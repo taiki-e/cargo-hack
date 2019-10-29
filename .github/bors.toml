@@ -1,0 +1,12 @@
+status = [
+    "test (ubuntu-latest, stable)",
+    "test (ubuntu-latest, nightly)",
+    "test (macOS-latest, stable)",
+    "test (macOS-latest, nightly)",
+    "test (windows-latest, stable)",
+    "test (windows-latest, nightly)",
+    "style (clippy)",
+    "style (rustfmt)",
+    "style (rustdoc)",
+]
+delete_merged_branches = true

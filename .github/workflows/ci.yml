@@ -1,0 +1,86 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - staging
+      - trying
+  schedule:
+    - cron: 00 01 * * 00 # Weekly
+
+env:
+  RUSTFLAGS: -Dwarnings
+
+jobs:
+  test:
+    name: test
+    runs-on: ${{ matrix.os }}
+    env:
+      AGENT_OS: ${{ matrix.os }}
+      RUST_TOOLCHAIN: ${{ matrix.rust }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        rust:
+          # This is the minimum supported Rust version of this crate.
+          # When updating this, the reminder to update the minimum supported
+          # Rust version in README.md.
+          - 1.36.0
+          - stable
+          - nightly
+    steps:
+      - uses: actions/checkout@master
+      - name: Install Rust
+        shell: bash
+        run: |
+          bash ./ci/install-rust.sh
+      - name: cargo test
+        shell: bash
+        run: |
+          cargo test
+
+  style:
+    name: style
+    runs-on: ubuntu-latest
+    env:
+      AGENT_OS: ${{ matrix.os }}
+      RUST_TOOLCHAIN: nightly
+    strategy:
+      fail-fast: false
+      matrix:
+        component:
+          - clippy
+          - rustfmt
+          - rustdoc
+    steps:
+      - uses: actions/checkout@master
+      - name: Install Rust
+        shell: bash
+        run: |
+          bash ./ci/install-rust.sh
+      - name: Install component
+        shell: bash
+        run: |
+          bash ./ci/install-component.sh ${{ matrix.component }}
+      - name: cargo clippy
+        shell: bash
+        if: matrix.component == 'clippy'
+        run: |
+          cargo clippy --all --all-features
+      - name: cargo fmt -- --check
+        shell: bash
+        if: matrix.component == 'rustfmt'
+        run: |
+          cargo fmt --all -- --check
+      - name: cargo doc
+        shell: bash
+        if: matrix.component == 'rustdoc'
+        run: |
+          cargo doc --no-deps --all --all-features
+        env:
+          RUSTDOCFLAGS: -Dwarnings

@@ -1,0 +1,23 @@
+[package]
+name = "cargo-hack"
+version = "0.1.0"
+authors = ["Taiki Endo <te316e89@gmail.com>"]
+edition = "2018"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/taiki-e/cargo-hack"
+documentation = "https://github.com/taiki-e/cargo-hack"
+keywords = ["cargo", "subcommand"]
+categories = ["command-line-utilities", "development-tools::cargo-plugins", "development-tools::build-utils"]
+readme = "README.md"
+description = """
+A tool to work around some limitations on cargo.
+"""
+
+[workspace]
+
+[dependencies]
+termcolor = "1.0.5"
+toml_edit = "0.1.5"
+
+[dev-dependencies]
+easy-ext = "0.1.6"
