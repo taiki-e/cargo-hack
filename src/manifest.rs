@@ -4,9 +4,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use anyhow::{anyhow, Context, Result};
 use toml_edit::{Array, Document, Item as Value, Table};
 
-use crate::{Args, Result};
+use crate::Options;
 
 const MANIFEST_FILE: &str = "Cargo.toml";
 
@@ -20,8 +21,11 @@ pub(crate) struct Manifest {
 
 impl Manifest {
     pub(crate) fn new(path: &Path) -> Result<Self> {
-        let path = path.canonicalize()?;
-        let raw = fs::read_to_string(&path)?;
+        let path = path
+            .canonicalize()
+            .with_context(|| format!("failed to canonicalize manifest path: {}", path.display()))?;
+        let raw = fs::read_to_string(&path)
+            .with_context(|| format!("failed to read manifest from {}", path.display()))?;
         let toml: Document = raw.parse()?;
         let features = toml
             .as_table()
@@ -33,7 +37,8 @@ impl Manifest {
 
         let manifest = Self { path, raw, toml, features };
         if manifest.package().is_none() && manifest.members().is_none() {
-            bail!("")
+            // TODO: improve error message
+            return Err(anyhow!("expected 'package' or 'workspace'"));
         }
 
         Ok(manifest)
@@ -41,12 +46,12 @@ impl Manifest {
 
     pub(crate) fn with_manifest_path(path: &str) -> Result<Self> {
         if !path.ends_with(MANIFEST_FILE) {
-            bail!("the manifest-path must be a path to a Cargo.toml file")
+            return Err(anyhow!("the manifest-path must be a path to a Cargo.toml file"));
         }
 
         let path = Path::new(path);
         if !path.exists() {
-            bail!("manifest path `{}` does not exist", path.display())
+            return Err(anyhow!("manifest path `{}` does not exist", path.display()));
         }
 
         Self::new(path)
@@ -65,7 +70,7 @@ impl Manifest {
         (|| self.package()?.get("name")?.as_str())().unwrap()
     }
 
-    pub(crate) fn package_name_verbose(&self, args: &Args) -> Cow<'_, str> {
+    pub(crate) fn package_name_verbose(&self, args: &Options) -> Cow<'_, str> {
         assert!(!self.is_virtual());
         if args.verbose {
             Cow::Owned(format!("{} ({})", self.package_name(), self.dir().display()))
@@ -114,7 +119,7 @@ pub(crate) fn find_root_manifest_for_wd(cwd: &Path) -> Result<PathBuf> {
         }
     }
 
-    bail!("could not find `Cargo.toml` in `{}` or any parent directory", cwd.display())
+    Err(anyhow!("could not find `Cargo.toml` in `{}` or any parent directory", cwd.display()))
 }
 
 /// Returns the path to the `MANIFEST_FILE` in `pwd`, if it exists.
@@ -124,6 +129,6 @@ pub(crate) fn find_project_manifest_exact(pwd: &Path) -> Result<PathBuf> {
     if manifest.exists() {
         Ok(manifest)
     } else {
-        bail!("Could not find `{}` in `{}`", MANIFEST_FILE, pwd.display())
+        Err(anyhow!("Could not find `{}` in `{}`", MANIFEST_FILE, pwd.display()))
     }
 }

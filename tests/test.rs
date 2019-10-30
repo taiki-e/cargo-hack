@@ -73,9 +73,9 @@ fn test_real() {
     let output = cargo_hack().args(&["hack", "check"]).current_dir(current_dir).output().unwrap();
 
     output.assert_success();
-    output.assert_stderr_not_contains("`cargo check` on member1");
-    output.assert_stderr_not_contains("`cargo check` on member2");
-    output.assert_stderr_contains("`cargo check` on real");
+    output.assert_stderr_not_contains("running `cargo check` on member1");
+    output.assert_stderr_not_contains("running `cargo check` on member2");
+    output.assert_stderr_contains("running `cargo check` on real");
 }
 
 #[test]
@@ -86,11 +86,9 @@ fn test_real_all() {
 
     output.assert_success();
     output.assert_stderr_contains("`--all` flag for `cargo hack` is experimental");
-    output.assert_stderr_contains("`cargo check` on member1");
-    output.assert_stderr_contains("`cargo check` on member2");
-    output.assert_stderr_contains("`cargo check` on real");
-    //
-    // output.stderr()
+    output.assert_stderr_contains("running `cargo check` on member1");
+    output.assert_stderr_contains("running `cargo check` on member2");
+    output.assert_stderr_contains("running `cargo check` on real");
 }
 
 #[test]
@@ -103,12 +101,12 @@ fn test_real_ignore_private() {
         .unwrap();
 
     output.assert_success();
-    output.assert_stderr_not_contains("`cargo check` on member1");
-    output.assert_stderr_not_contains("`cargo check` on member2");
-    output.assert_stderr_not_contains("`cargo check` on real");
-    output.assert_stderr_not_contains("skipped performing on member1");
-    output.assert_stderr_not_contains("skipped performing on member2");
-    output.assert_stderr_contains("skipped performing on real");
+    output.assert_stderr_not_contains("running `cargo check` on member1");
+    output.assert_stderr_not_contains("running `cargo check` on member2");
+    output.assert_stderr_not_contains("running `cargo check` on real");
+    output.assert_stderr_not_contains("skipped running on member1");
+    output.assert_stderr_not_contains("skipped running on member2");
+    output.assert_stderr_contains("skipped running on real");
 }
 
 #[test]
@@ -122,12 +120,12 @@ fn test_real_ignore_private_all() {
 
     output.assert_success();
     output.assert_stderr_contains("`--all` flag for `cargo hack` is experimental");
-    output.assert_stderr_contains("`cargo check` on member1");
-    output.assert_stderr_not_contains("`cargo check` on member2");
-    output.assert_stderr_not_contains("`cargo check` on real");
-    output.assert_stderr_not_contains("skipped performing on member1");
-    output.assert_stderr_contains("skipped performing on member2");
-    output.assert_stderr_contains("skipped performing on real");
+    output.assert_stderr_contains("running `cargo check` on member1");
+    output.assert_stderr_not_contains("running `cargo check` on member2");
+    output.assert_stderr_not_contains("running `cargo check` on real");
+    output.assert_stderr_not_contains("skipped running on member1");
+    output.assert_stderr_contains("skipped running on member2");
+    output.assert_stderr_contains("skipped running on real");
 }
 
 #[test]
@@ -136,8 +134,8 @@ fn test_virtual() {
     let output = cargo_hack().args(&["hack", "check"]).current_dir(current_dir).output().unwrap();
 
     output.assert_success();
-    output.assert_stderr_contains("`cargo check` on member1");
-    output.assert_stderr_contains("`cargo check` on member2");
+    output.assert_stderr_contains("running `cargo check` on member1");
+    output.assert_stderr_contains("running `cargo check` on member2");
 }
 
 #[test]
@@ -148,8 +146,8 @@ fn test_virtual_all() {
 
     output.assert_success();
     output.assert_stderr_contains("`--all` flag for `cargo hack` is experimental");
-    output.assert_stderr_contains("`cargo check` on member1");
-    output.assert_stderr_contains("`cargo check` on member2");
+    output.assert_stderr_contains("running `cargo check` on member1");
+    output.assert_stderr_contains("running `cargo check` on member2");
 }
 
 #[test]
@@ -162,10 +160,10 @@ fn test_virtual_ignore_private() {
         .unwrap();
 
     output.assert_success();
-    output.assert_stderr_contains("`cargo check` on member1");
-    output.assert_stderr_not_contains("`cargo check` on member2");
-    output.assert_stderr_not_contains("skipped performing on member1");
-    output.assert_stderr_contains("skipped performing on member2");
+    output.assert_stderr_contains("running `cargo check` on member1");
+    output.assert_stderr_not_contains("running `cargo check` on member2");
+    output.assert_stderr_not_contains("skipped running on member1");
+    output.assert_stderr_contains("skipped running on member2");
 }
 
 #[test]
@@ -179,10 +177,10 @@ fn test_virtual_ignore_private_all() {
 
     output.assert_success();
     output.assert_stderr_contains("`--all` flag for `cargo hack` is experimental");
-    output.assert_stderr_contains("`cargo check` on member1");
-    output.assert_stderr_not_contains("`cargo check` on member2");
-    output.assert_stderr_not_contains("skipped performing on member1");
-    output.assert_stderr_contains("skipped performing on member2");
+    output.assert_stderr_contains("running `cargo check` on member1");
+    output.assert_stderr_not_contains("running `cargo check` on member2");
+    output.assert_stderr_not_contains("skipped running on member1");
+    output.assert_stderr_contains("skipped running on member2");
 }
 
 #[test]
@@ -235,15 +233,12 @@ fn test_each_feature() {
         .unwrap();
 
     output.assert_success();
-    output.assert_stderr_contains("performing `cargo check` on real");
-    output.assert_stderr_contains("performing `cargo check --no-default-features` on real");
-    output.assert_stderr_contains(
-        "performing `cargo check --features=a --no-default-features` on real",
-    );
-    output.assert_stderr_contains(
-        "performing `cargo check --features=b --no-default-features` on real",
-    );
-    output.assert_stderr_contains(
-        "performing `cargo check --features=c --no-default-features` on real",
-    );
+    output.assert_stderr_contains("running `cargo check` on real");
+    output.assert_stderr_contains("running `cargo check --no-default-features` on real");
+    output
+        .assert_stderr_contains("running `cargo check --features=a --no-default-features` on real");
+    output
+        .assert_stderr_contains("running `cargo check --features=b --no-default-features` on real");
+    output
+        .assert_stderr_contains("running `cargo check --features=c --no-default-features` on real");
 }

@@ -1,8 +1,9 @@
 use std::{env, ffi::OsString, fs, path::PathBuf, str::FromStr};
 
+use anyhow::{anyhow, Error, Result};
 use termcolor::ColorChoice;
 
-use crate::error::{Error, Result};
+use crate::cmd::Line;
 
 pub(crate) fn print_version() {
     println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"),)
@@ -63,8 +64,8 @@ Some common cargo commands are (see all commands with --list):
 }
 
 #[derive(Debug, Default)]
-pub(crate) struct Args {
-    pub(crate) binary: OsString,
+pub(crate) struct Options {
+    binary: OsString,
 
     pub(crate) first: Vec<String>,
     pub(crate) second: Vec<String>,
@@ -86,6 +87,12 @@ pub(crate) struct Args {
 
     pub(crate) color: Option<Coloring>,
     pub(crate) verbose: bool,
+}
+
+impl Options {
+    pub(crate) fn process(&self) -> Line {
+        Line::new(&self.binary)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -113,13 +120,13 @@ impl FromStr for Coloring {
             "auto" => Ok(Coloring::Auto),
             "always" => Ok(Coloring::Always),
             "never" => Ok(Coloring::Never),
-            other => bail!("must be auto, always, or never, but found `{}`", other),
+            other => Err(anyhow!("must be auto, always, or never, but found `{}`", other)),
         }
     }
 }
 
 #[allow(clippy::cognitive_complexity)]
-pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Args> {
+pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Options> {
     let mut args = env::args().skip(1).collect::<Vec<_>>().into_iter().peekable();
     if args.peek().map_or(false, |a| a == "hack") {
         let _ = args.next();
@@ -171,10 +178,10 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Args> {
                 ($ident:ident, $propagate:expr, $pat1:expr, $pat2:expr, $help:expr) => {
                     if arg == $pat1 {
                         if $ident.is_some() {
-                            multi_arg($help, subcommand.as_ref())?;
+                            return Err(multi_arg($help, subcommand.as_ref()));
                         }
                         match args.next() {
-                            None => req_arg($help, subcommand.as_ref())?,
+                            None => return Err(req_arg($help, subcommand.as_ref())),
                             Some(next) => {
                                 if $propagate {
                                     $ident = Some(next.clone());
@@ -188,10 +195,10 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Args> {
                         continue;
                     } else if arg.starts_with($pat2) {
                         if $ident.is_some() {
-                            multi_arg($help, subcommand.as_ref())?;
+                            return Err(multi_arg($help, subcommand.as_ref()));
                         }
                         match arg.splitn(2, '=').nth(1).map(|s| s.to_string()) {
-                            None => req_arg($help, subcommand.as_ref())?,
+                            None => return Err(req_arg($help, subcommand.as_ref())),
                             arg @ Some(_) => $ident = arg,
                         }
                         if $propagate {
@@ -211,7 +218,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Args> {
                                 $ident.push(arg);
                             }
                         } else {
-                            req_arg($help, subcommand.as_ref())?;
+                            return Err(req_arg($help, subcommand.as_ref()));
                         }
                         continue;
                     } else if arg.starts_with($pat2) {
@@ -222,7 +229,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Args> {
                                 $ident.push(arg.to_string());
                             }
                         } else {
-                            req_arg($help, subcommand.as_ref())?;
+                            return Err(req_arg($help, subcommand.as_ref()));
                         }
                         continue;
                     }
@@ -253,37 +260,37 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Args> {
             match arg.as_str() {
                 "--workspace" | "--all" => {
                     if workspace.is_some() {
-                        multi_arg(&arg, subcommand.as_ref())?;
+                        return Err(multi_arg(&arg, subcommand.as_ref()));
                     }
                     workspace = Some(arg);
                 }
                 "--no-dev-deps" => {
                     if no_dev_deps {
-                        multi_arg(&arg, subcommand.as_ref())?;
+                        return Err(multi_arg(&arg, subcommand.as_ref()));
                     }
                     no_dev_deps = true;
                 }
                 "--remove-dev-deps" => {
                     if remove_dev_deps {
-                        multi_arg(&arg, subcommand.as_ref())?;
+                        return Err(multi_arg(&arg, subcommand.as_ref()));
                     }
                     remove_dev_deps = true;
                 }
                 "--each-feature" => {
                     if each_feature {
-                        multi_arg(&arg, subcommand.as_ref())?;
+                        return Err(multi_arg(&arg, subcommand.as_ref()));
                     }
                     each_feature = true;
                 }
                 "--ignore-private" => {
                     if ignore_private {
-                        multi_arg(&arg, subcommand.as_ref())?;
+                        return Err(multi_arg(&arg, subcommand.as_ref()));
                     }
                     ignore_private = true;
                 }
                 "--ignore-non-exist-features" => {
                     if ignore_non_exist_features {
-                        multi_arg(&arg, subcommand.as_ref())?;
+                        return Err(multi_arg(&arg, subcommand.as_ref()));
                     }
                     ignore_non_exist_features = true;
                 }
@@ -305,7 +312,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Args> {
     *coloring = color;
     let verbose = first.iter().any(|a| a == "--verbose" || a == "-v" || a == "-vv");
 
-    res.map(|()| Args {
+    res.map(|()| Options {
         binary: crate::cargo_binary(),
 
         first,
@@ -330,8 +337,8 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Args> {
     })
 }
 
-fn req_arg(arg: &str, subcommand: Option<&String>) -> Result<()> {
-    bail!(
+fn req_arg(arg: &str, subcommand: Option<&String>) -> Error {
+    anyhow!(
         "\
 The argument '{0}' requires a value but none was supplied
 
@@ -349,8 +356,8 @@ For more information try --help
     )
 }
 
-fn multi_arg(arg: &str, subcommand: Option<&String>) -> Result<()> {
-    bail!(
+fn multi_arg(arg: &str, subcommand: Option<&String>) -> Error {
+    anyhow!(
         "\
 The argument '{0}' was provided more than once, but cannot be used multiple times
 
