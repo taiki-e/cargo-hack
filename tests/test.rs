@@ -20,17 +20,29 @@ fn manifest_dir() -> PathBuf {
 
 #[easy_ext::ext(OutputExt)]
 impl Output {
-    fn assert_success(&self) {
-        assert!(self.status.success());
-    }
-    fn assert_failure(&self) {
-        assert!(!self.status.success());
-    }
     fn stdout(&self) -> Cow<'_, str> {
         String::from_utf8_lossy(&self.stdout)
     }
     fn stderr(&self) -> Cow<'_, str> {
         String::from_utf8_lossy(&self.stderr)
+    }
+    fn assert_success(&self) {
+        if !self.status.success() {
+            panic!(
+                "`self.status.success()`:\nSTDOUT:\n```\n{}\n```\n\nSTDERR:\n```\n{}\n```\n",
+                self.stdout(),
+                self.stderr(),
+            )
+        }
+    }
+    fn assert_failure(&self) {
+        if self.status.success() {
+            panic!(
+                "`!self.status.success()`:\nSTDOUT:\n```\n{}\n```\n\nSTDERR:\n```\n{}\n```\n",
+                self.stdout(),
+                self.stderr(),
+            )
+        }
     }
     fn assert_stderr_contains(&self, pat: impl AsRef<str>) {
         if !self.stderr().contains(pat.as_ref()) {
@@ -50,9 +62,9 @@ impl Output {
             )
         }
     }
-    // fn assert_stdout(&self, pat: impl AsRef<str>)
+    // fn assert_stdout_contains(&self, pat: impl AsRef<str>)
     // fn assert_stderr_contains_exact(&self, pat: impl AsRef<str>)
-    // fn assert_stdout_exact(&self, pat: impl AsRef<str>)
+    // fn assert_stdout_contains_exact(&self, pat: impl AsRef<str>)
 }
 
 #[test]
