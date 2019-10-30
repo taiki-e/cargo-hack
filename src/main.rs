@@ -4,26 +4,22 @@
 
 use std::{env, ffi::OsString, fmt, fs, io::Write, path::Path, process::Command};
 
+use anyhow::{anyhow, Context, Result};
 use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 
 use crate::{
-    cli::{Args, Coloring},
-    error::Result,
+    cli::{Coloring, Options},
     manifest::Manifest,
 };
 
-#[macro_use]
-mod error;
-
 mod cli;
+mod cmd;
 mod manifest;
 
 fn main() {
     let mut coloring = None;
     if let Err(e) = try_main(&mut coloring) {
-        if e.downcast_ref::<error::StringError>().map_or(true, |e| !e.0.is_empty()) {
-            print_error(coloring, &e.to_string());
-        }
+        print_error(coloring, e);
         std::process::exit(1)
     }
 }
@@ -43,11 +39,13 @@ fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
     }
     if args.subcommand.is_none() {
         if args.first.iter().any(|a| a == "--list") {
-            exec_cargo(Command::new(&args.binary).arg("--list"))?;
+            let mut line = args.process();
+            line.arg("--list");
+            exec_cargo(&mut line.command())?;
             return Ok(());
         } else if !args.remove_dev_deps {
             // TODO: improve this
-            bail!(
+            return Err(anyhow!(
                 "\
 No subcommand or valid flag specified.
 
@@ -56,12 +54,12 @@ USAGE:
 
 For more information try --help
 "
-            )
+            ));
         }
     }
 
     if let Some(flag) = &args.workspace {
-        print_warning(args.color, &format!("`{}` flag for `cargo hack` is experimental", flag))
+        print_warning(args.color, format!("`{}` flag for `cargo hack` is experimental", flag))
     }
     if !args.package.is_empty() {
         print_warning(args.color, "`--package` flag for `cargo hack` is currently ignored")
@@ -80,7 +78,7 @@ For more information try --help
     exec_on_workspace(&args, &mut root_manifest)
 }
 
-fn exec_on_workspace(args: &Args, root_manifest: &mut Manifest) -> Result<()> {
+fn exec_on_workspace(args: &Options, root_manifest: &mut Manifest) -> Result<()> {
     let root_dir = root_manifest.dir().to_path_buf();
 
     if args.workspace.is_some() || root_manifest.is_virtual() {
@@ -107,82 +105,87 @@ fn exec_on_workspace(args: &Args, root_manifest: &mut Manifest) -> Result<()> {
     Ok(())
 }
 
-fn exec_on_package(manifest: &mut Manifest, args: &Args) -> Result<()> {
+fn exec_on_package(manifest: &mut Manifest, args: &Options) -> Result<()> {
     if args.ignore_private && manifest.is_private() {
         print_info(
             args.color,
-            &format!("skipped performing on {}", manifest.package_name_verbose(args)),
+            format!("skipped running on {}", manifest.package_name_verbose(args)),
         );
-        Ok(())
-    } else if args.subcommand.is_some() {
-        no_dev_deps(manifest, args, each_feature)
-    } else if args.remove_dev_deps {
-        no_dev_deps(manifest, args, |_, _| Ok(()))
-    } else {
-        Ok(())
+    } else if args.subcommand.is_some() || args.remove_dev_deps {
+        no_dev_deps(manifest, args)?;
     }
+
+    Ok(())
 }
 
-fn no_dev_deps(
-    manifest: &mut Manifest,
-    args: &Args,
-    run_cargo: fn(manifest: &Manifest, args: &Args) -> Result<()>,
-) -> Result<()> {
+fn no_dev_deps(manifest: &Manifest, args: &Options) -> Result<()> {
     struct Bomb<'a> {
-        path: &'a Path,
+        manifest: &'a Manifest,
+        args: &'a Options,
         backup_path: &'a Path,
-        manifest: &'a str,
-        remove_dev_deps: bool,
         flag: bool,
     }
 
     impl Drop for Bomb<'_> {
         fn drop(&mut self) {
             if self.flag {
-                if !self.remove_dev_deps {
-                    let _ = fs::write(self.path, self.manifest);
-                }
+                let res = (|| {
+                    restore_manifest(self.manifest, self.args)?;
+                    remove_backup(self.backup_path)
+                })();
 
-                let _ = fs::remove_file(self.backup_path);
+                if let Err(e) = res {
+                    print_error(self.args.color, e);
+                }
             }
+        }
+    }
+
+    fn restore_manifest(manifest: &Manifest, args: &Options) -> Result<()> {
+        if args.remove_dev_deps {
+            Ok(())
+        } else {
+            fs::write(&manifest.path, &manifest.raw).with_context(|| {
+                format!("failed to restore manifest file: {}", manifest.path.display())
+            })
+        }
+    }
+
+    fn remove_backup(backup_path: &Path) -> Result<()> {
+        if backup_path.exists() {
+            fs::remove_file(&backup_path)
+                .with_context(|| format!("failed to remove backup file: {}", backup_path.display()))
+        } else {
+            Ok(())
         }
     }
 
     if args.no_dev_deps || args.remove_dev_deps {
         let backup_path = manifest.path.with_extension("toml.bk");
 
-        // backup
-        fs::copy(&manifest.path, &backup_path)?;
+        fs::copy(&manifest.path, &backup_path)
+            .with_context(|| format!("failed to create backup file: {}", backup_path.display()))?;
 
         fs::write(&manifest.path, remove_dev_deps(manifest)?)?;
 
-        let mut _bomb = Bomb {
-            path: &manifest.path,
-            backup_path: &backup_path,
-            manifest: &manifest.raw,
-            remove_dev_deps: args.remove_dev_deps,
-            flag: true,
-        };
+        let mut _bomb = Bomb { manifest, args, backup_path: &backup_path, flag: true };
 
-        run_cargo(manifest, args)?;
-
-        _bomb.flag = false;
-
-        if !args.remove_dev_deps {
-            // restore backup
-            fs::write(&manifest.path, &manifest.raw)?;
+        if args.subcommand.is_some() {
+            each_feature(manifest, args)?;
         }
 
-        // remove backup
-        fs::remove_file(&backup_path)?;
+        restore_manifest(manifest, args)?;
+        remove_backup(&backup_path)?;
 
-        Ok(())
-    } else {
-        run_cargo(manifest, args)
+        _bomb.flag = false;
+    } else if args.subcommand.is_some() {
+        each_feature(manifest, args)?;
     }
+
+    Ok(())
 }
 
-fn each_feature(manifest: &Manifest, args: &Args) -> Result<()> {
+fn each_feature(manifest: &Manifest, args: &Options) -> Result<()> {
     let mut features = String::new();
     if args.ignore_non_exist_features {
         let f: Vec<_> = args
@@ -195,7 +198,7 @@ fn each_feature(manifest: &Manifest, args: &Args) -> Result<()> {
                     // ignored
                     print_info(
                         args.color,
-                        &format!(
+                        format!(
                             "skipped applying non-exist `{}` feature to {}",
                             f,
                             manifest.package_name_verbose(args)
@@ -230,7 +233,7 @@ fn remove_dev_deps(manifest: &Manifest) -> Result<String> {
     Ok(doc.to_string_in_original_order())
 }
 
-fn exec_each_feature(manifest: &Manifest, args: &Args, features: Option<&str>) -> Result<()> {
+fn exec_each_feature(manifest: &Manifest, args: &Options, features: Option<&str>) -> Result<()> {
     // run with default features
     exec_cargo_command(manifest, args, features, &[])?;
 
@@ -254,51 +257,28 @@ fn exec_each_feature(manifest: &Manifest, args: &Args, features: Option<&str>) -
     })
 }
 
-struct CmdFormater<'a> {
-    args: &'a Args,
-    features: Option<&'a str>,
-    extra_args: &'a [&'a str],
-}
-
-impl fmt::Display for CmdFormater<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", Path::new(&self.args.binary).file_stem().unwrap().to_string_lossy())?;
-        self.args.first.iter().try_for_each(|arg| write!(f, " {}", arg))?;
-        if let Some(features) = self.features {
-            write!(f, " {}", features)?;
-        }
-        self.extra_args.iter().try_for_each(|arg| write!(f, " {}", arg))?;
-        self.args.second.iter().try_for_each(|arg| write!(f, " {}", arg))
-    }
-}
-
 fn exec_cargo_command(
     manifest: &Manifest,
-    args: &Args,
+    args: &Options,
     features: Option<&str>,
     extra_args: &[&str],
 ) -> Result<()> {
+    let mut line = args.process();
+    line.args(&args.first).args(features).args(extra_args).args(&args.second);
+
     print_info(
         args.color,
-        &format!(
-            "performing `{}` on {}",
-            CmdFormater { args, features, extra_args },
-            manifest.package_name_verbose(args)
-        ),
+        format!("running `{}` on {}", line, manifest.package_name_verbose(args)),
     );
 
-    let mut cmd = Command::new(&args.binary);
-    cmd.args(&args.first);
-    cmd.args(features);
-
-    cmd.args(extra_args).args(&args.second);
-    exec_cargo(cmd.current_dir(manifest.dir()))
+    exec_cargo(line.command().current_dir(manifest.dir()))
 }
 
 fn exec_cargo(cmd: &mut Command) -> Result<()> {
-    let exit_status =
-        cmd.spawn().expect("could not run cargo").wait().expect("failed to wait for cargo?");
-    if !exit_status.success() { bail!("") } else { Ok(()) }
+    let status =
+        cmd.spawn().context("could not run cargo")?.wait().context("failed to wait for cargo")?;
+
+    if status.success() { Ok(()) } else { Err(anyhow!("failed to run cargo")) }
 }
 
 fn cargo_binary() -> OsString {
@@ -307,24 +287,27 @@ fn cargo_binary() -> OsString {
     cargo_src.unwrap_or_else(|| cargo.unwrap_or_else(|| OsString::from("cargo")))
 }
 
-fn print_error(coloring: Option<Coloring>, msg: &str) {
+fn print_error(coloring: Option<Coloring>, msg: impl fmt::Display) {
     print_inner(coloring, Some(Color::Red), "error", msg);
 }
 
-fn print_warning(coloring: Option<Coloring>, msg: &str) {
+fn print_warning(coloring: Option<Coloring>, msg: impl fmt::Display) {
     print_inner(coloring, Some(Color::Yellow), "warning", msg);
 }
 
-fn print_info(coloring: Option<Coloring>, msg: &str) {
+fn print_info(coloring: Option<Coloring>, msg: impl fmt::Display) {
     print_inner(coloring, None, "info", msg);
 }
 
-fn print_inner(coloring: Option<Coloring>, color: Option<Color>, kind: &str, msg: &str) {
+fn print_inner(
+    coloring: Option<Coloring>,
+    color: Option<Color>,
+    kind: &str,
+    msg: impl fmt::Display,
+) {
     let mut stream = StandardStream::stderr(Coloring::color_choice(coloring));
     let _ = stream.set_color(ColorSpec::new().set_bold(true).set_fg(color));
     let _ = write!(stream, "{}", kind);
     let _ = stream.reset();
-    if !msg.is_empty() {
-        let _ = writeln!(stream, ": {}", msg);
-    }
+    let _ = writeln!(stream, ": {}", msg);
 }
