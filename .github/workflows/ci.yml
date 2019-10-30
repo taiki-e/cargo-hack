@@ -25,6 +25,7 @@ jobs:
         os:
           - ubuntu-latest
           - macos-latest
+          # FIXME: cargo-hack does not work on windows
           - windows-latest
         rust:
           # This is the minimum supported Rust version of this crate.
@@ -38,17 +39,22 @@ jobs:
       - name: Install Rust
         shell: bash
         run: |
-          bash ./ci/install-rust.sh
+          . ./ci/install-rust.sh
       - name: cargo test
         shell: bash
+        # FIXME: cargo-hack does not work on windows
+        if: matrix.os != 'windows-latest'
         run: |
           cargo test
+      - name: cargo hack
+        run: |
+          cargo run -- hack check --each-feature --no-dev-deps
 
   style:
     name: style
     runs-on: ubuntu-latest
     env:
-      AGENT_OS: ${{ matrix.os }}
+      AGENT_OS: ubuntu-latest
       RUST_TOOLCHAIN: nightly
     strategy:
       fail-fast: false
@@ -56,17 +62,16 @@ jobs:
         component:
           - clippy
           - rustfmt
-          - rustdoc
     steps:
       - uses: actions/checkout@master
       - name: Install Rust
         shell: bash
         run: |
-          bash ./ci/install-rust.sh
+          . ./ci/install-rust.sh
       - name: Install component
         shell: bash
         run: |
-          bash ./ci/install-component.sh ${{ matrix.component }}
+          . ./ci/install-component.sh ${{ matrix.component }}
       - name: cargo clippy
         shell: bash
         if: matrix.component == 'clippy'
@@ -77,10 +82,3 @@ jobs:
         if: matrix.component == 'rustfmt'
         run: |
           cargo fmt --all -- --check
-      - name: cargo doc
-        shell: bash
-        if: matrix.component == 'rustdoc'
-        run: |
-          cargo doc --no-deps --all --all-features
-        env:
-          RUSTDOCFLAGS: -Dwarnings
