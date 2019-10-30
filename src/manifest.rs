@@ -4,10 +4,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{anyhow, Context, Result};
 use toml_edit::{Array, Document, Item as Value, Table};
 
-use crate::Options;
+use crate::{
+    error::{Context, Result},
+    Options,
+};
 
 const MANIFEST_FILE: &str = "Cargo.toml";
 
@@ -38,7 +40,7 @@ impl Manifest {
         let manifest = Self { path, raw, toml, features };
         if manifest.package().is_none() && manifest.members().is_none() {
             // TODO: improve error message
-            return Err(anyhow!("expected 'package' or 'workspace'"));
+            return Err(format_err!("expected 'package' or 'workspace'"));
         }
 
         Ok(manifest)
@@ -46,12 +48,12 @@ impl Manifest {
 
     pub(crate) fn with_manifest_path(path: &str) -> Result<Self> {
         if !path.ends_with(MANIFEST_FILE) {
-            return Err(anyhow!("the manifest-path must be a path to a Cargo.toml file"));
+            return Err(format_err!("the manifest-path must be a path to a Cargo.toml file"));
         }
 
         let path = Path::new(path);
         if !path.exists() {
-            return Err(anyhow!("manifest path `{}` does not exist", path.display()));
+            return Err(format_err!("manifest path `{}` does not exist", path.display()));
         }
 
         Self::new(path)
@@ -119,7 +121,7 @@ pub(crate) fn find_root_manifest_for_wd(cwd: &Path) -> Result<PathBuf> {
         }
     }
 
-    Err(anyhow!("could not find `Cargo.toml` in `{}` or any parent directory", cwd.display()))
+    Err(format_err!("could not find `Cargo.toml` in `{}` or any parent directory", cwd.display()))
 }
 
 /// Returns the path to the `MANIFEST_FILE` in `pwd`, if it exists.
@@ -129,6 +131,6 @@ pub(crate) fn find_project_manifest_exact(pwd: &Path) -> Result<PathBuf> {
     if manifest.exists() {
         Ok(manifest)
     } else {
-        Err(anyhow!("Could not find `{}` in `{}`", MANIFEST_FILE, pwd.display()))
+        Err(format_err!("Could not find `{}` in `{}`", MANIFEST_FILE, pwd.display()))
     }
 }

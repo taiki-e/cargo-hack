@@ -4,13 +4,16 @@
 
 use std::{env, ffi::OsString, fmt, fs, io::Write, path::Path, process::Command};
 
-use anyhow::{anyhow, Context, Result};
 use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 
 use crate::{
     cli::{Coloring, Options},
+    error::{Context, Result},
     manifest::Manifest,
 };
+
+#[macro_use]
+mod error;
 
 mod cli;
 mod cmd;
@@ -45,7 +48,7 @@ fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
             return Ok(());
         } else if !args.remove_dev_deps {
             // TODO: improve this
-            return Err(anyhow!(
+            return Err(format_err!(
                 "\
 No subcommand or valid flag specified.
 
@@ -278,7 +281,7 @@ fn exec_cargo(cmd: &mut Command) -> Result<()> {
     let status =
         cmd.spawn().context("could not run cargo")?.wait().context("failed to wait for cargo")?;
 
-    if status.success() { Ok(()) } else { Err(anyhow!("failed to run cargo")) }
+    if status.success() { Ok(()) } else { Err(format_err!("failed to run cargo")) }
 }
 
 fn cargo_binary() -> OsString {

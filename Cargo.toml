@@ -16,7 +16,6 @@ A tool to work around some limitations on cargo.
 [workspace]
 
 [dependencies]
-anyhow = "1.0.18"
 termcolor = "1.0.5"
 toml_edit = "0.1.5"
 
