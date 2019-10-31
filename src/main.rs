@@ -2,18 +2,17 @@
 #![warn(rust_2018_idioms, single_use_lifetimes, unreachable_pub)]
 #![warn(clippy::all)]
 
-use std::{env, ffi::OsString, fmt, fs, io::Write, path::Path, process::Command};
+use std::{env, ffi::OsString, fs, path::Path, process::Command};
 
-use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
+use anyhow::{bail, Context, Result};
 
 use crate::{
     cli::{Coloring, Options},
-    error::{Context, Result},
     manifest::Manifest,
 };
 
 #[macro_use]
-mod error;
+mod term;
 
 mod cli;
 mod cmd;
@@ -22,7 +21,7 @@ mod manifest;
 fn main() {
     let mut coloring = None;
     if let Err(e) = try_main(&mut coloring) {
-        print_error(coloring, e);
+        error!(coloring, "{:?}", e);
         std::process::exit(1)
     }
 }
@@ -48,7 +47,7 @@ fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
             return Ok(());
         } else if !args.remove_dev_deps {
             // TODO: improve this
-            return Err(format_err!(
+            bail!(
                 "\
 No subcommand or valid flag specified.
 
@@ -57,18 +56,18 @@ USAGE:
 
 For more information try --help
 "
-            ));
+            );
         }
     }
 
     if let Some(flag) = &args.workspace {
-        print_warning(args.color, format!("`{}` flag for `cargo hack` is experimental", flag))
+        warn!(args.color, "`{}` flag for `cargo hack` is experimental", flag)
     }
     if !args.package.is_empty() {
-        print_warning(args.color, "`--package` flag for `cargo hack` is currently ignored")
+        warn!(args.color, "`--package` flag for `cargo hack` is currently ignored")
     }
     if !args.exclude.is_empty() {
-        print_warning(args.color, "`--exclude` flag for `cargo hack` is currently ignored")
+        warn!(args.color, "`--exclude` flag for `cargo hack` is currently ignored")
     }
 
     let current_dir = &env::current_dir()?;
@@ -110,10 +109,7 @@ fn exec_on_workspace(args: &Options, root_manifest: &mut Manifest) -> Result<()>
 
 fn exec_on_package(manifest: &mut Manifest, args: &Options) -> Result<()> {
     if args.ignore_private && manifest.is_private() {
-        print_info(
-            args.color,
-            format!("skipped running on {}", manifest.package_name_verbose(args)),
-        );
+        info!(args.color, "skipped running on {}", manifest.package_name_verbose(args));
     } else if args.subcommand.is_some() || args.remove_dev_deps {
         no_dev_deps(manifest, args)?;
     }
@@ -138,7 +134,7 @@ fn no_dev_deps(manifest: &Manifest, args: &Options) -> Result<()> {
                 })();
 
                 if let Err(e) = res {
-                    print_error(self.args.color, e);
+                    error!(self.args.color, "{:?}", e);
                 }
             }
         }
@@ -199,13 +195,11 @@ fn each_feature(manifest: &Manifest, args: &Options) -> Result<()> {
                     true
                 } else {
                     // ignored
-                    print_info(
+                    info!(
                         args.color,
-                        format!(
-                            "skipped applying non-exist `{}` feature to {}",
-                            f,
-                            manifest.package_name_verbose(args)
-                        ),
+                        "skipped applying non-exist `{}` feature to {}",
+                        f,
+                        manifest.package_name_verbose(args)
                     );
                     false
                 }
@@ -269,10 +263,7 @@ fn exec_cargo_command(
     let mut line = args.process();
     line.args(&args.first).args(features).args(extra_args).args(&args.second);
 
-    print_info(
-        args.color,
-        format!("running `{}` on {}", line, manifest.package_name_verbose(args)),
-    );
+    info!(args.color, "running `{}` on {}", line, manifest.package_name_verbose(args));
 
     exec_cargo(line.command().current_dir(manifest.dir()))
 }
@@ -281,36 +272,11 @@ fn exec_cargo(cmd: &mut Command) -> Result<()> {
     let status =
         cmd.spawn().context("could not run cargo")?.wait().context("failed to wait for cargo")?;
 
-    if status.success() { Ok(()) } else { Err(format_err!("failed to run cargo")) }
+    if status.success() { Ok(()) } else { bail!("failed to run cargo") }
 }
 
 fn cargo_binary() -> OsString {
     let cargo_src = env::var_os("CARGO_HACK_CARGO_SRC");
     let cargo = env::var_os("CARGO");
     cargo_src.unwrap_or_else(|| cargo.unwrap_or_else(|| OsString::from("cargo")))
-}
-
-fn print_error(coloring: Option<Coloring>, msg: impl fmt::Display) {
-    print_inner(coloring, Some(Color::Red), "error", msg);
-}
-
-fn print_warning(coloring: Option<Coloring>, msg: impl fmt::Display) {
-    print_inner(coloring, Some(Color::Yellow), "warning", msg);
-}
-
-fn print_info(coloring: Option<Coloring>, msg: impl fmt::Display) {
-    print_inner(coloring, None, "info", msg);
-}
-
-fn print_inner(
-    coloring: Option<Coloring>,
-    color: Option<Color>,
-    kind: &str,
-    msg: impl fmt::Display,
-) {
-    let mut stream = StandardStream::stderr(Coloring::color_choice(coloring));
-    let _ = stream.set_color(ColorSpec::new().set_bold(true).set_fg(color));
-    let _ = write!(stream, "{}", kind);
-    let _ = stream.reset();
-    let _ = writeln!(stream, ": {}", msg);
 }
