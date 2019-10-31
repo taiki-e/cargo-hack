@@ -128,47 +128,42 @@ fn no_dev_deps(manifest: &Manifest, args: &Options) -> Result<()> {
         manifest: &'a Manifest,
         args: &'a Options,
         backup_path: &'a Path,
-        flag: bool,
+        done: bool,
+        res: &'a mut Result<()>,
     }
 
     impl Drop for Bomb<'_> {
         fn drop(&mut self) {
-            if self.flag {
-                let res = (|| {
-                    restore_manifest(self.manifest, self.args)?;
-                    remove_backup(self.backup_path)
-                })();
-
-                if let Err(e) = res {
-                    error!(self.args.color, "{:?}", e);
+            let res = (|| {
+                if !self.args.remove_dev_deps {
+                    fs::write(&self.manifest.path, &self.manifest.raw).with_context(|| {
+                        format!("failed to restore manifest file: {}", self.manifest.path.display())
+                    })?
                 }
+                if self.backup_path.exists() {
+                    // This will not run if the manifest update fails (early return with above `?`).
+                    fs::remove_file(&self.backup_path).with_context(|| {
+                        format!("failed to remove backup file: {}", self.backup_path.display())
+                    })?
+                }
+                Ok(())
+            })();
+
+            if self.done {
+                *self.res = res;
+            } else if let Err(e) = res {
+                error!(self.args.color, "{:?}", e);
             }
-        }
-    }
-
-    fn restore_manifest(manifest: &Manifest, args: &Options) -> Result<()> {
-        if args.remove_dev_deps {
-            Ok(())
-        } else {
-            fs::write(&manifest.path, &manifest.raw).with_context(|| {
-                format!("failed to restore manifest file: {}", manifest.path.display())
-            })
-        }
-    }
-
-    fn remove_backup(backup_path: &Path) -> Result<()> {
-        if backup_path.exists() {
-            fs::remove_file(&backup_path)
-                .with_context(|| format!("failed to remove backup file: {}", backup_path.display()))
-        } else {
-            Ok(())
         }
     }
 
     if args.no_dev_deps || args.remove_dev_deps {
         let backup_path = manifest.path.with_extension("toml.bk");
 
-        let mut _bomb = Bomb { manifest, args, backup_path: &backup_path, flag: true };
+        let mut res = Ok(());
+
+        let mut bomb =
+            Bomb { manifest, args, backup_path: &backup_path, done: false, res: &mut res };
 
         fs::copy(&manifest.path, &backup_path)
             .with_context(|| format!("failed to create backup file: {}", backup_path.display()))?;
@@ -181,10 +176,9 @@ fn no_dev_deps(manifest: &Manifest, args: &Options) -> Result<()> {
             each_feature(manifest, args)?;
         }
 
-        restore_manifest(manifest, args)?;
-        remove_backup(&backup_path)?;
-
-        _bomb.flag = false;
+        bomb.done = true;
+        drop(bomb);
+        res?;
     } else if args.subcommand.is_some() {
         each_feature(manifest, args)?;
     }
