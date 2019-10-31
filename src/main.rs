@@ -7,7 +7,7 @@ mod term;
 
 mod cli;
 mod manifest;
-mod process_builder;
+mod process;
 
 use std::{env, ffi::OsString, fs, path::Path};
 
@@ -16,7 +16,7 @@ use anyhow::{bail, Context, Result};
 use crate::{
     cli::{Coloring, Options},
     manifest::Manifest,
-    process_builder::ProcessBuilder,
+    process::ProcessBuilder,
 };
 
 fn main() {
