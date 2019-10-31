@@ -26,7 +26,9 @@ impl Manifest {
             .with_context(|| format!("failed to canonicalize manifest path: {}", path.display()))?;
         let raw = fs::read_to_string(&path)
             .with_context(|| format!("failed to read manifest from {}", path.display()))?;
-        let toml: Document = raw.parse()?;
+        let toml: Document = raw
+            .parse()
+            .with_context(|| format!("failed to parse manifest file: {}", path.display()))?;
         let features = toml
             .as_table()
             .get("features")
@@ -36,6 +38,7 @@ impl Manifest {
             .collect::<Vec<_>>();
 
         let manifest = Self { path, raw, toml, features };
+
         if manifest.package().is_none() && manifest.members().is_none() {
             // TODO: improve error message
             bail!("expected 'package' or 'workspace'");
@@ -108,7 +111,7 @@ pub(crate) fn remove_key_and_target_key(table: &mut Table, key: &str) {
     }
 }
 
-// Based on https://github.com/rust-lang/cargo/blob/dc83ead224d8622f748f507574e1448a28d8dcc7/src/cargo/util/important_paths.rs
+// Based on https://github.com/rust-lang/cargo/blob/0.39.0/src/cargo/util/important_paths.rs
 
 /// Finds the root `Cargo.toml`.
 pub(crate) fn find_root_manifest_for_wd(cwd: &Path) -> Result<PathBuf> {

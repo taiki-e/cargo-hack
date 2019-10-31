@@ -1,9 +1,7 @@
-use std::{env, ffi::OsString, fs, path::PathBuf, str::FromStr};
+use std::{env, fs, path::PathBuf, str::FromStr};
 
 use anyhow::{anyhow, bail, Error, Result};
 use termcolor::ColorChoice;
-
-use crate::cmd::Line;
 
 pub(crate) fn print_version() {
     println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"),)
@@ -65,14 +63,14 @@ Some common cargo commands are (see all commands with --list):
 
 #[derive(Debug, Default)]
 pub(crate) struct Options {
-    binary: OsString,
-
     pub(crate) first: Vec<String>,
     pub(crate) second: Vec<String>,
 
     pub(crate) subcommand: Option<String>,
 
     pub(crate) manifest_path: Option<String>,
+    // canonicalized target-dir
+    pub(crate) target_dir: Option<PathBuf>,
 
     pub(crate) package: Vec<String>,
     pub(crate) exclude: Vec<String>,
@@ -87,12 +85,6 @@ pub(crate) struct Options {
 
     pub(crate) color: Option<Coloring>,
     pub(crate) verbose: bool,
-}
-
-impl Options {
-    pub(crate) fn process(&self) -> Line {
-        Line::new(&self.binary)
-    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -298,28 +290,21 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Options> {
             }
         }
 
-        if let Some(target_dir) =
-            target_dir.map(fs::canonicalize).transpose()?.map(PathBuf::into_os_string)
-        {
-            first.push(String::from("--target-dir"));
-            first.push(target_dir.to_string_lossy().into_owned());
-        }
-
         Ok(())
     })();
 
+    let target_dir = target_dir.map(fs::canonicalize).transpose()?;
     let color = color.map(|c| c.parse()).transpose()?;
     *coloring = color;
     let verbose = first.iter().any(|a| a == "--verbose" || a == "-v" || a == "-vv");
 
     res.map(|()| Options {
-        binary: crate::cargo_binary(),
-
         first,
         second,
 
         subcommand,
         manifest_path,
+        target_dir,
 
         package,
         exclude,

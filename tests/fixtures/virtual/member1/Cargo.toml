@@ -5,13 +5,14 @@ authors = ["Taiki Endo <te316e89@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+# member2 = { path = "../member2" }
 
 [dev-dependencies]
 
 [target.'cfg(unix)'.dev-dependencies]
 
 [features]
-default = []
+default = ["a"]
 a = []
 b = []
 c = []

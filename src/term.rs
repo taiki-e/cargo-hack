@@ -14,7 +14,7 @@ pub(crate) fn print_inner(
     let _ = stream.set_color(ColorSpec::new().set_bold(true).set_fg(color));
     let _ = write!(stream, "{}", kind);
     let _ = stream.reset();
-    let _ = writeln!(stream, ": ");
+    let _ = write!(stream, ": ");
     let _ = write_msg(&mut stream);
 }
 
