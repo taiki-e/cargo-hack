@@ -12,7 +12,7 @@ publish = false
 [target.'cfg(unix)'.dev-dependencies]
 
 [features]
-default = []
+default = ["a"]
 a = []
 b = []
 c = []

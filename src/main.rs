@@ -2,21 +2,22 @@
 #![warn(rust_2018_idioms, single_use_lifetimes, unreachable_pub)]
 #![warn(clippy::all)]
 
-use std::{env, ffi::OsString, fs, path::Path, process::Command};
+#[macro_use]
+mod term;
+
+mod cli;
+mod manifest;
+mod process_builder;
+
+use std::{env, ffi::OsString, fs, path::Path};
 
 use anyhow::{bail, Context, Result};
 
 use crate::{
     cli::{Coloring, Options},
     manifest::Manifest,
+    process_builder::ProcessBuilder,
 };
-
-#[macro_use]
-mod term;
-
-mod cli;
-mod cmd;
-mod manifest;
 
 fn main() {
     let mut coloring = None;
@@ -41,9 +42,9 @@ fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
     }
     if args.subcommand.is_none() {
         if args.first.iter().any(|a| a == "--list") {
-            let mut line = args.process();
+            let mut line = ProcessBuilder::new(cargo_binary());
             line.arg("--list");
-            exec_cargo(&mut line.command())?;
+            line.exec()?;
             return Ok(());
         } else if !args.remove_dev_deps {
             // TODO: improve this
@@ -72,31 +73,36 @@ For more information try --help
 
     let current_dir = &env::current_dir()?;
 
-    let mut root_manifest = match &args.manifest_path {
+    let root_manifest = match &args.manifest_path {
         Some(path) => Manifest::with_manifest_path(path)?,
         None => Manifest::new(&manifest::find_root_manifest_for_wd(&current_dir)?)?,
     };
 
-    exec_on_workspace(&args, &mut root_manifest)
+    exec_on_workspace(&args, &root_manifest)
 }
 
-fn exec_on_workspace(args: &Options, root_manifest: &mut Manifest) -> Result<()> {
-    let root_dir = root_manifest.dir().to_path_buf();
+fn exec_on_workspace(args: &Options, root_manifest: &Manifest) -> Result<()> {
+    let root_dir = root_manifest.dir();
 
     if args.workspace.is_some() || root_manifest.is_virtual() {
         root_manifest
             .members()
             .into_iter()
             .flat_map(|v| v.iter().filter_map(|v| v.as_str()))
-            .try_for_each(|dir| {
+            .map(Path::new)
+            .try_for_each(|mut dir| {
+                if let Ok(new) = dir.strip_prefix(".") {
+                    dir = new;
+                }
+
                 let path = manifest::find_project_manifest_exact(&root_dir.join(dir))?;
-                let mut manifest = crate::Manifest::new(&path)?;
+                let manifest = crate::Manifest::new(&path)?;
 
                 if root_manifest.path == manifest.path {
                     return Ok(());
                 }
 
-                exec_on_package(&mut manifest, args)
+                exec_on_package(&manifest, args)
             })?;
     }
 
@@ -107,7 +113,7 @@ fn exec_on_workspace(args: &Options, root_manifest: &mut Manifest) -> Result<()>
     Ok(())
 }
 
-fn exec_on_package(manifest: &mut Manifest, args: &Options) -> Result<()> {
+fn exec_on_package(manifest: &Manifest, args: &Options) -> Result<()> {
     if args.ignore_private && manifest.is_private() {
         info!(args.color, "skipped running on {}", manifest.package_name_verbose(args));
     } else if args.subcommand.is_some() || args.remove_dev_deps {
@@ -162,12 +168,14 @@ fn no_dev_deps(manifest: &Manifest, args: &Options) -> Result<()> {
     if args.no_dev_deps || args.remove_dev_deps {
         let backup_path = manifest.path.with_extension("toml.bk");
 
+        let mut _bomb = Bomb { manifest, args, backup_path: &backup_path, flag: true };
+
         fs::copy(&manifest.path, &backup_path)
             .with_context(|| format!("failed to create backup file: {}", backup_path.display()))?;
 
-        fs::write(&manifest.path, remove_dev_deps(manifest)?)?;
-
-        let mut _bomb = Bomb { manifest, args, backup_path: &backup_path, flag: true };
+        fs::write(&manifest.path, remove_dev_deps(manifest)).with_context(|| {
+            format!("failed to update manifest file: {}", manifest.path.display())
+        })?;
 
         if args.subcommand.is_some() {
             each_feature(manifest, args)?;
@@ -224,10 +232,10 @@ fn each_feature(manifest: &Manifest, args: &Options) -> Result<()> {
     }
 }
 
-fn remove_dev_deps(manifest: &Manifest) -> Result<String> {
+fn remove_dev_deps(manifest: &Manifest) -> String {
     let mut doc = manifest.toml.clone();
     manifest::remove_key_and_target_key(doc.as_table_mut(), "dev-dependencies");
-    Ok(doc.to_string_in_original_order())
+    doc.to_string_in_original_order()
 }
 
 fn exec_each_feature(manifest: &Manifest, args: &Options, features: Option<&str>) -> Result<()> {
@@ -260,19 +268,27 @@ fn exec_cargo_command(
     features: Option<&str>,
     extra_args: &[&str],
 ) -> Result<()> {
-    let mut line = args.process();
-    line.args(&args.first).args(features).args(extra_args).args(&args.second);
+    let mut line = ProcessBuilder::new(cargo_binary());
 
-    info!(args.color, "running `{}` on {}", line, manifest.package_name_verbose(args));
+    line.args(&args.first);
 
-    exec_cargo(line.command().current_dir(manifest.dir()))
-}
+    if let Some(features) = features {
+        line.arg(features);
+    }
 
-fn exec_cargo(cmd: &mut Command) -> Result<()> {
-    let status =
-        cmd.spawn().context("could not run cargo")?.wait().context("failed to wait for cargo")?;
+    if let Some(target_dir) = args.target_dir.as_ref() {
+        line.arg("--target-dir");
+        line.arg(target_dir);
+    }
 
-    if status.success() { Ok(()) } else { bail!("failed to run cargo") }
+    line.args(extra_args);
+    line.args(&args.second);
+
+    line.cwd(manifest.dir());
+
+    info!(args.color, "running {} on {}", line, manifest.package_name_verbose(args));
+
+    line.exec()
 }
 
 fn cargo_binary() -> OsString {
