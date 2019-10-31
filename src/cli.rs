@@ -1,11 +1,9 @@
 use std::{env, ffi::OsString, fs, path::PathBuf, str::FromStr};
 
+use anyhow::{anyhow, bail, Error, Result};
 use termcolor::ColorChoice;
 
-use crate::{
-    cmd::Line,
-    error::{Error, Result},
-};
+use crate::cmd::Line;
 
 pub(crate) fn print_version() {
     println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"),)
@@ -122,7 +120,7 @@ impl FromStr for Coloring {
             "auto" => Ok(Coloring::Auto),
             "always" => Ok(Coloring::Always),
             "never" => Ok(Coloring::Never),
-            other => Err(format_err!("must be auto, always, or never, but found `{}`", other)),
+            other => bail!("must be auto, always, or never, but found `{}`", other),
         }
     }
 }
@@ -340,7 +338,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Options> {
 }
 
 fn req_arg(arg: &str, subcommand: Option<&String>) -> Error {
-    format_err!(
+    anyhow!(
         "\
 The argument '{0}' requires a value but none was supplied
 
@@ -359,7 +357,7 @@ For more information try --help
 }
 
 fn multi_arg(arg: &str, subcommand: Option<&String>) -> Error {
-    format_err!(
+    anyhow!(
         "\
 The argument '{0}' was provided more than once, but cannot be used multiple times
 
