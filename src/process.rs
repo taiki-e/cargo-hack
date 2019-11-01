@@ -1,5 +1,3 @@
-// Based on https://github.com/rust-lang/cargo/blob/0.39.0/src/cargo/util/process_builder.rs
-
 use std::{
     collections::HashMap,
     ffi::{OsStr, OsString},
@@ -10,6 +8,8 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+
+// Based on https://github.com/rust-lang/cargo/blob/0.39.0/src/cargo/util/process_builder.rs
 
 /// A builder object for an external process, similar to `std::process::Command`.
 #[derive(Clone, Debug)]
@@ -146,13 +146,13 @@ impl ProcessBuilder {
     pub(crate) fn exec(&self) -> Result<()> {
         let mut command = self.build_command();
         let exit = command.status().with_context(|| {
-            process_error(&format!("could not execute process {}", self), None, None)
+            ProcessError::new(&format!("could not execute process {}", self), None, None)
         })?;
 
         if exit.success() {
             Ok(())
         } else {
-            Err(process_error(
+            Err(ProcessError::new(
                 &format!("process didn't exit successfully: {}", self),
                 Some(exit),
                 None,
@@ -166,13 +166,13 @@ impl ProcessBuilder {
     //     let mut command = self.build_command();
 
     //     let output = command.output().with_context(|| {
-    //         process_error(&format!("could not execute process {}", self), None, None)
+    //         ProcessError::new(&format!("could not execute process {}", self), None, None)
     //     })?;
 
     //     if output.status.success() {
     //         Ok(output)
     //     } else {
-    //         Err(process_error(
+    //         Err(ProcessError::new(
     //             &format!("process didn't exit successfully: {}", self),
     //             Some(output.status),
     //             Some(&output),
@@ -183,7 +183,7 @@ impl ProcessBuilder {
 
     /// Converts `ProcessBuilder` into a `std::process::Command`, and handles the jobserver, if
     /// present.
-    pub(crate) fn build_command(&self) -> Command {
+    fn build_command(&self) -> Command {
         let mut command = Command::new(&self.program);
         if let Some(cwd) = self.get_cwd() {
             command.current_dir(cwd);
@@ -211,11 +211,42 @@ impl ProcessBuilder {
 // =============================================================================
 // Process errors
 
+// Based on https://github.com/rust-lang/cargo/blob/0.39.0/src/cargo/util/errors.rs
+
 #[derive(Debug)]
 pub(crate) struct ProcessError {
-    pub(crate) desc: String,
-    pub(crate) exit: Option<ExitStatus>,
-    pub(crate) output: Option<Output>,
+    desc: String,
+    exit: Option<ExitStatus>,
+    output: Option<Output>,
+}
+
+impl ProcessError {
+    fn new(msg: &str, status: Option<ExitStatus>, output: Option<&Output>) -> Self {
+        let exit = match status {
+            Some(s) => s.to_string(),
+            None => "never executed".to_string(),
+        };
+        let mut desc = format!("{} ({})", &msg, exit);
+
+        if let Some(out) = output {
+            match str::from_utf8(&out.stdout) {
+                Ok(s) if !s.trim().is_empty() => {
+                    desc.push_str("\n--- stdout\n");
+                    desc.push_str(s);
+                }
+                Ok(..) | Err(..) => {}
+            }
+            match str::from_utf8(&out.stderr) {
+                Ok(s) if !s.trim().is_empty() => {
+                    desc.push_str("\n--- stderr\n");
+                    desc.push_str(s);
+                }
+                Ok(..) | Err(..) => {}
+            }
+        }
+
+        Self { desc, exit: status, output: output.cloned() }
+    }
 }
 
 impl fmt::Display for ProcessError {
@@ -225,34 +256,3 @@ impl fmt::Display for ProcessError {
 }
 
 impl std::error::Error for ProcessError {}
-
-pub(crate) fn process_error(
-    msg: &str,
-    status: Option<ExitStatus>,
-    output: Option<&Output>,
-) -> ProcessError {
-    let exit = match status {
-        Some(s) => s.to_string(),
-        None => "never executed".to_string(),
-    };
-    let mut desc = format!("{} ({})", &msg, exit);
-
-    if let Some(out) = output {
-        match str::from_utf8(&out.stdout) {
-            Ok(s) if !s.trim().is_empty() => {
-                desc.push_str("\n--- stdout\n");
-                desc.push_str(s);
-            }
-            Ok(..) | Err(..) => {}
-        }
-        match str::from_utf8(&out.stderr) {
-            Ok(s) if !s.trim().is_empty() => {
-                desc.push_str("\n--- stderr\n");
-                desc.push_str(s);
-            }
-            Ok(..) | Err(..) => {}
-        }
-    }
-
-    ProcessError { desc, exit: status, output: output.cloned() }
-}
