@@ -22,7 +22,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "cargo-hack"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow 1.0.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "easy-ext 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
