@@ -16,8 +16,10 @@ use anyhow::{Context, Result};
 pub(crate) struct ProcessBuilder {
     /// The program to execute.
     program: OsString,
-    /// A list of arguments to pass to the program.
+    /// A list of arguments to pass to the program (until '--').
     args: Vec<OsString>,
+    /// A list of arguments to pass to the program ('--' and after).
+    args2: Vec<OsString>,
     /// Any environment variables that should be set for the program.
     env: HashMap<String, Option<OsString>>,
     /// The directory to run the program from.
@@ -33,6 +35,9 @@ impl fmt::Display for ProcessBuilder {
         for arg in &self.args {
             write!(f, " {}", arg.to_string_lossy())?;
         }
+        for arg in &self.args2 {
+            write!(f, " {}", arg.to_string_lossy())?;
+        }
 
         write!(f, "`")
     }
@@ -44,6 +49,7 @@ impl ProcessBuilder {
         Self {
             program: cmd.as_ref().to_os_string(),
             args: Vec::new(),
+            args2: Vec::new(),
             cwd: None,
             env: HashMap::new(),
         }
@@ -73,11 +79,29 @@ impl ProcessBuilder {
     //     self
     // }
 
-    /// (chainable) Sets the current working directory of the process.
-    pub(crate) fn cwd(&mut self, path: impl AsRef<OsStr>) -> &mut Self {
-        self.cwd = Some(path.as_ref().to_os_string());
+    // /// (chainable) Adds `arg` to the args2 list.
+    // pub(crate) fn arg2(&mut self, arg: impl AsRef<OsStr>) -> &mut Self {
+    //     self.args2.push(arg.as_ref().to_os_string());
+    //     self
+    // }
+
+    /// (chainable) Adds multiple `args` to the args2 list.
+    pub(crate) fn args2(&mut self, args: &[impl AsRef<OsStr>]) -> &mut Self {
+        self.args2.extend(args.iter().map(|t| t.as_ref().to_os_string()));
         self
     }
+
+    // /// (chainable) Replaces the args2 list with the given `args`.
+    // pub(crate) fn args2_replace(&mut self, args: &[impl AsRef<OsStr>]) -> &mut Self {
+    //     self.args2 = args.iter().map(|t| t.as_ref().to_os_string()).collect();
+    //     self
+    // }
+
+    // /// (chainable) Sets the current working directory of the process.
+    // pub(crate) fn cwd(&mut self, path: impl AsRef<OsStr>) -> &mut Self {
+    //     self.cwd = Some(path.as_ref().to_os_string());
+    //     self
+    // }
 
     // /// (chainable) Sets an environment variable for the process.
     // pub(crate) fn env(&mut self, key: &str, val: impl AsRef<OsStr>) -> &mut Self {
@@ -165,6 +189,9 @@ impl ProcessBuilder {
             command.current_dir(cwd);
         }
         for arg in &self.args {
+            command.arg(arg);
+        }
+        for arg in &self.args2 {
             command.arg(arg);
         }
         for (k, v) in &self.env {

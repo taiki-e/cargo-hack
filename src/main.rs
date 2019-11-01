@@ -276,11 +276,21 @@ fn exec_cargo_command(
     }
 
     line.args(extra_args);
-    line.args(&args.second);
 
-    line.cwd(manifest.dir());
+    line.args2(&args.second);
 
-    info!(args.color, "running {} on {}", line, manifest.package_name_verbose(args));
+    if args.verbose {
+        line.arg("--manifest-path");
+        line.arg(&manifest.path);
+
+        info!(args.color, "running {} on {}", line, manifest.package_name_verbose(args));
+    } else {
+        info!(args.color, "running {} on {}", line, manifest.package_name_verbose(args));
+
+        // Displaying --manifest-path is redundant.
+        line.arg("--manifest-path");
+        line.arg(&manifest.path);
+    }
 
     line.exec()
 }
