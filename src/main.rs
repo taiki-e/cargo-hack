@@ -8,6 +8,7 @@ mod term;
 mod cli;
 mod manifest;
 mod process;
+mod workspace;
 
 use std::{env, ffi::OsString, fs, path::Path};
 
@@ -15,8 +16,9 @@ use anyhow::{bail, Context, Result};
 
 use crate::{
     cli::{Coloring, Options},
-    manifest::Manifest,
+    manifest::{find_root_manifest_for_wd, Manifest},
     process::ProcessBuilder,
+    workspace::Workspace,
 };
 
 fn main() {
@@ -64,50 +66,50 @@ For more information try --help
     if let Some(flag) = &args.workspace {
         warn!(args.color, "`{}` flag for `cargo hack` is experimental", flag)
     }
-    if !args.package.is_empty() {
-        warn!(args.color, "`--package` flag for `cargo hack` is currently ignored")
-    }
-    if !args.exclude.is_empty() {
-        warn!(args.color, "`--exclude` flag for `cargo hack` is currently ignored")
-    }
 
     let current_dir = &env::current_dir()?;
 
-    let root_manifest = match &args.manifest_path {
+    let current_manifest = match &args.manifest_path {
         Some(path) => Manifest::with_manifest_path(path)?,
-        None => Manifest::new(&manifest::find_root_manifest_for_wd(&current_dir)?)?,
+        None => Manifest::new(&find_root_manifest_for_wd(&current_dir)?)?,
     };
+    let workspace = Workspace::new(&current_manifest)?;
 
-    exec_on_workspace(&args, &root_manifest)
+    exec_on_workspace(&args, &workspace)
 }
 
-fn exec_on_workspace(args: &Options, root_manifest: &Manifest) -> Result<()> {
-    let root_dir = root_manifest.dir();
+fn exec_on_workspace(args: &Options, workspace: &Workspace<'_>) -> Result<()> {
+    if args.workspace.is_some() {
+        for spec in &args.exclude {
+            if !workspace.members.contains_key(spec) {
+                warn!(
+                    args.color,
+                    "excluded package(s) {} not found in workspace `{}`",
+                    spec,
+                    workspace.current_manifest.dir().display()
+                );
+            }
+        }
 
-    if args.workspace.is_some() || root_manifest.is_virtual() {
-        root_manifest
-            .members()
-            .into_iter()
-            .flat_map(|v| v.iter().filter_map(|v| v.as_str()))
-            .map(Path::new)
-            .try_for_each(|mut dir| {
-                if let Ok(new) = dir.strip_prefix(".") {
-                    dir = new;
-                }
-
-                let path = manifest::find_project_manifest_exact(&root_dir.join(dir))?;
-                let manifest = crate::Manifest::new(&path)?;
-
-                if root_manifest.path == manifest.path {
-                    return Ok(());
-                }
-
-                exec_on_package(&manifest, args)
-            })?;
-    }
-
-    if !root_manifest.is_virtual() {
-        exec_on_package(root_manifest, args)?;
+        for (_, manifest) in
+            workspace.members.iter().filter(|(spec, _)| !args.exclude.contains(spec))
+        {
+            exec_on_package(manifest, args)?;
+        }
+    } else if !args.package.is_empty() {
+        for spec in &args.package {
+            if let Some(manifest) = workspace.members.get(spec) {
+                exec_on_package(manifest, args)?;
+            } else {
+                bail!("package ID specification `{}` matched no packages", spec);
+            }
+        }
+    } else if workspace.current_manifest.is_virtual() {
+        for (_, manifest) in workspace.members.iter() {
+            exec_on_package(manifest, args)?;
+        }
+    } else if !workspace.current_manifest.is_virtual() {
+        exec_on_package(workspace.current_manifest, args)?;
     }
 
     Ok(())

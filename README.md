@@ -99,14 +99,6 @@ To install the current cargo-hack requires Rust 1.36 or later.
 
   Unlike `cargo` ([rust-lang/cargo#3620], [rust-lang/cargo#4106], [rust-lang/cargo#4463], [rust-lang/cargo#4753], [rust-lang/cargo#5015], [rust-lang/cargo#5364], [rust-lang/cargo#6195]), it can also be applied to sub-crate.
 
-* **`-p`**, **`--package`**
-
-  *Currently this flag is ignored.*
-
-* **`--exclude`**
-
-  *Currently this flag is ignored.*
-
 [rust-lang/cargo#3620]: https://github.com/rust-lang/cargo/issues/3620
 [rust-lang/cargo#4106]: https://github.com/rust-lang/cargo/issues/4106
 [rust-lang/cargo#4463]: https://github.com/rust-lang/cargo/issues/4463

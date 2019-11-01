@@ -9,9 +9,7 @@ use toml_edit::{Array, Document, Item as Value, Table};
 
 use crate::Options;
 
-const MANIFEST_FILE: &str = "Cargo.toml";
-
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct Manifest {
     pub(crate) path: PathBuf,
     pub(crate) raw: String,
@@ -48,7 +46,7 @@ impl Manifest {
     }
 
     pub(crate) fn with_manifest_path(path: &str) -> Result<Self> {
-        if !path.ends_with(MANIFEST_FILE) {
+        if !path.ends_with("Cargo.toml") {
             bail!("the manifest-path must be a path to a Cargo.toml file");
         }
 
@@ -116,7 +114,7 @@ pub(crate) fn remove_key_and_target_key(table: &mut Table, key: &str) {
 /// Finds the root `Cargo.toml`.
 pub(crate) fn find_root_manifest_for_wd(cwd: &Path) -> Result<PathBuf> {
     for current in cwd.ancestors() {
-        let manifest = current.join(MANIFEST_FILE);
+        let manifest = current.join("Cargo.toml");
         if manifest.exists() {
             return Ok(manifest);
         }
@@ -125,13 +123,12 @@ pub(crate) fn find_root_manifest_for_wd(cwd: &Path) -> Result<PathBuf> {
     bail!("could not find `Cargo.toml` in `{}` or any parent directory", cwd.display())
 }
 
-/// Returns the path to the `MANIFEST_FILE` in `pwd`, if it exists.
+/// Returns the path to the `Cargo.toml` in `pwd`, if it exists.
 pub(crate) fn find_project_manifest_exact(pwd: &Path) -> Result<PathBuf> {
-    let manifest = pwd.join(MANIFEST_FILE);
-
+    let manifest = pwd.join("Cargo.toml");
     if manifest.exists() {
         Ok(manifest)
     } else {
-        bail!("Could not find `{}` in `{}`", MANIFEST_FILE, pwd.display())
+        bail!("Could not find `Cargo.toml` in `{}`", pwd.display())
     }
 }
