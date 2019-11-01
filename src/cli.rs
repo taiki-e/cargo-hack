@@ -40,7 +40,7 @@ OPTIONS:
                                     does not restore the original `Cargo.toml`
                                     after execution
         --ignore-private            Skip to perform on `publish = false` packages
-        --ignore-non-exist-features Skip passing `--features` to `cargo` if that
+        --ignore-unknown-features   Skip passing `--features` to `cargo` if that
                                     feature does not exist in the package.
     -v, --verbose                   Use verbose output
                                     (this flag will be propagated to cargo)
@@ -81,7 +81,7 @@ pub(crate) struct Options {
     pub(crate) no_dev_deps: bool,
     pub(crate) remove_dev_deps: bool,
     pub(crate) ignore_private: bool,
-    pub(crate) ignore_non_exist_features: bool,
+    pub(crate) ignore_unknown_features: bool,
 
     pub(crate) color: Option<Coloring>,
     pub(crate) verbose: bool,
@@ -141,6 +141,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Options> {
     let mut remove_dev_deps = false;
     let mut each_feature = false;
     let mut ignore_private = false;
+    let mut ignore_unknown_features = false;
     let mut ignore_non_exist_features = false;
 
     let res = (|| -> Result<()> {
@@ -280,9 +281,15 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Options> {
                     }
                     ignore_private = true;
                 }
-                "--ignore-non-exist-features" => {
-                    if ignore_non_exist_features {
+                "--ignore-unknown-features" => {
+                    if ignore_unknown_features || ignore_non_exist_features {
                         return Err(multi_arg(&arg, subcommand.as_ref()));
+                    }
+                    ignore_unknown_features = true;
+                }
+                "--ignore-non-exist-features" => {
+                    if ignore_unknown_features || ignore_non_exist_features {
+                        return Err(multi_arg("--ignore-unknown-features", subcommand.as_ref()));
                     }
                     ignore_non_exist_features = true;
                 }
@@ -297,6 +304,12 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Options> {
     let color = color.map(|c| c.parse()).transpose()?;
     *coloring = color;
     let verbose = first.iter().any(|a| a == "--verbose" || a == "-v" || a == "-vv");
+    if ignore_non_exist_features {
+        warn!(
+            color,
+            "'--ignore-non-exist-features' flag is deprecated, use '--ignore-unknown-features' flag instead"
+        );
+    }
 
     res.map(|()| Options {
         first,
@@ -315,7 +328,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Options> {
         no_dev_deps,
         remove_dev_deps,
         ignore_private,
-        ignore_non_exist_features,
+        ignore_unknown_features: ignore_unknown_features || ignore_non_exist_features,
 
         color,
         verbose,
