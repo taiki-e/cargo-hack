@@ -8,7 +8,7 @@ on:
       - staging
       - trying
   schedule:
-    - cron: 00 01 * * 00 # Weekly
+    - cron: '00 01 * * *'
 
 env:
   RUSTFLAGS: -Dwarnings
@@ -40,11 +40,9 @@ jobs:
         run: |
           . ./ci/install-rust.sh
       - name: cargo test
-        shell: bash
         run: |
           cargo test
       - name: cargo hack
-        shell: bash
         run: |
           cargo run -- hack check --each-feature --no-dev-deps
 
@@ -71,12 +69,10 @@ jobs:
         run: |
           . ./ci/install-component.sh ${{ matrix.component }}
       - name: cargo clippy
-        shell: bash
         if: matrix.component == 'clippy'
         run: |
           cargo clippy --all --all-features
       - name: cargo fmt -- --check
-        shell: bash
         if: matrix.component == 'rustfmt'
         run: |
           cargo fmt --all -- --check
