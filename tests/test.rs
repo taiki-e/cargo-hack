@@ -46,48 +46,46 @@ impl Output {
         }
         self
     }
-    fn assert_stderr_contains(&self, pat: impl AsRef<str>) -> &Self {
-        if !self.stderr().contains(pat.as_ref()) {
+    fn assert_stderr_contains(&self, pat: &str) -> &Self {
+        if !self.stderr().contains(pat) {
             panic!(
                 "`self.stderr().contains(pat)`:\nPAT:\n```\n{}\n```\n\nACTUAL:\n```\n{}\n```\n",
-                pat.as_ref(),
+                pat,
                 self.stderr()
             )
         }
         self
     }
-    fn assert_stderr_not_contains(&self, pat: impl AsRef<str>) -> &Self {
-        if self.stderr().contains(pat.as_ref()) {
+    fn assert_stderr_not_contains(&self, pat: &str) -> &Self {
+        if self.stderr().contains(pat) {
             panic!(
                 "`!self.stderr().contains(pat)`:\nPAT:\n```\n{}\n```\n\nACTUAL:\n```\n{}\n```\n",
-                pat.as_ref(),
+                pat,
                 self.stderr()
             )
         }
         self
     }
-    fn assert_stdout_contains(&self, pat: impl AsRef<str>) -> &Self {
-        if !self.stdout().contains(pat.as_ref()) {
+    fn assert_stdout_contains(&self, pat: &str) -> &Self {
+        if !self.stdout().contains(pat) {
             panic!(
                 "`self.stdout().contains(pat)`:\nPAT:\n```\n{}\n```\n\nACTUAL:\n```\n{}\n```\n",
-                pat.as_ref(),
+                pat,
                 self.stdout()
             )
         }
         self
     }
-    fn assert_stdout_not_contains(&self, pat: impl AsRef<str>) -> &Self {
-        if self.stdout().contains(pat.as_ref()) {
+    fn assert_stdout_not_contains(&self, pat: &str) -> &Self {
+        if self.stdout().contains(pat) {
             panic!(
                 "`!self.stdout().contains(pat)`:\nPAT:\n```\n{}\n```\n\nACTUAL:\n```\n{}\n```\n",
-                pat.as_ref(),
+                pat,
                 self.stdout()
             )
         }
         self
     }
-    // fn assert_stderr_contains_exact(&self, pat: impl AsRef<str>)
-    // fn assert_stdout_contains_exact(&self, pat: impl AsRef<str>)
 }
 
 #[test]
@@ -223,27 +221,72 @@ fn test_virtual_ignore_private_all() {
 #[test]
 fn test_package() {
     let output = cargo_hack()
-        .args(&["hack", "check", "--package", "foo"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .args(&["hack", "check", "--package", "member1"])
+        .current_dir(test_dir("tests/fixtures/virtual"))
         .output()
         .unwrap();
 
     output
         .assert_success()
-        .assert_stderr_contains("`--package` flag for `cargo hack` is currently ignored");
+        .assert_stderr_contains("running `cargo check` on member1")
+        .assert_stderr_not_contains("running `cargo check` on member2");
+}
+
+#[test]
+fn test_package_no_packages() {
+    let output = cargo_hack()
+        .args(&["hack", "check", "--package", "foo"])
+        .current_dir(test_dir("tests/fixtures/virtual"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_failure()
+        .assert_stderr_contains("package ID specification `foo` matched no packages");
 }
 
 #[test]
 fn test_exclude() {
     let output = cargo_hack()
-        .args(&["hack", "check", "--exclude", "foo"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .args(&["hack", "check", "--all", "--exclude", "foo"])
+        .current_dir(test_dir("tests/fixtures/virtual"))
         .output()
         .unwrap();
 
     output
         .assert_success()
-        .assert_stderr_contains("`--exclude` flag for `cargo hack` is currently ignored");
+        .assert_stderr_contains("`--all` flag for `cargo hack` is experimental")
+        .assert_stderr_contains("excluded package(s) foo not found in workspace")
+        .assert_stderr_contains("running `cargo check` on member1")
+        .assert_stderr_contains("running `cargo check` on member2");
+}
+
+#[test]
+fn test_exclude_not_found() {
+    let output = cargo_hack()
+        .args(&["hack", "check", "--all", "--exclude", "member1"])
+        .current_dir(test_dir("tests/fixtures/virtual"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_success()
+        .assert_stderr_contains("`--all` flag for `cargo hack` is experimental")
+        .assert_stderr_not_contains("running `cargo check` on member1")
+        .assert_stderr_contains("running `cargo check` on member2");
+}
+
+#[test]
+fn test_exclude_not_all() {
+    let output = cargo_hack()
+        .args(&["hack", "check", "--exclude", "member1"])
+        .current_dir(test_dir("tests/fixtures/virtual"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_failure()
+        .assert_stderr_contains("--exclude can only be used together with --workspace");
 }
 
 #[test]

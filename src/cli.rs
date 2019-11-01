@@ -61,7 +61,7 @@ Some common cargo commands are (see all commands with --list):
     )
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(crate) struct Options {
     pub(crate) first: Vec<String>,
     pub(crate) second: Vec<String>,
@@ -309,6 +309,9 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Options> {
             color,
             "'--ignore-non-exist-features' flag is deprecated, use '--ignore-unknown-features' flag instead"
         );
+    }
+    if !exclude.is_empty() && workspace.is_none() {
+        bail!("--exclude can only be used together with --workspace")
     }
 
     res.map(|()| Options {
