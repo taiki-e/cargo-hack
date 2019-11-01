@@ -188,7 +188,7 @@ fn no_dev_deps(manifest: &Manifest, args: &Options) -> Result<()> {
 
 fn each_feature(manifest: &Manifest, args: &Options) -> Result<()> {
     let mut features = String::new();
-    if args.ignore_non_exist_features {
+    if args.ignore_unknown_features {
         let f: Vec<_> = args
             .features
             .iter()
@@ -199,7 +199,7 @@ fn each_feature(manifest: &Manifest, args: &Options) -> Result<()> {
                     // ignored
                     info!(
                         args.color,
-                        "skipped applying non-exist `{}` feature to {}",
+                        "skipped applying unknown `{}` feature to {}",
                         f,
                         manifest.package_name_verbose(args)
                     );

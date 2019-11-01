@@ -247,6 +247,20 @@ fn test_exclude() {
 }
 
 #[test]
+fn test_ignore_unknown_features() {
+    let output = cargo_hack()
+        .args(&["hack", "check", "--ignore-unknown-features", "--features=f"])
+        .current_dir(test_dir("tests/fixtures/virtual"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_success()
+        .assert_stderr_contains("skipped applying unknown `f` feature to member1")
+        .assert_stderr_contains("skipped applying unknown `f` feature to member2");
+}
+
+#[test]
 fn test_ignore_non_exist_features() {
     let output = cargo_hack()
         .args(&["hack", "check", "--ignore-non-exist-features", "--features=f"])
@@ -256,8 +270,9 @@ fn test_ignore_non_exist_features() {
 
     output
         .assert_success()
-        .assert_stderr_contains("skipped applying non-exist `f` feature to member1")
-        .assert_stderr_contains("skipped applying non-exist `f` feature to member2");
+        .assert_stderr_contains("'--ignore-non-exist-features' flag is deprecated, use '--ignore-unknown-features' flag instead")
+        .assert_stderr_contains("skipped applying unknown `f` feature to member1")
+        .assert_stderr_contains("skipped applying unknown `f` feature to member2");
 }
 
 #[test]

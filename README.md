@@ -67,11 +67,13 @@ To install the current cargo-hack requires Rust 1.36 or later.
 
   Skip to perform on `publish = false` packages.
 
-* **`--ignore-non-exist-features`**
+* **`--ignore-unknown-features`**
 
   Skip passing `--features` to `cargo` if that feature does not exist.
 
   This is a workaround for an issue that `cargo` does not support for `--features` with workspace ([rust-lang/cargo#3620], [rust-lang/cargo#4106], [rust-lang/cargo#4463], [rust-lang/cargo#4753], [rust-lang/cargo#5015], [rust-lang/cargo#5364], [rust-lang/cargo#6195]).
+
+  This feature was formerly called `--ignore-unknown-features`, but has been renamed. The old name can be used as an alias, but is deprecated.
 
 `cargo-hack` changes the behavior of the following existing flags.
 
