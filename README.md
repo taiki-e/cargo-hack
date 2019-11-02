@@ -24,7 +24,7 @@ cargo install cargo-hack
 
 To install the current cargo-hack requires Rust 1.36 or later.
 
-**Note: cargo-hack is currently only tested on Linux and macOS. It may not work well on other platforms.**
+*Note: cargo-hack is currently only tested on Linux and macOS. It may not work well on other platforms. See [#3] for Windows support.*
 
 ## Usage
 
@@ -34,7 +34,7 @@ To install the current cargo-hack requires Rust 1.36 or later.
 
   Perform for each feature *which includes `--no-default-features` and default features* of the package.
 
-  This is primarily intended to be used to verify that each feature is working properly. (*When used for this purpose, it is recommended to use with `--no-dev-deps`.*)
+  This is useful to check that each feature is working properly. (*When used for this purpose, it is recommended to use with `--no-dev-deps`.*)
 
   ```sh
   cargo hack check --each-feature --no-dev-deps
@@ -99,6 +99,7 @@ To install the current cargo-hack requires Rust 1.36 or later.
 
   Unlike `cargo` ([rust-lang/cargo#3620], [rust-lang/cargo#4106], [rust-lang/cargo#4463], [rust-lang/cargo#4753], [rust-lang/cargo#5015], [rust-lang/cargo#5364], [rust-lang/cargo#6195]), it can also be applied to sub-crate.
 
+[#3]: https://github.com/taiki-e/cargo-hack/issues/3
 [rust-lang/cargo#3620]: https://github.com/rust-lang/cargo/issues/3620
 [rust-lang/cargo#4106]: https://github.com/rust-lang/cargo/issues/4106
 [rust-lang/cargo#4463]: https://github.com/rust-lang/cargo/issues/4463

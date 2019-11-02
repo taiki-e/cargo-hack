@@ -349,3 +349,41 @@ fn test_args2() {
         .assert_stdout_contains("running 1 test")
         .assert_stdout_contains("test tests::test_ignored");
 }
+
+#[test]
+fn windows_package_collision() {
+    let output = cargo_hack()
+        .args(&["hack", "check"])
+        .current_dir(test_dir("tests/fixtures/windows_package_collision"))
+        .output()
+        .unwrap();
+
+    if cfg!(windows) {
+        output
+            .assert_failure()
+            .assert_stderr_contains("package collision in the lockfile: packages member2");
+    } else {
+        output
+            .assert_success()
+            .assert_stderr_contains("running `cargo check` on member1")
+            .assert_stderr_contains("running `cargo check` on member2");
+    }
+}
+
+#[test]
+fn windows_not_find_manifest() {
+    let output = cargo_hack()
+        .args(&["hack", "check"])
+        .current_dir(test_dir("tests/fixtures/windows_not_find_manifest"))
+        .output()
+        .unwrap();
+
+    if cfg!(windows) {
+        output.assert_failure().assert_stderr_contains("Could not find `Cargo.toml` in `");
+    } else {
+        output
+            .assert_success()
+            .assert_stderr_contains("running `cargo check` on member1")
+            .assert_stderr_contains("running `cargo check` on member2");
+    }
+}
