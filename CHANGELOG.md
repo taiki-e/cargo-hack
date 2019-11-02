@@ -8,12 +8,15 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [0.2.0] - 2019-11-02
 
-* Implemented `--package` flag.
+* [Implemented `--package` flag.][12]
 
-* Implemented `--exclude` flag.
+* [Implemented `--exclude` flag.][12]
 
-* Renamed `--ignore-non-exist-features` flag to `--ignore-unknown-features`.
+* [Renamed `--ignore-non-exist-features` flag to `--ignore-unknown-features`.][10]
   The old name can be used as an alias, but is deprecated.
+
+[10]: https://github.com/taiki-e/cargo-hack/pull/10
+[12]: https://github.com/taiki-e/cargo-hack/pull/12
 
 ## [0.1.1] - 2019-11-01
 
