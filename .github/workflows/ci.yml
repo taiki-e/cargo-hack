@@ -49,9 +49,6 @@ jobs:
   style:
     name: style
     runs-on: ubuntu-latest
-    env:
-      AGENT_OS: ubuntu-latest
-      RUST_TOOLCHAIN: nightly
     strategy:
       fail-fast: false
       matrix:

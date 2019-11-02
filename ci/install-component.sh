@@ -11,7 +11,7 @@ else
     # use the latest toolchain with the component available.
     # Refs: https://github.com/rust-lang/rustup-components-history#the-web-part
     target=$(curl -sSf "https://rust-lang.github.io/rustup-components-history/x86_64-unknown-linux-gnu/${1}")
-    echo "'${1}' is unavailable on the toolchain '${RUST_TOOLCHAIN}', use the toolchain 'nightly-${target}' instead"
+    echo "'${1}' is unavailable on the toolchain '${RUST_TOOLCHAIN:-nightly}', use the toolchain 'nightly-${target}' instead"
 
     rustup update "nightly-${target}" --no-self-update
     rustup default "nightly-${target}"
