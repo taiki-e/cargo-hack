@@ -113,7 +113,6 @@ fn test_real_all() {
 
     output
         .assert_success()
-        .assert_stderr_contains("`--all` flag for `cargo hack` is experimental")
         .assert_stderr_contains("running `cargo check` on member1")
         .assert_stderr_contains("running `cargo check` on member2")
         .assert_stderr_contains("running `cargo check` on real");
@@ -147,7 +146,6 @@ fn test_real_ignore_private_all() {
 
     output
         .assert_success()
-        .assert_stderr_contains("`--all` flag for `cargo hack` is experimental")
         .assert_stderr_contains("running `cargo check` on member1")
         .assert_stderr_not_contains("running `cargo check` on member2")
         .assert_stderr_not_contains("running `cargo check` on real")
@@ -180,7 +178,6 @@ fn test_virtual_all() {
 
     output
         .assert_success()
-        .assert_stderr_contains("`--all` flag for `cargo hack` is experimental")
         .assert_stderr_contains("running `cargo check` on member1")
         .assert_stderr_contains("running `cargo check` on member2");
 }
@@ -211,7 +208,6 @@ fn test_virtual_ignore_private_all() {
 
     output
         .assert_success()
-        .assert_stderr_contains("`--all` flag for `cargo hack` is experimental")
         .assert_stderr_contains("running `cargo check` on member1")
         .assert_stderr_not_contains("running `cargo check` on member2")
         .assert_stderr_not_contains("skipped running on member1")
@@ -255,7 +251,6 @@ fn test_exclude() {
 
     output
         .assert_success()
-        .assert_stderr_contains("`--all` flag for `cargo hack` is experimental")
         .assert_stderr_contains("excluded package(s) foo not found in workspace")
         .assert_stderr_contains("running `cargo check` on member1")
         .assert_stderr_contains("running `cargo check` on member2");
@@ -271,7 +266,6 @@ fn test_exclude_not_found() {
 
     output
         .assert_success()
-        .assert_stderr_contains("`--all` flag for `cargo hack` is experimental")
         .assert_stderr_not_contains("running `cargo check` on member1")
         .assert_stderr_contains("running `cargo check` on member2");
 }

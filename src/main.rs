@@ -63,10 +63,6 @@ For more information try --help
         }
     }
 
-    if let Some(flag) = &args.workspace {
-        warn!(args.color, "`{}` flag for `cargo hack` is experimental", flag)
-    }
-
     let current_dir = &env::current_dir()?;
 
     let current_manifest = match &args.manifest_path {
