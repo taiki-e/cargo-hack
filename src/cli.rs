@@ -1,6 +1,6 @@
 use std::{env, fs, path::PathBuf, str::FromStr};
 
-use anyhow::{anyhow, bail, Error, Result};
+use anyhow::{bail, format_err, Error, Result};
 use termcolor::ColorChoice;
 
 pub(crate) fn print_version() {
@@ -339,7 +339,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Options> {
 }
 
 fn req_arg(arg: &str, subcommand: Option<&String>) -> Error {
-    anyhow!(
+    format_err!(
         "\
 The argument '{0}' requires a value but none was supplied
 
@@ -358,7 +358,7 @@ For more information try --help
 }
 
 fn multi_arg(arg: &str, subcommand: Option<&String>) -> Error {
-    anyhow!(
+    format_err!(
         "\
 The argument '{0}' was provided more than once, but cannot be used multiple times
 
