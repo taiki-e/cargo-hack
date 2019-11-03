@@ -6,6 +6,10 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.2.1] - 2019-11-03
+
+* Removed warning from `--all`/`--workspace` flag. This is no longer "experimental".
+
 ## [0.2.0] - 2019-11-02
 
 * [Implemented `--package` flag.][12]
@@ -26,7 +30,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/taiki-e/cargo-hack/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/taiki-e/cargo-hack/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/taiki-e/cargo-hack/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/taiki-e/cargo-hack/releases/tag/v0.1.0
