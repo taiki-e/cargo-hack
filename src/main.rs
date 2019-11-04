@@ -10,7 +10,7 @@ mod manifest;
 mod process;
 mod workspace;
 
-use std::{env, ffi::OsString, fs, path::Path};
+use std::{env, ffi::OsString, fs};
 
 use anyhow::{bail, Context, Result};
 
@@ -125,46 +125,29 @@ fn no_dev_deps(manifest: &Manifest, args: &Options) -> Result<()> {
     struct Bomb<'a> {
         manifest: &'a Manifest,
         args: &'a Options,
-        backup_path: &'a Path,
         done: bool,
         res: &'a mut Result<()>,
     }
 
     impl Drop for Bomb<'_> {
         fn drop(&mut self) {
-            let res = (|| {
-                if !self.args.remove_dev_deps {
-                    fs::write(&self.manifest.path, &self.manifest.raw).with_context(|| {
-                        format!("failed to restore manifest file: {}", self.manifest.path.display())
-                    })?
-                }
-                if self.backup_path.exists() {
-                    // This will not run if the manifest update fails (early return with above `?`).
-                    fs::remove_file(&self.backup_path).with_context(|| {
-                        format!("failed to remove backup file: {}", self.backup_path.display())
-                    })?
-                }
-                Ok(())
-            })();
+            if !self.args.remove_dev_deps {
+                let res = fs::write(&self.manifest.path, &self.manifest.raw).with_context(|| {
+                    format!("failed to restore manifest file: {}", self.manifest.path.display())
+                });
 
-            if self.done {
-                *self.res = res;
-            } else if let Err(e) = res {
-                error!(self.args.color, "{:?}", e);
+                if self.done {
+                    *self.res = res;
+                } else if let Err(e) = res {
+                    error!(self.args.color, "{:?}", e);
+                }
             }
         }
     }
 
     if args.no_dev_deps || args.remove_dev_deps {
-        let backup_path = manifest.path.with_extension("toml.bk");
-
         let mut res = Ok(());
-
-        let mut bomb =
-            Bomb { manifest, args, backup_path: &backup_path, done: false, res: &mut res };
-
-        fs::copy(&manifest.path, &backup_path)
-            .with_context(|| format!("failed to create backup file: {}", backup_path.display()))?;
+        let mut bomb = Bomb { manifest, args, done: false, res: &mut res };
 
         fs::write(&manifest.path, remove_dev_deps(manifest)).with_context(|| {
             format!("failed to update manifest file: {}", manifest.path.display())
