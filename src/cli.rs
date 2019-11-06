@@ -313,6 +313,26 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Options> {
     if !exclude.is_empty() && workspace.is_none() {
         bail!("--exclude can only be used together with --workspace")
     }
+    if let Some(subcommand) = &subcommand {
+        if subcommand == "test" || subcommand == "bench" {
+            if remove_dev_deps {
+                bail!("--remove-dev-deps may not be used together with {} subcommand", subcommand)
+            } else if no_dev_deps {
+                bail!("--no-dev-deps may not be used together with {} subcommand", subcommand)
+            }
+        }
+    }
+    if let Some(pos) = first.iter().position(|a| match a.as_str() {
+        "--example" | "--examples" | "--test" | "--tests" | "--bench" | "--benches"
+        | "--all-targets" => true,
+        _ => false,
+    }) {
+        if remove_dev_deps {
+            bail!("--remove-dev-deps may not be used together with {}", first[pos])
+        } else if no_dev_deps {
+            bail!("--no-dev-deps may not be used together with {}", first[pos])
+        }
+    }
 
     res.map(|()| Options {
         first,

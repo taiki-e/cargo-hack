@@ -284,6 +284,82 @@ fn test_exclude_not_all() {
 }
 
 #[test]
+fn test_remove_dev_deps_with_devs() {
+    for flag in &[
+        "--example",
+        "--examples",
+        "--test",
+        "--tests",
+        "--bench",
+        "--benches",
+        "--all-targets",
+    ][..]
+    {
+        let output = cargo_hack()
+            .args(&["hack", "check", "--remove-dev-deps", flag])
+            .current_dir(test_dir("tests/fixtures/real"))
+            .output()
+            .unwrap();
+
+        output.assert_failure().assert_stderr_contains(&format!(
+            "--remove-dev-deps may not be used together with {}",
+            flag
+        ));
+    }
+
+    for subcommand in &["test", "bench"] {
+        let output = cargo_hack()
+            .args(&["hack", subcommand, "--remove-dev-deps"])
+            .current_dir(test_dir("tests/fixtures/real"))
+            .output()
+            .unwrap();
+
+        output.assert_failure().assert_stderr_contains(&format!(
+            "--remove-dev-deps may not be used together with {} subcommand",
+            subcommand
+        ));
+    }
+}
+
+#[test]
+fn test_no_dev_deps_with_devs() {
+    for flag in &[
+        "--example",
+        "--examples",
+        "--test",
+        "--tests",
+        "--bench",
+        "--benches",
+        "--all-targets",
+    ][..]
+    {
+        let output = cargo_hack()
+            .args(&["hack", "check", "--no-dev-deps", flag])
+            .current_dir(test_dir("tests/fixtures/real"))
+            .output()
+            .unwrap();
+
+        output.assert_failure().assert_stderr_contains(&format!(
+            "--no-dev-deps may not be used together with {}",
+            flag
+        ));
+    }
+
+    for subcommand in &["test", "bench"] {
+        let output = cargo_hack()
+            .args(&["hack", subcommand, "--no-dev-deps"])
+            .current_dir(test_dir("tests/fixtures/real"))
+            .output()
+            .unwrap();
+
+        output.assert_failure().assert_stderr_contains(&format!(
+            "--no-dev-deps may not be used together with {} subcommand",
+            subcommand
+        ));
+    }
+}
+
+#[test]
 fn test_ignore_unknown_features() {
     let output = cargo_hack()
         .args(&["hack", "check", "--ignore-unknown-features", "--features=f"])
