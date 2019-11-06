@@ -17,9 +17,6 @@ jobs:
   test:
     name: test
     runs-on: ${{ matrix.os }}
-    env:
-      AGENT_OS: ${{ matrix.os }}
-      RUST_TOOLCHAIN: ${{ matrix.rust }}
     strategy:
       matrix:
         os:
@@ -38,7 +35,7 @@ jobs:
       - name: Install Rust
         shell: bash
         run: |
-          . ./ci/install-rust.sh
+          . ./ci/install-rust.sh ${{ matrix.rust }}
       - name: cargo test
         run: |
           cargo test
