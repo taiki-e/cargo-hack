@@ -120,7 +120,7 @@ impl FromStr for Coloring {
 #[allow(clippy::cognitive_complexity)]
 pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut args = env::args();
-    let _ = args.next(); // binary name
+    let _ = args.next(); // executable name
     match &args.next() {
         Some(a) if a == "hack" => {}
         Some(_) | None => return Ok(None),

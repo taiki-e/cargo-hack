@@ -172,8 +172,10 @@ impl ProcessBuilder {
             command.current_dir(cwd);
         }
         command.args(&self.args);
-        command.arg("--");
-        command.args(&self.args2);
+        if !self.args2.is_empty() {
+            command.arg("--");
+            command.args(&self.args2);
+        }
         for (k, v) in &self.env {
             match v {
                 Some(v) => {
@@ -197,8 +199,12 @@ impl fmt::Display for ProcessBuilder {
         for arg in &self.args {
             write!(f, " {}", arg.to_string_lossy())?;
         }
-        for arg in &self.args2 {
-            write!(f, " {}", arg.to_string_lossy())?;
+
+        if !self.args2.is_empty() {
+            write!(f, " --")?;
+            for arg in &self.args2 {
+                write!(f, " {}", arg.to_string_lossy())?;
+            }
         }
 
         write!(f, "`")
