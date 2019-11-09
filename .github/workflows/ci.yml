@@ -42,6 +42,7 @@ jobs:
       - name: cargo hack
         run: |
           cargo run -- hack check --each-feature --no-dev-deps
+          cargo run -- hack --remove-dev-deps
 
   style:
     name: style

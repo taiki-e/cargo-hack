@@ -32,7 +32,7 @@ fn main() {
 fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
     let args = cli::args(coloring)?;
 
-    if args.first.is_empty()
+    if args.first.is_empty() && !args.remove_dev_deps
         || args.subcommand.is_none() && args.first.iter().any(|a| a == "--help" || a == "-h")
     {
         cli::print_help();
