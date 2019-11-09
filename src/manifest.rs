@@ -7,7 +7,7 @@ use std::{
 use anyhow::{bail, Context, Result};
 use toml_edit::{Array, Document, Item as Value, Table};
 
-use crate::Options;
+use crate::Args;
 
 #[derive(Clone, Debug)]
 pub(crate) struct Manifest {
@@ -71,7 +71,7 @@ impl Manifest {
         (|| self.package()?.get("name")?.as_str())().unwrap()
     }
 
-    pub(crate) fn package_name_verbose(&self, args: &Options) -> Cow<'_, str> {
+    pub(crate) fn package_name_verbose(&self, args: &Args) -> Cow<'_, str> {
         assert!(!self.is_virtual());
         if args.verbose {
             Cow::Owned(format!("{} ({})", self.package_name(), self.dir().display()))

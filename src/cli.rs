@@ -62,7 +62,7 @@ Some common cargo commands are (see all commands with --list):
 }
 
 #[derive(Debug)]
-pub(crate) struct Options {
+pub(crate) struct Args {
     pub(crate) first: Vec<String>,
     pub(crate) second: Vec<String>,
 
@@ -118,14 +118,15 @@ impl FromStr for Coloring {
 }
 
 #[allow(clippy::cognitive_complexity)]
-pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Options> {
-    let mut args = env::args().skip(1).collect::<Vec<_>>().into_iter().peekable();
-    if args.peek().map_or(false, |a| a == "hack") {
-        let _ = args.next();
+pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
+    let mut args = env::args();
+    let _ = args.next(); // binary name
+    match &args.next() {
+        Some(a) if a == "hack" => {}
+        Some(_) | None => return Ok(None),
     }
 
     let mut first = Vec::new();
-    let mut second = Vec::new();
 
     let mut subcommand: Option<String> = None;
     let mut target_dir = None;
@@ -152,10 +153,8 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Options> {
             //   second: (empty)
             // 2. `cargo hack test --each-feature -- --ignored`
             //   first:  `cargo hack test --each-feature` (filtered and passed to `cargo`)
-            //   second: `-- --ignored` (directly passed to `cargo`)
+            //   second: `--ignored` (passed directly to `cargo` with `--`)
             if arg == "--" {
-                second.push(arg);
-                second.extend(args);
                 break;
             }
 
@@ -300,9 +299,16 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Options> {
         Ok(())
     })();
 
-    let target_dir = target_dir.map(fs::canonicalize).transpose()?;
     let color = color.map(|c| c.parse()).transpose()?;
     *coloring = color;
+
+    if first.is_empty() && !remove_dev_deps
+        || subcommand.is_none() && first.iter().any(|a| a == "--help" || a == "-h")
+    {
+        return Ok(None);
+    }
+
+    let target_dir = target_dir.map(fs::canonicalize).transpose()?;
     let verbose = first.iter().any(|a| a == "--verbose" || a == "-v" || a == "-vv");
     if ignore_non_exist_features {
         warn!(
@@ -334,27 +340,29 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Options> {
         }
     }
 
-    res.map(|()| Options {
-        first,
-        second,
+    res.map(|()| {
+        Some(Args {
+            first,
+            second: args.collect(),
 
-        subcommand,
-        manifest_path,
-        target_dir,
+            subcommand,
+            manifest_path,
+            target_dir,
 
-        package,
-        exclude,
-        features,
+            package,
+            exclude,
+            features,
 
-        workspace,
-        each_feature,
-        no_dev_deps,
-        remove_dev_deps,
-        ignore_private,
-        ignore_unknown_features: ignore_unknown_features || ignore_non_exist_features,
+            workspace,
+            each_feature,
+            no_dev_deps,
+            remove_dev_deps,
+            ignore_private,
+            ignore_unknown_features: ignore_unknown_features || ignore_non_exist_features,
 
-        color,
-        verbose,
+            color,
+            verbose,
+        })
     })
 }
 

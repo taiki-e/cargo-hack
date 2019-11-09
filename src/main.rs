@@ -15,7 +15,7 @@ use std::{env, ffi::OsString, fs};
 use anyhow::{bail, Context, Result};
 
 use crate::{
-    cli::{Coloring, Options},
+    cli::{Args, Coloring},
     manifest::{find_root_manifest_for_wd, Manifest},
     process::ProcessBuilder,
     workspace::Workspace,
@@ -30,14 +30,14 @@ fn main() {
 }
 
 fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
-    let args = cli::args(coloring)?;
+    let args = match cli::args(coloring)? {
+        None => {
+            cli::print_help();
+            return Ok(());
+        }
+        Some(args) => args,
+    };
 
-    if args.first.is_empty() && !args.remove_dev_deps
-        || args.subcommand.is_none() && args.first.iter().any(|a| a == "--help" || a == "-h")
-    {
-        cli::print_help();
-        return Ok(());
-    }
     if args.first.iter().any(|a| a == "--version" || a == "-V") {
         cli::print_version();
         return Ok(());
@@ -74,7 +74,7 @@ For more information try --help
     exec_on_workspace(&args, &workspace)
 }
 
-fn exec_on_workspace(args: &Options, workspace: &Workspace<'_>) -> Result<()> {
+fn exec_on_workspace(args: &Args, workspace: &Workspace<'_>) -> Result<()> {
     if args.workspace.is_some() {
         for spec in &args.exclude {
             if !workspace.members.contains_key(spec) {
@@ -111,7 +111,7 @@ fn exec_on_workspace(args: &Options, workspace: &Workspace<'_>) -> Result<()> {
     Ok(())
 }
 
-fn exec_on_package(manifest: &Manifest, args: &Options) -> Result<()> {
+fn exec_on_package(manifest: &Manifest, args: &Args) -> Result<()> {
     if args.ignore_private && manifest.is_private() {
         info!(args.color, "skipped running on {}", manifest.package_name_verbose(args));
     } else if args.subcommand.is_some() || args.remove_dev_deps {
@@ -121,10 +121,10 @@ fn exec_on_package(manifest: &Manifest, args: &Options) -> Result<()> {
     Ok(())
 }
 
-fn no_dev_deps(manifest: &Manifest, args: &Options) -> Result<()> {
+fn no_dev_deps(manifest: &Manifest, args: &Args) -> Result<()> {
     struct Bomb<'a> {
         manifest: &'a Manifest,
-        args: &'a Options,
+        args: &'a Args,
         done: bool,
         res: &'a mut Result<()>,
     }
@@ -167,7 +167,7 @@ fn no_dev_deps(manifest: &Manifest, args: &Options) -> Result<()> {
     Ok(())
 }
 
-fn each_feature(manifest: &Manifest, args: &Options) -> Result<()> {
+fn each_feature(manifest: &Manifest, args: &Args) -> Result<()> {
     let mut features = String::new();
     if args.ignore_unknown_features {
         let f: Vec<_> = args
@@ -213,7 +213,7 @@ fn remove_dev_deps(manifest: &Manifest) -> String {
     doc.to_string_in_original_order()
 }
 
-fn exec_each_feature(manifest: &Manifest, args: &Options, features: Option<&str>) -> Result<()> {
+fn exec_each_feature(manifest: &Manifest, args: &Args, features: Option<&str>) -> Result<()> {
     // run with default features
     exec_cargo_command(manifest, args, features, &[])?;
 
@@ -239,7 +239,7 @@ fn exec_each_feature(manifest: &Manifest, args: &Options, features: Option<&str>
 
 fn exec_cargo_command(
     manifest: &Manifest,
-    args: &Options,
+    args: &Args,
     features: Option<&str>,
     extra_args: &[&str],
 ) -> Result<()> {

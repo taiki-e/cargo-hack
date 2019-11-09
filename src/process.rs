@@ -18,7 +18,7 @@ pub(crate) struct ProcessBuilder {
     program: OsString,
     /// A list of arguments to pass to the program (until '--').
     args: Vec<OsString>,
-    /// A list of arguments to pass to the program ('--' and after).
+    /// A list of arguments to pass to the program (after '--').
     args2: Vec<OsString>,
     /// Any environment variables that should be set for the program.
     env: HashMap<String, Option<OsString>>,
@@ -26,28 +26,11 @@ pub(crate) struct ProcessBuilder {
     cwd: Option<OsString>,
 }
 
-impl fmt::Display for ProcessBuilder {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "`")?;
-
-        write!(f, "{}", Path::new(&self.program).file_stem().unwrap().to_string_lossy())?;
-
-        for arg in &self.args {
-            write!(f, " {}", arg.to_string_lossy())?;
-        }
-        for arg in &self.args2 {
-            write!(f, " {}", arg.to_string_lossy())?;
-        }
-
-        write!(f, "`")
-    }
-}
-
 impl ProcessBuilder {
     /// Creates a new `ProcessBuilder`.
-    pub(crate) fn new(cmd: impl AsRef<OsStr>) -> Self {
+    pub(crate) fn new(cmd: impl Into<OsString>) -> Self {
         Self {
-            program: cmd.as_ref().to_os_string(),
+            program: cmd.into(),
             args: Vec::new(),
             args2: Vec::new(),
             cwd: None,
@@ -188,12 +171,9 @@ impl ProcessBuilder {
         if let Some(cwd) = self.get_cwd() {
             command.current_dir(cwd);
         }
-        for arg in &self.args {
-            command.arg(arg);
-        }
-        for arg in &self.args2 {
-            command.arg(arg);
-        }
+        command.args(&self.args);
+        command.arg("--");
+        command.args(&self.args2);
         for (k, v) in &self.env {
             match v {
                 Some(v) => {
@@ -205,6 +185,23 @@ impl ProcessBuilder {
             }
         }
         command
+    }
+}
+
+impl fmt::Display for ProcessBuilder {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "`")?;
+
+        write!(f, "{}", Path::new(&self.program).file_stem().unwrap().to_string_lossy())?;
+
+        for arg in &self.args {
+            write!(f, " {}", arg.to_string_lossy())?;
+        }
+        for arg in &self.args2 {
+            write!(f, " {}", arg.to_string_lossy())?;
+        }
+
+        write!(f, "`")
     }
 }
 
@@ -234,14 +231,14 @@ impl ProcessError {
                     desc.push_str("\n--- stdout\n");
                     desc.push_str(s);
                 }
-                Ok(..) | Err(..) => {}
+                Ok(_) | Err(_) => {}
             }
             match str::from_utf8(&out.stderr) {
                 Ok(s) if !s.trim().is_empty() => {
                     desc.push_str("\n--- stderr\n");
                     desc.push_str(s);
                 }
-                Ok(..) | Err(..) => {}
+                Ok(_) | Err(_) => {}
             }
         }
 
