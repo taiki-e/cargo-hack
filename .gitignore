@@ -2,7 +2,7 @@ target
 **/*.rs.bk
 Cargo.lock
 
-# cargo-hack is binary crate, so publish the root Cargo.lock file.
+# This crate is binary crate, so publish the root Cargo.lock file.
 !/Cargo.lock
 
 # For platform and editor specific settings, it is recommended to add to
