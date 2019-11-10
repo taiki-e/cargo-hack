@@ -100,11 +100,9 @@ fn test_real() {
         .assert_success()
         .assert_stderr_not_contains("running `cargo check` on member1")
         .assert_stderr_not_contains("running `cargo check` on member2")
+        .assert_stderr_not_contains("running `cargo check` on member3")
         .assert_stderr_contains("running `cargo check` on real");
-}
 
-#[test]
-fn test_real_all() {
     let output = cargo_hack()
         .args(&["hack", "check", "--all"])
         .current_dir(test_dir("tests/fixtures/real"))
@@ -115,43 +113,8 @@ fn test_real_all() {
         .assert_success()
         .assert_stderr_contains("running `cargo check` on member1")
         .assert_stderr_contains("running `cargo check` on member2")
+        .assert_stderr_contains("running `cargo check` on member3")
         .assert_stderr_contains("running `cargo check` on real");
-}
-
-#[test]
-fn test_real_ignore_private() {
-    let output = cargo_hack()
-        .args(&["hack", "check", "--ignore-private"])
-        .current_dir(test_dir("tests/fixtures/real"))
-        .output()
-        .unwrap();
-
-    output
-        .assert_success()
-        .assert_stderr_not_contains("running `cargo check` on member1")
-        .assert_stderr_not_contains("running `cargo check` on member2")
-        .assert_stderr_not_contains("running `cargo check` on real")
-        .assert_stderr_not_contains("skipped running on member1")
-        .assert_stderr_not_contains("skipped running on member2")
-        .assert_stderr_contains("skipped running on real");
-}
-
-#[test]
-fn test_real_ignore_private_all() {
-    let output = cargo_hack()
-        .args(&["hack", "check", "--all", "--ignore-private"])
-        .current_dir(test_dir("tests/fixtures/real"))
-        .output()
-        .unwrap();
-
-    output
-        .assert_success()
-        .assert_stderr_contains("running `cargo check` on member1")
-        .assert_stderr_not_contains("running `cargo check` on member2")
-        .assert_stderr_not_contains("running `cargo check` on real")
-        .assert_stderr_not_contains("skipped running on member1")
-        .assert_stderr_contains("skipped running on member2")
-        .assert_stderr_contains("skipped running on real");
 }
 
 #[test]
@@ -166,10 +129,7 @@ fn test_virtual() {
         .assert_success()
         .assert_stderr_contains("running `cargo check` on member1")
         .assert_stderr_contains("running `cargo check` on member2");
-}
 
-#[test]
-fn test_virtual_all() {
     let output = cargo_hack()
         .args(&["hack", "check", "--all"])
         .current_dir(test_dir("tests/fixtures/virtual"))
@@ -180,6 +140,95 @@ fn test_virtual_all() {
         .assert_success()
         .assert_stderr_contains("running `cargo check` on member1")
         .assert_stderr_contains("running `cargo check` on member2");
+}
+
+#[test]
+fn test_real_all_in_subcrate() {
+    let output = cargo_hack()
+        .args(&["hack", "check"])
+        .current_dir(test_dir("tests/fixtures/real/member2"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_success()
+        .assert_stderr_not_contains("running `cargo check` on member1")
+        .assert_stderr_contains("running `cargo check` on member2")
+        .assert_stderr_not_contains("running `cargo check` on member3")
+        .assert_stderr_not_contains("running `cargo check` on real");
+
+    let output = cargo_hack()
+        .args(&["hack", "check", "--all"])
+        .current_dir(test_dir("tests/fixtures/real/member2"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_success()
+        .assert_stderr_contains("running `cargo check` on member1")
+        .assert_stderr_contains("running `cargo check` on member2")
+        .assert_stderr_contains("running `cargo check` on member3")
+        .assert_stderr_contains("running `cargo check` on real");
+}
+
+#[test]
+fn test_virtual_all_in_subcrate() {
+    let output = cargo_hack()
+        .args(&["hack", "check"])
+        .current_dir(test_dir("tests/fixtures/virtual/member1"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_success()
+        .assert_stderr_contains("running `cargo check` on member1")
+        .assert_stderr_not_contains("running `cargo check` on member2");
+
+    let output = cargo_hack()
+        .args(&["hack", "check", "--all"])
+        .current_dir(test_dir("tests/fixtures/virtual/member1"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_success()
+        .assert_stderr_contains("running `cargo check` on member1")
+        .assert_stderr_contains("running `cargo check` on member2");
+}
+
+#[test]
+fn test_real_ignore_private() {
+    let output = cargo_hack()
+        .args(&["hack", "check", "--ignore-private"])
+        .current_dir(test_dir("tests/fixtures/real"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_success()
+        .assert_stderr_not_contains("running `cargo check` on member1")
+        .assert_stderr_not_contains("skipped running on member1")
+        .assert_stderr_not_contains("running `cargo check` on member2")
+        .assert_stderr_not_contains("skipped running on member2")
+        .assert_stderr_not_contains("running `cargo check` on real")
+        .assert_stderr_contains("skipped running on real");
+
+    let output = cargo_hack()
+        .args(&["hack", "check", "--all", "--ignore-private"])
+        .current_dir(test_dir("tests/fixtures/real"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_success()
+        .assert_stderr_contains("running `cargo check` on member1")
+        .assert_stderr_not_contains("skipped running on member1")
+        .assert_stderr_not_contains("running `cargo check` on member2")
+        .assert_stderr_contains("skipped running on member2")
+        .assert_stderr_contains("running `cargo check` on member3")
+        .assert_stderr_not_contains("skipped running on member3")
+        .assert_stderr_not_contains("running `cargo check` on real")
+        .assert_stderr_contains("skipped running on real");
 }
 
 #[test]
@@ -196,10 +245,7 @@ fn test_virtual_ignore_private() {
         .assert_stderr_not_contains("running `cargo check` on member2")
         .assert_stderr_not_contains("skipped running on member1")
         .assert_stderr_contains("skipped running on member2");
-}
 
-#[test]
-fn test_virtual_ignore_private_all() {
     let output = cargo_hack()
         .args(&["hack", "check", "--all", "--ignore-private"])
         .current_dir(test_dir("tests/fixtures/virtual"))
@@ -271,7 +317,7 @@ fn test_exclude_not_found() {
 }
 
 #[test]
-fn test_exclude_not_all() {
+fn test_exclude_not_with_all() {
     let output = cargo_hack()
         .args(&["hack", "check", "--exclude", "member1"])
         .current_dir(test_dir("tests/fixtures/virtual"))
@@ -362,7 +408,14 @@ fn test_no_dev_deps_with_devs() {
 #[test]
 fn test_ignore_unknown_features() {
     let output = cargo_hack()
-        .args(&["hack", "check", "--ignore-unknown-features", "--features=f"])
+        .args(&[
+            "hack",
+            "check",
+            "--ignore-unknown-features",
+            "--no-default-features",
+            "--features",
+            "f",
+        ])
         .current_dir(test_dir("tests/fixtures/virtual"))
         .output()
         .unwrap();
@@ -370,7 +423,11 @@ fn test_ignore_unknown_features() {
     output
         .assert_success()
         .assert_stderr_contains("skipped applying unknown `f` feature to member1")
-        .assert_stderr_contains("skipped applying unknown `f` feature to member2");
+        .assert_stderr_contains("running `cargo check --no-default-features` on member1")
+        .assert_stderr_not_contains("skipped applying unknown `f` feature to member2")
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features f` on member2",
+        );
 }
 
 #[test]
@@ -385,7 +442,9 @@ fn test_ignore_non_exist_features() {
         .assert_success()
         .assert_stderr_contains("'--ignore-non-exist-features' flag is deprecated, use '--ignore-unknown-features' flag instead")
         .assert_stderr_contains("skipped applying unknown `f` feature to member1")
-        .assert_stderr_contains("skipped applying unknown `f` feature to member2");
+        .assert_stderr_contains("running `cargo check` on member1")
+        .assert_stderr_not_contains("skipped applying unknown `f` feature to member2")
+        .assert_stderr_contains("running `cargo check --features f` on member2");
 }
 
 #[test]
@@ -400,9 +459,32 @@ fn test_each_feature() {
         .assert_success()
         .assert_stderr_contains("running `cargo check` on real")
         .assert_stderr_contains("running `cargo check --no-default-features` on real")
-        .assert_stderr_contains("running `cargo check --features=a --no-default-features` on real")
-        .assert_stderr_contains("running `cargo check --features=b --no-default-features` on real")
-        .assert_stderr_contains("running `cargo check --features=c --no-default-features` on real");
+        .assert_stderr_contains("running `cargo check --no-default-features --features a` on real")
+        .assert_stderr_contains("running `cargo check --no-default-features --features b` on real")
+        .assert_stderr_contains("running `cargo check --no-default-features --features c` on real");
+}
+
+#[test]
+fn test_each_feature2() {
+    let output = cargo_hack()
+        .args(&["hack", "check", "--each-feature", "--features=a"])
+        .current_dir(test_dir("tests/fixtures/real"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_success()
+        .assert_stderr_contains("running `cargo check --features a` on real")
+        .assert_stderr_contains("running `cargo check --no-default-features --features a` on real")
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features a,a` on real",
+        )
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features a,b` on real",
+        )
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features a,c` on real",
+        );
 }
 
 #[test]
@@ -421,39 +503,66 @@ fn test_args2() {
 }
 
 #[test]
-fn windows_package_collision() {
+fn test_package_collision() {
     let output = cargo_hack()
         .args(&["hack", "check"])
-        .current_dir(test_dir("tests/fixtures/windows_package_collision"))
+        .current_dir(test_dir("tests/fixtures/package_collision"))
         .output()
         .unwrap();
 
-    if cfg!(windows) {
-        output
-            .assert_failure()
-            .assert_stderr_contains("package collision in the lockfile: packages member2");
-    } else {
-        output
-            .assert_success()
-            .assert_stderr_contains("running `cargo check` on member1")
-            .assert_stderr_contains("running `cargo check` on member2");
-    }
+    output
+        .assert_success()
+        .assert_stderr_contains("running `cargo check` on member1")
+        .assert_stderr_contains("running `cargo check` on member2");
 }
 
 #[test]
-fn windows_not_find_manifest() {
+fn test_not_find_manifest() {
     let output = cargo_hack()
         .args(&["hack", "check"])
-        .current_dir(test_dir("tests/fixtures/windows_not_find_manifest"))
+        .current_dir(test_dir("tests/fixtures/virtual/dir/not_find_manifest"))
         .output()
         .unwrap();
 
-    if cfg!(windows) {
-        output.assert_failure().assert_stderr_contains("Could not find `Cargo.toml` in `");
-    } else {
-        output
-            .assert_success()
-            .assert_stderr_contains("running `cargo check` on member1")
-            .assert_stderr_contains("running `cargo check` on member2");
-    }
+    output
+        .assert_success()
+        .assert_stderr_not_contains("running `cargo check` on member1")
+        .assert_stderr_not_contains("running `cargo check` on member2")
+        .assert_stderr_contains("running `cargo check` on not_find_manifest");
+
+    let output = cargo_hack()
+        .args(&["hack", "check", "--all"])
+        .current_dir(test_dir("tests/fixtures/virtual/dir/not_find_manifest"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_success()
+        .assert_stderr_contains("running `cargo check` on member1")
+        .assert_stderr_contains("running `cargo check` on member2")
+        .assert_stderr_contains("running `cargo check` on not_find_manifest");
+
+    let output = cargo_hack()
+        .args(&["hack", "check", "--manifest-path", "dir/not_find_manifest/Cargo.toml"])
+        .current_dir(test_dir("tests/fixtures/virtual"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_success()
+        .assert_stderr_not_contains("running `cargo check` on member1")
+        .assert_stderr_not_contains("running `cargo check` on member2")
+        .assert_stderr_contains("running `cargo check` on not_find_manifest");
+
+    let output = cargo_hack()
+        .args(&["hack", "check", "--all", "--manifest-path", "dir/not_find_manifest/Cargo.toml"])
+        .current_dir(test_dir("tests/fixtures/virtual"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_success()
+        .assert_stderr_contains("running `cargo check` on member1")
+        .assert_stderr_contains("running `cargo check` on member2")
+        .assert_stderr_contains("running `cargo check` on not_find_manifest");
 }

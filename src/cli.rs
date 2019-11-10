@@ -1,13 +1,13 @@
-use std::{env, fs, path::PathBuf, str::FromStr};
+use std::{env, fs, path::PathBuf, rc::Rc, str::FromStr};
 
 use anyhow::{bail, format_err, Error, Result};
 use termcolor::ColorChoice;
 
-pub(crate) fn print_version() {
+fn print_version() {
     println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"),)
 }
 
-pub(crate) fn print_help() {
+fn print_help() {
     println!(
         "\
 {0} {1}
@@ -45,6 +45,7 @@ OPTIONS:
     -v, --verbose                   Use verbose output
                                     (this flag will be propagated to cargo)
         --color <WHEN>              Coloring: auto, always, never
+                                    (this flag will be propagated to cargo)
     -h, --help                      Prints help information
     -V, --version                   Prints version information
 
@@ -63,27 +64,39 @@ Some common cargo commands are (see all commands with --list):
 
 #[derive(Debug)]
 pub(crate) struct Args {
-    pub(crate) first: Vec<String>,
-    pub(crate) second: Vec<String>,
+    pub(crate) leading_args: Rc<[String]>,
+    pub(crate) trailing_args: Rc<[String]>,
 
     pub(crate) subcommand: Option<String>,
 
+    /// --manifest-path <PATH>
     pub(crate) manifest_path: Option<String>,
-    // canonicalized target-dir
+    /// (canonicalized) --target-dir <DIRECTORY>
     pub(crate) target_dir: Option<PathBuf>,
-
-    pub(crate) package: Vec<String>,
-    pub(crate) exclude: Vec<String>,
+    /// --features <FEATURES>...
     pub(crate) features: Vec<String>,
 
-    pub(crate) workspace: Option<String>,
+    /// -p, --package <SPEC>...
+    pub(crate) package: Vec<String>,
+    /// --exclude <SPEC>...
+    pub(crate) exclude: Vec<String>,
+    /// --all, --workspace
+    pub(crate) workspace: bool,
+    /// --each-feature
     pub(crate) each_feature: bool,
+    /// --no-dev-deps
     pub(crate) no_dev_deps: bool,
+    /// --remove-dev-deps
     pub(crate) remove_dev_deps: bool,
+    /// --ignore-private
     pub(crate) ignore_private: bool,
+    /// --ignore-unknown-features, (--ignore-non-exist-features)
     pub(crate) ignore_unknown_features: bool,
 
+    // flags that will be propagated to cargo
+    /// --color <WHEN>
     pub(crate) color: Option<Coloring>,
+    /// -v, --verbose, -vv
     pub(crate) verbose: bool,
 }
 
@@ -100,6 +113,14 @@ impl Coloring {
             Some(Coloring::Auto) | None => ColorChoice::Auto,
             Some(Coloring::Always) => ColorChoice::Always,
             Some(Coloring::Never) => ColorChoice::Never,
+        }
+    }
+
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Coloring::Auto => "auto",
+            Coloring::Always => "always",
+            Coloring::Never => "never",
         }
     }
 }
@@ -123,12 +144,15 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let _ = args.next(); // executable name
     match &args.next() {
         Some(a) if a == "hack" => {}
-        Some(_) | None => return Ok(None),
+        Some(_) | None => {
+            print_help();
+            return Ok(None);
+        }
     }
 
-    let mut first = Vec::new();
-
+    let mut leading = Vec::new();
     let mut subcommand: Option<String> = None;
+
     let mut target_dir = None;
     let mut manifest_path = None;
     let mut color = None;
@@ -162,7 +186,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                 if subcommand.is_none() {
                     subcommand = Some(arg.clone());
                 }
-                first.push(arg);
+                leading.push(arg);
                 continue;
             }
 
@@ -177,8 +201,8 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                             Some(next) => {
                                 if $propagate {
                                     $ident = Some(next.clone());
-                                    first.push(arg);
-                                    first.push(next);
+                                    leading.push(arg);
+                                    leading.push(next);
                                 } else {
                                     $ident = Some(next);
                                 }
@@ -189,12 +213,12 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                         if $ident.is_some() {
                             return Err(multi_arg($help, subcommand.as_ref()));
                         }
-                        match arg.splitn(2, '=').nth(1).map(|s| s.to_string()) {
+                        match arg.splitn(2, '=').nth(1).map(ToString::to_string) {
                             None => return Err(req_arg($help, subcommand.as_ref())),
                             arg @ Some(_) => $ident = arg,
                         }
                         if $propagate {
-                            first.push(arg);
+                            leading.push(arg);
                         }
                         continue;
                     }
@@ -205,7 +229,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                     if arg == $pat1 {
                         if let Some(arg) = args.next() {
                             if $allow_split {
-                                $ident.extend(arg.split(',').map(|s| s.to_string()));
+                                $ident.extend(arg.split(',').map(ToString::to_string));
                             } else {
                                 $ident.push(arg);
                             }
@@ -216,7 +240,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                     } else if arg.starts_with($pat2) {
                         if let Some(arg) = arg.splitn(2, '=').nth(1) {
                             if $allow_split {
-                                $ident.extend(arg.split(',').map(|s| s.to_string()));
+                                $ident.extend(arg.split(',').map(ToString::to_string));
                             } else {
                                 $ident.push(arg.to_string());
                             }
@@ -292,7 +316,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                     }
                     ignore_non_exist_features = true;
                 }
-                _ => first.push(arg),
+                _ => leading.push(arg),
             }
         }
 
@@ -302,14 +326,19 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let color = color.map(|c| c.parse()).transpose()?;
     *coloring = color;
 
-    if first.is_empty() && !remove_dev_deps
-        || subcommand.is_none() && first.iter().any(|a| a == "--help" || a == "-h")
+    if leading.is_empty() && !remove_dev_deps
+        || subcommand.is_none() && leading.iter().any(|a| a == "--help" || a == "-h")
     {
+        print_help();
+        return Ok(None);
+    }
+    if leading.iter().any(|a| a == "--version" || a == "-V" || a == "-vV") {
+        print_version();
         return Ok(None);
     }
 
     let target_dir = target_dir.map(fs::canonicalize).transpose()?;
-    let verbose = first.iter().any(|a| a == "--verbose" || a == "-v" || a == "-vv");
+    let verbose = leading.iter().any(|a| a == "--verbose" || a == "-v" || a == "-vv");
     if ignore_non_exist_features {
         warn!(
             color,
@@ -328,32 +357,52 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             }
         }
     }
-    if let Some(pos) = first.iter().position(|a| match a.as_str() {
+    if let Some(pos) = leading.iter().position(|a| match a.as_str() {
         "--example" | "--examples" | "--test" | "--tests" | "--bench" | "--benches"
         | "--all-targets" => true,
         _ => false,
     }) {
         if remove_dev_deps {
-            bail!("--remove-dev-deps may not be used together with {}", first[pos])
+            bail!("--remove-dev-deps may not be used together with {}", leading[pos])
         } else if no_dev_deps {
-            bail!("--no-dev-deps may not be used together with {}", first[pos])
+            bail!("--no-dev-deps may not be used together with {}", leading[pos])
+        }
+    }
+
+    if subcommand.is_none() {
+        if leading.iter().any(|a| a == "--list") {
+            let mut line = crate::ProcessBuilder::new(crate::cargo_binary());
+            line.arg("--list");
+            line.exec()?;
+            return Ok(None);
+        } else if !remove_dev_deps {
+            // TODO: improve this
+            bail!(
+                "\
+No subcommand or valid flag specified.
+
+USAGE:
+    cargo hack [OPTIONS] [SUBCOMMAND]
+
+For more information try --help
+"
+            );
         }
     }
 
     res.map(|()| {
         Some(Args {
-            first,
-            second: args.collect(),
+            leading_args: leading.into(),
+            // shared_from_iter requires Rust 1.37
+            trailing_args: args.collect::<Vec<_>>().into(),
 
             subcommand,
             manifest_path,
             target_dir,
-
             package,
             exclude,
             features,
-
-            workspace,
+            workspace: workspace.is_some(),
             each_feature,
             no_dev_deps,
             remove_dev_deps,

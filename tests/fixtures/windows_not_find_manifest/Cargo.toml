@@ -1,5 +1,0 @@
-[workspace]
-members = [
-    "member1",
-    "dir/member2",
-]

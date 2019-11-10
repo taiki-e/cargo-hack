@@ -2,4 +2,5 @@
 members = [
     "member1",
     "member2",
+    "dir/not_find_manifest",
 ]
