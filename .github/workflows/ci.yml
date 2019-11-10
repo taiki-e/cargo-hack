@@ -40,6 +40,7 @@ jobs:
         run: |
           cargo test
       - name: cargo hack
+        shell: bash
         run: |
           cargo run -- hack check --each-feature --no-dev-deps
           cargo run -- hack --remove-dev-deps

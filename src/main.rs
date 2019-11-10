@@ -7,18 +7,18 @@ mod term;
 
 mod cli;
 mod manifest;
+mod metadata;
 mod process;
-mod workspace;
 
-use std::{env, ffi::OsString, fs};
+use std::{env, ffi::OsString, fs, path::Path};
 
 use anyhow::{bail, Context, Result};
 
 use crate::{
     cli::{Args, Coloring},
     manifest::{find_root_manifest_for_wd, Manifest},
+    metadata::{Metadata, Package},
     process::ProcessBuilder,
-    workspace::Workspace,
 };
 
 fn main() {
@@ -31,97 +31,92 @@ fn main() {
 
 fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
     let args = match cli::args(coloring)? {
-        None => {
-            cli::print_help();
-            return Ok(());
-        }
+        None => return Ok(()),
         Some(args) => args,
     };
 
-    if args.first.iter().any(|a| a == "--version" || a == "-V") {
-        cli::print_version();
-        return Ok(());
-    }
-    if args.subcommand.is_none() {
-        if args.first.iter().any(|a| a == "--list") {
-            let mut line = ProcessBuilder::new(cargo_binary());
-            line.arg("--list");
-            line.exec()?;
-            return Ok(());
-        } else if !args.remove_dev_deps {
-            // TODO: improve this
-            bail!(
-                "\
-No subcommand or valid flag specified.
-
-USAGE:
-    cargo hack [OPTIONS] [SUBCOMMAND]
-
-For more information try --help
-"
-            );
-        }
-    }
-
-    let current_dir = &env::current_dir()?;
+    let metadata = Metadata::new(&args)?;
 
     let current_manifest = match &args.manifest_path {
-        Some(path) => Manifest::with_manifest_path(path)?,
-        None => Manifest::new(&find_root_manifest_for_wd(&current_dir)?)?,
+        Some(path) => Manifest::new(Path::new(path))?,
+        None => Manifest::new(find_root_manifest_for_wd(&env::current_dir()?)?)?,
     };
-    let workspace = Workspace::new(&current_manifest)?;
 
-    exec_on_workspace(&args, &workspace)
+    exec_on_workspace(&args, &current_manifest, &metadata)
 }
 
-fn exec_on_workspace(args: &Args, workspace: &Workspace<'_>) -> Result<()> {
-    if args.workspace.is_some() {
+fn exec_on_workspace(args: &Args, current_manifest: &Manifest, metadata: &Metadata) -> Result<()> {
+    let mut line = ProcessBuilder::from_args(cargo_binary(), &args);
+
+    line.arg("--target-dir");
+    line.arg(args.target_dir.as_ref().unwrap_or(&metadata.target_directory));
+
+    if let Some(color) = args.color {
+        line.arg("--color");
+        line.arg(color.as_str());
+    }
+
+    if args.workspace {
         for spec in &args.exclude {
-            if !workspace.members.contains_key(spec) {
+            if !metadata.packages.iter().any(|package| package.name == *spec) {
                 warn!(
                     args.color,
                     "excluded package(s) {} not found in workspace `{}`",
                     spec,
-                    workspace.current_manifest.dir().display()
+                    metadata.workspace_root.display()
                 );
             }
         }
 
-        for (_, manifest) in
-            workspace.members.iter().filter(|(spec, _)| !args.exclude.contains(spec))
+        for package in
+            metadata.packages.iter().filter(|package| !args.exclude.contains(&package.name))
         {
-            exec_on_package(manifest, args)?;
+            exec_on_package(args, package, &line)?;
         }
     } else if !args.package.is_empty() {
         for spec in &args.package {
-            if let Some(manifest) = workspace.members.get(spec) {
-                exec_on_package(manifest, args)?;
-            } else {
+            if !metadata.packages.iter().any(|package| package.name == *spec) {
                 bail!("package ID specification `{}` matched no packages", spec);
             }
         }
-    } else if workspace.current_manifest.is_virtual() {
-        for (_, manifest) in workspace.members.iter() {
-            exec_on_package(manifest, args)?;
+
+        for package in
+            metadata.packages.iter().filter(|package| args.package.contains(&package.name))
+        {
+            exec_on_package(args, package, &line)?;
         }
-    } else if !workspace.current_manifest.is_virtual() {
-        exec_on_package(workspace.current_manifest, args)?;
+    } else if current_manifest.is_virtual() {
+        for package in &metadata.packages {
+            exec_on_package(args, package, &line)?;
+        }
+    } else if !current_manifest.is_virtual() {
+        let current_package = current_manifest.package_name();
+        let package =
+            metadata.packages.iter().find(|package| package.name == *current_package).unwrap();
+        exec_on_package(args, package, &line)?;
     }
 
     Ok(())
 }
 
-fn exec_on_package(manifest: &Manifest, args: &Args) -> Result<()> {
+fn exec_on_package(args: &Args, package: &Package, line: &ProcessBuilder) -> Result<()> {
+    let manifest = Manifest::new(&package.manifest_path)?;
+
     if args.ignore_private && manifest.is_private() {
-        info!(args.color, "skipped running on {}", manifest.package_name_verbose(args));
+        info!(args.color, "skipped running on {}", package.name_verbose(args));
     } else if args.subcommand.is_some() || args.remove_dev_deps {
-        no_dev_deps(manifest, args)?;
+        no_dev_deps(args, package, manifest, line)?;
     }
 
     Ok(())
 }
 
-fn no_dev_deps(manifest: &Manifest, args: &Args) -> Result<()> {
+fn no_dev_deps(
+    args: &Args,
+    package: &Package,
+    mut manifest: Manifest,
+    line: &ProcessBuilder,
+) -> Result<()> {
     struct Bomb<'a> {
         manifest: &'a Manifest,
         args: &'a Args,
@@ -145,139 +140,73 @@ fn no_dev_deps(manifest: &Manifest, args: &Args) -> Result<()> {
         }
     }
 
+    let f = |args: &Args, package: &Package, line: &ProcessBuilder| {
+        let mut line = line.clone();
+        line.features(args, package);
+        line.arg("--manifest-path");
+        line.arg(&package.manifest_path);
+
+        if args.each_feature {
+            exec_for_each_feature(args, package, &line)
+        } else {
+            exec_cargo(args, package, &line)
+        }
+    };
+
     if args.no_dev_deps || args.remove_dev_deps {
         let mut res = Ok(());
-        let mut bomb = Bomb { manifest, args, done: false, res: &mut res };
+        let new = manifest.remove_dev_deps();
+        let mut bomb = Bomb { manifest: &manifest, args, done: false, res: &mut res };
 
-        fs::write(&manifest.path, remove_dev_deps(manifest)).with_context(|| {
-            format!("failed to update manifest file: {}", manifest.path.display())
+        fs::write(&package.manifest_path, new).with_context(|| {
+            format!("failed to update manifest file: {}", package.manifest_path.display())
         })?;
 
         if args.subcommand.is_some() {
-            each_feature(manifest, args)?;
+            f(args, package, line)?;
         }
 
         bomb.done = true;
         drop(bomb);
         res?;
     } else if args.subcommand.is_some() {
-        each_feature(manifest, args)?;
+        f(args, package, line)?;
     }
 
     Ok(())
 }
 
-fn each_feature(manifest: &Manifest, args: &Args) -> Result<()> {
-    let mut features = String::new();
-    if args.ignore_unknown_features {
-        let f: Vec<_> = args
-            .features
-            .iter()
-            .filter(|f| {
-                if manifest.features.contains(f) {
-                    true
-                } else {
-                    // ignored
-                    info!(
-                        args.color,
-                        "skipped applying unknown `{}` feature to {}",
-                        f,
-                        manifest.package_name_verbose(args)
-                    );
-                    false
-                }
-            })
-            .map(String::as_str)
-            .collect();
-        if !f.is_empty() {
-            features.push_str("--features=");
-            features.push_str(&f.join(","));
-        }
-    } else if !args.features.is_empty() {
-        features.push_str("--features=");
-        features.push_str(&args.features.join(","));
-    }
-
-    let features = if features.is_empty() { None } else { Some(&*features) };
-
-    if args.each_feature {
-        exec_each_feature(manifest, args, features)
-    } else {
-        exec_cargo_command(manifest, args, features, &[])
-    }
-}
-
-fn remove_dev_deps(manifest: &Manifest) -> String {
-    let mut doc = manifest.toml.clone();
-    manifest::remove_key_and_target_key(doc.as_table_mut(), "dev-dependencies");
-    doc.to_string_in_original_order()
-}
-
-fn exec_each_feature(manifest: &Manifest, args: &Args, features: Option<&str>) -> Result<()> {
+fn exec_for_each_feature(args: &Args, package: &Package, line: &ProcessBuilder) -> Result<()> {
     // run with default features
-    exec_cargo_command(manifest, args, features, &[])?;
+    exec_cargo(args, package, line)?;
 
-    if manifest.features.is_empty() {
+    if package.features.is_empty() {
         return Ok(());
     }
+
+    let mut line = line.clone();
+    line.arg("--no-default-features");
 
     // run with no default features if the package has other features
     //
     // `default` is not skipped because `cfg(feature = "default")` is work
     // if `default` feature specified.
-    exec_cargo_command(manifest, args, features, &["--no-default-features"])?;
+    exec_cargo(args, package, &line)?;
 
     // run with each feature
-    manifest.features.iter().filter(|&k| k != "default").try_for_each(|feature| {
-        let features = match features {
-            Some(features) => String::from(features) + "," + feature,
-            None => String::from("--features=") + feature,
-        };
-        exec_cargo_command(manifest, args, Some(&*features), &["--no-default-features"])
+    package.features.iter().filter(|(k, _)| *k != "default").try_for_each(|(feature, _)| {
+        let mut line = line.clone();
+        line.append_features(&[feature]);
+        exec_cargo(args, package, &line)
     })
 }
 
-fn exec_cargo_command(
-    manifest: &Manifest,
-    args: &Args,
-    features: Option<&str>,
-    extra_args: &[&str],
-) -> Result<()> {
-    let mut line = ProcessBuilder::new(cargo_binary());
-
-    line.args(&args.first);
-
-    if let Some(features) = features {
-        line.arg(features);
-    }
-
-    if let Some(target_dir) = args.target_dir.as_ref() {
-        line.arg("--target-dir");
-        line.arg(target_dir);
-    }
-
-    line.args(extra_args);
-
-    line.args2(&args.second);
-
-    if args.verbose {
-        line.arg("--manifest-path");
-        line.arg(&manifest.path);
-
-        info!(args.color, "running {} on {}", line, manifest.package_name_verbose(args));
-    } else {
-        info!(args.color, "running {} on {}", line, manifest.package_name_verbose(args));
-
-        // Displaying --manifest-path is redundant.
-        line.arg("--manifest-path");
-        line.arg(&manifest.path);
-    }
-
+fn exec_cargo(args: &Args, package: &Package, line: &ProcessBuilder) -> Result<()> {
+    info!(args.color, "running {} on {}", line, package.name_verbose(args));
     line.exec()
 }
 
 fn cargo_binary() -> OsString {
-    let cargo_src = env::var_os("CARGO_HACK_CARGO_SRC");
-    let cargo = env::var_os("CARGO");
-    cargo_src.unwrap_or_else(|| cargo.unwrap_or_else(|| OsString::from("cargo")))
+    env::var_os("CARGO_HACK_CARGO_SRC")
+        .unwrap_or_else(|| env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo")))
 }

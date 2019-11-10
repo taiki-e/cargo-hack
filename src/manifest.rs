@@ -1,69 +1,31 @@
 use std::{
-    borrow::Cow,
     fs, ops,
     path::{Path, PathBuf},
 };
 
 use anyhow::{bail, Context, Result};
-use toml_edit::{Array, Document, Item as Value, Table};
-
-use crate::Args;
+use toml_edit::{Document, Table};
 
 #[derive(Clone, Debug)]
 pub(crate) struct Manifest {
     pub(crate) path: PathBuf,
     pub(crate) raw: String,
-    pub(crate) toml: Document,
-    pub(crate) features: Vec<String>,
+    pub(crate) doc: Document,
 }
 
 impl Manifest {
-    pub(crate) fn new(path: &Path) -> Result<Self> {
-        let path = path
-            .canonicalize()
-            .with_context(|| format!("failed to canonicalize manifest path: {}", path.display()))?;
+    pub(crate) fn new(path: impl Into<PathBuf>) -> Result<Self> {
+        let path = path.into();
         let raw = fs::read_to_string(&path)
             .with_context(|| format!("failed to read manifest from {}", path.display()))?;
-        let toml: Document = raw
+        let doc: Document = raw
             .parse()
             .with_context(|| format!("failed to parse manifest file: {}", path.display()))?;
-        let features = toml
-            .as_table()
-            .get("features")
-            .and_then(Value::as_table)
-            .into_iter()
-            .flat_map(|f| f.iter().map(|(k, _)| k.to_string()))
-            .collect::<Vec<_>>();
-
-        let manifest = Self { path, raw, toml, features };
-
-        if manifest.package().is_none() && manifest.members().is_none() {
-            // TODO: improve error message
-            bail!("expected 'package' or 'workspace'");
-        }
-
-        Ok(manifest)
-    }
-
-    pub(crate) fn with_manifest_path(path: &str) -> Result<Self> {
-        if !path.ends_with("Cargo.toml") {
-            bail!("the manifest-path must be a path to a Cargo.toml file");
-        }
-
-        let path = Path::new(path);
-        if !path.exists() {
-            bail!("manifest path `{}` does not exist", path.display());
-        }
-
-        Self::new(path)
-    }
-
-    pub(crate) fn dir(&self) -> &Path {
-        self.path.parent().unwrap()
+        Ok(Self { path, raw, doc })
     }
 
     pub(crate) fn package(&self) -> Option<&Table> {
-        self.toml.as_table().get("package")?.as_table()
+        self.doc.as_table().get("package")?.as_table()
     }
 
     pub(crate) fn package_name(&self) -> &str {
@@ -71,33 +33,22 @@ impl Manifest {
         (|| self.package()?.get("name")?.as_str())().unwrap()
     }
 
-    pub(crate) fn package_name_verbose(&self, args: &Args) -> Cow<'_, str> {
-        assert!(!self.is_virtual());
-        if args.verbose {
-            Cow::Owned(format!("{} ({})", self.package_name(), self.dir().display()))
-        } else {
-            Cow::Borrowed(self.package_name())
-        }
-    }
-
     pub(crate) fn is_virtual(&self) -> bool {
         self.package().is_none()
     }
 
+    // `metadata.package.publish` requires Rust 1.39
     pub(crate) fn is_private(&self) -> bool {
         (|| self.package()?.get("publish")?.as_bool())().map_or(false, ops::Not::not)
     }
 
-    pub(crate) fn workspace(&self) -> Option<&Table> {
-        self.toml.as_table().get("workspace")?.as_table()
-    }
-
-    pub(crate) fn members(&self) -> Option<&Array> {
-        (|| self.workspace()?.get("members")?.as_array())()
+    pub(crate) fn remove_dev_deps(&mut self) -> String {
+        remove_key_and_target_key(self.doc.as_table_mut(), "dev-dependencies");
+        self.doc.to_string_in_original_order()
     }
 }
 
-pub(crate) fn remove_key_and_target_key(table: &mut Table, key: &str) {
+fn remove_key_and_target_key(table: &mut Table, key: &str) {
     table.remove(key);
     if let Some(table) = table.entry("target").as_table_mut() {
         // `toml_edit::Table` does not have `.iter_mut()`, so collect keys.
@@ -121,14 +72,4 @@ pub(crate) fn find_root_manifest_for_wd(cwd: &Path) -> Result<PathBuf> {
     }
 
     bail!("could not find `Cargo.toml` in `{}` or any parent directory", cwd.display())
-}
-
-/// Returns the path to the `Cargo.toml` in `pwd`, if it exists.
-pub(crate) fn find_project_manifest_exact(pwd: &Path) -> Result<PathBuf> {
-    let manifest = pwd.join("Cargo.toml");
-    if manifest.exists() {
-        Ok(manifest)
-    } else {
-        bail!("Could not find `Cargo.toml` in `{}`", pwd.display())
-    }
 }

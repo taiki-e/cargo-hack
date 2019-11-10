@@ -1,5 +1,5 @@
 [package]
-name = "member2"
+name = "not_find_manifest"
 version = "0.1.0"
 authors = ["Taiki Endo <te316e89@gmail.com>"]
 edition = "2018"

@@ -1,11 +1,12 @@
 [package]
-name = "member1"
+name = "member3"
 version = "0.1.0"
 authors = ["Taiki Endo <te316e89@gmail.com>"]
 edition = "2018"
+publish = true
 
 [dependencies]
-# member2 = { path = "../member2" }
+member2 = { path = "../member2" }
 
 [dev-dependencies]
 

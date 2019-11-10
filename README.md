@@ -24,17 +24,15 @@ cargo install cargo-hack
 
 To install the current cargo-hack requires Rust 1.36 or later.
 
-*Note: cargo-hack is currently only tested on Linux and macOS. It may not work well on other platforms. See [#3] for Windows support.*
-
 ## Usage
 
 `cargo-hack` is basically wrapper of `cargo` that propagates subcommand and most of the passed flags to `cargo`, but provides additional flags and changes the behavior of some existing flags.
 
 * **`--each-feature`**
 
-  Perform for each feature *which includes `--no-default-features` and default features* of the package.
+  Perform for each feature which includes default features and `--no-default-features` of the package.
 
-  This is useful to check that each feature is working properly. (*When used for this purpose, it is recommended to use with `--no-dev-deps`.*)
+  This is useful to check that each feature is working properly. (When used for this purpose, it is recommended to use with `--no-dev-deps` to avoid [cargo#4866].)
 
   ```sh
   cargo hack check --each-feature --no-dev-deps
@@ -48,20 +46,22 @@ To install the current cargo-hack requires Rust 1.36 or later.
 
   This is a workaround for an issue that dev-dependencies leaking into normal build ([cargo#4866]).
 
+  Also, this can be used as a workaround for an issue that `cargo` does not allow publishing a package with cyclic dev-dependencies. ([cargo#4242])
+
+  ```sh
+  cargo hack publish --no-dev-deps --dry-run --allow-dirty
+  ```
+
+  Currently, using `--no-dev-deps` flag removes dev-dependencies from real manifest while cargo-hack is running and restores it when finished. See [cargo#4242] for why this is necessary.
+  Also, this behavior may change in the future on some subcommands. See also [#15].
+
 * **`--remove-dev-deps`**
 
   Equivalent to `--no-dev-deps` except for does not restore the original `Cargo.toml` after execution.
 
   This is useful to know what Cargo.toml that cargo-hack is actually using with `--no-dev-deps`.
 
-  Also, this can be used as a workaround for an issue that `cargo` does not allow publishing a package with cyclic dev-dependencies. ([cargo#4242])
-
-  ```sh
-  # This flag also works without subcommands.
-  cargo hack --remove-dev-deps
-  cargo publish --dry-run --allow-dirty
-  # Equivalent to `cargo hack publish --no-dev-deps --dry-run --allow-dirty`
-  ```
+  *This flag also works without subcommands.*
 
 * **`--ignore-private`**
 
@@ -79,7 +79,7 @@ To install the current cargo-hack requires Rust 1.36 or later.
 
 * **`--features`**, **`--no-default-features`**
 
-  Unlike `cargo` ([cargo#3620], [cargo#4106], [cargo#4463], [cargo#4753], [cargo#5015], [cargo#5364], [cargo#6195]), it can also be applied to sub-crate.
+  Unlike `cargo` ([cargo#3620], [cargo#4106], [cargo#4463], [cargo#4753], [cargo#5015], [cargo#5364], [cargo#6195]), it can also be applied to sub-crates.
 
 * **`--all`**, **`--workspace`**
 
@@ -92,13 +92,14 @@ To install the current cargo-hack requires Rust 1.36 or later.
   members=("foo" "bar")
 
   for member in ${members[@]}; do
-    cargo check --manifest-path "${member}"
+      cargo check --manifest-path "${member}"
   done
   ```
 
-  *Note that there is currently no guarantee in which order workspace members will be performed.* (This means that `cargo hack publish --all --ignore-private` does not necessarily function as you intended.)
+  Workspace members will be performed according to the order of the 'packages' fields of [cargo-metadata].
 
 [#3]: https://github.com/taiki-e/cargo-hack/issues/3
+[#15]: https://github.com/taiki-e/cargo-hack/issues/15
 [cargo#3620]: https://github.com/rust-lang/cargo/issues/3620
 [cargo#4106]: https://github.com/rust-lang/cargo/issues/4106
 [cargo#4463]: https://github.com/rust-lang/cargo/issues/4463
@@ -108,6 +109,7 @@ To install the current cargo-hack requires Rust 1.36 or later.
 [cargo#5364]: https://github.com/rust-lang/cargo/issues/5364
 [cargo#6195]: https://github.com/rust-lang/cargo/issues/6195
 [cargo#4242]: https://github.com/rust-lang/cargo/issues/4242
+[cargo-metadata]: https://doc.rust-lang.org/cargo/commands/cargo-metadata.html
 
 ## License
 
