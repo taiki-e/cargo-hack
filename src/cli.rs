@@ -1,6 +1,6 @@
 use std::{env, fs, path::PathBuf, rc::Rc, str::FromStr};
 
-use anyhow::{bail, format_err, Error, Result};
+use anyhow::{format_err, Error, Result};
 use termcolor::ColorChoice;
 
 fn print_version() {
@@ -133,20 +133,20 @@ impl FromStr for Coloring {
             "auto" => Ok(Coloring::Auto),
             "always" => Ok(Coloring::Always),
             "never" => Ok(Coloring::Never),
-            other => bail!("must be auto, always, or never, but found `{}`", other),
+            other => Err(format_err!("must be auto, always, or never, but found `{}`", other)),
         }
     }
 }
 
 #[allow(clippy::cognitive_complexity)]
-pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
+pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Result<Args, i32>> {
     let mut args = env::args();
     let _ = args.next(); // executable name
     match &args.next() {
         Some(a) if a == "hack" => {}
         Some(_) | None => {
             print_help();
-            return Ok(None);
+            return Ok(Err(0));
         }
     }
 
@@ -330,11 +330,11 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
         || subcommand.is_none() && leading.iter().any(|a| a == "--help" || a == "-h")
     {
         print_help();
-        return Ok(None);
+        return Ok(Err(0));
     }
     if leading.iter().any(|a| a == "--version" || a == "-V" || a == "-vV") {
         print_version();
-        return Ok(None);
+        return Ok(Err(0));
     }
 
     let target_dir = target_dir.map(fs::canonicalize).transpose()?;
@@ -346,14 +346,23 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
         );
     }
     if !exclude.is_empty() && workspace.is_none() {
-        bail!("--exclude can only be used together with --workspace")
+        error!(color, "--exclude can only be used together with --workspace");
+        return Ok(Err(1));
     }
     if let Some(subcommand) = &subcommand {
         if subcommand == "test" || subcommand == "bench" {
             if remove_dev_deps {
-                bail!("--remove-dev-deps may not be used together with {} subcommand", subcommand)
+                error!(
+                    color,
+                    "--remove-dev-deps may not be used together with {} subcommand", subcommand
+                );
+                return Ok(Err(1));
             } else if no_dev_deps {
-                bail!("--no-dev-deps may not be used together with {} subcommand", subcommand)
+                error!(
+                    color,
+                    "--no-dev-deps may not be used together with {} subcommand", subcommand
+                );
+                return Ok(Err(1));
             }
         }
     }
@@ -363,10 +372,17 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
         _ => false,
     }) {
         if remove_dev_deps {
-            bail!("--remove-dev-deps may not be used together with {}", leading[pos])
+            error!(color, "--remove-dev-deps may not be used together with {}", leading[pos]);
+            return Ok(Err(1));
         } else if no_dev_deps {
-            bail!("--no-dev-deps may not be used together with {}", leading[pos])
+            error!(color, "--no-dev-deps may not be used together with {}", leading[pos]);
+            return Ok(Err(1));
         }
+    }
+
+    if no_dev_deps && remove_dev_deps {
+        error!(color, "--no-dev-deps may not be used together with --remove-dev-deps");
+        return Ok(Err(1));
     }
 
     if subcommand.is_none() {
@@ -374,10 +390,11 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             let mut line = crate::ProcessBuilder::new(crate::cargo_binary());
             line.arg("--list");
             line.exec()?;
-            return Ok(None);
+            return Ok(Err(0));
         } else if !remove_dev_deps {
             // TODO: improve this
-            bail!(
+            error!(
+                color,
                 "\
 No subcommand or valid flag specified.
 
@@ -387,32 +404,39 @@ USAGE:
 For more information try --help
 "
             );
+            return Ok(Err(1));
         }
     }
 
-    res.map(|()| {
-        Some(Args {
-            leading_args: leading.into(),
-            // shared_from_iter requires Rust 1.37
-            trailing_args: args.collect::<Vec<_>>().into(),
-
-            subcommand,
-            manifest_path,
-            target_dir,
-            package,
-            exclude,
-            features,
-            workspace: workspace.is_some(),
-            each_feature,
-            no_dev_deps,
-            remove_dev_deps,
-            ignore_private,
-            ignore_unknown_features: ignore_unknown_features || ignore_non_exist_features,
-
+    if no_dev_deps {
+        info!(
             color,
-            verbose,
-        })
-    })
+            "`--no-dev-deps` flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished"
+        )
+    }
+
+    res?;
+    Ok(Ok(Args {
+        leading_args: leading.into(),
+        // shared_from_iter requires Rust 1.37
+        trailing_args: args.collect::<Vec<_>>().into(),
+
+        subcommand,
+        manifest_path,
+        target_dir,
+        package,
+        exclude,
+        features,
+        workspace: workspace.is_some(),
+        each_feature,
+        no_dev_deps,
+        remove_dev_deps,
+        ignore_private,
+        ignore_unknown_features: ignore_unknown_features || ignore_non_exist_features,
+
+        color,
+        verbose,
+    }))
 }
 
 fn req_arg(arg: &str, subcommand: Option<&String>) -> Error {

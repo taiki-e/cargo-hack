@@ -31,8 +31,8 @@ fn main() {
 
 fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
     let args = match cli::args(coloring)? {
-        None => return Ok(()),
-        Some(args) => args,
+        Ok(args) => args,
+        Err(code) => std::process::exit(code),
     };
 
     let metadata = Metadata::new(&args)?;
