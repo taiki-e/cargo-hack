@@ -251,8 +251,8 @@ impl fmt::Display for ProcessBuilder {
         } else {
             let mut args = self.args.iter();
             while let Some(arg) = args.next() {
-                // Displaying `--target-dir` and `--manifest-path` is redundant.
-                if arg == "--target-dir" || arg == "--manifest-path" {
+                // Displaying `--manifest-path` is redundant.
+                if arg == "--manifest-path" {
                     let _ = args.next();
                     continue;
                 }

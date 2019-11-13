@@ -22,8 +22,6 @@ use crate::Args;
 pub(crate) struct Metadata {
     /// A list of all crates referenced by this crate (and the crate itself)
     pub(crate) packages: Vec<Package>,
-    /// Build directory
-    pub(crate) target_directory: PathBuf,
     /// Workspace root
     pub(crate) workspace_root: PathBuf,
 }

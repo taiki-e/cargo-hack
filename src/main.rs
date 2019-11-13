@@ -48,8 +48,10 @@ fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
 fn exec_on_workspace(args: &Args, current_manifest: &Manifest, metadata: &Metadata) -> Result<()> {
     let mut line = ProcessBuilder::from_args(cargo_binary(), &args);
 
-    line.arg("--target-dir");
-    line.arg(args.target_dir.as_ref().unwrap_or(&metadata.target_directory));
+    if let Some(target_dir) = &args.target_dir {
+        line.arg("--target-dir");
+        line.arg(target_dir);
+    }
 
     if let Some(color) = args.color {
         line.arg("--color");
