@@ -19,15 +19,11 @@ USAGE:
 
 OPTIONS:
     -p, --package <SPEC>...         Package(s) to check
-                                    (this flag will not be propagated to cargo)
         --all                       Alias for --workspace
         --workspace                 Perform command for all packages in the
                                     workspace
-                                    (this flag will not be propagated to cargo)
         --exclude <SPEC>...         Exclude packages from the check
-                                    (this flag will not be propagated to cargo)
         --manifest-path <PATH>      Path to Cargo.toml
-                                    (this flag will not be propagated to cargo)
         --features <FEATURES>...    Space-separated list of features to activate
         --each-feature              Perform for each feature which includes
                                     `--no-default-features` and default features
@@ -68,9 +64,6 @@ pub(crate) struct Args {
 
     /// --manifest-path <PATH>
     pub(crate) manifest_path: Option<String>,
-    /// --features <FEATURES>...
-    pub(crate) features: Vec<String>,
-
     /// -p, --package <SPEC>...
     pub(crate) package: Vec<String>,
     /// --exclude <SPEC>...
@@ -89,6 +82,8 @@ pub(crate) struct Args {
     pub(crate) ignore_unknown_features: bool,
 
     // flags that will be propagated to cargo
+    /// --features <FEATURES>...
+    pub(crate) features: Vec<String>,
     /// --color <WHEN>
     pub(crate) color: Option<Coloring>,
     /// -v, --verbose, -vv
@@ -163,7 +158,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
     let mut ignore_unknown_features = false;
     let mut ignore_non_exist_features = false;
 
-    let res = (|| -> Result<()> {
+    let res = (|| -> std::result::Result<(), String> {
         while let Some(arg) = args.next() {
             // stop at `--`
             // 1. `cargo hack check --no-dev-deps`
@@ -185,8 +180,8 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
             }
 
             macro_rules! parse_arg1 {
-                ($ident:ident, $propagate:expr, $pat1:expr, $pat2:expr, $help:expr) => {
-                    if arg == $pat1 {
+                ($ident:ident, $propagate:expr, $pat:expr, $help:expr) => {
+                    if arg == $pat {
                         if $ident.is_some() {
                             return Err(multi_arg($help, subcommand.as_ref()));
                         }
@@ -203,7 +198,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
                             }
                         }
                         continue;
-                    } else if arg.starts_with($pat2) {
+                    } else if arg.starts_with(concat!($pat, "=")) {
                         if $ident.is_some() {
                             return Err(multi_arg($help, subcommand.as_ref()));
                         }
@@ -219,8 +214,8 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
                 };
             }
             macro_rules! parse_arg2 {
-                ($ident:ident, $allow_split:expr, $pat1:expr, $pat2:expr, $help:expr) => {
-                    if arg == $pat1 {
+                ($ident:ident, $allow_split:expr, $pat:expr, $help:expr) => {
+                    if arg == $pat {
                         if let Some(arg) = args.next() {
                             if $allow_split {
                                 $ident.extend(arg.split(',').map(ToString::to_string));
@@ -231,7 +226,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
                             return Err(req_arg($help, subcommand.as_ref()));
                         }
                         continue;
-                    } else if arg.starts_with($pat2) {
+                    } else if arg.starts_with(concat!($pat, "=")) {
                         if let Some(arg) = arg.splitn(2, '=').nth(1) {
                             if $allow_split {
                                 $ident.extend(arg.split(',').map(ToString::to_string));
@@ -246,19 +241,13 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
                 };
             }
 
-            parse_arg1!(
-                manifest_path,
-                false,
-                "--manifest-path",
-                "--manifest-path=",
-                "--manifest-path <PATH>"
-            );
-            parse_arg1!(color, true, "--color", "--color=", "--color <WHEN>");
+            parse_arg1!(manifest_path, false, "--manifest-path", "--manifest-path <PATH>");
+            parse_arg1!(color, true, "--color", "--color <WHEN>");
 
-            parse_arg2!(package, false, "--package", "--package=", "--package <SPEC>");
-            parse_arg2!(package, false, "-p", "-p=", "--package <SPEC>");
-            parse_arg2!(exclude, false, "--exclude", "--exclude=", "--exclude <SPEC>");
-            parse_arg2!(features, true, "--features", "--features=", "--features <FEATURES>");
+            parse_arg2!(package, false, "--package", "--package <SPEC>");
+            parse_arg2!(package, false, "-p", "--package <SPEC>");
+            parse_arg2!(exclude, false, "--exclude", "--exclude <SPEC>");
+            parse_arg2!(features, true, "--features", "--features <FEATURES>");
 
             match arg.as_str() {
                 "--workspace" | "--all" => {
@@ -313,6 +302,11 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
     let color = color.map(|c| c.parse()).transpose()?;
     *coloring = color;
 
+    if let Err(e) = res {
+        error!(color, "{}", e);
+        return Ok(Err(1));
+    }
+
     if leading.is_empty() && !remove_dev_deps
         || subcommand.is_none() && leading.iter().any(|a| a == "--help" || a == "-h")
     {
@@ -324,13 +318,6 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
         return Ok(Err(0));
     }
 
-    let verbose = leading.iter().any(|a| a == "--verbose" || a == "-v" || a == "-vv");
-    if ignore_non_exist_features {
-        warn!(
-            color,
-            "'--ignore-non-exist-features' flag is deprecated, use '--ignore-unknown-features' flag instead"
-        );
-    }
     if !exclude.is_empty() && workspace.is_none() {
         error!(color, "--exclude can only be used together with --workspace");
         return Ok(Err(1));
@@ -355,7 +342,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
     if let Some(pos) = leading.iter().position(|a| match a.as_str() {
         "--example" | "--examples" | "--test" | "--tests" | "--bench" | "--benches"
         | "--all-targets" => true,
-        _ => false,
+        _ => a.starts_with("--example=") || a.starts_with("--test=") || a.starts_with("--bench="),
     }) {
         if remove_dev_deps {
             error!(color, "--remove-dev-deps may not be used together with {}", leading[pos]);
@@ -394,6 +381,13 @@ For more information try --help
         }
     }
 
+    let verbose = leading.iter().any(|a| a == "--verbose" || a == "-v" || a == "-vv");
+    if ignore_non_exist_features {
+        warn!(
+            color,
+            "'--ignore-non-exist-features' flag is deprecated, use '--ignore-unknown-features' flag instead"
+        );
+    }
     if no_dev_deps {
         info!(
             color,
@@ -401,17 +395,16 @@ For more information try --help
         )
     }
 
-    res?;
     Ok(Ok(Args {
         leading_args: leading.into(),
         // shared_from_iter requires Rust 1.37
         trailing_args: args.collect::<Vec<_>>().into(),
 
         subcommand,
+
         manifest_path,
         package,
         exclude,
-        features,
         workspace: workspace.is_some(),
         each_feature,
         no_dev_deps,
@@ -419,13 +412,14 @@ For more information try --help
         ignore_private,
         ignore_unknown_features: ignore_unknown_features || ignore_non_exist_features,
 
+        features,
         color,
         verbose,
     }))
 }
 
-fn req_arg(arg: &str, subcommand: Option<&String>) -> Error {
-    format_err!(
+fn req_arg(arg: &str, subcommand: Option<&String>) -> String {
+    format!(
         "\
 The argument '{0}' requires a value but none was supplied
 
@@ -443,8 +437,8 @@ For more information try --help
     )
 }
 
-fn multi_arg(arg: &str, subcommand: Option<&String>) -> Error {
-    format_err!(
+fn multi_arg(arg: &str, subcommand: Option<&String>) -> String {
+    format!(
         "\
 The argument '{0}' was provided more than once, but cannot be used multiple times
 
