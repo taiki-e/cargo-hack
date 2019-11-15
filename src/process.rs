@@ -30,8 +30,6 @@ pub(crate) struct ProcessBuilder {
 
     /// Any environment variables that should be set for the program.
     env: HashMap<String, Option<OsString>>,
-    /// The directory to run the program from.
-    cwd: Option<OsString>,
     /// Use verbose output.
     verbose: bool,
 }
@@ -45,7 +43,6 @@ impl ProcessBuilder {
             trailing_args: Rc::from(&[][..]),
             args: Vec::new(),
             features: String::new(),
-            cwd: None,
             env: HashMap::new(),
             verbose: false,
         }
@@ -59,7 +56,6 @@ impl ProcessBuilder {
             trailing_args: args.trailing_args.clone(),
             args: Vec::new(),
             features: String::new(),
-            cwd: None,
             env: HashMap::new(),
             verbose: args.verbose,
         }
@@ -117,12 +113,6 @@ impl ProcessBuilder {
     //     self
     // }
 
-    // /// (chainable) Sets the current working directory of the process.
-    // pub(crate) fn cwd(&mut self, path: impl AsRef<OsStr>) -> &mut Self {
-    //     self.cwd = Some(path.as_ref().to_os_string());
-    //     self
-    // }
-
     // /// (chainable) Sets an environment variable for the process.
     // pub(crate) fn env(&mut self, key: &str, val: impl AsRef<OsStr>) -> &mut Self {
     //     self.env.insert(key.to_string(), Some(val.as_ref().to_os_string()));
@@ -144,11 +134,6 @@ impl ProcessBuilder {
     // pub(crate) fn get_args(&self) -> &[OsString] {
     //     &self.args
     // }
-
-    /// Gets the current working directory for the process.
-    pub(crate) fn get_cwd(&self) -> Option<&Path> {
-        self.cwd.as_ref().map(Path::new)
-    }
 
     // /// Gets an environment variable as the process will see it (will inherit from environment
     // /// unless explicitally unset).
@@ -205,9 +190,6 @@ impl ProcessBuilder {
     /// present.
     fn build_command(&self) -> Command {
         let mut command = Command::new(&*self.program);
-        if let Some(cwd) = self.get_cwd() {
-            command.current_dir(cwd);
-        }
 
         command.args(&*self.leading_args);
         command.args(&self.args);
