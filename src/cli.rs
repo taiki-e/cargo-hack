@@ -1,4 +1,4 @@
-use std::{env, fs, path::PathBuf, rc::Rc, str::FromStr};
+use std::{env, rc::Rc, str::FromStr};
 
 use anyhow::{format_err, Error, Result};
 use termcolor::ColorChoice;
@@ -26,9 +26,6 @@ OPTIONS:
                                     (this flag will not be propagated to cargo)
         --exclude <SPEC>...         Exclude packages from the check
                                     (this flag will not be propagated to cargo)
-        --target-dir <DIRECTORY>    Directory for all generated artifacts
-                                    (this flag will be passed to cargo after
-                                    normalizing the given path)
         --manifest-path <PATH>      Path to Cargo.toml
                                     (this flag will not be propagated to cargo)
         --features <FEATURES>...    Space-separated list of features to activate
@@ -71,8 +68,6 @@ pub(crate) struct Args {
 
     /// --manifest-path <PATH>
     pub(crate) manifest_path: Option<String>,
-    /// (canonicalized) --target-dir <DIRECTORY>
-    pub(crate) target_dir: Option<PathBuf>,
     /// --features <FEATURES>...
     pub(crate) features: Vec<String>,
 
@@ -153,7 +148,6 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
     let mut leading = Vec::new();
     let mut subcommand: Option<String> = None;
 
-    let mut target_dir = None;
     let mut manifest_path = None;
     let mut color = None;
 
@@ -253,13 +247,6 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
             }
 
             parse_arg1!(
-                target_dir,
-                false,
-                "--target-dir",
-                "--target-dir=",
-                "--target-dir <DIRECTORY>"
-            );
-            parse_arg1!(
                 manifest_path,
                 false,
                 "--manifest-path",
@@ -337,7 +324,6 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
         return Ok(Err(0));
     }
 
-    let target_dir = target_dir.map(fs::canonicalize).transpose()?;
     let verbose = leading.iter().any(|a| a == "--verbose" || a == "-v" || a == "-vv");
     if ignore_non_exist_features {
         warn!(
@@ -423,7 +409,6 @@ For more information try --help
 
         subcommand,
         manifest_path,
-        target_dir,
         package,
         exclude,
         features,
