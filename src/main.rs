@@ -102,7 +102,12 @@ fn exec_on_package(args: &Args, package: &Package, line: &ProcessBuilder) -> Res
     if args.ignore_private && manifest.is_private() {
         info!(args.color, "skipped running on {}", package.name_verbose(args));
     } else if args.subcommand.is_some() || args.remove_dev_deps {
-        no_dev_deps(args, package, manifest, line)?;
+        let mut line = line.clone();
+        line.features(args, package);
+        line.arg("--manifest-path");
+        line.arg(&package.manifest_path);
+
+        no_dev_deps(args, package, &manifest, &line)?;
     }
 
     Ok(())
@@ -111,7 +116,7 @@ fn exec_on_package(args: &Args, package: &Package, line: &ProcessBuilder) -> Res
 fn no_dev_deps(
     args: &Args,
     package: &Package,
-    mut manifest: Manifest,
+    manifest: &Manifest,
     line: &ProcessBuilder,
 ) -> Result<()> {
     struct Bomb<'a> {
@@ -137,47 +142,34 @@ fn no_dev_deps(
         }
     }
 
-    let f = |args: &Args, package: &Package, line: &ProcessBuilder| {
-        let mut line = line.clone();
-        line.features(args, package);
-        line.arg("--manifest-path");
-        line.arg(&package.manifest_path);
-
-        if args.each_feature {
-            exec_for_each_feature(args, package, &line)
-        } else {
-            exec_cargo(args, package, &line)
-        }
-    };
-
     if args.no_dev_deps || args.remove_dev_deps {
         let mut res = Ok(());
-        let new = manifest.remove_dev_deps();
-        let mut bomb = Bomb { manifest: &manifest, args, done: false, res: &mut res };
+        let new = manifest.remove_dev_deps()?;
+        let mut bomb = Bomb { manifest, args, done: false, res: &mut res };
 
         fs::write(&package.manifest_path, new).with_context(|| {
             format!("failed to update manifest file: {}", package.manifest_path.display())
         })?;
 
         if args.subcommand.is_some() {
-            f(args, package, line)?;
+            each_feature(args, package, line)?;
         }
 
         bomb.done = true;
         drop(bomb);
         res?;
     } else if args.subcommand.is_some() {
-        f(args, package, line)?;
+        each_feature(args, package, line)?;
     }
 
     Ok(())
 }
 
-fn exec_for_each_feature(args: &Args, package: &Package, line: &ProcessBuilder) -> Result<()> {
+fn each_feature(args: &Args, package: &Package, line: &ProcessBuilder) -> Result<()> {
     // run with default features
     exec_cargo(args, package, line)?;
 
-    if package.features.is_empty() {
+    if !args.each_feature || package.features.is_empty() {
         return Ok(());
     }
 

@@ -1,16 +1,16 @@
 use std::{
-    fs, ops,
+    fs,
+    ops::Deref,
     path::{Path, PathBuf},
 };
 
 use anyhow::{bail, Context, Result};
-use toml_edit::{Document, Table};
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub(crate) struct Manifest {
     pub(crate) path: PathBuf,
     pub(crate) raw: String,
-    pub(crate) doc: Document,
+    toml: de::Manifest,
 }
 
 impl Manifest {
@@ -18,37 +18,34 @@ impl Manifest {
         let path = path.into();
         let raw = fs::read_to_string(&path)
             .with_context(|| format!("failed to read manifest from {}", path.display()))?;
-        let doc: Document = raw
-            .parse()
+        let toml = toml::from_str(&raw)
             .with_context(|| format!("failed to parse manifest file: {}", path.display()))?;
-        Ok(Self { path, raw, doc })
-    }
-
-    pub(crate) fn package(&self) -> Option<&Table> {
-        self.doc.as_table().get("package")?.as_table()
+        Ok(Self { path, raw, toml })
     }
 
     pub(crate) fn package_name(&self) -> &str {
         assert!(!self.is_virtual());
-        (|| self.package()?.get("name")?.as_str())().unwrap()
+        &self.package.as_ref().unwrap().name
     }
 
     pub(crate) fn is_virtual(&self) -> bool {
-        self.package().is_none()
+        self.package.is_none()
     }
 
     // `metadata.package.publish` requires Rust 1.39
     pub(crate) fn is_private(&self) -> bool {
-        (|| self.package()?.get("publish")?.as_bool())().map_or(false, ops::Not::not)
+        assert!(!self.is_virtual());
+        self.package.as_ref().unwrap().publish == false
     }
 
-    pub(crate) fn remove_dev_deps(&mut self) -> String {
-        remove_key_and_target_key(self.doc.as_table_mut(), "dev-dependencies");
-        self.doc.to_string_in_original_order()
+    pub(crate) fn remove_dev_deps(&self) -> Result<String> {
+        let mut doc: toml_edit::Document = self.raw.parse()?;
+        remove_key_and_target_key(doc.as_table_mut(), "dev-dependencies");
+        Ok(doc.to_string_in_original_order())
     }
 }
 
-fn remove_key_and_target_key(table: &mut Table, key: &str) {
+fn remove_key_and_target_key(table: &mut toml_edit::Table, key: &str) {
     table.remove(key);
     if let Some(table) = table.entry("target").as_table_mut() {
         // `toml_edit::Table` does not have `.iter_mut()`, so collect keys.
@@ -60,8 +57,15 @@ fn remove_key_and_target_key(table: &mut Table, key: &str) {
     }
 }
 
-// Based on https://github.com/rust-lang/cargo/blob/0.39.0/src/cargo/util/important_paths.rs
+impl Deref for Manifest {
+    type Target = de::Manifest;
 
+    fn deref(&self) -> &Self::Target {
+        &self.toml
+    }
+}
+
+// Based on https://github.com/rust-lang/cargo/blob/0.39.0/src/cargo/util/important_paths.rs
 /// Finds the root `Cargo.toml`.
 pub(crate) fn find_root_manifest_for_wd(cwd: &Path) -> Result<PathBuf> {
     for current in cwd.ancestors() {
@@ -72,4 +76,60 @@ pub(crate) fn find_root_manifest_for_wd(cwd: &Path) -> Result<PathBuf> {
     }
 
     bail!("could not find `Cargo.toml` in `{}` or any parent directory", cwd.display())
+}
+
+mod de {
+    use serde::Deserialize;
+
+    // Refs:
+    // * https://github.com/rust-lang/cargo/blob/0.40.0/src/cargo/util/toml/mod.rs
+    // * https://gitlab.com/crates.rs/cargo_toml
+
+    #[derive(Debug, Deserialize)]
+    pub(crate) struct Manifest {
+        pub(crate) package: Option<Package>,
+        pub(crate) workspace: Option<Workspace>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub(crate) struct Workspace {
+        pub(crate) members: Option<Vec<String>>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub(crate) struct Package {
+        pub(crate) edition: Option<String>,
+        pub(crate) name: String,
+        pub(crate) version: String,
+        #[serde(default)]
+        pub(crate) publish: Publish,
+    }
+
+    #[derive(Debug, Deserialize)]
+    #[serde(untagged)]
+    pub(crate) enum Publish {
+        Flag(bool),
+        Registry(Vec<String>),
+    }
+
+    impl Default for Publish {
+        fn default() -> Self {
+            Publish::Flag(true)
+        }
+    }
+
+    impl PartialEq<Publish> for bool {
+        fn eq(&self, p: &Publish) -> bool {
+            match p {
+                Publish::Flag(flag) => *flag == *self,
+                Publish::Registry(reg) => !reg.is_empty() == *self,
+            }
+        }
+    }
+
+    impl PartialEq<bool> for Publish {
+        fn eq(&self, b: &bool) -> bool {
+            b.eq(self)
+        }
+    }
 }
