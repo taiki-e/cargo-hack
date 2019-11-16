@@ -24,7 +24,7 @@ use crate::{
 fn main() {
     let mut coloring = None;
     if let Err(e) = try_main(&mut coloring) {
-        error!(coloring, "{:?}", e);
+        error!(coloring, "{:#}", e);
         std::process::exit(1)
     }
 }
@@ -131,7 +131,7 @@ fn no_dev_deps(
                 if self.done {
                     *self.res = res;
                 } else if let Err(e) = res {
-                    error!(self.args.color, "{:?}", e);
+                    error!(self.args.color, "{:#}", e);
                 }
             }
         }

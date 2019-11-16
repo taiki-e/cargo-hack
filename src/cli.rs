@@ -1,6 +1,6 @@
 use std::{env, rc::Rc, str::FromStr};
 
-use anyhow::{format_err, Error, Result};
+use anyhow::{bail, format_err, Error, Result};
 use termcolor::ColorChoice;
 
 fn print_version() {
@@ -123,7 +123,7 @@ impl FromStr for Coloring {
             "auto" => Ok(Coloring::Auto),
             "always" => Ok(Coloring::Always),
             "never" => Ok(Coloring::Never),
-            other => Err(format_err!("must be auto, always, or never, but found `{}`", other)),
+            other => bail!("must be auto, always, or never, but found `{}`", other),
         }
     }
 }
@@ -158,7 +158,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
     let mut ignore_unknown_features = false;
     let mut ignore_non_exist_features = false;
 
-    let res = (|| -> std::result::Result<(), String> {
+    let res = (|| -> Result<()> {
         while let Some(arg) = args.next() {
             // stop at `--`
             // 1. `cargo hack check --no-dev-deps`
@@ -302,10 +302,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
     let color = color.map(|c| c.parse()).transpose()?;
     *coloring = color;
 
-    if let Err(e) = res {
-        error!(color, "{}", e);
-        return Ok(Err(1));
-    }
+    res?;
 
     if leading.is_empty() && !remove_dev_deps
         || subcommand.is_none() && leading.iter().any(|a| a == "--help" || a == "-h")
@@ -319,23 +316,14 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
     }
 
     if !exclude.is_empty() && workspace.is_none() {
-        error!(color, "--exclude can only be used together with --workspace");
-        return Ok(Err(1));
+        bail!("--exclude can only be used together with --workspace");
     }
     if let Some(subcommand) = &subcommand {
         if subcommand == "test" || subcommand == "bench" {
             if remove_dev_deps {
-                error!(
-                    color,
-                    "--remove-dev-deps may not be used together with {} subcommand", subcommand
-                );
-                return Ok(Err(1));
+                bail!("--remove-dev-deps may not be used together with {} subcommand", subcommand);
             } else if no_dev_deps {
-                error!(
-                    color,
-                    "--no-dev-deps may not be used together with {} subcommand", subcommand
-                );
-                return Ok(Err(1));
+                bail!("--no-dev-deps may not be used together with {} subcommand", subcommand);
             }
         }
     }
@@ -345,17 +333,14 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
         _ => a.starts_with("--example=") || a.starts_with("--test=") || a.starts_with("--bench="),
     }) {
         if remove_dev_deps {
-            error!(color, "--remove-dev-deps may not be used together with {}", leading[pos]);
-            return Ok(Err(1));
+            bail!("--remove-dev-deps may not be used together with {}", leading[pos]);
         } else if no_dev_deps {
-            error!(color, "--no-dev-deps may not be used together with {}", leading[pos]);
-            return Ok(Err(1));
+            bail!("--no-dev-deps may not be used together with {}", leading[pos]);
         }
     }
 
     if no_dev_deps && remove_dev_deps {
-        error!(color, "--no-dev-deps may not be used together with --remove-dev-deps");
-        return Ok(Err(1));
+        bail!("--no-dev-deps may not be used together with --remove-dev-deps");
     }
 
     if subcommand.is_none() {
@@ -366,8 +351,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Resul
             return Ok(Err(0));
         } else if !remove_dev_deps {
             // TODO: improve this
-            error!(
-                color,
+            bail!(
                 "\
 No subcommand or valid flag specified.
 
@@ -377,7 +361,6 @@ USAGE:
 For more information try --help
 "
             );
-            return Ok(Err(1));
         }
     }
 
@@ -418,8 +401,8 @@ For more information try --help
     }))
 }
 
-fn req_arg(arg: &str, subcommand: Option<&String>) -> String {
-    format!(
+fn req_arg(arg: &str, subcommand: Option<&String>) -> Error {
+    format_err!(
         "\
 The argument '{0}' requires a value but none was supplied
 
@@ -437,8 +420,8 @@ For more information try --help
     )
 }
 
-fn multi_arg(arg: &str, subcommand: Option<&String>) -> String {
-    format!(
+fn multi_arg(arg: &str, subcommand: Option<&String>) -> Error {
+    format_err!(
         "\
 The argument '{0}' was provided more than once, but cannot be used multiple times
 
