@@ -4,7 +4,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Context};
+
+use crate::Result;
 
 #[derive(Debug)]
 pub(crate) struct Manifest {

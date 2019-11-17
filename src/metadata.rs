@@ -8,10 +8,10 @@ use std::{
     process::Command,
 };
 
-use anyhow::{Context, Result};
+use anyhow::Context;
 use serde::Deserialize;
 
-use crate::Args;
+use crate::{Args, Result};
 
 // Refs:
 // * https://github.com/rust-lang/cargo/blob/0.40.0/src/cargo/ops/cargo_output_metadata.rs#L79-L86

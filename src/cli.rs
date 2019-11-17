@@ -1,7 +1,9 @@
 use std::{env, rc::Rc, str::FromStr};
 
-use anyhow::{bail, format_err, Error, Result};
+use anyhow::{bail, format_err, Error};
 use termcolor::ColorChoice;
+
+use crate::Result;
 
 fn print_version() {
     println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"),)
@@ -129,7 +131,7 @@ impl FromStr for Coloring {
 }
 
 #[allow(clippy::cognitive_complexity)]
-pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<std::result::Result<Args, i32>> {
+pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Result<Args, i32>> {
     let mut args = env::args();
     let _ = args.next(); // executable name
     match &args.next() {

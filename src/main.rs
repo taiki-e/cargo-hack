@@ -12,7 +12,7 @@ mod process;
 
 use std::{env, ffi::OsString, fs, path::Path};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Context, Error};
 
 use crate::{
     cli::{Args, Coloring},
@@ -20,6 +20,8 @@ use crate::{
     metadata::{Metadata, Package},
     process::ProcessBuilder,
 };
+
+type Result<T, E = Error> = std::result::Result<T, E>;
 
 fn main() {
     let mut coloring = None;
