@@ -81,7 +81,7 @@ pub(crate) fn find_root_manifest_for_wd(cwd: &Path) -> Result<PathBuf> {
 }
 
 mod de {
-    use serde::Deserialize;
+    use serde_derive::Deserialize;
 
     // Refs:
     // * https://github.com/rust-lang/cargo/blob/0.40.0/src/cargo/util/toml/mod.rs

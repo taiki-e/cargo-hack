@@ -17,7 +17,11 @@ A tool to work around some limitations on cargo.
 
 [dependencies]
 anyhow = "1.0.20"
-serde = { version = "1.0.102", features = ["derive"] }
+serde = "1.0.102"
+# Depends directly on `serde_derive` instead of using `derive` feature of
+# `serde` to reduce compile time. When pipeline compilation for proc-macro is
+# supported, switch to using `derive` feature.
+serde_derive = "1.0.102"
 serde_json = "1.0.41"
 termcolor = "1.0.5"
 toml = "0.5.5"

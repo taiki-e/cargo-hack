@@ -9,7 +9,7 @@ use std::{
 };
 
 use anyhow::Context;
-use serde::Deserialize;
+use serde_derive::Deserialize;
 
 use crate::{Args, Result};
 
