@@ -10,7 +10,16 @@ mod manifest;
 mod metadata;
 mod process;
 
-use std::{env, ffi::OsString, fs, path::Path};
+use std::{
+    env,
+    ffi::OsString,
+    fs,
+    path::{Path, PathBuf},
+    sync::{
+        atomic::{AtomicBool, Ordering::SeqCst},
+        Arc, Mutex,
+    },
+};
 
 use anyhow::{bail, Context, Error};
 
@@ -121,33 +130,70 @@ fn no_dev_deps(
     manifest: &Manifest,
     line: &ProcessBuilder,
 ) -> Result<()> {
-    struct Bomb<'a> {
-        manifest: &'a Manifest,
-        args: &'a Args,
-        done: bool,
-        res: &'a mut Result<()>,
+    struct Restore {
+        manifest: String,
+        manifest_path: PathBuf,
+        color: Option<Coloring>,
+        restore: AtomicBool,
+        done: AtomicBool,
+        res: Arc<Mutex<Option<Result<()>>>>,
     }
 
-    impl Drop for Bomb<'_> {
-        fn drop(&mut self) {
-            if !self.args.remove_dev_deps {
-                let res = fs::write(&self.manifest.path, &self.manifest.raw).with_context(|| {
-                    format!("failed to restore manifest file: {}", self.manifest.path.display())
+    impl Restore {
+        #[allow(clippy::type_complexity)]
+        fn new(
+            args: &Args,
+            manifest: &Manifest,
+        ) -> (Bomb, Arc<Self>, Arc<Mutex<Option<Result<()>>>>) {
+            let res = Arc::new(Mutex::new(Some(Ok(()))));
+
+            let bomb = Arc::new(Self {
+                manifest: manifest.raw.to_string(),
+                manifest_path: manifest.path.to_path_buf(),
+                color: args.color,
+                // if `--remove-dev-deps` flag is off, restore manifest file.
+                restore: AtomicBool::new(args.no_dev_deps && !args.remove_dev_deps),
+                done: AtomicBool::new(false),
+                res: res.clone(),
+            });
+
+            (Bomb(bomb.clone()), bomb, res)
+        }
+
+        fn restore_dev_deps(&self) {
+            if self.restore.load(SeqCst) {
+                let res = fs::write(&self.manifest_path, &self.manifest).with_context(|| {
+                    format!("failed to restore manifest file: {}", self.manifest_path.display())
                 });
 
-                if self.done {
-                    *self.res = res;
+                if self.done.load(SeqCst) {
+                    *self.res.lock().unwrap() = Some(res);
                 } else if let Err(e) = res {
-                    error!(self.args.color, "{:#}", e);
+                    error!(self.color, "{:#}", e);
                 }
+
+                self.restore.store(false, SeqCst);
             }
         }
     }
 
+    struct Bomb(Arc<Restore>);
+
+    impl Drop for Bomb {
+        fn drop(&mut self) {
+            self.0.restore_dev_deps();
+        }
+    }
+
     if args.no_dev_deps || args.remove_dev_deps {
-        let mut res = Ok(());
         let new = manifest.remove_dev_deps()?;
-        let mut bomb = Bomb { manifest, args, done: false, res: &mut res };
+        let (bomb, restore, res) = Restore::new(args, manifest);
+
+        ctrlc::set_handler(move || {
+            restore.restore_dev_deps();
+            std::process::exit(0)
+        })
+        .unwrap();
 
         fs::write(&package.manifest_path, new).with_context(|| {
             format!("failed to update manifest file: {}", package.manifest_path.display())
@@ -157,9 +203,9 @@ fn no_dev_deps(
             each_feature(args, package, line)?;
         }
 
-        bomb.done = true;
+        bomb.0.done.store(true, SeqCst);
         drop(bomb);
-        res?;
+        res.lock().unwrap().take().unwrap()?;
     } else if args.subcommand.is_some() {
         each_feature(args, package, line)?;
     }
