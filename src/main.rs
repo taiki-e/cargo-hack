@@ -9,6 +9,7 @@ mod cli;
 mod manifest;
 mod metadata;
 mod process;
+mod remove_dev_deps;
 mod restore;
 
 use std::{env, ffi::OsString, fs, path::Path};
@@ -132,7 +133,7 @@ fn no_dev_deps(
     restore: &Restore,
 ) -> Result<()> {
     if args.no_dev_deps || args.remove_dev_deps {
-        let new = manifest.remove_dev_deps()?;
+        let new = manifest.remove_dev_deps();
         let mut handle = restore.set_manifest(&manifest);
 
         fs::write(&package.manifest_path, new).with_context(|| {
