@@ -6,10 +6,16 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.3.1] - 2019-11-20
+
+* [cargo-hack can now handle ctrl-c signal properly.][20] Previously there was an issue with interoperability with `--no-dev-deps` flag.
+
+[20]: https://github.com/taiki-e/cargo-hack/pull/20
+
 ## [0.3.0] - 2019-11-13
 
 * [cargo-hack now works on windows.][17]
-* [Fixed issue that when `--all`(`--workspace`) and `--package` flags are run in subcrate, the command does not apply to other crates in the workspace.][17]
+* [Fixed an issue that when `--all`(`--workspace`) and `--package` flags are run in subcrate, the command does not apply to other crates in the workspace.][17]
 * [Banned `--no-dev-deps` flag with builds that require dev-dependencies.][16]
 * [cargo-hack is no longer does not generate temporary backup files.][14]
 
@@ -41,7 +47,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/taiki-e/cargo-hack/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/taiki-e/cargo-hack/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/taiki-e/cargo-hack/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/taiki-e/cargo-hack/compare/v0.1.1...v0.2.0
