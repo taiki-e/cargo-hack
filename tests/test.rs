@@ -394,6 +394,21 @@ fn test_no_dev_deps() {
 }
 
 #[test]
+fn test_no_dev_deps_all() {
+    let output = cargo_hack()
+        .args(&["hack", "check", "--no-dev-deps", "--all"])
+        .current_dir(test_dir("tests/fixtures/real"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_success()
+        .assert_stderr_contains(&format!(
+            "`--no-dev-deps` flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished",
+        ));
+}
+
+#[test]
 fn test_no_dev_deps_with_devs() {
     for flag in &[
         "--example",
