@@ -9,17 +9,9 @@ mod cli;
 mod manifest;
 mod metadata;
 mod process;
+mod restore;
 
-use std::{
-    env,
-    ffi::OsString,
-    fs,
-    path::{Path, PathBuf},
-    sync::{
-        atomic::{AtomicBool, Ordering::SeqCst},
-        Arc, Mutex,
-    },
-};
+use std::{env, ffi::OsString, fs, path::Path};
 
 use anyhow::{bail, Context, Error};
 
@@ -28,6 +20,7 @@ use crate::{
     manifest::{find_root_manifest_for_wd, Manifest},
     metadata::{Metadata, Package},
     process::ProcessBuilder,
+    restore::Restore,
 };
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -64,6 +57,8 @@ fn exec_on_workspace(args: &Args, current_manifest: &Manifest, metadata: &Metada
         line.arg(color.as_str());
     }
 
+    let restore = Restore::new(args);
+
     if args.workspace {
         for spec in &args.exclude {
             if !metadata.packages.iter().any(|package| package.name == *spec) {
@@ -79,7 +74,7 @@ fn exec_on_workspace(args: &Args, current_manifest: &Manifest, metadata: &Metada
         for package in
             metadata.packages.iter().filter(|package| !args.exclude.contains(&package.name))
         {
-            exec_on_package(args, package, &line)?;
+            exec_on_package(args, package, &line, &restore)?;
         }
     } else if !args.package.is_empty() {
         for spec in &args.package {
@@ -91,23 +86,28 @@ fn exec_on_workspace(args: &Args, current_manifest: &Manifest, metadata: &Metada
         for package in
             metadata.packages.iter().filter(|package| args.package.contains(&package.name))
         {
-            exec_on_package(args, package, &line)?;
+            exec_on_package(args, package, &line, &restore)?;
         }
     } else if current_manifest.is_virtual() {
         for package in &metadata.packages {
-            exec_on_package(args, package, &line)?;
+            exec_on_package(args, package, &line, &restore)?;
         }
     } else if !current_manifest.is_virtual() {
         let current_package = current_manifest.package_name();
         let package =
             metadata.packages.iter().find(|package| package.name == *current_package).unwrap();
-        exec_on_package(args, package, &line)?;
+        exec_on_package(args, package, &line, &restore)?;
     }
 
     Ok(())
 }
 
-fn exec_on_package(args: &Args, package: &Package, line: &ProcessBuilder) -> Result<()> {
+fn exec_on_package(
+    args: &Args,
+    package: &Package,
+    line: &ProcessBuilder,
+    restore: &Restore,
+) -> Result<()> {
     let manifest = Manifest::new(&package.manifest_path)?;
 
     if args.ignore_private && manifest.is_private() {
@@ -118,7 +118,7 @@ fn exec_on_package(args: &Args, package: &Package, line: &ProcessBuilder) -> Res
         line.arg("--manifest-path");
         line.arg(&package.manifest_path);
 
-        no_dev_deps(args, package, &manifest, &line)?;
+        no_dev_deps(args, package, &manifest, &line, restore)?;
     }
 
     Ok(())
@@ -129,71 +129,11 @@ fn no_dev_deps(
     package: &Package,
     manifest: &Manifest,
     line: &ProcessBuilder,
+    restore: &Restore,
 ) -> Result<()> {
-    struct Restore {
-        manifest: String,
-        manifest_path: PathBuf,
-        color: Option<Coloring>,
-        restore: AtomicBool,
-        done: AtomicBool,
-        res: Arc<Mutex<Option<Result<()>>>>,
-    }
-
-    impl Restore {
-        #[allow(clippy::type_complexity)]
-        fn new(
-            args: &Args,
-            manifest: &Manifest,
-        ) -> (Bomb, Arc<Self>, Arc<Mutex<Option<Result<()>>>>) {
-            let res = Arc::new(Mutex::new(Some(Ok(()))));
-
-            let bomb = Arc::new(Self {
-                manifest: manifest.raw.to_string(),
-                manifest_path: manifest.path.to_path_buf(),
-                color: args.color,
-                // if `--remove-dev-deps` flag is off, restore manifest file.
-                restore: AtomicBool::new(args.no_dev_deps && !args.remove_dev_deps),
-                done: AtomicBool::new(false),
-                res: res.clone(),
-            });
-
-            (Bomb(bomb.clone()), bomb, res)
-        }
-
-        fn restore_dev_deps(&self) {
-            if self.restore.load(SeqCst) {
-                let res = fs::write(&self.manifest_path, &self.manifest).with_context(|| {
-                    format!("failed to restore manifest file: {}", self.manifest_path.display())
-                });
-
-                if self.done.load(SeqCst) {
-                    *self.res.lock().unwrap() = Some(res);
-                } else if let Err(e) = res {
-                    error!(self.color, "{:#}", e);
-                }
-
-                self.restore.store(false, SeqCst);
-            }
-        }
-    }
-
-    struct Bomb(Arc<Restore>);
-
-    impl Drop for Bomb {
-        fn drop(&mut self) {
-            self.0.restore_dev_deps();
-        }
-    }
-
     if args.no_dev_deps || args.remove_dev_deps {
         let new = manifest.remove_dev_deps()?;
-        let (bomb, restore, res) = Restore::new(args, manifest);
-
-        ctrlc::set_handler(move || {
-            restore.restore_dev_deps();
-            std::process::exit(0)
-        })
-        .unwrap();
+        let mut handle = restore.set_manifest(&manifest);
 
         fs::write(&package.manifest_path, new).with_context(|| {
             format!("failed to update manifest file: {}", package.manifest_path.display())
@@ -203,9 +143,7 @@ fn no_dev_deps(
             each_feature(args, package, line)?;
         }
 
-        bomb.0.done.store(true, SeqCst);
-        drop(bomb);
-        res.lock().unwrap().take().unwrap()?;
+        handle.done()?;
     } else if args.subcommand.is_some() {
         each_feature(args, package, line)?;
     }
