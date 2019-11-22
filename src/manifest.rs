@@ -40,22 +40,8 @@ impl Manifest {
         self.package.as_ref().unwrap().publish == false
     }
 
-    pub(crate) fn remove_dev_deps(&self) -> Result<String> {
-        let mut doc: toml_edit::Document = self.raw.parse()?;
-        remove_key_and_target_key(doc.as_table_mut(), "dev-dependencies");
-        Ok(doc.to_string_in_original_order())
-    }
-}
-
-fn remove_key_and_target_key(table: &mut toml_edit::Table, key: &str) {
-    table.remove(key);
-    if let Some(table) = table.entry("target").as_table_mut() {
-        // `toml_edit::Table` does not have `.iter_mut()`, so collect keys.
-        for k in table.iter().map(|(key, _)| key.to_string()).collect::<Vec<_>>() {
-            if let Some(table) = table.entry(&k).as_table_mut() {
-                table.remove(key);
-            }
-        }
+    pub(crate) fn remove_dev_deps(&self) -> String {
+        super::remove_dev_deps::remove_dev_deps(&self.raw)
     }
 }
 
