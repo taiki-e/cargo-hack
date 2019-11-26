@@ -136,14 +136,14 @@ impl FromStr for Coloring {
 }
 
 #[allow(clippy::cognitive_complexity)]
-pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Result<Args, i32>> {
+pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut args = env::args();
     let _ = args.next(); // executable name
     match &args.next() {
         Some(a) if a == "hack" => {}
         Some(_) | None => {
             print_help();
-            return Ok(Err(0));
+            return Ok(None);
         }
     }
 
@@ -193,27 +193,25 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Result<Args, i32>>
                         if $ident.is_some() {
                             return Err(multi_arg($help, subcommand.as_ref()));
                         }
-                        match args.next() {
-                            None => return Err(req_arg($help, subcommand.as_ref())),
-                            Some(next) => {
-                                if $propagate {
-                                    $ident = Some(next.clone());
-                                    leading.push(arg);
-                                    leading.push(next);
-                                } else {
-                                    $ident = Some(next);
-                                }
-                            }
+                        let next =
+                            args.next().ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
+                        if $propagate {
+                            $ident = Some(next.clone());
+                            leading.push(arg);
+                            leading.push(next);
+                        } else {
+                            $ident = Some(next);
                         }
                         continue;
                     } else if arg.starts_with(concat!($pat, "=")) {
                         if $ident.is_some() {
                             return Err(multi_arg($help, subcommand.as_ref()));
                         }
-                        match arg.splitn(2, '=').nth(1).map(ToString::to_string) {
-                            None => return Err(req_arg($help, subcommand.as_ref())),
-                            arg @ Some(_) => $ident = arg,
-                        }
+                        let next = arg
+                            .splitn(2, '=')
+                            .nth(1)
+                            .ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
+                        $ident = Some(next.to_string());
                         if $propagate {
                             leading.push(arg);
                         }
@@ -224,25 +222,22 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Result<Args, i32>>
             macro_rules! parse_arg2 {
                 ($ident:ident, $allow_split:expr, $pat:expr, $help:expr) => {
                     if arg == $pat {
-                        if let Some(arg) = args.next() {
-                            if $allow_split {
-                                $ident.extend(arg.split(',').map(ToString::to_string));
-                            } else {
-                                $ident.push(arg);
-                            }
+                        let arg = args.next().ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
+                        if $allow_split {
+                            $ident.extend(arg.split(',').map(ToString::to_string));
                         } else {
-                            return Err(req_arg($help, subcommand.as_ref()));
+                            $ident.push(arg);
                         }
                         continue;
                     } else if arg.starts_with(concat!($pat, "=")) {
-                        if let Some(arg) = arg.splitn(2, '=').nth(1) {
-                            if $allow_split {
-                                $ident.extend(arg.split(',').map(ToString::to_string));
-                            } else {
-                                $ident.push(arg.to_string());
-                            }
+                        let arg = arg
+                            .splitn(2, '=')
+                            .nth(1)
+                            .ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
+                        if $allow_split {
+                            $ident.extend(arg.split(',').map(ToString::to_string));
                         } else {
-                            return Err(req_arg($help, subcommand.as_ref()));
+                            $ident.push(arg.to_string());
                         }
                         continue;
                     }
@@ -322,11 +317,11 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Result<Args, i32>>
         || subcommand.is_none() && leading.iter().any(|a| a == "--help" || a == "-h")
     {
         print_help();
-        return Ok(Err(0));
+        return Ok(None);
     }
     if leading.iter().any(|a| a == "--version" || a == "-V" || a == "-vV") {
         print_version();
-        return Ok(Err(0));
+        return Ok(None);
     }
 
     if !exclude.is_empty() && workspace.is_none() {
@@ -362,7 +357,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Result<Args, i32>>
             let mut line = crate::ProcessBuilder::new(crate::cargo_binary());
             line.arg("--list");
             line.exec()?;
-            return Ok(Err(0));
+            return Ok(None);
         } else if !remove_dev_deps {
             // TODO: improve this
             bail!(
@@ -392,7 +387,7 @@ For more information try --help
         )
     }
 
-    Ok(Ok(Args {
+    Ok(Some(Args {
         leading_args: leading.into(),
         // shared_from_iter requires Rust 1.37
         trailing_args: args.collect::<Vec<_>>().into(),

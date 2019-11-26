@@ -35,11 +35,7 @@ fn main() {
 }
 
 fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
-    let args = match cli::args(coloring)? {
-        Ok(args) => args,
-        Err(code) => std::process::exit(code),
-    };
-
+    let args = cli::args(coloring)?.unwrap_or_else(|| std::process::exit(0));
     let metadata = Metadata::new(&args)?;
 
     let current_manifest = match &args.manifest_path {
@@ -51,14 +47,13 @@ fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
 }
 
 fn exec_on_workspace(args: &Args, current_manifest: &Manifest, metadata: &Metadata) -> Result<()> {
+    let restore = Restore::new(args);
     let mut line = ProcessBuilder::from_args(cargo_binary(), &args);
 
     if let Some(color) = args.color {
         line.arg("--color");
         line.arg(color.as_str());
     }
-
-    let restore = Restore::new(args);
 
     if args.workspace {
         for spec in &args.exclude {
