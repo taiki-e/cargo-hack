@@ -18,11 +18,12 @@ use crate::{Args, Package, Result};
 #[derive(Clone, Debug)]
 pub(crate) struct ProcessBuilder {
     /// The program to execute.
-    program: Rc<OsString>,
+    program: Rc<OsStr>,
     /// A list of arguments to pass to the program (until '--').
     leading_args: Rc<[String]>,
     /// A list of arguments to pass to the program (after '--').
     trailing_args: Rc<[String]>,
+
     /// A list of arguments to pass to the program (between `leading_args` and '--').
     args: Vec<OsString>,
     // cargo less than Rust 1.38 cannot handle multiple '--features' flags, so it creates another String.
@@ -38,7 +39,7 @@ impl ProcessBuilder {
     /// Creates a new `ProcessBuilder`.
     pub(crate) fn new(program: OsString) -> Self {
         Self {
-            program: Rc::new(program),
+            program: Rc::from(program),
             leading_args: Rc::from(&[][..]),
             trailing_args: Rc::from(&[][..]),
             args: Vec::new(),
@@ -51,7 +52,7 @@ impl ProcessBuilder {
     /// Creates a new `ProcessBuilder` from `Args`.
     pub(crate) fn from_args(program: OsString, args: &Args) -> Self {
         Self {
-            program: Rc::new(program),
+            program: Rc::from(program),
             leading_args: args.leading_args.clone(),
             trailing_args: args.trailing_args.clone(),
             args: Vec::new(),
