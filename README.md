@@ -40,6 +40,19 @@ To install the current cargo-hack requires Rust 1.36 or later.
 
   This is a workaround for an issue that cargo does not support for `--features` and `--no-default-features` flags for sub crates ([cargo#3620], [cargo#4106], [cargo#4463], [cargo#4753], [cargo#5015], [cargo#5364], [cargo#6195]).
 
+* **`--feature-powerset`**
+
+  Perform for the feature powerset which includes `--no-default-features` and
+  default features of the package.
+
+  This is useful to check that every combination of features is working
+  properly. (When used for this purpose, it is recommended to use with
+  `--no-dev-deps` to avoid [cargo#4866].)
+
+  ```sh
+  cargo hack check --feature-powerset --no-dev-deps
+  ```
+
 * **`--no-dev-deps`**
 
   Perform without dev-dependencies.

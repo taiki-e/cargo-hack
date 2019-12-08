@@ -13,8 +13,8 @@ mod remove_dev_deps;
 mod restore;
 
 use std::{env, ffi::OsString, fs, path::Path};
-
 use anyhow::{bail, Context, Error};
+use itertools;
 
 use crate::{
     cli::{Args, Coloring},
@@ -141,22 +141,22 @@ fn no_dev_deps(
         })?;
 
         if args.subcommand.is_some() {
-            each_feature(args, package, line)?;
+            features(args, package, line)?;
         }
 
         handle.done()?;
     } else if args.subcommand.is_some() {
-        each_feature(args, package, line)?;
+        features(args, package, line)?;
     }
 
     Ok(())
 }
 
-fn each_feature(args: &Args, package: &Package, line: &ProcessBuilder) -> Result<()> {
+fn features(args: &Args, package: &Package, line: &ProcessBuilder) -> Result<()> {
     // run with default features
     exec_cargo(args, package, line)?;
 
-    if !args.each_feature || package.features.is_empty() {
+    if (!args.each_feature && !args.feature_powerset) || package.features.is_empty() {
         return Ok(());
     }
 
@@ -169,10 +169,34 @@ fn each_feature(args: &Args, package: &Package, line: &ProcessBuilder) -> Result
     // if `default` feature specified.
     exec_cargo(args, package, &line)?;
 
-    // run with each feature
+    if args.each_feature {
+        each_feature(args, package, &line)
+    } else if args.feature_powerset {
+        feature_powerset(args, package, &line)
+    } else {
+        Ok(())
+    }
+}
+
+fn each_feature(args: &Args, package: &Package, line: &ProcessBuilder) -> Result<()> {
     package.features.iter().filter(|(k, _)| *k != "default").try_for_each(|(feature, _)| {
         let mut line = line.clone();
         line.append_features(&[feature]);
+        exec_cargo(args, package, &line)
+    })
+}
+
+fn feature_powerset(args: &Args, package: &Package, line: &ProcessBuilder) -> Result<()> {
+    let features: Vec<&String> = package.features.keys().filter(|k| *k != "default").collect();
+    let mut powerset = powerset(&features[..]);
+
+    // The first element of a powerset is `[]` so it should be removed.
+    powerset.remove(0);
+
+    powerset.into_iter().try_for_each(|elem| {
+        let features = itertools::join(elem, ",");
+        let mut line = line.clone();
+        line.append_features(&[features]);
         exec_cargo(args, package, &line)
     })
 }
@@ -185,4 +209,15 @@ fn exec_cargo(args: &Args, package: &Package, line: &ProcessBuilder) -> Result<(
 fn cargo_binary() -> OsString {
     env::var_os("CARGO_HACK_CARGO_SRC")
         .unwrap_or_else(|| env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo")))
+}
+
+fn powerset<T: Clone>(s: &[T]) -> Vec<Vec<T>> {
+    s.iter().fold(vec![vec![]], |mut acc, elem| {
+        let ext = acc.clone().into_iter().map(|mut curr| {
+            curr.push(elem.clone());
+            curr
+        });
+        acc.extend(ext);
+        acc
+    })
 }
