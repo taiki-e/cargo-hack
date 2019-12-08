@@ -12,9 +12,9 @@ mod process;
 mod remove_dev_deps;
 mod restore;
 
-use std::{env, ffi::OsString, fs, path::Path};
 use anyhow::{bail, Context, Error};
 use itertools;
+use std::{env, ffi::OsString, fs, path::Path};
 
 use crate::{
     cli::{Args, Coloring},

@@ -520,10 +520,18 @@ fn test_feature_powerset() {
         .assert_stderr_contains("running `cargo check --no-default-features --features a` on real")
         .assert_stderr_contains("running `cargo check --no-default-features --features b` on real")
         .assert_stderr_contains("running `cargo check --no-default-features --features c` on real")
-        .assert_stderr_contains("running `cargo check --no-default-features --features a,b` on real")
-        .assert_stderr_contains("running `cargo check --no-default-features --features a,c` on real")
-        .assert_stderr_contains("running `cargo check --no-default-features --features b,c` on real")
-        .assert_stderr_contains("running `cargo check --no-default-features --features a,b,c` on real");
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features a,b` on real",
+        )
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features a,c` on real",
+        )
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features b,c` on real",
+        )
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features a,b,c` on real",
+        );
 }
 
 #[test]
