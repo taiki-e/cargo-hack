@@ -12,9 +12,9 @@ mod process;
 mod remove_dev_deps;
 mod restore;
 
-use anyhow::{bail, Context, Error};
-use itertools;
 use std::{env, ffi::OsString, fs, path::Path};
+
+use anyhow::{bail, Context, Error};
 
 use crate::{
     cli::{Args, Coloring},
@@ -188,15 +188,12 @@ fn each_feature(args: &Args, package: &Package, line: &ProcessBuilder) -> Result
 
 fn feature_powerset(args: &Args, package: &Package, line: &ProcessBuilder) -> Result<()> {
     let features: Vec<&String> = package.features.keys().filter(|k| *k != "default").collect();
-    let mut powerset = powerset(&features[..]);
+    let powerset = powerset(&features);
 
-    // The first element of a powerset is `[]` so it should be removed.
-    powerset.remove(0);
-
-    powerset.into_iter().try_for_each(|elem| {
-        let features = itertools::join(elem, ",");
+    // The first element of a powerset is `[]` so it should be skipped.
+    powerset.into_iter().skip(1).try_for_each(|features| {
         let mut line = line.clone();
-        line.append_features(&[features]);
+        line.append_features(features);
         exec_cargo(args, package, &line)
     })
 }
