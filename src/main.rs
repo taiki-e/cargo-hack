@@ -73,10 +73,12 @@ fn exec_on_workspace(args: &Args, current_manifest: &Manifest, metadata: &Metada
             exec_on_package(args, package, &line, &restore)?;
         }
     } else if !args.package.is_empty() {
-        for spec in &args.package {
-            if !metadata.packages.iter().any(|package| package.name == *spec) {
-                bail!("package ID specification `{}` matched no packages", spec);
-            }
+        if let Some(spec) = args
+            .package
+            .iter()
+            .find(|spec| !metadata.packages.iter().any(|package| package.name == **spec))
+        {
+            bail!("package ID specification `{}` matched no packages", spec)
         }
 
         for package in
