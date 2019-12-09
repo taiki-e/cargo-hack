@@ -30,6 +30,9 @@ OPTIONS:
         --each-feature              Perform for each feature which includes
                                     `--no-default-features` and default features
                                     of the package
+        --feature-powerset          Perform for the feature powerset which
+                                    includes `--no-default-features` and
+                                    default features of the package
         --no-dev-deps               Perform without dev-dependencies
         --remove-dev-deps           Equivalent to `--no-dev-deps` except for
                                     does not restore the original `Cargo.toml`
@@ -74,6 +77,8 @@ pub(crate) struct Args {
     pub(crate) workspace: bool,
     /// --each-feature
     pub(crate) each_feature: bool,
+    /// --feature-powerset
+    pub(crate) feature_powerset: bool,
     /// --no-dev-deps
     pub(crate) no_dev_deps: bool,
     /// --remove-dev-deps
@@ -156,6 +161,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Result<Args, i32>>
     let mut no_dev_deps = false;
     let mut remove_dev_deps = false;
     let mut each_feature = false;
+    let mut feature_powerset = false;
     let mut ignore_private = false;
     let mut ignore_unknown_features = false;
     let mut ignore_non_exist_features = false;
@@ -276,6 +282,12 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Result<Args, i32>>
                     }
                     each_feature = true;
                 }
+                "--feature-powerset" => {
+                    if feature_powerset {
+                        return Err(multi_arg(&arg, subcommand.as_ref()));
+                    }
+                    feature_powerset = true;
+                }
                 "--ignore-private" => {
                     if ignore_private {
                         return Err(multi_arg(&arg, subcommand.as_ref()));
@@ -392,6 +404,7 @@ For more information try --help
         exclude,
         workspace: workspace.is_some(),
         each_feature,
+        feature_powerset,
         no_dev_deps,
         remove_dev_deps,
         ignore_private,
