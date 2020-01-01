@@ -535,6 +535,69 @@ fn test_feature_powerset() {
 }
 
 #[test]
+fn test_skip_failure() {
+    let output = cargo_hack()
+        .args(&["hack", "check", "--skip", "a"])
+        .current_dir(test_dir("tests/fixtures/real"))
+        .output()
+        .unwrap();
+
+    output.assert_failure().assert_stderr_contains(
+        "--skip can only be used with either --each-feature or --feature-powerset",
+    );
+}
+
+#[test]
+fn test_each_feature_skip_success() {
+    let output = cargo_hack()
+        .args(&["hack", "check", "--each-feature", "--skip", "a"])
+        .current_dir(test_dir("tests/fixtures/real"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_success()
+        .assert_stderr_contains("running `cargo check` on real")
+        .assert_stderr_contains("running `cargo check --no-default-features` on real")
+        .assert_stderr_contains("running `cargo check --no-default-features --features b` on real")
+        .assert_stderr_contains("running `cargo check --no-default-features --features c` on real")
+        .assert_stderr_not_contains(
+            "running `cargo check --no-default-features --features a` on real",
+        );
+}
+
+#[test]
+fn test_powerset_skip_success() {
+    let output = cargo_hack()
+        .args(&["hack", "check", "--feature-powerset", "--skip", "a"])
+        .current_dir(test_dir("tests/fixtures/real"))
+        .output()
+        .unwrap();
+
+    output
+        .assert_success()
+        .assert_stderr_contains("running `cargo check` on real")
+        .assert_stderr_contains("running `cargo check --no-default-features` on real")
+        .assert_stderr_contains("running `cargo check --no-default-features --features b` on real")
+        .assert_stderr_contains("running `cargo check --no-default-features --features c` on real")
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features b,c` on real",
+        )
+        .assert_stderr_not_contains(
+            "running `cargo check --no-default-features --features a` on real",
+        )
+        .assert_stderr_not_contains(
+            "running `cargo check --no-default-features --features a,b` on real",
+        )
+        .assert_stderr_not_contains(
+            "running `cargo check --no-default-features --features a,c` on real",
+        )
+        .assert_stderr_not_contains(
+            "running `cargo check --no-default-features --features a,b,c` on real",
+        );
+}
+
+#[test]
 fn test_each_feature2() {
     let output = cargo_hack()
         .args(&["hack", "check", "--each-feature", "--features=a"])
