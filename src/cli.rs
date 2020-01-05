@@ -79,6 +79,8 @@ pub(crate) struct Args {
     pub(crate) each_feature: bool,
     /// --feature-powerset
     pub(crate) feature_powerset: bool,
+    /// --skip
+    pub(crate) skip: Vec<String>,
     /// --no-dev-deps
     pub(crate) no_dev_deps: bool,
     /// --remove-dev-deps
@@ -156,6 +158,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut package = Vec::new();
     let mut exclude = Vec::new();
     let mut features = Vec::new();
+    let mut skip = Vec::new();
 
     let mut workspace = None;
     let mut no_dev_deps = false;
@@ -251,6 +254,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             parse_arg2!(package, false, "-p", "--package <SPEC>");
             parse_arg2!(exclude, false, "--exclude", "--exclude <SPEC>");
             parse_arg2!(features, true, "--features", "--features <FEATURES>");
+            parse_arg2!(skip, true, "--skip", "skip <SKIP>");
 
             match arg.as_str() {
                 "--workspace" | "--all" => {
@@ -327,6 +331,11 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     if !exclude.is_empty() && workspace.is_none() {
         bail!("--exclude can only be used together with --workspace");
     }
+
+    if !skip.is_empty() && (!each_feature && !feature_powerset) {
+        bail!("--skip can only be used with either --each-feature or --feature-powerset");
+    }
+
     if let Some(subcommand) = &subcommand {
         if subcommand == "test" || subcommand == "bench" {
             if remove_dev_deps {
@@ -400,6 +409,7 @@ For more information try --help
         workspace: workspace.is_some(),
         each_feature,
         feature_powerset,
+        skip,
         no_dev_deps,
         remove_dev_deps,
         ignore_private,

@@ -176,15 +176,20 @@ fn features(args: &Args, package: &Package, line: &ProcessBuilder) -> Result<()>
 }
 
 fn each_feature(args: &Args, package: &Package, line: &ProcessBuilder) -> Result<()> {
-    package.features.iter().filter(|(k, _)| *k != "default").try_for_each(|(feature, _)| {
-        let mut line = line.clone();
-        line.append_features(&[feature]);
-        exec_cargo(args, package, &line)
-    })
+    package
+        .features
+        .iter()
+        .filter(|(k, _)| (*k != "default" && !args.skip.contains(k)))
+        .try_for_each(|(feature, _)| {
+            let mut line = line.clone();
+            line.append_features(&[feature]);
+            exec_cargo(args, package, &line)
+        })
 }
 
 fn feature_powerset(args: &Args, package: &Package, line: &ProcessBuilder) -> Result<()> {
-    let features: Vec<&String> = package.features.keys().filter(|k| *k != "default").collect();
+    let features: Vec<&String> =
+        package.features.keys().filter(|k| (*k != "default" && !args.skip.contains(k))).collect();
     let powerset = powerset(&features);
 
     // The first element of a powerset is `[]` so it should be skipped.
