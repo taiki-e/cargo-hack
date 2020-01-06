@@ -79,7 +79,7 @@ pub(crate) struct Args {
     pub(crate) each_feature: bool,
     /// --feature-powerset
     pub(crate) feature_powerset: bool,
-    /// --skip
+    /// --skip <FEATURES>...
     pub(crate) skip: Vec<String>,
     /// --no-dev-deps
     pub(crate) no_dev_deps: bool,
@@ -254,7 +254,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             parse_arg2!(package, false, "-p", "--package <SPEC>");
             parse_arg2!(exclude, false, "--exclude", "--exclude <SPEC>");
             parse_arg2!(features, true, "--features", "--features <FEATURES>");
-            parse_arg2!(skip, true, "--skip", "skip <SKIP>");
+            parse_arg2!(skip, true, "--skip", "--skip <FEATURES>");
 
             match arg.as_str() {
                 "--workspace" | "--all" => {
