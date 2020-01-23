@@ -67,7 +67,7 @@ jobs:
       - name: cargo clippy
         if: matrix.component == 'clippy'
         run: |
-          cargo clippy --all --all-features
+          cargo clippy --all --all-features --all-targets
       - name: cargo fmt -- --check
         if: matrix.component == 'rustfmt'
         run: |

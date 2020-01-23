@@ -375,9 +375,9 @@ fn test_no_dev_deps() {
         .output()
         .unwrap();
 
-    output.assert_failure().assert_stderr_contains(&format!(
-        "--no-dev-deps may not be used together with --remove-dev-deps",
-    ));
+    output
+        .assert_failure()
+        .assert_stderr_contains("--no-dev-deps may not be used together with --remove-dev-deps");
 
     let output = cargo_hack()
         .args(&["hack", "check", "--no-dev-deps"])
@@ -388,9 +388,9 @@ fn test_no_dev_deps() {
     output
         .assert_success()
         .assert_stderr_contains("running `cargo check` on real")
-        .assert_stderr_contains(&format!(
+        .assert_stderr_contains(
             "`--no-dev-deps` flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished",
-        ));
+        );
 }
 
 #[test]
@@ -403,9 +403,9 @@ fn test_no_dev_deps_all() {
 
     output
         .assert_success()
-        .assert_stderr_contains(&format!(
+        .assert_stderr_contains(
             "`--no-dev-deps` flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished",
-        ));
+        );
 }
 
 #[test]
