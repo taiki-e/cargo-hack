@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     ffi::{OsStr, OsString},
     fmt,
     path::Path,
@@ -29,8 +28,6 @@ pub(crate) struct ProcessBuilder {
     // cargo less than Rust 1.38 cannot handle multiple '--features' flags, so it creates another String.
     features: String,
 
-    /// Any environment variables that should be set for the program.
-    env: HashMap<String, Option<OsString>>,
     /// Use verbose output.
     verbose: bool,
 }
@@ -44,7 +41,6 @@ impl ProcessBuilder {
             trailing_args: Rc::from(&[][..]),
             args: Vec::new(),
             features: String::new(),
-            env: HashMap::new(),
             verbose: false,
         }
     }
@@ -57,7 +53,6 @@ impl ProcessBuilder {
             trailing_args: args.trailing_args.clone(),
             args: Vec::new(),
             features: String::new(),
-            env: HashMap::new(),
             verbose: args.verbose,
         }
     }
@@ -114,18 +109,6 @@ impl ProcessBuilder {
     //     self
     // }
 
-    // /// (chainable) Sets an environment variable for the process.
-    // pub(crate) fn env(&mut self, key: &str, val: impl AsRef<OsStr>) -> &mut Self {
-    //     self.env.insert(key.to_string(), Some(val.as_ref().to_os_string()));
-    //     self
-    // }
-
-    // /// (chainable) Unsets an environment variable for the process.
-    // pub(crate) fn env_remove(&mut self, key: &str) -> &mut Self {
-    //     self.env.insert(key.to_string(), None);
-    //     self
-    // }
-
     // /// Gets the executable name.
     // pub(crate) fn get_program(&self) -> &OsString {
     //     &self.program
@@ -134,18 +117,6 @@ impl ProcessBuilder {
     // /// Gets the program arguments.
     // pub(crate) fn get_args(&self) -> &[OsString] {
     //     &self.args
-    // }
-
-    // /// Gets an environment variable as the process will see it (will inherit from environment
-    // /// unless explicitally unset).
-    // pub(crate) fn get_env(&self, var: &str) -> Option<OsString> {
-    //     self.env.get(var).cloned().or_else(|| Some(env::var_os(var))).and_then(|s| s)
-    // }
-
-    // /// Gets all environment variables explicitly set or unset for the process (not inherited
-    // /// vars).
-    // pub(crate) fn get_envs(&self) -> &HashMap<String, Option<OsString>> {
-    //     &self.env
     // }
 
     /// Runs the process, waiting for completion, and mapping non-success exit codes to an error.
@@ -196,23 +167,13 @@ impl ProcessBuilder {
         command.args(&self.args);
         if !self.features.is_empty() {
             command.arg("--features");
-            command.arg(&self.features[..self.features.len() - 1]);
+            command.arg(&self.features[..self.features.len() - 1]); // drop tail `,`
         }
         if !self.trailing_args.is_empty() {
             command.arg("--");
             command.args(&*self.trailing_args);
         }
 
-        for (k, v) in &self.env {
-            match v {
-                Some(v) => {
-                    command.env(k, v);
-                }
-                None => {
-                    command.env_remove(k);
-                }
-            }
-        }
         command
     }
 }
