@@ -16,16 +16,16 @@ A tool to work around some limitations on cargo.
 [workspace]
 
 [dependencies]
-anyhow = "1.0.22"
+anyhow = "1.0.26"
 ctrlc = "3.1.3"
-serde = "1.0.102"
+serde = "1.0.104"
 # Depends directly on `serde_derive` instead of using `derive` feature of
 # `serde` to reduce compile time. When pipeline compilation for proc-macro is
 # supported, switch to using `derive` feature.
-serde_derive = "1.0.102"
-serde_json = "1.0.41"
-termcolor = "1.0.5"
-toml = "0.5.5"
+serde_derive = "1.0.104"
+serde_json = "1.0.45"
+termcolor = "1.1.0"
+toml = "0.5.6"
 
 [dev-dependencies]
 easy-ext = "0.1.6"
