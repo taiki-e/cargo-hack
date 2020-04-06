@@ -110,7 +110,7 @@ mod de {
         fn eq(&self, p: &Publish) -> bool {
             match p {
                 Publish::Flag(flag) => *flag == *self,
-                Publish::Registry(reg) => !reg.is_empty() == *self,
+                Publish::Registry(reg) => reg.is_empty() != *self,
             }
         }
     }
