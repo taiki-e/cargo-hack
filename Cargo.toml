@@ -13,6 +13,9 @@ description = """
 A tool to work around some limitations on cargo.
 """
 
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
 [workspace]
 
 [dependencies]
