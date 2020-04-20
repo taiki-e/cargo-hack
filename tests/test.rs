@@ -18,7 +18,7 @@ fn test_dir(path: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(path)
 }
 
-#[easy_ext::ext(OutputExt)]
+#[easy_ext::ext]
 impl Output {
     fn stdout(&self) -> Cow<'_, str> {
         String::from_utf8_lossy(&self.stdout)
