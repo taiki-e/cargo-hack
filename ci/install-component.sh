@@ -11,19 +11,13 @@ if ! rustup component add "${component}" 2>/dev/null; then
     target=$(curl -sSf "https://rust-lang.github.io/rustup-components-history/x86_64-unknown-linux-gnu/${component}")
     echo "'${component}' is unavailable on the default toolchain, use the toolchain 'nightly-${target}' instead"
 
-    rustup update "nightly-${target}" --no-self-update
-    rustup default "nightly-${target}"
-
-    echo "Query rust and cargo versions:"
-    rustup -V
-    rustc -V
-    cargo -V
+    # shellcheck disable=SC1091
+    . ci/scripts/install-rust.sh "nightly-${target}"
 
     rustup component add "${component}"
 fi
 
-echo "Query component versions:"
 case "${component}" in
-    clippy | miri) cargo "${component}" -V ;;
-    rustfmt) "${component}" -V ;;
+    rustfmt | rustdoc) "${component}" -V ;;
+    *) cargo "${component}" -V ;;
 esac

@@ -1,14 +1,2 @@
-status = [
-    "test (ubuntu-latest, 1.36.0)",
-    "test (ubuntu-latest, stable)",
-    "test (ubuntu-latest, nightly)",
-    "test (macos-latest, 1.36.0)",
-    "test (macos-latest, stable)",
-    "test (macos-latest, nightly)",
-    "test (windows-latest, 1.36.0)",
-    "test (windows-latest, stable)",
-    "test (windows-latest, nightly)",
-    "style (clippy)",
-    "style (rustfmt)",
-]
+status = ["ci"]
 delete_merged_branches = true
