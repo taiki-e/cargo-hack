@@ -1,5 +1,4 @@
 target
-**/*.rs.bk
 Cargo.lock
 
 # This crate is binary crate, so publish the root Cargo.lock file.

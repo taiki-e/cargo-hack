@@ -4,19 +4,13 @@
 # Top-most EditorConfig file
 root = true
 
-# Unix-style newlines with a newline ending every file, utf-8 charset
 [*]
 end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 charset = utf-8
-
-# Match rust/toml, set 4 space indentation
-[*.{rs,toml}]
 indent_style = space
 indent_size = 4
 
-# Match json/yaml/markdown, set 2 space indentation
 [*.{json,yml,md}]
-indent_style = space
 indent_size = 2
