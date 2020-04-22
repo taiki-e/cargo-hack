@@ -14,7 +14,6 @@ else
     echo "##[add-path]${HOME}/.cargo/bin"
 fi
 
-echo "Query rust and cargo versions:"
 rustup -V
 rustc -V
 cargo -V
