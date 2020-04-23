@@ -6,7 +6,7 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
-## [0.3.4] - 2020-04-24
+## [0.3.4] - 2020-04-23
 
 * [cargo-hack now prints the total number of feature flag combinations and progress.][32]
 
