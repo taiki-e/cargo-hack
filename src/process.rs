@@ -68,7 +68,9 @@ impl ProcessBuilder {
     pub(crate) fn features(&mut self, args: &Args, package: &Package) -> &mut Self {
         if args.ignore_unknown_features {
             self.append_features(args.features.iter().filter(|f| {
-                if package.features.get(*f).is_some() {
+                if package.features.get(*f).is_some()
+                    || package.dependencies.iter().any(|dep| dep.as_feature() == Some(*f))
+                {
                     true
                 } else {
                     // ignored

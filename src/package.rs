@@ -50,6 +50,7 @@ impl<'a> Package<'a> {
 
 impl Deref for Package<'_> {
     type Target = metadata::Package;
+
     fn deref(&self) -> &Self::Target {
         self.package
     }
@@ -64,20 +65,44 @@ pub(crate) enum Kind<'a> {
 
 impl<'a> Kind<'a> {
     fn collect(args: &'a Args, package: &'a metadata::Package) -> (Self, usize) {
-        if (!args.each_feature && !args.feature_powerset) || package.features.is_empty() {
-            return (Kind::Nomal { show_progress: args.each_feature || args.feature_powerset }, 1);
+        if !args.each_feature && !args.feature_powerset {
+            return (Kind::Nomal { show_progress: false }, 1);
         }
 
         let features =
             package.features.keys().filter(|k| (*k != "default" && !args.skip.contains(k)));
+        let opt_deps = if args.optional_deps {
+            Some(package.dependencies.iter().filter_map(|dep| dep.as_feature()))
+        } else {
+            None
+        };
+
         if args.each_feature {
-            let features: Vec<_> = features.collect();
+            let features: Vec<_> = if let Some(opt_deps) = opt_deps {
+                features.chain(opt_deps).collect()
+            } else {
+                features.collect()
+            };
+
+            if package.features.is_empty() && features.is_empty() {
+                return (Kind::Nomal { show_progress: true }, 1);
+            }
+
             // +1: default features
             // +1: no default features
             let total = features.len() + 2;
             (Kind::Each { features }, total)
         } else if args.feature_powerset {
-            let features = powerset(features);
+            let features = if let Some(opt_deps) = opt_deps {
+                powerset(features.chain(opt_deps))
+            } else {
+                powerset(features)
+            };
+
+            if package.features.is_empty() && features.is_empty() {
+                return (Kind::Nomal { show_progress: true }, 1);
+            }
+
             // +1: default features
             // +1: no default features
             // -1: the first element of a powerset is `[]`
