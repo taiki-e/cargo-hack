@@ -1,4 +1,4 @@
-use std::{env, rc::Rc, str::FromStr};
+use std::{env, mem, rc::Rc, str::FromStr};
 
 use anyhow::{bail, format_err, Error};
 use termcolor::ColorChoice;
@@ -33,13 +33,19 @@ OPTIONS:
         --feature-powerset          Perform for the feature powerset which
                                     includes `--no-default-features` and
                                     default features of the package
+        --optional-deps             Use optional dependencies as features,
+                                    this flag can only be used with either
+                                    `--each-feature` or `--feature-powerset`
+        --skip <FEATURES>           Space-separated list of features to skip,
+                                    this flag can only be used with either
+                                    `--each-feature` or `--feature-powerset`
         --no-dev-deps               Perform without dev-dependencies
         --remove-dev-deps           Equivalent to `--no-dev-deps` except for
                                     does not restore the original `Cargo.toml`
                                     after execution
         --ignore-private            Skip to perform on `publish = false` packages
         --ignore-unknown-features   Skip passing `--features` to `cargo` if that
-                                    feature does not exist in the package.
+                                    feature does not exist in the package
     -v, --verbose                   Use verbose output
                                     (this flag will be propagated to cargo)
         --color <WHEN>              Coloring: auto, always, never
@@ -73,7 +79,7 @@ pub(crate) struct Args {
     pub(crate) package: Vec<String>,
     /// --exclude <SPEC>...
     pub(crate) exclude: Vec<String>,
-    /// --all, --workspace
+    /// --workspace, (--all)
     pub(crate) workspace: bool,
     /// --each-feature
     pub(crate) each_feature: bool,
@@ -89,6 +95,8 @@ pub(crate) struct Args {
     pub(crate) ignore_private: bool,
     /// --ignore-unknown-features, (--ignore-non-exist-features)
     pub(crate) ignore_unknown_features: bool,
+    /// --optional-deps
+    pub(crate) optional_deps: bool,
 
     // flags that will be propagated to cargo
     /// --features <FEATURES>...
@@ -168,6 +176,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut ignore_private = false;
     let mut ignore_unknown_features = false;
     let mut ignore_non_exist_features = false;
+    let mut optional_deps = false;
 
     let res = (|| -> Result<()> {
         while let Some(arg) = args.next() {
@@ -264,34 +273,34 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                     workspace = Some(arg);
                 }
                 "--no-dev-deps" => {
-                    if no_dev_deps {
+                    if mem::replace(&mut no_dev_deps, true) {
                         return Err(multi_arg(&arg, subcommand.as_ref()));
                     }
-                    no_dev_deps = true;
                 }
                 "--remove-dev-deps" => {
-                    if remove_dev_deps {
+                    if mem::replace(&mut remove_dev_deps, true) {
                         return Err(multi_arg(&arg, subcommand.as_ref()));
                     }
-                    remove_dev_deps = true;
                 }
                 "--each-feature" => {
-                    if each_feature {
+                    if mem::replace(&mut each_feature, true) {
                         return Err(multi_arg(&arg, subcommand.as_ref()));
                     }
-                    each_feature = true;
                 }
                 "--feature-powerset" => {
-                    if feature_powerset {
+                    if mem::replace(&mut feature_powerset, true) {
                         return Err(multi_arg(&arg, subcommand.as_ref()));
                     }
-                    feature_powerset = true;
                 }
                 "--ignore-private" => {
-                    if ignore_private {
+                    if mem::replace(&mut ignore_private, true) {
                         return Err(multi_arg(&arg, subcommand.as_ref()));
                     }
-                    ignore_private = true;
+                }
+                "--optional-deps" => {
+                    if mem::replace(&mut optional_deps, true) {
+                        return Err(multi_arg(&arg, subcommand.as_ref()));
+                    }
                 }
                 "--ignore-unknown-features" => {
                     if ignore_unknown_features || ignore_non_exist_features {
@@ -331,9 +340,11 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     if !exclude.is_empty() && workspace.is_none() {
         bail!("--exclude can only be used together with --workspace");
     }
-
     if !skip.is_empty() && (!each_feature && !feature_powerset) {
         bail!("--skip can only be used with either --each-feature or --feature-powerset");
+    }
+    if optional_deps && (!each_feature && !feature_powerset) {
+        bail!("--optional-deps can only be used with either --each-feature or --feature-powerset");
     }
 
     if let Some(subcommand) = &subcommand {
@@ -417,6 +428,7 @@ For more information try --help
         remove_dev_deps,
         ignore_private,
         ignore_unknown_features: ignore_unknown_features || ignore_non_exist_features,
+        optional_deps,
 
         features,
         color,

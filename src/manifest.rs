@@ -86,9 +86,7 @@ mod de {
 
     #[derive(Debug, Deserialize)]
     pub(crate) struct Package {
-        pub(crate) edition: Option<String>,
         pub(crate) name: String,
-        pub(crate) version: String,
         #[serde(default)]
         pub(crate) publish: Publish,
     }

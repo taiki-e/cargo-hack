@@ -18,6 +18,8 @@ use crate::{Args, Result};
 // * https://github.com/rust-lang/cargo/blob/0.40.0/src/cargo/core/package.rs#L57-L80
 // * https://github.com/oli-obk/cargo_metadata
 
+// As cargo_metadata does not preserve the order of feature flags, use our own structs.
+
 #[derive(Debug, Deserialize)]
 pub(crate) struct Metadata {
     /// A list of all crates referenced by this crate (and the crate itself)
@@ -30,10 +32,24 @@ pub(crate) struct Metadata {
 pub(crate) struct Package {
     /// Name as given in the `Cargo.toml`
     pub(crate) name: String,
+    /// List of dependencies of this particular package
+    pub(crate) dependencies: Vec<Dependency>,
     /// Features provided by the crate, mapped to the features required by that feature.
     pub(crate) features: BTreeMap<String, Vec<String>>,
     /// Path containing the `Cargo.toml`
     pub(crate) manifest_path: PathBuf,
+}
+
+#[derive(Debug, Deserialize)]
+/// A dependency of the main crate
+pub(crate) struct Dependency {
+    /// Name as given in the `Cargo.toml`
+    pub(crate) name: String,
+    /// Whether this dependency is required or optional
+    pub(crate) optional: bool,
+    /// If the dependency is renamed, this is the new name for the dependency
+    /// as a string.  None if it is not renamed.
+    pub(crate) rename: Option<String>,
 }
 
 impl Metadata {
@@ -68,5 +84,11 @@ impl Package {
         } else {
             Cow::Borrowed(&self.name)
         }
+    }
+}
+
+impl Dependency {
+    pub(crate) fn as_feature(&self) -> Option<&String> {
+        if self.optional { Some(self.rename.as_ref().unwrap_or(&self.name)) } else { None }
     }
 }

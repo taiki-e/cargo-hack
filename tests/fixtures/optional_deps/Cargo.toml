@@ -1,0 +1,15 @@
+[package]
+name = "optional_deps"
+version = "0.1.0"
+authors = ["Taiki Endo <te316e89@gmail.com>"]
+edition = "2018"
+publish = false
+
+[workspace]
+
+[dependencies]
+real = { path = "../real", optional = true }
+member2 = { path = "../real/member2" }
+renemed = { path = "../real/member3", package = "member3", optional = true }
+
+[features]
