@@ -9,7 +9,7 @@ use std::{
 
 use anyhow::Context;
 
-use crate::{Args, Package, Result};
+use crate::{metadata::Package, Args, Result};
 
 // Based on https://github.com/rust-lang/cargo/blob/0.39.0/src/cargo/util/process_builder.rs
 
@@ -74,7 +74,7 @@ impl ProcessBuilder {
                     // ignored
                     info!(
                         args.color,
-                        "skipped applying unknown `{}` feature to {}", f, package.name
+                        "skipped applying unknown `{}` feature to {}", f, package.name,
                     );
                     false
                 }

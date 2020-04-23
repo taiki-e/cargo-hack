@@ -360,6 +360,9 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     if no_dev_deps && remove_dev_deps {
         bail!("--no-dev-deps may not be used together with --remove-dev-deps");
     }
+    if each_feature && feature_powerset {
+        bail!("--each-feature may not be used together with --feature-powerset");
+    }
 
     if subcommand.is_none() {
         if leading.iter().any(|a| a == "--list") {
