@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.3.4] - 2020-04-24
+
+* [cargo-hack now prints the total number of feature flag combinations and progress.][32]
+
+[32]: https://github.com/taiki-e/cargo-hack/pull/32
+
 ## [0.3.3] - 2020-01-06
 
 * [Added `--skip` option.][25] See [#24][24] for more details.
@@ -66,7 +72,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.4...HEAD
+[0.3.4]: https://github.com/taiki-e/cargo-hack/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/taiki-e/cargo-hack/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/taiki-e/cargo-hack/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/taiki-e/cargo-hack/compare/v0.3.0...v0.3.1
