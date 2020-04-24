@@ -6,6 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.3.5] - 2020-04-24
+
+* [Added --optional-deps flag.][34] See [#28][28] for more details.
+
+[28]: https://github.com/taiki-e/cargo-hack/pull/28
+[34]: https://github.com/taiki-e/cargo-hack/pull/34
+
 ## [0.3.4] - 2020-04-23
 
 * [cargo-hack now prints the total number of feature flag combinations and progress.][32]
@@ -72,7 +79,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.4...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.5...HEAD
+[0.3.5]: https://github.com/taiki-e/cargo-hack/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/taiki-e/cargo-hack/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/taiki-e/cargo-hack/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/taiki-e/cargo-hack/compare/v0.3.1...v0.3.2
