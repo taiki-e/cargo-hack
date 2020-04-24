@@ -11,8 +11,7 @@ if ! rustup component add "${component}" 2>/dev/null; then
     target=$(curl -sSf "https://rust-lang.github.io/rustup-components-history/x86_64-unknown-linux-gnu/${component}")
     echo "'${component}' is unavailable on the default toolchain, use the toolchain 'nightly-${target}' instead"
 
-    # shellcheck disable=SC1091
-    . ci/scripts/install-rust.sh "nightly-${target}"
+    . ci/install-rust.sh "nightly-${target}"
 
     rustup component add "${component}"
 fi
