@@ -145,7 +145,6 @@ impl FromStr for Coloring {
     }
 }
 
-#[allow(clippy::cognitive_complexity)]
 pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut args = env::args();
     let _ = args.next(); // executable name
