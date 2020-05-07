@@ -1,3 +1,4 @@
+use anyhow::Context;
 use std::{
     ffi::{OsStr, OsString},
     fmt,
@@ -6,8 +7,6 @@ use std::{
     rc::Rc,
     str,
 };
-
-use anyhow::Context;
 
 use crate::{metadata::Package, Args, Result};
 

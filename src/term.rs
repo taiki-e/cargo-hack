@@ -1,5 +1,4 @@
 use std::io::{self, Write};
-
 use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 
 use crate::cli::Coloring;

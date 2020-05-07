@@ -1,10 +1,9 @@
+use anyhow::Context;
 use std::{
     fs, mem,
     path::PathBuf,
     sync::{Arc, Mutex},
 };
-
-use anyhow::Context;
 
 use crate::{
     cli::{Args, Coloring},

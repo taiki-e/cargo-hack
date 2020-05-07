@@ -1,6 +1,6 @@
 use std::{fmt::Write, ops::Deref};
 
-use crate::*;
+use crate::{metadata, Args, Info, Manifest, ProcessBuilder, Result};
 
 pub(crate) fn features(
     args: &Args,

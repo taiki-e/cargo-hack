@@ -1,6 +1,5 @@
-use std::{env, mem, rc::Rc, str::FromStr};
-
 use anyhow::{bail, format_err, Error};
+use std::{env, mem, rc::Rc, str::FromStr};
 use termcolor::ColorChoice;
 
 use crate::Result;

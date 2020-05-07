@@ -1,3 +1,5 @@
+use anyhow::Context;
+use serde_derive::Deserialize;
 use std::{
     borrow::Cow,
     collections::BTreeMap,
@@ -7,9 +9,6 @@ use std::{
     path::PathBuf,
     process::Command,
 };
-
-use anyhow::Context;
-use serde_derive::Deserialize;
 
 use crate::{Args, Result};
 
