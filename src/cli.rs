@@ -265,10 +265,9 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
 
             match arg.as_str() {
                 "--workspace" | "--all" => {
-                    if workspace.is_some() {
+                    if let Some(arg) = workspace.replace(arg) {
                         return Err(multi_arg(&arg, subcommand.as_ref()));
                     }
-                    workspace = Some(arg);
                 }
                 "--no-dev-deps" => {
                     if mem::replace(&mut no_dev_deps, true) {
