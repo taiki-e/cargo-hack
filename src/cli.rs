@@ -2,7 +2,7 @@ use anyhow::{bail, format_err, Error};
 use std::{env, mem, rc::Rc, str::FromStr};
 use termcolor::ColorChoice;
 
-use crate::Result;
+use crate::{ProcessBuilder, Result};
 
 fn print_version() {
     println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"),)
@@ -374,7 +374,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
 
     if subcommand.is_none() {
         if leading.iter().any(|a| a == "--list") {
-            let mut line = crate::ProcessBuilder::new(crate::cargo_binary());
+            let mut line = ProcessBuilder::new(crate::cargo_binary());
             line.arg("--list");
             line.exec()?;
             return Ok(None);

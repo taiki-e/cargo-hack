@@ -70,7 +70,7 @@ impl<'a> Kind<'a> {
         }
 
         let features =
-            package.features.keys().filter(|k| (*k != "default" && !args.skip.contains(k)));
+            package.features.keys().filter(|k| *k != "default" && !args.skip.contains(k));
         let opt_deps = if args.optional_deps {
             Some(package.dependencies.iter().filter_map(|dep| dep.as_feature()))
         } else {

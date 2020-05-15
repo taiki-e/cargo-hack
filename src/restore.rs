@@ -11,11 +11,12 @@ use crate::{
     Result,
 };
 
+#[derive(Clone)]
 pub(crate) struct Restore {
     color: Option<Coloring>,
     restore_flag: bool,
 
-    current: Mutex<Option<Current>>,
+    current: Arc<Mutex<Option<Current>>>,
 }
 
 struct Current {
@@ -26,13 +27,13 @@ struct Current {
 }
 
 impl Restore {
-    pub(crate) fn new(args: &Args) -> Arc<Self> {
-        let this = Arc::new(Self {
+    pub(crate) fn new(args: &Args) -> Self {
+        let this = Self {
             color: args.color,
             // if `--remove-dev-deps` flag is off, restore manifest file.
             restore_flag: args.no_dev_deps && !args.remove_dev_deps,
-            current: Mutex::new(None),
-        });
+            current: Arc::new(Mutex::new(None)),
+        };
 
         let x = this.clone();
         ctrlc::set_handler(move || {
@@ -80,7 +81,7 @@ impl Handle<'_> {
 
 impl Drop for Handle<'_> {
     fn drop(&mut self) {
-        if let Some(this) = &self.0 {
+        if let Some(this) = self.0 {
             if let Err(e) = this.restore_dev_deps() {
                 error!(this.color, "{:#}", e);
             }

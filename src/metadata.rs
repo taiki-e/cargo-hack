@@ -13,8 +13,8 @@ use std::{
 use crate::{Args, Result};
 
 // Refs:
-// * https://github.com/rust-lang/cargo/blob/0.40.0/src/cargo/ops/cargo_output_metadata.rs#L79-L86
-// * https://github.com/rust-lang/cargo/blob/0.40.0/src/cargo/core/package.rs#L57-L80
+// * https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/ops/cargo_output_metadata.rs#L56-L63
+// * https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/core/package.rs#L57-L80
 // * https://github.com/oli-obk/cargo_metadata
 
 // As cargo_metadata does not preserve the order of feature flags, use our own structs.

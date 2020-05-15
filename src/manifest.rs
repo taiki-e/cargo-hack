@@ -52,7 +52,7 @@ impl Deref for Manifest {
     }
 }
 
-// Based on https://github.com/rust-lang/cargo/blob/0.39.0/src/cargo/util/important_paths.rs
+// Based on https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/util/important_paths.rs
 /// Finds the root `Cargo.toml`.
 pub(crate) fn find_root_manifest_for_wd(cwd: &Path) -> Result<PathBuf> {
     for current in cwd.ancestors() {
@@ -69,7 +69,7 @@ mod de {
     use serde_derive::Deserialize;
 
     // Refs:
-    // * https://github.com/rust-lang/cargo/blob/0.40.0/src/cargo/util/toml/mod.rs
+    // * https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/util/toml/mod.rs
     // * https://gitlab.com/crates.rs/cargo_toml
 
     #[derive(Debug, Deserialize)]

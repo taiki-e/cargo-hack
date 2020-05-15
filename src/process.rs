@@ -10,7 +10,7 @@ use std::{
 
 use crate::{metadata::Package, Args, Result};
 
-// Based on https://github.com/rust-lang/cargo/blob/0.39.0/src/cargo/util/process_builder.rs
+// Based on https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/util/process_builder.rs
 
 /// A builder object for an external process, similar to `std::process::Command`.
 #[derive(Clone, Debug)]
@@ -223,16 +223,27 @@ impl fmt::Display for ProcessBuilder {
 // =============================================================================
 // Process errors
 
-// Based on https://github.com/rust-lang/cargo/blob/0.39.0/src/cargo/util/errors.rs
+// Based on https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/util/errors.rs
 
 #[derive(Debug)]
 pub(crate) struct ProcessError {
-    desc: String,
-    exit: Option<ExitStatus>,
-    output: Option<Output>,
+    /// A detailed description to show to the user why the process failed.
+    pub(crate) desc: String,
+    /// The exit status of the process.
+    ///
+    /// This can be `None` if the process failed to launch (like process not found).
+    pub(crate) exit: Option<ExitStatus>,
+    /// The output from the process.
+    ///
+    /// This can be `None` if the process failed to launch, or the output was not captured.
+    pub(crate) output: Option<Output>,
 }
 
 impl ProcessError {
+    /// Creates a new process error.
+    ///
+    /// `status` can be `None` if the process did not launch.
+    /// `output` can be `None` if the process did not launch, or output was not captured.
     fn new(msg: &str, status: Option<ExitStatus>, output: Option<&Output>) -> Self {
         let exit = match status {
             Some(s) => s.to_string(),
