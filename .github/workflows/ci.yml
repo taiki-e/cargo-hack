@@ -29,8 +29,7 @@ jobs:
           - windows-latest
         rust:
           # This is the minimum supported Rust version of this crate.
-          # When updating this, the reminder to update the minimum supported
-          # Rust version in README.md.
+          # When updating this, the reminder to update the minimum supported Rust version in README.md.
           - 1.36.0
           - stable
           - nightly
@@ -74,7 +73,9 @@ jobs:
         run: |
           cargo fmt --all -- --check
 
-  # Refs: https://github.com/rust-lang/crater/blob/9ab6f9697c901c4a44025cf0a39b73ad5b37d198/.github/workflows/bors.yml#L125-L149
+  # These jobs don't actually test anything, but they're used to tell bors the
+  # build completed, as there is no practical way to detect when a workflow is
+  # successful listening to webhooks only.
   #
   # ALL THE PREVIOUS JOBS NEEDS TO BE ADDED TO THE `needs` SECTION OF THIS JOB!
 
