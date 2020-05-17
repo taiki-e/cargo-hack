@@ -6,7 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
-## [0.3.5] - 2020-04-24
+## [0.3.6] - 2020-05-17
+
+* [Fixed an issue that `--remove-dev-deps` flag does not work properly without subcommand.][36]
+
+[36]: https://github.com/taiki-e/cargo-hack/pull/36
+
+## [0.3.6] - 2020-04-24
 
 * [Added --optional-deps flag.][34] See [#28][28] for more details.
 
@@ -79,8 +85,9 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.5...HEAD
-[0.3.5]: https://github.com/taiki-e/cargo-hack/compare/v0.3.4...v0.3.5
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.6...HEAD
+[0.3.6]: https://github.com/taiki-e/cargo-hack/compare/v0.3.6...v0.3.6
+[0.3.6]: https://github.com/taiki-e/cargo-hack/compare/v0.3.4...v0.3.6
 [0.3.4]: https://github.com/taiki-e/cargo-hack/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/taiki-e/cargo-hack/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/taiki-e/cargo-hack/compare/v0.3.1...v0.3.2
