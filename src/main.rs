@@ -50,6 +50,11 @@ fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
 }
 
 fn exec_on_workspace(args: &Args, current_manifest: &Manifest, metadata: &Metadata) -> Result<()> {
+    assert!(
+        args.subcommand.is_some() || args.remove_dev_deps,
+        "no subcommand or valid flag specified"
+    );
+
     let restore = Restore::new(args);
     let mut line = ProcessBuilder::from_args(cargo_binary(), &args);
 
@@ -112,18 +117,17 @@ fn exec_on_package(
     restore: &Restore,
     info: &mut Info,
 ) -> Result<()> {
-    if let Kind::Skip = package.kind {
-        info!(args.color, "skipped running on {}", package.name_verbose(args));
-    } else if args.subcommand.is_some() || args.remove_dev_deps {
+    if let Kind::SkipAsPrivate = package.kind {
+        info!(args.color, "skipped running on private crate {}", package.name_verbose(args));
+        Ok(())
+    } else {
         let mut line = line.clone();
         line.features(args, package);
         line.arg("--manifest-path");
         line.arg(&package.manifest_path);
 
-        no_dev_deps(args, package, &line, restore, info)?;
+        no_dev_deps(args, package, &line, restore, info)
     }
-
-    Ok(())
 }
 
 fn no_dev_deps(
@@ -141,16 +145,12 @@ fn no_dev_deps(
             format!("failed to update manifest file: {}", package.manifest_path.display())
         })?;
 
-        if args.subcommand.is_some() {
-            package::features(args, package, line, info)?;
-        }
+        package::exec(args, package, line, info)?;
 
-        handle.done()?;
-    } else if args.subcommand.is_some() {
-        package::features(args, package, line, info)?;
+        handle.done()
+    } else {
+        package::exec(args, package, line, info)
     }
-
-    Ok(())
 }
 
 fn cargo_binary() -> OsString {
