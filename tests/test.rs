@@ -238,11 +238,11 @@ fn real_ignore_private() {
         .unwrap()
         .assert_success()
         .assert_stderr_not_contains("running `cargo check` on member1")
-        .assert_stderr_not_contains("skipped running on member1")
+        .assert_stderr_not_contains("skipped running on private crate member1")
         .assert_stderr_not_contains("running `cargo check` on member2")
-        .assert_stderr_not_contains("skipped running on member2")
+        .assert_stderr_not_contains("skipped running on private crate member2")
         .assert_stderr_not_contains("running `cargo check` on real")
-        .assert_stderr_contains("skipped running on real");
+        .assert_stderr_contains("skipped running on private crate real");
 
     cargo_hack()
         .args(&["check", "--all", "--ignore-private"])
@@ -251,13 +251,13 @@ fn real_ignore_private() {
         .unwrap()
         .assert_success()
         .assert_stderr_contains("running `cargo check` on member1")
-        .assert_stderr_not_contains("skipped running on member1")
+        .assert_stderr_not_contains("skipped running on private crate member1")
         .assert_stderr_not_contains("running `cargo check` on member2")
-        .assert_stderr_contains("skipped running on member2")
+        .assert_stderr_contains("skipped running on private crate member2")
         .assert_stderr_contains("running `cargo check` on member3")
-        .assert_stderr_not_contains("skipped running on member3")
+        .assert_stderr_not_contains("skipped running on private crate member3")
         .assert_stderr_not_contains("running `cargo check` on real")
-        .assert_stderr_contains("skipped running on real");
+        .assert_stderr_contains("skipped running on private crate real");
 }
 
 #[test]
@@ -270,8 +270,8 @@ fn virtual_ignore_private() {
         .assert_success()
         .assert_stderr_contains("running `cargo check` on member1")
         .assert_stderr_not_contains("running `cargo check` on member2")
-        .assert_stderr_not_contains("skipped running on member1")
-        .assert_stderr_contains("skipped running on member2");
+        .assert_stderr_not_contains("skipped running on private crate member1")
+        .assert_stderr_contains("skipped running on private crate member2");
 
     cargo_hack()
         .args(&["check", "--all", "--ignore-private"])
@@ -281,8 +281,8 @@ fn virtual_ignore_private() {
         .assert_success()
         .assert_stderr_contains("running `cargo check` on member1")
         .assert_stderr_not_contains("running `cargo check` on member2")
-        .assert_stderr_not_contains("skipped running on member1")
-        .assert_stderr_contains("skipped running on member2");
+        .assert_stderr_not_contains("skipped running on private crate member1")
+        .assert_stderr_contains("skipped running on private crate member2");
 }
 
 #[test]
