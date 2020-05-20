@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.3.7] - 2020-05-20
+
+* [Fixed an issue that runs with default features even if `--skip default` flag passed.][37]
+
+[37]: https://github.com/taiki-e/cargo-hack/pull/37
+
 ## [0.3.6] - 2020-05-17
 
 * [Fixed an issue that `--remove-dev-deps` flag does not work properly without subcommand.][36]
@@ -85,7 +91,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.6...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.7...HEAD
+[0.3.7]: https://github.com/taiki-e/cargo-hack/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/taiki-e/cargo-hack/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/taiki-e/cargo-hack/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/taiki-e/cargo-hack/compare/v0.3.3...v0.3.4
