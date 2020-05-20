@@ -78,9 +78,11 @@ impl<'a> Kind<'a> {
                 *total += 1;
                 Kind::Nomal { show_progress: true }
             } else {
-                // +1: default features
                 // +1: no default features
-                *total += features.len() + 2;
+                *total += features.len() + 1;
+                if !args.skip.iter().any(|x| x == "default") {
+                    *total += 1;
+                }
                 Kind::Each { features }
             }
         } else if args.feature_powerset {
@@ -94,10 +96,12 @@ impl<'a> Kind<'a> {
                 *total += 1;
                 Kind::Nomal { show_progress: true }
             } else {
-                // +1: default features
                 // +1: no default features
                 // -1: the first element of a powerset is `[]`
-                *total += features.len() + 1;
+                *total += features.len();
+                if !args.skip.iter().any(|x| x == "default") {
+                    *total += 1;
+                }
                 Kind::Powerset { features }
             }
         } else {
@@ -124,8 +128,10 @@ pub(crate) fn exec(
 
     let mut line = line.clone();
 
-    // run with default features
-    exec_cargo(args, package, &line, info, true)?;
+    if !args.skip.iter().any(|x| x == "default") {
+        // run with default features
+        exec_cargo(args, package, &line, info, true)?;
+    }
 
     line.arg("--no-default-features");
 
