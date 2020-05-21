@@ -78,9 +78,11 @@ impl<'a> Kind<'a> {
                 *total += 1;
                 Kind::Nomal { show_progress: true }
             } else {
-                // +1: no default features
-                *total += features.len() + 1;
+                *total += features.len();
                 if !args.skip.iter().any(|x| x == "default") {
+                    *total += 1;
+                }
+                if !args.skip_no_default_features {
                     *total += 1;
                 }
                 Kind::Each { features }
@@ -96,10 +98,12 @@ impl<'a> Kind<'a> {
                 *total += 1;
                 Kind::Nomal { show_progress: true }
             } else {
-                // +1: no default features
                 // -1: the first element of a powerset is `[]`
-                *total += features.len();
+                *total += features.len() - 1;
                 if !args.skip.iter().any(|x| x == "default") {
+                    *total += 1;
+                }
+                if !args.skip_no_default_features {
                     *total += 1;
                 }
                 Kind::Powerset { features }
@@ -135,11 +139,13 @@ pub(crate) fn exec(
 
     line.arg("--no-default-features");
 
-    // run with no default features if the package has other features
-    //
-    // `default` is not skipped because `cfg(feature = "default")` is work
-    // if `default` feature specified.
-    exec_cargo(args, package, &line, info, true)?;
+    if !args.skip_no_default_features {
+        // run with no default features if the package has other features
+        //
+        // `default` is not skipped because `cfg(feature = "default")` is work
+        // if `default` feature specified.
+        exec_cargo(args, package, &line, info, true)?;
+    }
 
     match &package.kind {
         Kind::Each { features } => features

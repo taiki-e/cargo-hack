@@ -63,11 +63,11 @@ pub(crate) fn remove_dev_deps(bytes: &str) -> String {
         }
 
         prev = pos;
-        // pos + 0 = '['
-        // pos + 1 = part of table name (or '[')
-        // pos + 2 = ']' (or part of table name)
-        // pos + 3 = '\n' or eof (or part of table name or ']')
-        // pos + 4 = start of next table or eof (or part of this table)
+        // pos + 0: '['
+        // pos + 1: part of table name (or '[')
+        // pos + 2: ']' (or part of table name)
+        // pos + 3: '\n' or eof (or part of table name or ']')
+        // pos + 4: start of next table or eof (or part of this table)
         pos += 4;
         next = bytes.get(pos..).and_then(|s| s.find('[')).map(|n| pos + n);
         continue;

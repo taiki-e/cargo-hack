@@ -45,6 +45,12 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
     ),
     (
         "",
+        "--skip-no-default-features",
+        "Skip run of just --no-default-features flag",
+        &["This flag can only be used with either --each-feature flag or --feature-powerset flag."],
+    ),
+    (
+        "",
         "--no-dev-deps",
         "Perform without dev-dependencies",
         &[
@@ -195,6 +201,8 @@ pub(crate) struct Args {
     pub(crate) ignore_unknown_features: bool,
     /// --optional-deps
     pub(crate) optional_deps: bool,
+    /// --skip-no-default-features
+    pub(crate) skip_no_default_features: bool,
 
     // flags that will be propagated to cargo
     /// --features <FEATURES>...
@@ -274,6 +282,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut ignore_unknown_features = false;
     let mut ignore_non_exist_features = false;
     let mut optional_deps = false;
+    let mut skip_no_default_features = false;
 
     let res = (|| -> Result<()> {
         while let Some(arg) = args.next() {
@@ -398,6 +407,11 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                         return Err(multi_arg(&arg, subcommand.as_ref()));
                     }
                 }
+                "--skip-no-default-features" => {
+                    if mem::replace(&mut skip_no_default_features, true) {
+                        return Err(multi_arg(&arg, subcommand.as_ref()));
+                    }
+                }
                 "--ignore-unknown-features" => {
                     if ignore_unknown_features || ignore_non_exist_features {
                         return Err(multi_arg(&arg, subcommand.as_ref()));
@@ -438,11 +452,18 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     if !exclude.is_empty() && workspace.is_none() {
         bail!("--exclude can only be used together with --workspace");
     }
-    if !skip.is_empty() && (!each_feature && !feature_powerset) {
-        bail!("--skip can only be used with either --each-feature or --feature-powerset");
-    }
-    if optional_deps && (!each_feature && !feature_powerset) {
-        bail!("--optional-deps can only be used with either --each-feature or --feature-powerset");
+    if !each_feature && !feature_powerset {
+        if !skip.is_empty() {
+            bail!("--skip can only be used with either --each-feature or --feature-powerset");
+        } else if optional_deps {
+            bail!(
+                "--optional-deps can only be used with either --each-feature or --feature-powerset"
+            );
+        } else if skip_no_default_features {
+            bail!(
+                "--skip-no-default-features can only be used with either --each-feature or --feature-powerset"
+            );
+        }
     }
 
     if let Some(subcommand) = &subcommand {
@@ -527,6 +548,7 @@ For more information try --help
         ignore_private,
         ignore_unknown_features: ignore_unknown_features || ignore_non_exist_features,
         optional_deps,
+        skip_no_default_features,
 
         features,
         color,
