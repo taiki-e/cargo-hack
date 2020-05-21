@@ -640,6 +640,27 @@ fn skip_default() {
 }
 
 #[test]
+fn skip_no_default_features() {
+    cargo_hack()
+        .args(&["check", "--each-feature", "--skip-no-default-features"])
+        .current_dir(test_dir("tests/fixtures/real"))
+        .output()
+        .unwrap()
+        .assert_success()
+        .assert_stderr_contains("running `cargo check` on real (1/4)")
+        .assert_stderr_not_contains("running `cargo check --no-default-features` on real")
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features a` on real (2/4)",
+        )
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features b` on real (3/4)",
+        )
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features c` on real (4/4)",
+        );
+}
+
+#[test]
 fn each_feature_all() {
     cargo_hack()
         .args(&["check", "--each-feature", "--workspace"])
