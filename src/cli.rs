@@ -1,5 +1,5 @@
 use anyhow::{bail, format_err, Error};
-use std::{env, mem, rc::Rc, str::FromStr};
+use std::{env, fmt, mem, rc::Rc, str::FromStr};
 use termcolor::ColorChoice;
 
 use crate::{ProcessBuilder, Result};
@@ -8,61 +8,160 @@ fn print_version() {
     println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"),)
 }
 
-fn print_help() {
-    println!(
-        "\
-{0} {1}
-{2}
+// (short flag, long flag, short descriptions, additional descriptions)
+const HELP: &[(&str, &str, &str, &[&str])] = &[
+    ("-p", "--package <SPEC>...", "Package(s) to check", &[]),
+    ("", "--all", "Alias for --workspace", &[]),
+    ("", "--workspace", "Perform command for all packages in the workspace", &[]),
+    ("", "--exclude <SPEC>...", "Exclude packages from the check", &[]),
+    ("", "--manifest-path <PATH>", "Path to Cargo.toml", &[]),
+    ("", "--features <FEATURES>", "Space-separated list of features to activate", &[]),
+    (
+        "",
+        "--each-feature",
+        "Perform for each feature which includes --no-default-features flag and default features of the package",
+        &[],
+    ),
+    (
+        "",
+        "--feature-powerset",
+        "Perform for the feature powerset which includes --no-default-features flag and default features of the package",
+        &[],
+    ),
+    (
+        "",
+        "--optional-deps",
+        "Use optional dependencies as features",
+        &["This flag can only be used with either --each-feature flag or --feature-powerset flag."],
+    ),
+    (
+        "",
+        "--skip <FEATURES>",
+        "Space-separated list of features to skip",
+        &[
+            "To skip run of default feature, using value `--skip default`.",
+            "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
+        ],
+    ),
+    (
+        "",
+        "--no-dev-deps",
+        "Perform without dev-dependencies",
+        &[
+            "This flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished.",
+        ],
+    ),
+    (
+        "",
+        "--remove-dev-deps",
+        "Equivalent to --no-dev-deps flag except for does not restore the original `Cargo.toml` after performed",
+        &[],
+    ),
+    ("", "--ignore-private", "Skip to perform on `publish = false` packages", &[]),
+    (
+        "",
+        "--ignore-unknown-features",
+        "Skip passing --features flag to `cargo` if that feature does not exist in the package",
+        &[],
+    ),
+    ("-v", "--verbose", "Use verbose output", &["This flag will be propagated to cargo."]),
+    (
+        "",
+        "--color <WHEN>",
+        "Coloring: auto, always, never",
+        &["This flag will be propagated to cargo."],
+    ),
+    ("-h", "--help", "Prints help information", &[]),
+    ("-V", "--version", "Prints version information", &[]),
+];
 
-{3}
+struct Help {
+    long: bool,
+    term_size: usize,
+}
+
+impl Help {
+    fn new(long: bool) -> Self {
+        Self { long, term_size: term_size::dimensions().map_or(120, |(w, _)| w) }
+    }
+}
+
+impl fmt::Display for Help {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fn write(
+            f: &mut fmt::Formatter<'_>,
+            indent: usize,
+            require_first_indent: bool,
+            term_size: usize,
+            desc: &str,
+        ) -> fmt::Result {
+            if require_first_indent {
+                (0..indent).try_for_each(|_| write!(f, " "))?;
+            }
+            let mut written = 0;
+            let size = term_size - indent;
+            for s in desc.split(' ') {
+                if written + s.len() + 1 >= size {
+                    writeln!(f)?;
+                    (0..indent).try_for_each(|_| write!(f, " "))?;
+                    write!(f, "{}", s)?;
+                    written = s.len();
+                } else if written == 0 {
+                    write!(f, "{}", s)?;
+                    written += s.len();
+                } else {
+                    write!(f, " {}", s)?;
+                    written += s.len() + 1;
+                }
+            }
+            Ok(())
+        }
+
+        writeln!(
+            f,
+            "\
+{0} {1}\n{2}\n\n{3}
 USAGE:
-    cargo hack [OPTIONS] [SUBCOMMAND]
+    cargo hack [OPTIONS] [SUBCOMMAND]\n
+Use -h for short descriptions and --help for more details.\n
+OPTIONS:",
+            env!("CARGO_PKG_NAME"),
+            env!("CARGO_PKG_VERSION"),
+            env!("CARGO_PKG_AUTHORS"),
+            env!("CARGO_PKG_DESCRIPTION")
+        )?;
 
-OPTIONS:
-    -p, --package <SPEC>...         Package(s) to check
-        --all                       Alias for --workspace
-        --workspace                 Perform command for all packages in the
-                                    workspace
-        --exclude <SPEC>...         Exclude packages from the check
-        --manifest-path <PATH>      Path to Cargo.toml
-        --features <FEATURES>...    Space-separated list of features to activate
-        --each-feature              Perform for each feature which includes
-                                    `--no-default-features` and default features
-                                    of the package
-        --feature-powerset          Perform for the feature powerset which
-                                    includes `--no-default-features` and
-                                    default features of the package
-        --optional-deps             Use optional dependencies as features,
-                                    this flag can only be used with either
-                                    `--each-feature` or `--feature-powerset`
-        --skip <FEATURES>           Space-separated list of features to skip,
-                                    this flag can only be used with either
-                                    `--each-feature` or `--feature-powerset`
-        --no-dev-deps               Perform without dev-dependencies
-        --remove-dev-deps           Equivalent to `--no-dev-deps` except for
-                                    does not restore the original `Cargo.toml`
-                                    after execution
-        --ignore-private            Skip to perform on `publish = false` packages
-        --ignore-unknown-features   Skip passing `--features` to `cargo` if that
-                                    feature does not exist in the package
-    -v, --verbose                   Use verbose output
-                                    (this flag will be propagated to cargo)
-        --color <WHEN>              Coloring: auto, always, never
-                                    (this flag will be propagated to cargo)
-    -h, --help                      Prints help information
-    -V, --version                   Prints version information
+        for &(short, long, desc, additional) in HELP {
+            write!(f, "    {:2}{} ", short, if short.is_empty() { " " } else { "," })?;
+            if self.long {
+                writeln!(f, "{}", long)?;
+                write(f, 12, true, self.term_size, desc)?;
+                writeln!(f, ".\n")?;
+                for desc in additional {
+                    write(f, 12, true, self.term_size, desc)?;
+                    writeln!(f, "\n")?;
+                }
+            } else {
+                write!(f, "{:25} ", long)?;
+                write(f, 34, false, self.term_size, desc)?;
+                writeln!(f)?;
+            }
+        }
+        if !self.long {
+            writeln!(f)?;
+        }
 
+        writeln!(
+            f,
+            "\
 Some common cargo commands are (see all commands with --list):
-    build       Compile the current package
-    check       Analyze the current package and report errors, but don't build object files
-    run         Run a binary or example of the local package
-    test        Run the tests
-",
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_PKG_VERSION"),
-        env!("CARGO_PKG_AUTHORS"),
-        env!("CARGO_PKG_DESCRIPTION"),
-    )
+        build       Compile the current package
+        check       Analyze the current package and report errors, but don't build object files
+        run         Run a binary or example of the local package
+        test        Run the tests
+"
+        )
+    }
 }
 
 #[derive(Debug)]
@@ -150,7 +249,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     match &args.next() {
         Some(a) if a == "hack" => {}
         Some(_) | None => {
-            print_help();
+            println!("{}", Help::new(false));
             return Ok(None);
         }
     }
@@ -324,12 +423,14 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     res?;
 
     if leading.is_empty() && !remove_dev_deps
-        || subcommand.is_none() && leading.iter().any(|a| a == "--help" || a == "-h")
+        || subcommand.is_none() && leading.iter().any(|a| a == "-h")
     {
-        print_help();
+        println!("{}", Help::new(false));
         return Ok(None);
-    }
-    if leading.iter().any(|a| a == "--version" || a == "-V" || a == "-vV") {
+    } else if subcommand.is_none() && leading.iter().any(|a| a == "--help") {
+        println!("{}", Help::new(true));
+        return Ok(None);
+    } else if leading.iter().any(|a| a == "--version" || a == "-V" || a == "-vV" || a == "-Vv") {
         print_version();
         return Ok(None);
     }
