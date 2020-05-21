@@ -8,6 +8,7 @@ use std::{
 };
 
 fn cargo_hack() -> Command {
+    // TODO: update to use CARGO_BIN_EXE (https://github.com/rust-lang/cargo/pull/7697, require Rust 1.43).
     let mut current = env::current_exe().unwrap();
     current.pop();
     if current.ends_with("deps") {
