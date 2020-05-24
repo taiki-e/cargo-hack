@@ -46,6 +46,9 @@ pub(crate) struct Dependency {
     pub(crate) name: String,
     /// Whether this dependency is required or optional
     pub(crate) optional: bool,
+    // TODO: support this
+    // /// The target this dependency is specific to.
+    // pub target: Option<String>,
     /// If the dependency is renamed, this is the new name for the dependency
     /// as a string.  None if it is not renamed.
     pub(crate) rename: Option<String>,
