@@ -9,7 +9,7 @@ pub(crate) struct Package<'a> {
 }
 
 impl<'a> Package<'a> {
-    fn new(args: &'a Args, package: &'a metadata::Package, total: &mut usize) -> Result<Self> {
+    fn new(args: &'a Args, total: &mut usize, package: &'a metadata::Package) -> Result<Self> {
         let manifest = Manifest::new(&package.manifest_path)?;
 
         if args.ignore_private && manifest.is_private() {
@@ -26,7 +26,7 @@ impl<'a> Package<'a> {
     ) -> Result<Vec<Self>> {
         packages
             .into_iter()
-            .map(|package| Package::new(args, package, total))
+            .map(|package| Package::new(args, total, package))
             .collect::<Result<Vec<_>>>()
     }
 }
@@ -60,9 +60,15 @@ impl<'a> Kind<'a> {
         }
 
         let features =
-            package.features.keys().filter(|k| *k != "default" && !args.skip.contains(k));
+            package.features.keys().filter(|f| *f != "default" && !args.skip.contains(f));
         let opt_deps = if args.optional_deps {
-            Some(package.dependencies.iter().filter_map(|dep| dep.as_feature()))
+            Some(
+                package
+                    .dependencies
+                    .iter()
+                    .filter_map(|dep| dep.as_feature())
+                    .filter(|f| !args.skip.contains(f)),
+            )
         } else {
             None
         };

@@ -810,7 +810,7 @@ fn optional_deps() {
             "running `cargo check --no-default-features --features real` on optional_deps",
         )
         .assert_stderr_not_contains(
-            "running `cargo check  --no-default-features--features renemed` on optional_deps",
+            "running `cargo check  --no-default-features --features renemed` on optional_deps",
         );
 
     cargo_hack()
@@ -828,5 +828,25 @@ fn optional_deps() {
         )
         .assert_stderr_contains(
             "running `cargo check --no-default-features --features renemed` on optional_deps (4/4)",
+        );
+}
+
+#[test]
+fn skip_optional_deps() {
+    cargo_hack()
+        .args(&["check", "--each-feature", "--optional-deps", "--skip", "real"])
+        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .output()
+        .unwrap()
+        .assert_success()
+        .assert_stderr_contains("running `cargo check` on optional_deps (1/3)")
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features` on optional_deps (2/3)",
+        )
+        .assert_stderr_not_contains(
+            "running `cargo check --no-default-features --features real` on optional_deps",
+        )
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features renemed` on optional_deps (3/3)",
         );
 }
