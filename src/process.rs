@@ -86,12 +86,6 @@ impl ProcessBuilder {
         self
     }
 
-    // /// (chainable) Sets the executable for the process.
-    // pub(crate) fn program(&mut self, program: impl AsRef<OsStr>) -> &mut Self {
-    //     self.program = program.as_ref().to_os_string();
-    //     self
-    // }
-
     /// (chainable) Adds `arg` to the args list.
     pub(crate) fn arg(&mut self, arg: impl AsRef<OsStr>) -> &mut Self {
         self.args.push(arg.as_ref().to_os_string());
@@ -99,25 +93,18 @@ impl ProcessBuilder {
     }
 
     // /// (chainable) Adds multiple `args` to the args list.
-    // pub(crate) fn args(&mut self, args: &[impl AsRef<OsStr>]) -> &mut Self {
-    //     self.args.extend(args.iter().map(|t| t.as_ref().to_os_string()));
+    // pub(crate) fn args(&mut self, args: impl IntoIterator<Item = impl AsRef<OsStr>>) -> &mut Self {
+    //     self.args.extend(args.into_iter().map(|t| t.as_ref().to_os_string()));
     //     self
     // }
 
     // /// (chainable) Replaces the args list with the given `args`.
-    // pub(crate) fn args_replace(&mut self, args: &[impl AsRef<OsStr>]) -> &mut Self {
-    //     self.args = args.iter().map(|t| t.as_ref().to_os_string()).collect();
+    // pub(crate) fn args_replace(
+    //     &mut self,
+    //     args: impl IntoIterator<Item = impl AsRef<OsStr>>,
+    // ) -> &mut Self {
+    //     self.args = args.into_iter().map(|t| t.as_ref().to_os_string()).collect();
     //     self
-    // }
-
-    // /// Gets the executable name.
-    // pub(crate) fn get_program(&self) -> &OsString {
-    //     &self.program
-    // }
-
-    // /// Gets the program arguments.
-    // pub(crate) fn get_args(&self) -> &[OsString] {
-    //     &self.args
     // }
 
     /// Runs the process, waiting for completion, and mapping non-success exit codes to an error.

@@ -200,10 +200,10 @@ fn exec_cargo(
     line.exec()
 }
 
-fn powerset<'a, T>(iter: impl IntoIterator<Item = &'a T>) -> Vec<Vec<&'a T>> {
+fn powerset<T: Clone>(iter: impl IntoIterator<Item = T>) -> Vec<Vec<T>> {
     iter.into_iter().fold(vec![vec![]], |mut acc, elem| {
         let ext = acc.clone().into_iter().map(|mut curr| {
-            curr.push(elem);
+            curr.push(elem.clone());
             curr
         });
         acc.extend(ext);
