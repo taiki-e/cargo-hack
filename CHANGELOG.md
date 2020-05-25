@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.3.9] - 2020-05-25
+
+* [Fix an issue that `--skip` does not work for optional dependencies.][43]
+
+[43]: https://github.com/taiki-e/cargo-hack/pull/43
+
 ## [0.3.8] - 2020-05-21
 
 * [Added `--skip-no-default-features` flag.][41] See [#38][38] for more details.
@@ -98,7 +104,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.8...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.9...HEAD
+[0.3.9]: https://github.com/taiki-e/cargo-hack/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/taiki-e/cargo-hack/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/taiki-e/cargo-hack/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/taiki-e/cargo-hack/compare/v0.3.5...v0.3.6
