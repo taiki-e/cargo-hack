@@ -1,7 +1,6 @@
 use anyhow::{bail, Context};
 use std::{
     fs,
-    ops::Deref,
     path::{Path, PathBuf},
 };
 
@@ -11,7 +10,9 @@ use crate::Result;
 pub(crate) struct Manifest {
     pub(crate) path: PathBuf,
     pub(crate) raw: String,
-    toml: de::Manifest,
+
+    // parsed manifest
+    pub(crate) package: Option<de::Package>,
 }
 
 impl Manifest {
@@ -19,9 +20,9 @@ impl Manifest {
         let path = path.into();
         let raw = fs::read_to_string(&path)
             .with_context(|| format!("failed to read manifest from {}", path.display()))?;
-        let toml = toml::from_str(&raw)
+        let toml: de::Manifest = toml::from_str(&raw)
             .with_context(|| format!("failed to parse manifest file: {}", path.display()))?;
-        Ok(Self { path, raw, toml })
+        Ok(Self { path, raw, package: toml.package })
     }
 
     pub(crate) fn package_name(&self) -> &str {
@@ -41,14 +42,6 @@ impl Manifest {
 
     pub(crate) fn remove_dev_deps(&self) -> String {
         super::remove_dev_deps::remove_dev_deps(&self.raw)
-    }
-}
-
-impl Deref for Manifest {
-    type Target = de::Manifest;
-
-    fn deref(&self) -> &Self::Target {
-        &self.toml
     }
 }
 
@@ -75,12 +68,6 @@ mod de {
     #[derive(Debug, Deserialize)]
     pub(crate) struct Manifest {
         pub(crate) package: Option<Package>,
-        pub(crate) workspace: Option<Workspace>,
-    }
-
-    #[derive(Debug, Deserialize)]
-    pub(crate) struct Workspace {
-        pub(crate) members: Option<Vec<String>>,
     }
 
     #[derive(Debug, Deserialize)]
