@@ -298,9 +298,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             }
 
             if !arg.starts_with('-') {
-                if subcommand.is_none() {
-                    subcommand = Some(arg.clone());
-                }
+                subcommand.get_or_insert_with(|| arg.clone());
                 leading.push(arg);
                 continue;
             }
