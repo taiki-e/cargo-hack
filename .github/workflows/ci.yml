@@ -90,7 +90,6 @@ jobs:
       - test
       - clippy
       - rustfmt
-      - rustdoc
     runs-on: ubuntu-latest
     steps:
       - name: Mark the job as a success
@@ -102,7 +101,6 @@ jobs:
       - test
       - clippy
       - rustfmt
-      - rustdoc
     runs-on: ubuntu-latest
     steps:
       - name: Mark the job as a failure
