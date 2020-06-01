@@ -4,7 +4,7 @@ set -euo pipefail
 
 component="${1}"
 
-if [[ "${component}" != "rustdoc" ]] && ! rustup component add "${component}" 2>/dev/null; then
+if ! rustup component add "${component}" 2>/dev/null; then
     # If the component is unavailable on the latest nightly,
     # use the latest toolchain with the component available.
     # Refs: https://github.com/rust-lang/rustup-components-history#the-web-part
@@ -17,6 +17,6 @@ if [[ "${component}" != "rustdoc" ]] && ! rustup component add "${component}" 2>
 fi
 
 case "${component}" in
-    rustfmt | rustdoc) "${component}" -V ;;
+    rustfmt) "${component}" -V ;;
     *) cargo "${component}" -V ;;
 esac
