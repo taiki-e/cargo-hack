@@ -3,17 +3,23 @@
 
 # This is required for bug-fixes, which technically can't be made to the stable
 # first version.
-version = "Two" # Tracking issue: https://github.com/rust-lang/rustfmt/issues/3383
+# This is unstable (tracking issue: https://github.com/rust-lang/rustfmt/issues/3383).
+version = "Two"
 
-# Refs: https://internals.rust-lang.org/t/running-rustfmt-on-rust-lang-rust-and-other-rust-lang-repositories/8732/72
+# Override the default formatting style.
+# See https://internals.rust-lang.org/t/running-rustfmt-on-rust-lang-rust-and-other-rust-lang-repositories/8732/81.
 use_small_heuristics = "Max"
+# See https://github.com/rust-dev-tools/fmt-rfcs/issues/149.
+# This is unstable (tracking issue: https://github.com/rust-lang/rustfmt/issues/3370)
+overflow_delimited_expr = true
 
 # Apply rustfmt to more places.
-merge_imports = true # Tracking issue: https://github.com/rust-lang/rustfmt/issues/3362
-format_code_in_doc_comments = true # Tracking issue: https://github.com/rust-lang/rustfmt/issues/3348
+# This is unstable (tracking issue: https://github.com/rust-lang/rustfmt/issues/3362).
+merge_imports = true
+# This is unstable (tracking issue: https://github.com/rust-lang/rustfmt/issues/3348).
+format_code_in_doc_comments = true
 
 # Set the default settings again to always apply the proper formatting without
 # being affected by the editor settings.
-# Refs: https://github.com/rust-lang/rls/issues/501#issuecomment-333717736
 edition = "2018"
 tab_spaces = 4
