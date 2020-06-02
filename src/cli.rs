@@ -28,35 +28,19 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
         "Perform for the feature powerset which includes --no-default-features flag and default features of the package",
         &[],
     ),
-    (
-        "",
-        "--optional-deps",
-        "Use optional dependencies as features",
-        &["This flag can only be used with either --each-feature flag or --feature-powerset flag."],
-    ),
-    (
-        "",
-        "--skip <FEATURES>",
-        "Space-separated list of features to skip",
-        &[
-            "To skip run of default feature, using value `--skip default`.",
-            "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
-        ],
-    ),
-    (
-        "",
-        "--skip-no-default-features",
-        "Skip run of just --no-default-features flag",
-        &["This flag can only be used with either --each-feature flag or --feature-powerset flag."],
-    ),
-    (
-        "",
-        "--no-dev-deps",
-        "Perform without dev-dependencies",
-        &[
-            "This flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished.",
-        ],
-    ),
+    ("", "--optional-deps", "Use optional dependencies as features", &[
+        "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
+    ]),
+    ("", "--skip <FEATURES>", "Space-separated list of features to skip", &[
+        "To skip run of default feature, using value `--skip default`.",
+        "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
+    ]),
+    ("", "--skip-no-default-features", "Skip run of just --no-default-features flag", &[
+        "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
+    ]),
+    ("", "--no-dev-deps", "Perform without dev-dependencies", &[
+        "This flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished.",
+    ]),
     (
         "",
         "--remove-dev-deps",
@@ -71,12 +55,9 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
         &[],
     ),
     ("-v", "--verbose", "Use verbose output", &["This flag will be propagated to cargo."]),
-    (
-        "",
-        "--color <WHEN>",
-        "Coloring: auto, always, never",
-        &["This flag will be propagated to cargo."],
-    ),
+    ("", "--color <WHEN>", "Coloring: auto, always, never", &[
+        "This flag will be propagated to cargo.",
+    ]),
     ("-h", "--help", "Prints help information", &[]),
     ("-V", "--version", "Prints version information", &[]),
 ];
