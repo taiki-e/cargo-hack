@@ -9,3 +9,13 @@ fn main() {
     #[cfg(feature = "c")]
     println!("c");
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test() {}
+
+    #[ignore]
+    #[test]
+    fn test_ignored() {}
+}
