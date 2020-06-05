@@ -5,6 +5,8 @@
 # first version.
 # This is unstable (tracking issue: https://github.com/rust-lang/rustfmt/issues/3383).
 version = "Two"
+# This is unstable (tracking issue: https://github.com/rust-lang/rustfmt/issues/3391)
+error_on_line_overflow = true
 
 # Override the default formatting style.
 # See https://internals.rust-lang.org/t/running-rustfmt-on-rust-lang-rust-and-other-rust-lang-repositories/8732/81.
