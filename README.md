@@ -6,7 +6,7 @@
 
 [crates-badge]: https://img.shields.io/crates/v/cargo-hack.svg
 [crates-url]: https://crates.io/crates/cargo-hack
-[license-badge]: https://img.shields.io/crates/l/cargo-hack.svg
+[license-badge]: https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg
 [license]: #license
 [rustc-badge]: https://img.shields.io/badge/rustc-1.36+-lightgray.svg
 [rustc-url]: https://blog.rust-lang.org/2019/07/04/Rust-1.36.0.html
