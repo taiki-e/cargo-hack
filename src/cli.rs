@@ -316,23 +316,37 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                     }
                 };
             }
+
             macro_rules! parse_arg2 {
                 ($ident:ident, $allow_split:expr, $pat:expr, $help:expr) => {
                     if arg == $pat {
                         let arg = args.next().ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
                         if $allow_split {
-                            $ident.extend(arg.split(',').map(ToString::to_string));
+                            if arg.contains(',') {
+                                $ident.extend(arg.split(',').map(ToString::to_string));
+                            } else {
+                                $ident.extend(arg.split(' ').map(ToString::to_string));
+                            }
                         } else {
                             $ident.push(arg);
                         }
                         continue;
                     } else if arg.starts_with(concat!($pat, "=")) {
-                        let arg = arg
+                        let mut arg = arg
                             .splitn(2, '=')
                             .nth(1)
                             .ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
                         if $allow_split {
-                            $ident.extend(arg.split(',').map(ToString::to_string));
+                            if arg.starts_with('\'') && arg.ends_with('\'')
+                                || arg.starts_with('"') && arg.ends_with('"')
+                            {
+                                arg = &arg[1..arg.len() - 1];
+                            }
+                            if arg.contains(',') {
+                                $ident.extend(arg.split(',').map(ToString::to_string));
+                            } else {
+                                $ident.extend(arg.split(' ').map(ToString::to_string));
+                            }
                         } else {
                             $ident.push(arg.to_string());
                         }
