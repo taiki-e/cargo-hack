@@ -850,3 +850,62 @@ fn skip_optional_deps() {
             "running `cargo check --no-default-features --features renemed` on optional_deps (3/3)",
         );
 }
+
+#[test]
+fn list_separator() {
+    cargo_hack()
+        .args(&["run", "--features='real,renemed'"])
+        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .output()
+        .unwrap()
+        .assert_success()
+        .assert_stderr_contains("running `cargo run --features real,renemed` on optional_deps");
+
+    cargo_hack()
+        .args(&["run", "--features=\"real,renemed\""])
+        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .output()
+        .unwrap()
+        .assert_success()
+        .assert_stderr_contains("running `cargo run --features real,renemed` on optional_deps");
+
+    cargo_hack()
+        .args(&["run", "--features=real,renemed"])
+        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .output()
+        .unwrap()
+        .assert_success()
+        .assert_stderr_contains("running `cargo run --features real,renemed` on optional_deps");
+
+    cargo_hack()
+        .args(&["run", "--features", "real,renemed"])
+        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .output()
+        .unwrap()
+        .assert_success()
+        .assert_stderr_contains("running `cargo run --features real,renemed` on optional_deps");
+
+    cargo_hack()
+        .args(&["run", "--features='real renemed'"])
+        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .output()
+        .unwrap()
+        .assert_success()
+        .assert_stderr_contains("running `cargo run --features real,renemed` on optional_deps");
+
+    cargo_hack()
+        .args(&["run", "--features=\"real renemed\""])
+        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .output()
+        .unwrap()
+        .assert_success()
+        .assert_stderr_contains("running `cargo run --features real,renemed` on optional_deps");
+
+    cargo_hack()
+        .args(&["run", "--features", "real renemed"])
+        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .output()
+        .unwrap()
+        .assert_success()
+        .assert_stderr_contains("running `cargo run --features real,renemed` on optional_deps");
+}
