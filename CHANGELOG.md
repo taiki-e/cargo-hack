@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.3.10] - 2020-06-20
+
+* [Fixed an issue where some flags could not handle space-separated list correctly.][46]
+
+[46]: https://github.com/taiki-e/cargo-hack/pull/46
+
 ## [0.3.9] - 2020-05-25
 
 * [Fix an issue that `--skip` does not work for optional dependencies.][43]
@@ -104,7 +110,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.9...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.10...HEAD
+[0.3.10]: https://github.com/taiki-e/cargo-hack/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/taiki-e/cargo-hack/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/taiki-e/cargo-hack/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/taiki-e/cargo-hack/compare/v0.3.6...v0.3.7
