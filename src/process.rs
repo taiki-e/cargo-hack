@@ -33,21 +33,21 @@ pub(crate) struct ProcessBuilder {
 
 impl ProcessBuilder {
     /// Creates a new `ProcessBuilder`.
-    pub(crate) fn new(program: OsString) -> Self {
+    pub(crate) fn new(program: impl Into<Rc<OsStr>>, verbose: bool) -> Self {
         Self {
-            program: Rc::from(program),
+            program: program.into(),
             leading_args: Rc::from(&[][..]),
             trailing_args: Rc::from(&[][..]),
             args: Vec::new(),
             features: String::new(),
-            verbose: false,
+            verbose,
         }
     }
 
     /// Creates a new `ProcessBuilder` from `Args`.
-    pub(crate) fn from_args(program: OsString, args: &Args) -> Self {
+    pub(crate) fn from_args(program: impl Into<Rc<OsStr>>, args: &Args) -> Self {
         Self {
-            program: Rc::from(program),
+            program: program.into(),
             leading_args: args.leading_args.clone(),
             trailing_args: args.trailing_args.clone(),
             args: Vec::new(),
@@ -106,6 +106,11 @@ impl ProcessBuilder {
     //     self.args = args.into_iter().map(|t| t.as_ref().to_os_string()).collect();
     //     self
     // }
+
+    /// Gets the executable name.
+    pub(crate) fn get_program(&self) -> &OsStr {
+        &self.program
+    }
 
     /// Runs the process, waiting for completion, and mapping non-success exit codes to an error.
     pub(crate) fn exec(&self) -> Result<()> {

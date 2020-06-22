@@ -1,4 +1,4 @@
-use std::{fmt::Write, ops::Deref};
+use std::{ffi::OsStr, fmt::Write, ops::Deref};
 
 use crate::{metadata, Args, Info, Manifest, ProcessBuilder, Result};
 
@@ -189,6 +189,10 @@ fn exec_cargo(
 ) -> Result<()> {
     info.count += 1;
 
+    if args.clean_per_run {
+        cargo_clean(line.get_program(), args, package)?;
+    }
+
     // running `<command>` on <package> (<count>/<total>)
     let mut msg = String::new();
     write!(msg, "running {} on {}", line, &package.name).unwrap();
@@ -196,6 +200,20 @@ fn exec_cargo(
         write!(msg, " ({}/{})", info.count, info.total).unwrap();
     }
     info!(args.color, "{}", msg);
+
+    line.exec()
+}
+
+fn cargo_clean(cargo: &OsStr, args: &Args, package: &Package<'_>) -> Result<()> {
+    let mut line = ProcessBuilder::new(cargo, args.verbose);
+    line.arg("clean");
+    line.arg("--package");
+    line.arg(&package.name);
+
+    if args.verbose {
+        // running `cargo clean --package <package>`
+        info!(args.color, "running {}", line);
+    }
 
     line.exec()
 }

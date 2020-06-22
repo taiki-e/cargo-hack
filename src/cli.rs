@@ -54,6 +54,9 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
         "Skip passing --features flag to `cargo` if that feature does not exist in the package",
         &[],
     ),
+    ("", "--clean-per-run", "Remove artifacts for that package before running the command", &[
+        "If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts will be removed before each run.",
+    ]),
     ("-v", "--verbose", "Use verbose output", &["This flag will be propagated to cargo."]),
     ("", "--color <WHEN>", "Coloring: auto, always, never", &[
         "This flag will be propagated to cargo.",
@@ -184,6 +187,8 @@ pub(crate) struct Args {
     pub(crate) optional_deps: bool,
     /// --skip-no-default-features
     pub(crate) skip_no_default_features: bool,
+    /// --clean-per-run
+    pub(crate) clean_per_run: bool,
 
     // flags that will be propagated to cargo
     /// --features <FEATURES>...
@@ -264,6 +269,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut ignore_non_exist_features = false;
     let mut optional_deps = false;
     let mut skip_no_default_features = false;
+    let mut clean_per_run = false;
 
     let res = (|| -> Result<()> {
         while let Some(arg) = args.next() {
@@ -284,31 +290,31 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                 continue;
             }
 
-            macro_rules! parse_arg1 {
-                ($ident:ident, $propagate:expr, $pat:expr, $help:expr) => {
+            macro_rules! parse_opt {
+                ($opt:ident, $propagate:expr, $pat:expr, $help:expr) => {
                     if arg == $pat {
-                        if $ident.is_some() {
+                        if $opt.is_some() {
                             return Err(multi_arg($help, subcommand.as_ref()));
                         }
                         let next =
                             args.next().ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
                         if $propagate {
-                            $ident = Some(next.clone());
+                            $opt = Some(next.clone());
                             leading.push(arg);
                             leading.push(next);
                         } else {
-                            $ident = Some(next);
+                            $opt = Some(next);
                         }
                         continue;
                     } else if arg.starts_with(concat!($pat, "=")) {
-                        if $ident.is_some() {
+                        if $opt.is_some() {
                             return Err(multi_arg($help, subcommand.as_ref()));
                         }
                         let next = arg
                             .splitn(2, '=')
                             .nth(1)
                             .ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
-                        $ident = Some(next.to_string());
+                        $opt = Some(next.to_string());
                         if $propagate {
                             leading.push(arg);
                         }
@@ -317,18 +323,18 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                 };
             }
 
-            macro_rules! parse_arg2 {
-                ($ident:ident, $allow_split:expr, $pat:expr, $help:expr) => {
+            macro_rules! parse_multi_opt {
+                ($v:ident, $allow_split:expr, $pat:expr, $help:expr) => {
                     if arg == $pat {
                         let arg = args.next().ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
                         if $allow_split {
                             if arg.contains(',') {
-                                $ident.extend(arg.split(',').map(ToString::to_string));
+                                $v.extend(arg.split(',').map(ToString::to_string));
                             } else {
-                                $ident.extend(arg.split(' ').map(ToString::to_string));
+                                $v.extend(arg.split(' ').map(ToString::to_string));
                             }
                         } else {
-                            $ident.push(arg);
+                            $v.push(arg);
                         }
                         continue;
                     } else if arg.starts_with(concat!($pat, "=")) {
@@ -343,26 +349,34 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                                 arg = &arg[1..arg.len() - 1];
                             }
                             if arg.contains(',') {
-                                $ident.extend(arg.split(',').map(ToString::to_string));
+                                $v.extend(arg.split(',').map(ToString::to_string));
                             } else {
-                                $ident.extend(arg.split(' ').map(ToString::to_string));
+                                $v.extend(arg.split(' ').map(ToString::to_string));
                             }
                         } else {
-                            $ident.push(arg.to_string());
+                            $v.push(arg.to_string());
                         }
                         continue;
                     }
                 };
             }
 
-            parse_arg1!(manifest_path, false, "--manifest-path", "--manifest-path <PATH>");
-            parse_arg1!(color, true, "--color", "--color <WHEN>");
+            macro_rules! parse_flag {
+                ($flag:ident) => {
+                    if mem::replace(&mut $flag, true) {
+                        return Err(multi_arg(&arg, subcommand.as_ref()));
+                    }
+                };
+            }
 
-            parse_arg2!(package, false, "--package", "--package <SPEC>");
-            parse_arg2!(package, false, "-p", "--package <SPEC>");
-            parse_arg2!(exclude, false, "--exclude", "--exclude <SPEC>");
-            parse_arg2!(features, true, "--features", "--features <FEATURES>");
-            parse_arg2!(skip, true, "--skip", "--skip <FEATURES>");
+            parse_opt!(manifest_path, false, "--manifest-path", "--manifest-path <PATH>");
+            parse_opt!(color, true, "--color", "--color <WHEN>");
+
+            parse_multi_opt!(package, false, "--package", "--package <SPEC>");
+            parse_multi_opt!(package, false, "-p", "--package <SPEC>");
+            parse_multi_opt!(exclude, false, "--exclude", "--exclude <SPEC>");
+            parse_multi_opt!(features, true, "--features", "--features <FEATURES>");
+            parse_multi_opt!(skip, true, "--skip", "--skip <FEATURES>");
 
             match arg.as_str() {
                 "--workspace" | "--all" => {
@@ -370,41 +384,14 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                         return Err(multi_arg(&arg, subcommand.as_ref()));
                     }
                 }
-                "--no-dev-deps" => {
-                    if mem::replace(&mut no_dev_deps, true) {
-                        return Err(multi_arg(&arg, subcommand.as_ref()));
-                    }
-                }
-                "--remove-dev-deps" => {
-                    if mem::replace(&mut remove_dev_deps, true) {
-                        return Err(multi_arg(&arg, subcommand.as_ref()));
-                    }
-                }
-                "--each-feature" => {
-                    if mem::replace(&mut each_feature, true) {
-                        return Err(multi_arg(&arg, subcommand.as_ref()));
-                    }
-                }
-                "--feature-powerset" => {
-                    if mem::replace(&mut feature_powerset, true) {
-                        return Err(multi_arg(&arg, subcommand.as_ref()));
-                    }
-                }
-                "--ignore-private" => {
-                    if mem::replace(&mut ignore_private, true) {
-                        return Err(multi_arg(&arg, subcommand.as_ref()));
-                    }
-                }
-                "--optional-deps" => {
-                    if mem::replace(&mut optional_deps, true) {
-                        return Err(multi_arg(&arg, subcommand.as_ref()));
-                    }
-                }
-                "--skip-no-default-features" => {
-                    if mem::replace(&mut skip_no_default_features, true) {
-                        return Err(multi_arg(&arg, subcommand.as_ref()));
-                    }
-                }
+                "--no-dev-deps" => parse_flag!(no_dev_deps),
+                "--remove-dev-deps" => parse_flag!(remove_dev_deps),
+                "--each-feature" => parse_flag!(each_feature),
+                "--feature-powerset" => parse_flag!(feature_powerset),
+                "--ignore-private" => parse_flag!(ignore_private),
+                "--optional-deps" => parse_flag!(optional_deps),
+                "--skip-no-default-features" => parse_flag!(skip_no_default_features),
+                "--clean-per-run" => parse_flag!(clean_per_run),
                 "--ignore-unknown-features" => {
                     if ignore_unknown_features || ignore_non_exist_features {
                         return Err(multi_arg(&arg, subcommand.as_ref()));
@@ -426,6 +413,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
 
     let color = color.map(|c| c.parse()).transpose()?;
     *coloring = color;
+    let verbose = leading.iter().any(|a| a == "--verbose" || a == "-v" || a == "-vv");
 
     res?;
 
@@ -489,7 +477,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
 
     if subcommand.is_none() {
         if leading.iter().any(|a| a == "--list") {
-            let mut line = ProcessBuilder::new(crate::cargo_binary());
+            let mut line = ProcessBuilder::new(crate::cargo_binary(), verbose);
             line.arg("--list");
             line.exec()?;
             return Ok(None);
@@ -508,7 +496,6 @@ For more information try --help
         }
     }
 
-    let verbose = leading.iter().any(|a| a == "--verbose" || a == "-v" || a == "-vv");
     if ignore_non_exist_features {
         warn!(
             color,
@@ -542,6 +529,7 @@ For more information try --help
         ignore_unknown_features: ignore_unknown_features || ignore_non_exist_features,
         optional_deps,
         skip_no_default_features,
+        clean_per_run,
 
         features,
         color,
