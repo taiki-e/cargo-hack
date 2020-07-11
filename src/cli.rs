@@ -55,6 +55,7 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
         &[],
     ),
     ("", "--clean-per-run", "Remove artifacts for that package before running the command", &[
+        "Note that dependencies artifacts will be preserved.",
         "If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts will be removed before each run.",
     ]),
     ("-v", "--verbose", "Use verbose output", &["This flag will be propagated to cargo."]),
