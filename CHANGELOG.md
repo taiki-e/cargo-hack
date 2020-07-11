@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.3.11] - 2020-07-11
+
+* [Added `--clean-per-run` flag.][49] See [#49][49] for more details.
+
+[49]: https://github.com/taiki-e/cargo-hack/pull/49
+
 ## [0.3.10] - 2020-06-20
 
 * [Fixed an issue where some flags could not handle space-separated list correctly.][46]
@@ -110,7 +116,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.10...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.11...HEAD
+[0.3.11]: https://github.com/taiki-e/cargo-hack/compare/v0.3.10...v0.3.11
 [0.3.10]: https://github.com/taiki-e/cargo-hack/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/taiki-e/cargo-hack/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/taiki-e/cargo-hack/compare/v0.3.7...v0.3.8

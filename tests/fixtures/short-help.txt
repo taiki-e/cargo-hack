@@ -1,4 +1,4 @@
-cargo-hack 0.3.10
+cargo-hack 0.3.11
 
 A tool to work around some limitations on cargo.
 
