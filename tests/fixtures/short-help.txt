@@ -1,0 +1,36 @@
+cargo-hack 0.3.10
+
+A tool to work around some limitations on cargo.
+
+USAGE:
+    cargo hack [OPTIONS] [SUBCOMMAND]
+
+Use -h for short descriptions and --help for more details.
+
+OPTIONS:
+    -p, --package <SPEC>...       Package(s) to check
+        --all                     Alias for --workspace
+        --workspace               Perform command for all packages in the workspace
+        --exclude <SPEC>...       Exclude packages from the check
+        --manifest-path <PATH>    Path to Cargo.toml
+        --features <FEATURES>     Space-separated list of features to activate
+        --each-feature            Perform for each feature which includes --no-default-features flag and default features of the package
+        --feature-powerset        Perform for the feature powerset which includes --no-default-features flag and default features of the package
+        --optional-deps           Use optional dependencies as features
+        --skip <FEATURES>         Space-separated list of features to skip
+        --skip-no-default-features Skip run of just --no-default-features flag
+        --no-dev-deps             Perform without dev-dependencies
+        --remove-dev-deps         Equivalent to --no-dev-deps flag except for does not restore the original `Cargo.toml` after performed
+        --ignore-private          Skip to perform on `publish = false` packages
+        --ignore-unknown-features Skip passing --features flag to `cargo` if that feature does not exist in the package
+        --clean-per-run           Remove artifacts for that package before running the command
+    -v, --verbose                 Use verbose output
+        --color <WHEN>            Coloring: auto, always, never
+    -h, --help                    Prints help information
+    -V, --version                 Prints version information
+
+Some common cargo commands are (see all commands with --list):
+        build       Compile the current package
+        check       Analyze the current package and report errors, but don't build object files
+        run         Run a binary or example of the local package
+        test        Run the tests

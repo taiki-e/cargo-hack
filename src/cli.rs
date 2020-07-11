@@ -111,14 +111,13 @@ impl fmt::Display for Help {
         writeln!(
             f,
             "\
-{0} {1}\n{2}\n\n{3}
+{0} {1}\n\n{2}
 USAGE:
     cargo hack [OPTIONS] [SUBCOMMAND]\n
 Use -h for short descriptions and --help for more details.\n
 OPTIONS:",
             env!("CARGO_PKG_NAME"),
             env!("CARGO_PKG_VERSION"),
-            env!("CARGO_PKG_AUTHORS"),
             env!("CARGO_PKG_DESCRIPTION")
         )?;
 
@@ -149,8 +148,7 @@ Some common cargo commands are (see all commands with --list):
         build       Compile the current package
         check       Analyze the current package and report errors, but don't build object files
         run         Run a binary or example of the local package
-        test        Run the tests
-"
+        test        Run the tests"
         )
     }
 }
@@ -574,4 +572,25 @@ For more information try --help
             String::from("")
         }
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Help;
+
+    #[test]
+    fn long_help() {
+        assert_eq!(
+            Help { long: true, term_size: 200 }.to_string(),
+            include_str!("../tests/fixtures/long-help.txt")
+        );
+    }
+
+    #[test]
+    fn short_help() {
+        assert_eq!(
+            Help { long: false, term_size: 200 }.to_string(),
+            include_str!("../tests/fixtures/short-help.txt")
+        );
+    }
 }
