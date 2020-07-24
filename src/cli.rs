@@ -132,8 +132,8 @@ OPTIONS:",
                     writeln!(f, "\n")?;
                 }
             } else {
-                write!(f, "{:25} ", long)?;
-                write(f, 34, false, self.term_size, desc)?;
+                write!(f, "{:26} ", long)?;
+                write(f, 35, false, self.term_size, desc)?;
                 writeln!(f)?;
             }
         }
