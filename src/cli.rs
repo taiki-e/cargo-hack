@@ -582,7 +582,7 @@ mod tests {
     fn long_help() {
         assert_eq!(
             Help { long: true, term_size: 200 }.to_string(),
-            include_str!("../tests/fixtures/long-help.txt")
+            include_str!("../tests/long-help.txt")
         );
     }
 
@@ -590,7 +590,7 @@ mod tests {
     fn short_help() {
         assert_eq!(
             Help { long: false, term_size: 200 }.to_string(),
-            include_str!("../tests/fixtures/short-help.txt")
+            include_str!("../tests/short-help.txt")
         );
     }
 }

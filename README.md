@@ -26,7 +26,7 @@ To install the current cargo-hack requires Rust 1.36 or later.
 
 ## Usage
 
-*See `cargo hack --help` for a complete list of options.*
+*See `cargo hack --help` for a complete list of options ([output is here](https://github.com/taiki-e/cargo-hack/blob/master/tests/long-help.txt)).*
 
 `cargo-hack` is basically wrapper of `cargo` that propagates subcommand and most of the passed flags to `cargo`, but provides additional flags and changes the behavior of some existing flags.
 
