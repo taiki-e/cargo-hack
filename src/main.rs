@@ -60,7 +60,7 @@ fn exec_on_workspace(args: &Args, current_manifest: &Manifest, metadata: &Metada
     );
 
     let restore = Restore::new(args);
-    let mut line = ProcessBuilder::from_args(cargo_binary(), &args);
+    let mut line = ProcessBuilder::from_args(cargo_binary(), args);
 
     if let Some(color) = args.color {
         line.arg("--color");

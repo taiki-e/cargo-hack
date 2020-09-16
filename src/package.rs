@@ -131,7 +131,7 @@ pub(crate) fn exec(
         Kind::SkipAsPrivate => unreachable!(),
         Kind::Nomal { show_progress } => {
             // only run with default features
-            return exec_cargo(args, package, &line, info, *show_progress);
+            return exec_cargo(args, package, line, info, *show_progress);
         }
         Kind::Each { .. } | Kind::Powerset { .. } => {}
     }
