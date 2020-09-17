@@ -1,5 +1,5 @@
 use anyhow::{bail, format_err, Error};
-use std::{env, fmt, mem, rc::Rc, str::FromStr};
+use std::{env, fmt, mem, str::FromStr};
 use termcolor::ColorChoice;
 
 use crate::{ProcessBuilder, Result};
@@ -155,8 +155,8 @@ Some common cargo commands are (see all commands with --list):
 
 #[derive(Debug)]
 pub(crate) struct Args {
-    pub(crate) leading_args: Rc<[String]>,
-    pub(crate) trailing_args: Rc<[String]>,
+    pub(crate) leading_args: Vec<String>,
+    pub(crate) trailing_args: Vec<String>,
 
     pub(crate) subcommand: Option<String>,
 
@@ -509,9 +509,8 @@ For more information try --help
     }
 
     Ok(Some(Args {
-        leading_args: leading.into(),
-        // shared_from_iter requires Rust 1.37
-        trailing_args: args.collect::<Vec<_>>().into(),
+        leading_args: leading,
+        trailing_args: args.collect::<Vec<_>>(),
 
         subcommand,
 

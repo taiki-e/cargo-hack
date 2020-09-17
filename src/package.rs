@@ -123,7 +123,7 @@ impl<'a> Kind<'a> {
 pub(crate) fn exec(
     args: &Args,
     package: &Package<'_>,
-    line: &ProcessBuilder,
+    line: &ProcessBuilder<'_>,
     info: &mut Info,
 ) -> Result<()> {
     match &package.kind {
@@ -171,7 +171,7 @@ pub(crate) fn exec(
 fn exec_cargo_with_features(
     args: &Args,
     package: &Package<'_>,
-    line: &ProcessBuilder,
+    line: &ProcessBuilder<'_>,
     info: &mut Info,
     features: impl IntoIterator<Item = impl AsRef<str>>,
 ) -> Result<()> {
@@ -183,7 +183,7 @@ fn exec_cargo_with_features(
 fn exec_cargo(
     args: &Args,
     package: &Package<'_>,
-    line: &ProcessBuilder,
+    line: &ProcessBuilder<'_>,
     info: &mut Info,
     show_progress: bool,
 ) -> Result<()> {

@@ -117,7 +117,7 @@ struct Info {
 fn exec_on_package(
     args: &Args,
     package: &Package<'_>,
-    line: &ProcessBuilder,
+    line: &ProcessBuilder<'_>,
     restore: &Restore,
     info: &mut Info,
 ) -> Result<()> {
@@ -137,7 +137,7 @@ fn exec_on_package(
 fn no_dev_deps(
     args: &Args,
     package: &Package<'_>,
-    line: &ProcessBuilder,
+    line: &ProcessBuilder<'_>,
     restore: &Restore,
     info: &mut Info,
 ) -> Result<()> {

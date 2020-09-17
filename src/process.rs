@@ -14,13 +14,13 @@ use crate::{metadata::Package, Args, Result};
 
 /// A builder object for an external process, similar to `std::process::Command`.
 #[derive(Clone, Debug)]
-pub(crate) struct ProcessBuilder {
+pub(crate) struct ProcessBuilder<'a> {
     /// The program to execute.
     program: Rc<OsStr>,
     /// A list of arguments to pass to the program (until '--').
-    leading_args: Rc<[String]>,
+    leading_args: &'a [String],
     /// A list of arguments to pass to the program (after '--').
-    trailing_args: Rc<[String]>,
+    trailing_args: &'a [String],
 
     /// A list of arguments to pass to the program (between `leading_args` and '--').
     args: Vec<OsString>,
@@ -31,13 +31,13 @@ pub(crate) struct ProcessBuilder {
     verbose: bool,
 }
 
-impl ProcessBuilder {
+impl<'a> ProcessBuilder<'a> {
     /// Creates a new `ProcessBuilder`.
     pub(crate) fn new(program: impl Into<Rc<OsStr>>, verbose: bool) -> Self {
         Self {
             program: program.into(),
-            leading_args: Rc::from(&[][..]),
-            trailing_args: Rc::from(&[][..]),
+            leading_args: &[],
+            trailing_args: &[],
             args: Vec::new(),
             features: String::new(),
             verbose,
@@ -45,11 +45,11 @@ impl ProcessBuilder {
     }
 
     /// Creates a new `ProcessBuilder` from `Args`.
-    pub(crate) fn from_args(program: impl Into<Rc<OsStr>>, args: &Args) -> Self {
+    pub(crate) fn from_args(program: impl Into<Rc<OsStr>>, args: &'a Args) -> Self {
         Self {
             program: program.into(),
-            leading_args: args.leading_args.clone(),
-            trailing_args: args.trailing_args.clone(),
+            leading_args: &args.leading_args,
+            trailing_args: &args.trailing_args,
             args: Vec::new(),
             features: String::new(),
             verbose: args.verbose,
@@ -171,7 +171,7 @@ impl ProcessBuilder {
     }
 }
 
-impl fmt::Display for ProcessBuilder {
+impl fmt::Display for ProcessBuilder<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "`")?;
 
