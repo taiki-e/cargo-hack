@@ -6,7 +6,6 @@ use std::{
 
 use crate::Result;
 
-#[derive(Debug)]
 pub(crate) struct Manifest {
     pub(crate) path: PathBuf,
     pub(crate) raw: String,
@@ -65,19 +64,19 @@ mod de {
     // * https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/util/toml/mod.rs
     // * https://gitlab.com/crates.rs/cargo_toml
 
-    #[derive(Debug, Deserialize)]
+    #[derive(Deserialize)]
     pub(crate) struct Manifest {
         pub(crate) package: Option<Package>,
     }
 
-    #[derive(Debug, Deserialize)]
+    #[derive(Deserialize)]
     pub(crate) struct Package {
         pub(crate) name: String,
         #[serde(default)]
         pub(crate) publish: Publish,
     }
 
-    #[derive(Debug, Deserialize)]
+    #[derive(Deserialize)]
     #[serde(untagged)]
     pub(crate) enum Publish {
         Flag(bool),

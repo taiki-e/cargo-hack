@@ -19,7 +19,7 @@ use crate::{Args, Result};
 
 // As cargo_metadata does not preserve the order of feature flags, use our own structs.
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub(crate) struct Metadata {
     /// A list of all crates referenced by this crate (and the crate itself)
     pub(crate) packages: Vec<Package>,
@@ -27,7 +27,7 @@ pub(crate) struct Metadata {
     pub(crate) workspace_root: PathBuf,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub(crate) struct Package {
     /// Name as given in the `Cargo.toml`
     pub(crate) name: String,
@@ -39,7 +39,7 @@ pub(crate) struct Package {
     pub(crate) manifest_path: PathBuf,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 /// A dependency of the main crate
 pub(crate) struct Dependency {
     /// Name as given in the `Cargo.toml`

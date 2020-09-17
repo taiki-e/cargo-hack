@@ -153,7 +153,6 @@ Some common cargo commands are (see all commands with --list):
     }
 }
 
-#[derive(Debug)]
 pub(crate) struct Args {
     pub(crate) leading_args: Vec<String>,
     pub(crate) trailing_args: Vec<String>,
@@ -198,7 +197,7 @@ pub(crate) struct Args {
     pub(crate) verbose: bool,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub(crate) enum Coloring {
     Auto,
     Always,
