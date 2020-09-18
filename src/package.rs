@@ -1,6 +1,9 @@
 use std::{ffi::OsStr, fmt::Write, ops::Deref};
 
-use crate::{metadata, Args, Info, Manifest, ProcessBuilder, Result};
+use crate::{
+    metadata::{self, Dependency},
+    Args, Info, Manifest, ProcessBuilder, Result,
+};
 
 pub(crate) struct Package<'a> {
     package: &'a metadata::Package,
@@ -61,17 +64,11 @@ impl<'a> Kind<'a> {
 
         let features =
             package.features.keys().filter(|f| *f != "default" && !args.skip.contains(f));
-        let opt_deps = if args.optional_deps {
-            Some(
-                package
-                    .dependencies
-                    .iter()
-                    .filter_map(|dep| dep.as_feature())
-                    .filter(|f| !args.skip.contains(f)),
-            )
-        } else {
-            None
-        };
+        let opt_deps = args.optional_deps.as_ref().map(|opt_deps| {
+            package.dependencies.iter().filter_map(Dependency::as_feature).filter(move |f| {
+                !args.skip.contains(f) && (opt_deps.is_empty() || opt_deps.contains(f))
+            })
+        });
 
         if args.each_feature {
             let features: Vec<_> = if let Some(opt_deps) = opt_deps {

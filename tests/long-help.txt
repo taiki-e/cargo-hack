@@ -23,7 +23,7 @@ OPTIONS:
         --manifest-path <PATH>
             Path to Cargo.toml.
 
-        --features <FEATURES>
+        --features <FEATURES>...
             Space-separated list of features to activate.
 
         --each-feature
@@ -32,12 +32,14 @@ OPTIONS:
         --feature-powerset
             Perform for the feature powerset which includes --no-default-features flag and default features of the package.
 
-        --optional-deps
+        --optional-deps [DEPS]...
             Use optional dependencies as features.
+
+            If DEPS are not specified, all optional dependencies are considered as features.
 
             This flag can only be used with either --each-feature flag or --feature-powerset flag.
 
-        --skip <FEATURES>
+        --skip <FEATURES>...
             Space-separated list of features to skip.
 
             To skip run of default feature, using value `--skip default`.

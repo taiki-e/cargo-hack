@@ -15,7 +15,7 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
     ("", "--workspace", "Perform command for all packages in the workspace", &[]),
     ("", "--exclude <SPEC>...", "Exclude packages from the check", &[]),
     ("", "--manifest-path <PATH>", "Path to Cargo.toml", &[]),
-    ("", "--features <FEATURES>", "Space-separated list of features to activate", &[]),
+    ("", "--features <FEATURES>...", "Space-separated list of features to activate", &[]),
     (
         "",
         "--each-feature",
@@ -28,10 +28,11 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
         "Perform for the feature powerset which includes --no-default-features flag and default features of the package",
         &[],
     ),
-    ("", "--optional-deps", "Use optional dependencies as features", &[
+    ("", "--optional-deps [DEPS]...", "Use optional dependencies as features", &[
+        "If DEPS are not specified, all optional dependencies are considered as features.",
         "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
     ]),
-    ("", "--skip <FEATURES>", "Space-separated list of features to skip", &[
+    ("", "--skip <FEATURES>...", "Space-separated list of features to skip", &[
         "To skip run of default feature, using value `--skip default`.",
         "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
     ]),
@@ -181,8 +182,8 @@ pub(crate) struct Args {
     pub(crate) ignore_private: bool,
     /// --ignore-unknown-features, (--ignore-non-exist-features)
     pub(crate) ignore_unknown_features: bool,
-    /// --optional-deps
-    pub(crate) optional_deps: bool,
+    /// --optional-deps [DEPS]...
+    pub(crate) optional_deps: Option<Vec<String>>,
     /// --skip-no-default-features
     pub(crate) skip_no_default_features: bool,
     /// --clean-per-run
@@ -205,7 +206,7 @@ pub(crate) enum Coloring {
 }
 
 impl Coloring {
-    pub(crate) fn color_choice(color: Option<Coloring>) -> ColorChoice {
+    pub(crate) fn color_choice(color: Option<Self>) -> ColorChoice {
         match color {
             Some(Coloring::Auto) | None => ColorChoice::Auto,
             Some(Coloring::Always) => ColorChoice::Always,
@@ -236,7 +237,7 @@ impl FromStr for Coloring {
 }
 
 pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
-    let mut args = env::args();
+    let mut args = env::args().peekable();
     let _ = args.next(); // executable name
     match &args.next() {
         Some(a) if a == "hack" => {}
@@ -256,6 +257,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut exclude = Vec::new();
     let mut features = Vec::new();
     let mut skip = Vec::new();
+    let mut optional_deps = None;
 
     let mut workspace = None;
     let mut no_dev_deps = false;
@@ -265,7 +267,6 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut ignore_private = false;
     let mut ignore_unknown_features = false;
     let mut ignore_non_exist_features = false;
-    let mut optional_deps = false;
     let mut skip_no_default_features = false;
     let mut clean_per_run = false;
 
@@ -322,8 +323,11 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             }
 
             macro_rules! parse_multi_opt {
-                ($v:ident, $allow_split:expr, $pat:expr, $help:expr) => {
+                ($v:ident, $allow_split:expr, $require_value:expr, $pat:expr, $help:expr) => {
                     if arg == $pat {
+                        if !$require_value && args.peek().map_or(true, |s| s.starts_with('-')) {
+                            continue;
+                        }
                         let arg = args.next().ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
                         if $allow_split {
                             if arg.contains(',') {
@@ -370,11 +374,25 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             parse_opt!(manifest_path, false, "--manifest-path", "--manifest-path <PATH>");
             parse_opt!(color, true, "--color", "--color <WHEN>");
 
-            parse_multi_opt!(package, false, "--package", "--package <SPEC>");
-            parse_multi_opt!(package, false, "-p", "--package <SPEC>");
-            parse_multi_opt!(exclude, false, "--exclude", "--exclude <SPEC>");
-            parse_multi_opt!(features, true, "--features", "--features <FEATURES>");
-            parse_multi_opt!(skip, true, "--skip", "--skip <FEATURES>");
+            parse_multi_opt!(package, false, true, "--package", "--package <SPEC>...");
+            parse_multi_opt!(package, false, true, "-p", "--package <SPEC>...");
+            parse_multi_opt!(exclude, false, true, "--exclude", "--exclude <SPEC>...");
+            parse_multi_opt!(features, true, true, "--features", "--features <FEATURES>...");
+            parse_multi_opt!(skip, true, true, "--skip", "--skip <FEATURES>...");
+
+            if arg.starts_with("--optional-deps") {
+                if optional_deps.is_some() {
+                    return Err(multi_arg(&arg, subcommand.as_ref()));
+                }
+                let optional_deps = optional_deps.get_or_insert_with(Vec::new);
+                parse_multi_opt!(
+                    optional_deps,
+                    true,
+                    false,
+                    "--optional-deps",
+                    "--optional-deps [DEPS]..."
+                );
+            }
 
             match arg.as_str() {
                 "--workspace" | "--all" => {
@@ -387,7 +405,6 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                 "--each-feature" => parse_flag!(each_feature),
                 "--feature-powerset" => parse_flag!(feature_powerset),
                 "--ignore-private" => parse_flag!(ignore_private),
-                "--optional-deps" => parse_flag!(optional_deps),
                 "--skip-no-default-features" => parse_flag!(skip_no_default_features),
                 "--clean-per-run" => parse_flag!(clean_per_run),
                 "--ignore-unknown-features" => {
@@ -434,7 +451,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     if !each_feature && !feature_powerset {
         if !skip.is_empty() {
             bail!("--skip can only be used with either --each-feature or --feature-powerset");
-        } else if optional_deps {
+        } else if optional_deps.is_some() {
             bail!(
                 "--optional-deps can only be used with either --each-feature or --feature-powerset"
             );
