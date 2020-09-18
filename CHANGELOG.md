@@ -6,6 +6,10 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.3.12] - 2020-09-18
+
+* [Allow only specified optional dependencies to be considered as features.](https://github.com/taiki-e/cargo-hack/pull/51)
+
 ## [0.3.11] - 2020-07-11
 
 * [Added `--clean-per-run` flag.][49] See [#49][49] for more details.
@@ -116,7 +120,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.11...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.12...HEAD
+[0.3.12]: https://github.com/taiki-e/cargo-hack/compare/v0.3.11...v0.3.12
 [0.3.11]: https://github.com/taiki-e/cargo-hack/compare/v0.3.10...v0.3.11
 [0.3.10]: https://github.com/taiki-e/cargo-hack/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/taiki-e/cargo-hack/compare/v0.3.8...v0.3.9
