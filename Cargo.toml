@@ -19,17 +19,17 @@ targets = ["x86_64-unknown-linux-gnu"]
 [workspace]
 
 [dependencies]
-anyhow = "1.0.28"
+anyhow = "1.0.20"
 ctrlc = "3.1.4"
-serde = "1.0.106"
+serde = "1.0.103"
 # Depends directly on `serde_derive` instead of using `derive` feature of
 # `serde` to reduce compile time. When pipeline compilation for proc-macro is
 # supported, switch to using `derive` feature.
-serde_derive = "1.0.106"
-serde_json = "1.0.51"
+serde_derive = "1.0.103"
+serde_json = "1.0"
 term_size = "0.3.2"
-termcolor = "1.1.0"
-toml = "0.5.6"
+termcolor = "1.1"
+toml = "0.5.2"
 
 [dev-dependencies]
-easy-ext = "0.2.0"
+easy-ext = "0.2"
