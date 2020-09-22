@@ -94,7 +94,7 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
 
 * **`--optional-deps`**
 
-  Space-separated list of features to skip.
+  Use optional dependencies as features.
 
 * **`--skip`**
 
