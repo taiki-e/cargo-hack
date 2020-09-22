@@ -18,8 +18,8 @@ This tool provides additional flags to avoid some of these limitations.
 
 ## Installation
 
-```console
-$ cargo install cargo-hack
+```sh
+cargo install cargo-hack
 ```
 
 To install the current cargo-hack requires Rust 1.36 or later.
@@ -36,11 +36,9 @@ To install the current cargo-hack requires Rust 1.36 or later.
 
   This is useful to check that each feature is working properly. (When used for this purpose, it is recommended to use with `--no-dev-deps` to avoid [rust-lang/cargo#4866].)
 
-  ```console
-  $ cargo hack check --each-feature --no-dev-deps
+  ```sh
+  cargo hack check --each-feature --no-dev-deps
   ```
-
-  This is a workaround for an issue that cargo does not support for `--features` and `--no-default-features` flags for sub crates ([rust-lang/cargo#3620], [rust-lang/cargo#4106], [rust-lang/cargo#4463], [rust-lang/cargo#4753], [rust-lang/cargo#5015], [rust-lang/cargo#5364], [rust-lang/cargo#6195]).
 
 * **`--feature-powerset`**
 
@@ -51,8 +49,8 @@ To install the current cargo-hack requires Rust 1.36 or later.
   properly. (When used for this purpose, it is recommended to use with
   `--no-dev-deps` to avoid [rust-lang/cargo#4866].)
 
-  ```console
-  $ cargo hack check --feature-powerset --no-dev-deps
+  ```sh
+  cargo hack check --feature-powerset --no-dev-deps
   ```
 
 * **`--no-dev-deps`**
@@ -63,11 +61,11 @@ To install the current cargo-hack requires Rust 1.36 or later.
 
   Also, this can be used as a workaround for an issue that `cargo` does not allow publishing a package with cyclic dev-dependencies. ([rust-lang/cargo#4242])
 
-  ```console
-  $ cargo hack publish --no-dev-deps --dry-run --allow-dirty
+  ```sh
+  cargo hack publish --no-dev-deps --dry-run --allow-dirty
   ```
 
-  Currently, using `--no-dev-deps` flag removes dev-dependencies from real manifest while cargo-hack is running and restores it when finished. See [rust-lang/cargo#4242] for why this is necessary.
+  Note: Currently, using `--no-dev-deps` flag removes dev-dependencies from real manifest while cargo-hack is running and restores it when finished. See [rust-lang/cargo#4242] for why this is necessary.
   Also, this behavior may change in the future on some subcommands. See also [#15].
 
 * **`--remove-dev-deps`**
@@ -86,9 +84,27 @@ To install the current cargo-hack requires Rust 1.36 or later.
 
   Skip passing `--features` to `cargo` if that feature does not exist.
 
-  This is a workaround for an issue that `cargo` does not support for `--features` with workspace ([rust-lang/cargo#3620], [rust-lang/cargo#4106], [rust-lang/cargo#4463], [rust-lang/cargo#4753], [rust-lang/cargo#5015], [rust-lang/cargo#5364], [rust-lang/cargo#6195]).
+  *This feature was formerly called `--ignore-non-exist-features`, but has been renamed. The old name can be used as an alias, but is deprecated.*
 
-  This feature was formerly called `--ignore-non-exist-features`, but has been renamed. The old name can be used as an alias, but is deprecated.
+* **`--clean-per-run`**
+
+  Remove artifacts for that package before running the command.
+
+The following flags can be used with `--each-feature` and `--feature-powerset`.
+
+* **`--optional-deps`**
+
+  Space-separated list of features to skip.
+
+* **`--skip`**
+
+  Space-separated list of features to skip.
+
+  To skip run of default feature, using value `--skip default`.
+
+* **`--skip-no-default-features`**
+
+  Skip run of just `--no-default-features` flag.
 
 `cargo-hack` changes the behavior of the following existing flags.
 
