@@ -1,5 +1,6 @@
 use anyhow::Context;
 use std::{
+    env,
     ffi::{OsStr, OsString},
     fmt,
     path::Path,
@@ -24,6 +25,8 @@ pub(crate) struct ProcessBuilder<'a> {
 
     /// A list of arguments to pass to the program (between `leading_args` and '--').
     args: Vec<OsString>,
+    /// A comma-separated list of features.
+    /// This list always has a trailing comma if it is not empty.
     // cargo less than Rust 1.38 cannot handle multiple '--features' flags, so it creates another String.
     features: String,
 
@@ -112,16 +115,24 @@ impl<'a> ProcessBuilder<'a> {
         &self.program
     }
 
+    /// Gets the comma-separated features list
+    fn get_features(&self) -> &str {
+        // drop a trailing comma if it is not empty.
+        &self.features[..self.features.len().saturating_sub(1)]
+    }
+
     /// Runs the process, waiting for completion, and mapping non-success exit codes to an error.
-    pub(crate) fn exec(&self) -> Result<()> {
+    pub(crate) fn exec(&mut self) -> Result<()> {
         let mut command = self.build_command();
         let exit = command.status().with_context(|| {
+            self.verbose = true;
             ProcessError::new(&format!("could not execute process {}", self), None, None)
         })?;
 
         if exit.success() {
             Ok(())
         } else {
+            self.verbose = true;
             Err(ProcessError::new(
                 &format!("process didn't exit successfully: {}", self),
                 Some(exit),
@@ -160,7 +171,7 @@ impl<'a> ProcessBuilder<'a> {
         command.args(&self.args);
         if !self.features.is_empty() {
             command.arg("--features");
-            command.arg(&self.features[..self.features.len() - 1]); // drop tail `,`
+            command.arg(self.get_features());
         }
         if !self.trailing_args.is_empty() {
             command.arg("--");
@@ -181,24 +192,27 @@ impl fmt::Display for ProcessBuilder<'_> {
             write!(f, " {}", arg)?;
         }
 
-        if self.verbose {
-            for arg in &self.args {
-                write!(f, " {}", arg.to_string_lossy())?;
-            }
-        } else {
-            let mut args = self.args.iter();
-            while let Some(arg) = args.next() {
+        let mut args = self.args.iter();
+        while let Some(arg) = args.next() {
+            if arg == "--manifest-path" {
+                let path = Path::new(args.next().unwrap());
                 // Displaying `--manifest-path` is redundant.
-                if arg == "--manifest-path" {
-                    let _ = args.next();
-                    continue;
+                if self.verbose {
+                    let path = env::current_dir()
+                        .ok()
+                        .and_then(|cwd| path.strip_prefix(&cwd).ok())
+                        .unwrap_or(path);
+
+                    write!(f, " --manifest-path")?;
+                    write!(f, " {}", path.display())?;
                 }
+            } else {
                 write!(f, " {}", arg.to_string_lossy())?;
             }
         }
 
         if !self.features.is_empty() {
-            write!(f, " --features {}", &self.features[..self.features.len() - 1])?;
+            write!(f, " --features {}", self.get_features())?;
         }
 
         if !self.trailing_args.is_empty() {

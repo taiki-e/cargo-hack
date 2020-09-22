@@ -7,6 +7,11 @@ use std::{
     process::{Command, Output},
 };
 
+#[cfg(not(windows))]
+const SEPARATOR: char = '/';
+#[cfg(windows)]
+const SEPARATOR: char = '\\';
+
 fn cargo_hack() -> Command {
     // TODO: update to use CARGO_BIN_EXE (https://github.com/rust-lang/cargo/pull/7697, require Rust 1.43).
     let mut current = env::current_exe().unwrap();
@@ -956,4 +961,26 @@ fn list_separator() {
         .unwrap()
         .assert_success()
         .assert_stderr_contains("running `cargo run --features real,renemed` on optional_deps");
+}
+
+#[test]
+fn verbose() {
+    cargo_hack()
+        .args(&["check", "--verbose"])
+        .current_dir(test_dir("tests/fixtures/virtual"))
+        .output()
+        .unwrap()
+        .assert_success()
+        .assert_stderr_contains(&format!(
+            "running `cargo check --manifest-path member1{0}Cargo.toml`",
+            SEPARATOR
+        ))
+        .assert_stderr_contains(&format!(
+            "running `cargo check --manifest-path member2{0}Cargo.toml`",
+            SEPARATOR
+        ))
+        .assert_stderr_contains(&format!(
+            "running `cargo check --manifest-path dir{0}not_find_manifest{0}Cargo.toml`",
+            SEPARATOR
+        ));
 }

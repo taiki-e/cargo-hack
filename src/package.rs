@@ -120,7 +120,7 @@ impl<'a> Kind<'a> {
 pub(crate) fn exec(
     args: &Args,
     package: &Package<'_>,
-    line: &ProcessBuilder<'_>,
+    line: &mut ProcessBuilder<'_>,
     info: &mut Info,
 ) -> Result<()> {
     match &package.kind {
@@ -137,7 +137,7 @@ pub(crate) fn exec(
 
     if !args.skip.iter().any(|x| x == "default") {
         // run with default features
-        exec_cargo(args, package, &line, info, true)?;
+        exec_cargo(args, package, &mut line, info, true)?;
     }
 
     line.arg("--no-default-features");
@@ -147,7 +147,7 @@ pub(crate) fn exec(
         //
         // `default` is not skipped because `cfg(feature = "default")` is work
         // if `default` feature specified.
-        exec_cargo(args, package, &line, info, true)?;
+        exec_cargo(args, package, &mut line, info, true)?;
     }
 
     match &package.kind {
@@ -174,13 +174,13 @@ fn exec_cargo_with_features(
 ) -> Result<()> {
     let mut line = line.clone();
     line.append_features(features);
-    exec_cargo(args, package, &line, info, true)
+    exec_cargo(args, package, &mut line, info, true)
 }
 
 fn exec_cargo(
     args: &Args,
     package: &Package<'_>,
-    line: &ProcessBuilder<'_>,
+    line: &mut ProcessBuilder<'_>,
     info: &mut Info,
     show_progress: bool,
 ) -> Result<()> {
@@ -190,9 +190,13 @@ fn exec_cargo(
         cargo_clean(line.get_program(), args, package)?;
     }
 
-    // running `<command>` on <package> (<count>/<total>)
+    // running `<command>` (on <package>) (<count>/<total>)
     let mut msg = String::new();
-    write!(msg, "running {} on {}", line, &package.name).unwrap();
+    if args.verbose {
+        write!(msg, "running {}", line).unwrap();
+    } else {
+        write!(msg, "running {} on {}", line, &package.name).unwrap();
+    }
     if show_progress {
         write!(msg, " ({}/{})", info.count, info.total).unwrap();
     }

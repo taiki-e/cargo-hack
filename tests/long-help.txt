@@ -75,8 +75,6 @@ OPTIONS:
     -v, --verbose
             Use verbose output.
 
-            This flag will be propagated to cargo.
-
         --color <WHEN>
             Coloring: auto, always, never.
 
