@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+* Improve compile time by removing some dependencies.
+
 ## [0.3.12] - 2020-09-18
 
 * [Allow only specified optional dependencies to be considered as features.](https://github.com/taiki-e/cargo-hack/pull/51)
