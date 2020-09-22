@@ -3,6 +3,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
+use toml::{value::Table, Value};
 
 use crate::Result;
 
@@ -11,7 +12,8 @@ pub(crate) struct Manifest {
     pub(crate) raw: String,
 
     // parsed manifest
-    pub(crate) package: Option<de::Package>,
+    // if `None`, workspace is virtual
+    pub(crate) package: Option<Package>,
 }
 
 impl Manifest {
@@ -19,9 +21,10 @@ impl Manifest {
         let path = path.into();
         let raw = fs::read_to_string(&path)
             .with_context(|| format!("failed to read manifest from {}", path.display()))?;
-        let toml: de::Manifest = toml::from_str(&raw)
+        let toml = toml::from_str(&raw)
             .with_context(|| format!("failed to parse manifest file: {}", path.display()))?;
-        Ok(Self { path, raw, package: toml.package })
+        let package = Package::from_table(&toml);
+        Ok(Self { path, raw, package })
     }
 
     pub(crate) fn package_name(&self) -> &str {
@@ -57,50 +60,52 @@ pub(crate) fn find_root_manifest_for_wd(cwd: &Path) -> Result<PathBuf> {
     bail!("could not find `Cargo.toml` in `{}` or any parent directory", cwd.display())
 }
 
-mod de {
-    use serde_derive::Deserialize;
+// Refs:
+// * https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/util/toml/mod.rs
+// * https://gitlab.com/crates.rs/cargo_toml
 
-    // Refs:
-    // * https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/util/toml/mod.rs
-    // * https://gitlab.com/crates.rs/cargo_toml
+pub(crate) struct Package {
+    pub(crate) name: String,
+    pub(crate) publish: Publish,
+}
 
-    #[derive(Deserialize)]
-    pub(crate) struct Manifest {
-        pub(crate) package: Option<Package>,
+impl Package {
+    fn from_table(table: &Table) -> Option<Self> {
+        let package = table.get("package")?.as_table()?;
+        let name = package.get("name")?.as_str()?.to_string();
+        let publish = match package.get("publish") {
+            None => Publish::default(),
+            Some(Value::Array(a)) => Publish::Registry(a.to_vec()),
+            Some(Value::Boolean(b)) => Publish::Flag(*b),
+            Some(_) => return None,
+        };
+
+        Some(Self { name, publish })
     }
+}
 
-    #[derive(Deserialize)]
-    pub(crate) struct Package {
-        pub(crate) name: String,
-        #[serde(default)]
-        pub(crate) publish: Publish,
+pub(crate) enum Publish {
+    Flag(bool),
+    Registry(Vec<Value>),
+}
+
+impl Default for Publish {
+    fn default() -> Self {
+        Publish::Flag(true)
     }
+}
 
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    pub(crate) enum Publish {
-        Flag(bool),
-        Registry(Vec<String>),
-    }
-
-    impl Default for Publish {
-        fn default() -> Self {
-            Publish::Flag(true)
+impl PartialEq<Publish> for bool {
+    fn eq(&self, p: &Publish) -> bool {
+        match p {
+            Publish::Flag(flag) => *flag == *self,
+            Publish::Registry(reg) => reg.is_empty() != *self,
         }
     }
+}
 
-    impl PartialEq<Publish> for bool {
-        fn eq(&self, p: &Publish) -> bool {
-            match p {
-                Publish::Flag(flag) => *flag == *self,
-                Publish::Registry(reg) => reg.is_empty() != *self,
-            }
-        }
-    }
-
-    impl PartialEq<bool> for Publish {
-        fn eq(&self, b: &bool) -> bool {
-            b.eq(self)
-        }
+impl PartialEq<bool> for Publish {
+    fn eq(&self, b: &bool) -> bool {
+        b.eq(self)
     }
 }
