@@ -6,6 +6,10 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+* cargo-hack now prints the command actually executed when error occurred.
+
+* `--verbose` flag is no longer propagated to cargo.
+
 * Improve compile time by removing some dependencies.
 
 ## [0.3.12] - 2020-09-18

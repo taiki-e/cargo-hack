@@ -131,14 +131,14 @@ fn exec_on_package(
         line.arg("--manifest-path");
         line.arg(&package.manifest_path);
 
-        no_dev_deps(args, package, &line, restore, info)
+        no_dev_deps(args, package, &mut line, restore, info)
     }
 }
 
 fn no_dev_deps(
     args: &Args,
     package: &Package<'_>,
-    line: &ProcessBuilder<'_>,
+    line: &mut ProcessBuilder<'_>,
     restore: &Restore,
     info: &mut Info,
 ) -> Result<()> {

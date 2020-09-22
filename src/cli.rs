@@ -59,7 +59,7 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
         "If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts will be removed before each run.",
         "Note that dependencies artifacts will be preserved.",
     ]),
-    ("-v", "--verbose", "Use verbose output", &["This flag will be propagated to cargo."]),
+    ("-v", "--verbose", "Use verbose output", &[]),
     ("", "--color <WHEN>", "Coloring: auto, always, never", &[
         "This flag will be propagated to cargo.",
     ]),
@@ -188,14 +188,14 @@ pub(crate) struct Args {
     pub(crate) skip_no_default_features: bool,
     /// --clean-per-run
     pub(crate) clean_per_run: bool,
+    /// -v, --verbose, -vv
+    pub(crate) verbose: bool,
 
     // flags that will be propagated to cargo
     /// --features <FEATURES>...
     pub(crate) features: Vec<String>,
     /// --color <WHEN>
     pub(crate) color: Option<Coloring>,
-    /// -v, --verbose, -vv
-    pub(crate) verbose: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -269,6 +269,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut ignore_non_exist_features = false;
     let mut skip_no_default_features = false;
     let mut clean_per_run = false;
+    let mut verbose = false;
 
     let res = (|| -> Result<()> {
         while let Some(arg) = args.next() {
@@ -394,7 +395,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                 );
             }
 
-            match arg.as_str() {
+            match &*arg {
                 "--workspace" | "--all" => {
                     if let Some(arg) = workspace.replace(arg) {
                         return Err(multi_arg(&arg, subcommand.as_ref()));
@@ -419,6 +420,8 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                     }
                     ignore_non_exist_features = true;
                 }
+                // allow multiple uses
+                "--verbose" | "-v" | "-vv" => verbose = true,
                 _ => leading.push(arg),
             }
         }
@@ -428,7 +431,6 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
 
     let color = color.map(|c| c.parse()).transpose()?;
     *coloring = color;
-    let verbose = leading.iter().any(|a| a == "--verbose" || a == "-v" || a == "-vv");
 
     res?;
 
@@ -471,7 +473,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             }
         }
     }
-    if let Some(pos) = leading.iter().position(|a| match a.as_str() {
+    if let Some(pos) = leading.iter().position(|a| match &**a {
         "--example" | "--examples" | "--test" | "--tests" | "--bench" | "--benches"
         | "--all-targets" => true,
         _ => a.starts_with("--example=") || a.starts_with("--test=") || a.starts_with("--bench="),
