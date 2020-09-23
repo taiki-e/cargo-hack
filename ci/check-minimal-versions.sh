@@ -1,12 +1,15 @@
 #!/bin/bash
+
 # Check all public crates with minimal version dependencies.
 #
-# Note that this script modifies Cargo.toml and Cargo.lock while this script is
+# Usage:
+#
+#    bash ci/check-minimal-versions.sh
+#
+# Note: this script modifies Cargo.toml and Cargo.lock while this script is
 # running, and it is an error if there are any unstaged changes.
 #
-# Refs:
-# * minimal versions: https://github.com/rust-lang/cargo/issues/5657
-# * features 2.0: https://github.com/rust-lang/cargo/issues/8088
+# Refs: https://github.com/rust-lang/cargo/issues/5657
 
 set -euo pipefail
 

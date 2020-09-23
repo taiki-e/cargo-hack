@@ -8,7 +8,7 @@ on:
       - staging
       - trying
   schedule:
-    - cron: '00 01 * * *'
+    - cron: '0 1 * * *'
 
 env:
   RUSTFLAGS: -Dwarnings
@@ -37,8 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install Rust
-        run: |
-          . ./ci/install-rust.sh ${{ matrix.rust }}
+        run: ci/install-rust.sh ${{ matrix.rust }}
       - name: cargo test
         run: |
           cargo test
@@ -52,12 +51,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Install Rust
-        run: |
-          . ./ci/install-rust.sh
-      - name: Install clippy
-        run: |
-          . ./ci/install-component.sh clippy
+      - name: Install Rust and Clippy
+        run: ci/install-component.sh clippy
       - name: cargo clippy
         run: |
           cargo clippy --all --all-features --all-targets
@@ -67,12 +62,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Install Rust
-        run: |
-          . ./ci/install-rust.sh
-      - name: Install rustfmt
-        run: |
-          . ./ci/install-component.sh rustfmt
+      - name: Install Rust and Rustfmt
+        run: ci/install-component.sh rustfmt
       - name: cargo fmt --check
         run: |
           cargo fmt --all -- --check
