@@ -41,7 +41,8 @@ impl Output {
     fn assert_success(&self) -> &Self {
         if !self.status.success() {
             panic!(
-                "`self.status.success()`:\n\nSTDOUT:\n```\n{}\n```\n\nSTDERR:\n```\n{}\n```\n",
+                "assertion failed: `self.status.success()`:\n\nSTDOUT:\n{0}\n{1}\n{0}\n\nSTDERR:\n{0}\n{2}\n{0}\n",
+                "┈".repeat(60),
                 self.stdout(),
                 self.stderr(),
             )
@@ -51,7 +52,8 @@ impl Output {
     fn assert_failure(&self) -> &Self {
         if self.status.success() {
             panic!(
-                "`!self.status.success()`:\n\nSTDOUT:\n```\n{}\n```\n\nSTDERR:\n```\n{}\n```\n",
+                "assertion failed: `!self.status.success()`:\n\nSTDOUT:\n{0}\n{1}\n{0}\n\nSTDERR:\n{0}\n{2}\n{0}\n",
+                "┈".repeat(60),
                 self.stdout(),
                 self.stderr(),
             )
@@ -62,7 +64,8 @@ impl Output {
     fn assert_stderr_contains(&self, pat: &str) -> &Self {
         if !self.stderr().contains(pat) {
             panic!(
-                "`self.stderr().contains(..)`:\n\nEXPECTED:\n```\n{}\n```\n\nACTUAL:\n```\n{}\n```\n",
+                "assertion failed: `self.stderr().contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
+                "┈".repeat(60),
                 pat,
                 self.stderr()
             )
@@ -73,7 +76,8 @@ impl Output {
     fn assert_stderr_not_contains(&self, pat: &str) -> &Self {
         if self.stderr().contains(pat) {
             panic!(
-                "`!self.stderr().contains(..)`:\n\nUNEXPECTED:\n```\n{}\n```\n\nACTUAL:\n```\n{}\n```\n",
+                "assertion failed: `!self.stderr().contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
+                "┈".repeat(60),
                 pat,
                 self.stderr()
             )
@@ -84,7 +88,8 @@ impl Output {
     fn assert_stdout_contains(&self, pat: &str) -> &Self {
         if !self.stdout().contains(pat) {
             panic!(
-                "`self.stdout().contains(..)`:\n\nEXPECTED:\n```\n{}\n```\n\nACTUAL:\n```\n{}\n```\n",
+                "assertion failed: `self.stdout().contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
+                "┈".repeat(60),
                 pat,
                 self.stdout()
             )
@@ -95,7 +100,8 @@ impl Output {
     fn assert_stdout_not_contains(&self, pat: &str) -> &Self {
         if self.stdout().contains(pat) {
             panic!(
-                "`!self.stdout().contains(..)`:\n\nUNEXPECTED:\n```\n{}\n```\n\nACTUAL:\n```\n{}\n```\n",
+                "assertion failed: `!self.stdout().contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
+                "┈".repeat(60),
                 pat,
                 self.stdout()
             )
