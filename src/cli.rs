@@ -594,20 +594,42 @@ For more information try --help
 #[cfg(test)]
 mod tests {
     use super::Help;
+    use crate::Result;
+    use std::{env, fs, path::PathBuf};
+
+    fn assert_eq(expected_path: &str, actual: &str) {
+        (|| -> Result<()> {
+            let manifest_dir = env::var_os("CARGO_MANIFEST_DIR")
+                .map(PathBuf::from)
+                .expect("CARGO_MANIFEST_DIR not set");
+            let expected_path = manifest_dir.join(expected_path);
+            let expected = fs::read_to_string(&expected_path)?;
+            if expected != actual {
+                if env::var_os("CI").map_or(false, |v| v == "true") {
+                    panic!(
+                        "assertion failed:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
+                        "┈".repeat(60),
+                        expected,
+                        actual,
+                    );
+                } else {
+                    fs::write(&expected_path, actual)?;
+                }
+            }
+            Ok(())
+        })()
+        .unwrap_or_else(|e| panic!("{:#}", e))
+    }
 
     #[test]
     fn long_help() {
-        assert_eq!(
-            Help { long: true, term_size: 200 }.to_string(),
-            include_str!("../tests/long-help.txt")
-        );
+        let actual = &Help { long: true, term_size: 200 }.to_string();
+        assert_eq("tests/long-help.txt", actual);
     }
 
     #[test]
     fn short_help() {
-        assert_eq!(
-            Help { long: false, term_size: 200 }.to_string(),
-            include_str!("../tests/short-help.txt")
-        );
+        let actual = &Help { long: false, term_size: 200 }.to_string();
+        assert_eq("tests/short-help.txt", actual);
     }
 }
