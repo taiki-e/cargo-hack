@@ -608,7 +608,7 @@ mod tests {
                 if env::var_os("CI").map_or(false, |v| v == "true") {
                     panic!(
                         "assertion failed:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
-                        "┈".repeat(60),
+                        "-".repeat(60),
                         expected,
                         actual,
                     );

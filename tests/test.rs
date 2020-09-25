@@ -42,7 +42,7 @@ impl Output {
         if !self.status.success() {
             panic!(
                 "assertion failed: `self.status.success()`:\n\nSTDOUT:\n{0}\n{1}\n{0}\n\nSTDERR:\n{0}\n{2}\n{0}\n",
-                "┈".repeat(60),
+                "-".repeat(60),
                 self.stdout(),
                 self.stderr(),
             )
@@ -53,7 +53,7 @@ impl Output {
         if self.status.success() {
             panic!(
                 "assertion failed: `!self.status.success()`:\n\nSTDOUT:\n{0}\n{1}\n{0}\n\nSTDERR:\n{0}\n{2}\n{0}\n",
-                "┈".repeat(60),
+                "-".repeat(60),
                 self.stdout(),
                 self.stderr(),
             )
@@ -65,7 +65,7 @@ impl Output {
         if !self.stderr().contains(pat) {
             panic!(
                 "assertion failed: `self.stderr().contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
-                "┈".repeat(60),
+                "-".repeat(60),
                 pat,
                 self.stderr()
             )
@@ -77,7 +77,7 @@ impl Output {
         if self.stderr().contains(pat) {
             panic!(
                 "assertion failed: `!self.stderr().contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
-                "┈".repeat(60),
+                "-".repeat(60),
                 pat,
                 self.stderr()
             )
@@ -89,7 +89,7 @@ impl Output {
         if !self.stdout().contains(pat) {
             panic!(
                 "assertion failed: `self.stdout().contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
-                "┈".repeat(60),
+                "-".repeat(60),
                 pat,
                 self.stdout()
             )
@@ -101,7 +101,7 @@ impl Output {
         if self.stdout().contains(pat) {
             panic!(
                 "assertion failed: `!self.stdout().contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
-                "┈".repeat(60),
+                "-".repeat(60),
                 pat,
                 self.stdout()
             )
