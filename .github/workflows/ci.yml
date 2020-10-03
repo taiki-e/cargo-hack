@@ -75,7 +75,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: shellcheck
         run: |
-          shellcheck ci/*.sh
+          shellcheck ci/*.sh scripts/*.sh
 
   # These jobs don't actually test anything, but they're used to tell bors the
   # build completed, as there is no practical way to detect when a workflow is

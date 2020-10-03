@@ -4,8 +4,7 @@ set -euo pipefail
 
 toolchain="${1:-nightly}"
 
-rustup set profile minimal
-rustup update "${toolchain}" --no-self-update
+rustup toolchain install "${toolchain}" --no-self-update --profile minimal
 rustup default "${toolchain}"
 
 rustup -V
