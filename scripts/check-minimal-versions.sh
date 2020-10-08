@@ -8,7 +8,7 @@
 # Note:
 # - This script modifies Cargo.toml and Cargo.lock while running
 # - This script exits with 1 if there are any unstaged changes
-# - This script requires nightly Rust
+# - This script requires nightly Rust and cargo-hack
 #
 # Refs: https://github.com/rust-lang/cargo/issues/5657
 
@@ -19,7 +19,13 @@ cd "$(cd "$(dirname "${0}")" && pwd)"/..
 if [[ "${1:-none}" == "+"* ]]; then
     toolchain="${1}"
 elif [[ "${CI:-false}" != "true" ]]; then
+    cargo +nightly -V >/dev/null || exit 1
     toolchain="+nightly"
+fi
+
+if [[ "${toolchain:-+nightly}" != "+nightly"* ]] || ! cargo hack -V &>/dev/null; then
+    echo "error: check-minimal-versions.sh requires nightly Rust and cargo-hack"
+    exit 1
 fi
 
 # This script modifies Cargo.toml and Cargo.lock, so make sure there are no
