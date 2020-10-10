@@ -51,6 +51,13 @@ OPTIONS:
 
             This flag can only be used with either --each-feature flag or --feature-powerset flag.
 
+        --depth <NUM>
+            Specify a max number of simultaneous feature flags of --feature-powerset.
+
+            If NUM is set to 1, --feature-powerset is equivalent to --each-feature.
+
+            This flag can only be used with --feature-powerset flag.
+
         --no-dev-deps
             Perform without dev-dependencies.
 

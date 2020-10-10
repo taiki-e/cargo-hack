@@ -19,6 +19,7 @@ OPTIONS:
         --optional-deps [DEPS]...  Use optional dependencies as features
         --skip <FEATURES>...       Space-separated list of features to skip
         --skip-no-default-features Skip run of just --no-default-features flag
+        --depth <NUM>              Specify a max number of simultaneous feature flags of --feature-powerset
         --no-dev-deps              Perform without dev-dependencies
         --remove-dev-deps          Equivalent to --no-dev-deps flag except for does not restore the original `Cargo.toml` after performed
         --ignore-private           Skip to perform on `publish = false` packages

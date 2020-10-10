@@ -1,5 +1,6 @@
 use std::cmp;
 
+// Note: The input must be a valid TOML.
 pub(crate) fn remove_dev_deps(bytes: &str) -> String {
     const DEV_DEPS: &str = "dev-dependencies";
     const TARGET: &str = "target.";

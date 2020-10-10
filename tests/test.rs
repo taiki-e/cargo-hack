@@ -574,6 +574,37 @@ fn feature_powerset() {
 }
 
 #[test]
+fn feature_powerset_depth() {
+    cargo_hack()
+        .args(&["check", "--feature-powerset", "--depth", "2"])
+        .current_dir(test_dir("tests/fixtures/real"))
+        .output()
+        .unwrap()
+        .assert_success()
+        .assert_stderr_contains("running `cargo check` on real (1/8)")
+        .assert_stderr_contains("running `cargo check --no-default-features` on real (2/8)")
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features a` on real (3/8)",
+        )
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features b` on real (4/8)",
+        )
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features c` on real (6/8)",
+        )
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features a,b` on real (5/8)",
+        )
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features a,c` on real (7/8)",
+        )
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features b,c` on real (8/8)",
+        )
+        .assert_stderr_not_contains("--features a,b,c");
+}
+
+#[test]
 fn skip_failure() {
     cargo_hack()
         .args(&["check", "--skip", "a"])
