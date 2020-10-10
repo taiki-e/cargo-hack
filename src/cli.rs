@@ -39,6 +39,15 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
     ("", "--skip-no-default-features", "Skip run of just --no-default-features flag", &[
         "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
     ]),
+    (
+        "",
+        "--depth <NUM>",
+        "Specify a max number of simultaneous feature flags of --feature-powerset",
+        &[
+            "If NUM is set to 1, --feature-powerset is equivalent to --each-feature.",
+            "This flag can only be used with --feature-powerset flag.",
+        ],
+    ),
     ("", "--no-dev-deps", "Perform without dev-dependencies", &[
         "This flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished.",
     ]),
@@ -190,6 +199,8 @@ pub(crate) struct Args {
     pub(crate) clean_per_run: bool,
     /// -v, --verbose, -vv
     pub(crate) verbose: bool,
+    /// --depth <NUM>
+    pub(crate) depth: Option<usize>,
 
     // flags that will be propagated to cargo
     /// --features <FEATURES>...
@@ -270,6 +281,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut skip_no_default_features = false;
     let mut clean_per_run = false;
     let mut verbose = false;
+    let mut depth = None;
 
     let res = (|| -> Result<()> {
         while let Some(arg) = args.next() {
@@ -373,6 +385,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             }
 
             parse_opt!(manifest_path, false, "--manifest-path", "--manifest-path <PATH>");
+            parse_opt!(depth, false, "--depth", "--depth <NUM>");
             parse_opt!(color, true, "--color", "--color <WHEN>");
 
             parse_multi_opt!(package, false, true, "--package", "--package <SPEC>...");
@@ -463,6 +476,10 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             );
         }
     }
+    if depth.is_some() && !feature_powerset {
+        bail!("--depth can only be used with --feature-powerset");
+    }
+    let depth = depth.map(|s| s.parse::<usize>()).transpose()?;
 
     if let Some(subcommand) = &subcommand {
         if subcommand == "test" || subcommand == "bench" {
@@ -546,6 +563,7 @@ For more information try --help
         optional_deps,
         skip_no_default_features,
         clean_per_run,
+        depth,
 
         features,
         color,

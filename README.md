@@ -106,6 +106,12 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
 
   Skip run of just `--no-default-features` flag.
 
+* **`--depth`**
+
+  Specify a max number of simultaneous feature flags of `--feature-powerset`.
+
+  If the number is set to 1, `--feature-powerset` is equivalent to `--each-feature`.
+
 `cargo-hack` changes the behavior of the following existing flags.
 
 * **`--features`**, **`--no-default-features`**
@@ -124,7 +130,7 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
   # If you use cargo-hack, you don't need to maintain this list manually.
   members=("foo" "bar")
 
-  for member in ${members[@]}; do
+  for member in "${members[@]}"; do
       cargo check --manifest-path "${member}/Cargo.toml"
   done
   ```

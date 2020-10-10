@@ -92,9 +92,9 @@ impl<'a> Kind<'a> {
             }
         } else if args.feature_powerset {
             let features = if let Some(opt_deps) = opt_deps {
-                powerset(features.chain(opt_deps))
+                powerset(features.chain(opt_deps), args.depth)
             } else {
-                powerset(features)
+                powerset(features, args.depth)
             };
 
             if package.features.is_empty() && features.is_empty() {
@@ -219,13 +219,91 @@ fn cargo_clean(cargo: &OsStr, args: &Args, package: &Package<'_>) -> Result<()> 
     line.exec()
 }
 
-fn powerset<T: Clone>(iter: impl IntoIterator<Item = T>) -> Vec<Vec<T>> {
+fn powerset<T: Clone>(iter: impl IntoIterator<Item = T>, depth: Option<usize>) -> Vec<Vec<T>> {
     iter.into_iter().fold(vec![vec![]], |mut acc, elem| {
         let ext = acc.clone().into_iter().map(|mut curr| {
             curr.push(elem.clone());
             curr
         });
-        acc.extend(ext);
+        if let Some(depth) = depth {
+            acc.extend(ext.filter(|f| f.len() <= depth));
+        } else {
+            acc.extend(ext);
+        }
         acc
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::powerset;
+
+    #[test]
+    fn powerset_full() {
+        let v = powerset(vec![1, 2, 3, 4], None);
+        assert_eq!(v, vec![
+            vec![],
+            vec![1],
+            vec![2],
+            vec![1, 2],
+            vec![3],
+            vec![1, 3],
+            vec![2, 3],
+            vec![1, 2, 3],
+            vec![4],
+            vec![1, 4],
+            vec![2, 4],
+            vec![1, 2, 4],
+            vec![3, 4],
+            vec![1, 3, 4],
+            vec![2, 3, 4],
+            vec![1, 2, 3, 4],
+        ]);
+    }
+
+    #[test]
+    fn powerset_depth1() {
+        let v = powerset(vec![1, 2, 3, 4], Some(1));
+        assert_eq!(v, vec![vec![], vec![1], vec![2], vec![3], vec![4],]);
+    }
+
+    #[test]
+    fn powerset_depth2() {
+        let v = powerset(vec![1, 2, 3, 4], Some(2));
+        assert_eq!(v, vec![
+            vec![],
+            vec![1],
+            vec![2],
+            vec![1, 2],
+            vec![3],
+            vec![1, 3],
+            vec![2, 3],
+            vec![4],
+            vec![1, 4],
+            vec![2, 4],
+            vec![3, 4],
+        ]);
+    }
+
+    #[test]
+    fn powerset_depth3() {
+        let v = powerset(vec![1, 2, 3, 4], Some(3));
+        assert_eq!(v, vec![
+            vec![],
+            vec![1],
+            vec![2],
+            vec![1, 2],
+            vec![3],
+            vec![1, 3],
+            vec![2, 3],
+            vec![1, 2, 3],
+            vec![4],
+            vec![1, 4],
+            vec![2, 4],
+            vec![1, 2, 4],
+            vec![3, 4],
+            vec![1, 3, 4],
+            vec![2, 3, 4],
+        ]);
+    }
 }
