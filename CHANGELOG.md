@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.3.14] - 2020-10-10
+
+* [Add `--depth` option.][59] See [#59][59] for details.
+
+[59]: https://github.com/taiki-e/cargo-hack/pull/59
+
 ## [0.3.13] - 2020-09-22
 
 * [Print the command actually executed when error occurred.](https://github.com/taiki-e/cargo-hack/pull/55)
@@ -20,7 +26,7 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [0.3.11] - 2020-07-11
 
-* [Added `--clean-per-run` flag.][49] See [#49][49] for more details.
+* [Added `--clean-per-run` flag.][49] See [#49][49] for details.
 
 [49]: https://github.com/taiki-e/cargo-hack/pull/49
 
@@ -38,7 +44,7 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [0.3.8] - 2020-05-21
 
-* [Added `--skip-no-default-features` flag.][41] See [#38][38] for more details.
+* [Added `--skip-no-default-features` flag.][41] See [#38][38] for details.
 
 [38]: https://github.com/taiki-e/cargo-hack/pull/38
 [41]: https://github.com/taiki-e/cargo-hack/pull/41
@@ -57,7 +63,7 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [0.3.5] - 2020-04-24
 
-* [Added `--optional-deps` flag.][34] See [#28][28] for more details.
+* [Added `--optional-deps` flag.][34] See [#28][28] for details.
 
 [28]: https://github.com/taiki-e/cargo-hack/pull/28
 [34]: https://github.com/taiki-e/cargo-hack/pull/34
@@ -70,7 +76,7 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [0.3.3] - 2020-01-06
 
-* [Added `--skip` option.][25] See [#24][24] for more details.
+* [Added `--skip` option.][25] See [#24][24] for details.
 
 [24]: https://github.com/taiki-e/cargo-hack/pull/24
 [25]: https://github.com/taiki-e/cargo-hack/pull/25
@@ -128,7 +134,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.13...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.14...HEAD
+[0.3.14]: https://github.com/taiki-e/cargo-hack/compare/v0.3.13...v0.3.14
 [0.3.13]: https://github.com/taiki-e/cargo-hack/compare/v0.3.12...v0.3.13
 [0.3.12]: https://github.com/taiki-e/cargo-hack/compare/v0.3.11...v0.3.12
 [0.3.11]: https://github.com/taiki-e/cargo-hack/compare/v0.3.10...v0.3.11
