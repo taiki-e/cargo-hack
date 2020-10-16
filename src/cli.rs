@@ -182,8 +182,6 @@ pub(crate) struct Args {
     pub(crate) each_feature: bool,
     /// --feature-powerset
     pub(crate) feature_powerset: bool,
-    /// --skip <FEATURES>...
-    pub(crate) skip: Vec<String>,
     /// --no-dev-deps
     pub(crate) no_dev_deps: bool,
     /// --remove-dev-deps
@@ -194,16 +192,24 @@ pub(crate) struct Args {
     pub(crate) ignore_unknown_features: bool,
     /// --optional-deps [DEPS]...
     pub(crate) optional_deps: Option<Vec<String>>,
+    /// --clean-per-run
+    pub(crate) clean_per_run: bool,
+    /// --depth <NUM>
+    pub(crate) depth: Option<usize>,
+
+    /// --no-default-features
+    pub(crate) no_default_features: bool,
+    /// -v, --verbose, -vv
+    pub(crate) verbose: bool,
+
+    // Note: These values are not always exactly the same as the input.
+    // Error messages should not assume that these options have been specified.
+    /// --skip <FEATURES>...
+    pub(crate) skip: Vec<String>,
     /// --skip-no-default-features
     pub(crate) skip_no_default_features: bool,
     /// --skip-all-features
     pub(crate) skip_all_features: bool,
-    /// --clean-per-run
-    pub(crate) clean_per_run: bool,
-    /// -v, --verbose, -vv
-    pub(crate) verbose: bool,
-    /// --depth <NUM>
-    pub(crate) depth: Option<usize>,
 
     // flags that will be propagated to cargo
     /// --features <FEATURES>...
@@ -283,8 +289,11 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut skip_no_default_features = false;
     let mut skip_all_features = false;
     let mut clean_per_run = false;
-    let mut verbose = false;
     let mut depth = None;
+
+    let mut verbose = false;
+    let mut no_default_features = false;
+    let mut all_features = false;
 
     let res = (|| -> Result<()> {
         while let Some(arg) = args.next() {
@@ -306,20 +315,14 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             }
 
             macro_rules! parse_opt {
-                ($opt:ident, $propagate:expr, $pat:expr, $help:expr) => {
+                ($opt:ident, $pat:expr, $help:expr) => {
                     if arg == $pat {
                         if $opt.is_some() {
                             return Err(multi_arg($help, subcommand.as_ref()));
                         }
                         let next =
                             args.next().ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
-                        if $propagate {
-                            $opt = Some(next.clone());
-                            leading.push(arg);
-                            leading.push(next);
-                        } else {
-                            $opt = Some(next);
-                        }
+                        $opt = Some(next);
                         continue;
                     } else if arg.starts_with(concat!($pat, "=")) {
                         if $opt.is_some() {
@@ -330,9 +333,6 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                             .nth(1)
                             .ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
                         $opt = Some(next.to_string());
-                        if $propagate {
-                            leading.push(arg);
-                        }
                         continue;
                     }
                 };
@@ -383,13 +383,15 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                 ($flag:ident) => {
                     if mem::replace(&mut $flag, true) {
                         return Err(multi_arg(&arg, subcommand.as_ref()));
+                    } else {
+                        continue;
                     }
                 };
             }
 
-            parse_opt!(manifest_path, false, "--manifest-path", "--manifest-path <PATH>");
-            parse_opt!(depth, false, "--depth", "--depth <NUM>");
-            parse_opt!(color, true, "--color", "--color <WHEN>");
+            parse_opt!(manifest_path, "--manifest-path", "--manifest-path <PATH>");
+            parse_opt!(depth, "--depth", "--depth <NUM>");
+            parse_opt!(color, "--color", "--color <WHEN>");
 
             parse_multi_opt!(package, false, true, "--package", "--package <SPEC>...");
             parse_multi_opt!(package, false, true, "-p", "--package <SPEC>...");
@@ -416,6 +418,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                     if let Some(arg) = workspace.replace(arg) {
                         return Err(multi_arg(&arg, subcommand.as_ref()));
                     }
+                    continue;
                 }
                 "--no-dev-deps" => parse_flag!(no_dev_deps),
                 "--remove-dev-deps" => parse_flag!(remove_dev_deps),
@@ -430,9 +433,16 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                     "--ignore-non-exist-features was removed, use --ignore-unknown-features instead"
                 ),
                 // allow multiple uses
-                "--verbose" | "-v" | "-vv" => verbose = true,
-                _ => leading.push(arg),
+                "--verbose" | "-v" | "-vv" => {
+                    verbose = true;
+                    continue;
+                }
+                "--no-default-features" => no_default_features = true,
+                "--all-features" => all_features = true,
+                _ => {}
             }
+
+            leading.push(arg);
         }
 
         Ok(())
@@ -517,6 +527,12 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     if each_feature && feature_powerset {
         bail!("--each-feature may not be used together with --feature-powerset");
     }
+    if all_features && each_feature {
+        bail!("--all-features may not be used together with --each-feature");
+    }
+    if all_features && feature_powerset {
+        bail!("--all-features may not be used together with --feature-powerset");
+    }
 
     if subcommand.is_none() {
         if leading.iter().any(|a| a == "--list") {
@@ -546,6 +562,9 @@ For more information try --help
         )
     }
 
+    skip_no_default_features |= no_default_features;
+    skip.extend_from_slice(&features);
+
     Ok(Some(Args {
         leading_args: leading,
         trailing_args: args.collect::<Vec<_>>(),
@@ -558,20 +577,23 @@ For more information try --help
         workspace: workspace.is_some(),
         each_feature,
         feature_powerset,
-        skip,
         no_dev_deps,
         remove_dev_deps,
         ignore_private,
         ignore_unknown_features,
         optional_deps,
-        skip_no_default_features,
-        skip_all_features,
         clean_per_run,
         depth,
 
+        no_default_features,
+        verbose,
+
+        skip,
+        skip_no_default_features,
+        skip_all_features,
+
         features,
         color,
-        verbose,
     }))
 }
 

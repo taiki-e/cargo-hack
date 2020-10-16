@@ -134,7 +134,9 @@ pub(crate) fn exec(
         exec_cargo(args, package, &mut line, info, true)?;
     }
 
-    line.arg("--no-default-features");
+    if !args.no_default_features {
+        line.arg("--no-default-features");
+    }
 
     if !args.skip_no_default_features {
         // run with no default features if the package has other features
