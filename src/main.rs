@@ -50,6 +50,14 @@ fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
         None => Manifest::new(find_root_manifest_for_wd(&env::current_dir()?)?)?,
     };
 
+    // TODO: Ideally, we should do this, but for now, we allow it as cargo-hack
+    // may mistakenly interpret the specified valid feature flag as unknown.
+    // if args.ignore_unknown_features && !args.workspace && !current_manifest.is_virtual() {
+    //     bail!(
+    //         "--ignore-unknown-features can only be used in the root of a virtual workspace or together with --workspace"
+    //     )
+    // }
+
     exec_on_workspace(&args, &current_manifest, &metadata)
 }
 
