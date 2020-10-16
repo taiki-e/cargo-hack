@@ -163,10 +163,7 @@ fn removed_flags() {
             .output()
             .unwrap()
             .assert_failure()
-            .assert_stderr_contains(&format!(
-                "`{}` flag was removed, use `{}` flag instead",
-                flag, alt
-            ));
+            .assert_stderr_contains(&format!("{} was removed, use {} instead", flag, alt));
     }
 }
 
@@ -365,7 +362,8 @@ fn exclude() {
 }
 
 #[test]
-fn exclude_not_with_all() {
+fn exclude_failure() {
+    // not with --workspace
     cargo_hack()
         .args(&["check", "--exclude", "member1"])
         .current_dir(test_dir("tests/fixtures/virtual"))
@@ -376,53 +374,7 @@ fn exclude_not_with_all() {
 }
 
 #[test]
-fn remove_dev_deps_with_devs() {
-    for flag in &[
-        "--example",
-        "--examples",
-        "--test",
-        "--tests",
-        "--bench",
-        "--benches",
-        "--all-targets",
-    ][..]
-    {
-        cargo_hack()
-            .args(&["check", "--remove-dev-deps", flag])
-            .current_dir(test_dir("tests/fixtures/real"))
-            .output()
-            .unwrap()
-            .assert_failure()
-            .assert_stderr_contains(&format!(
-                "--remove-dev-deps may not be used together with {}",
-                flag
-            ));
-    }
-
-    for subcommand in &["test", "bench"] {
-        cargo_hack()
-            .args(&[subcommand, "--remove-dev-deps"])
-            .current_dir(test_dir("tests/fixtures/real"))
-            .output()
-            .unwrap()
-            .assert_failure()
-            .assert_stderr_contains(&format!(
-                "--remove-dev-deps may not be used together with {} subcommand",
-                subcommand
-            ));
-    }
-}
-
-#[test]
 fn no_dev_deps() {
-    cargo_hack()
-        .args(&["check", "--no-dev-deps", "--remove-dev-deps"])
-        .current_dir(test_dir("tests/fixtures/no_dev_deps"))
-        .output()
-        .unwrap()
-        .assert_failure()
-        .assert_stderr_contains("--no-dev-deps may not be used together with --remove-dev-deps");
-
     cargo_hack()
         .args(&["check", "--no-dev-deps"])
         .current_dir(test_dir("tests/fixtures/no_dev_deps"))
@@ -431,7 +383,7 @@ fn no_dev_deps() {
         .assert_success()
         .assert_stderr_contains("running `cargo check` on no_dev_deps")
         .assert_stderr_contains(
-            "`--no-dev-deps` flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished",
+            "--no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished",
         );
 
     // with --all
@@ -442,21 +394,24 @@ fn no_dev_deps() {
         .unwrap()
         .assert_success()
         .assert_stderr_contains(
-            "`--no-dev-deps` flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished",
+            "--no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished",
         );
 }
 
 #[test]
-fn no_dev_deps_with_devs() {
-    for flag in &[
-        "--example",
-        "--examples",
-        "--test",
-        "--tests",
-        "--bench",
-        "--benches",
-        "--all-targets",
-    ][..]
+fn no_dev_deps_failure() {
+    // with --remove-dev-deps
+    cargo_hack()
+        .args(&["check", "--no-dev-deps", "--remove-dev-deps"])
+        .current_dir(test_dir("tests/fixtures/no_dev_deps"))
+        .output()
+        .unwrap()
+        .assert_failure()
+        .assert_stderr_contains("--no-dev-deps may not be used together with --remove-dev-deps");
+
+    // with options requires dev-deps
+    for flag in
+        &["--example", "--examples", "--test", "--tests", "--bench", "--benches", "--all-targets"]
     {
         cargo_hack()
             .args(&["check", "--no-dev-deps", flag])
@@ -470,6 +425,7 @@ fn no_dev_deps_with_devs() {
             ));
     }
 
+    // with subcommands requires dev-deps
     for subcommand in &["test", "bench"] {
         cargo_hack()
             .args(&[subcommand, "--no-dev-deps"])
@@ -479,6 +435,39 @@ fn no_dev_deps_with_devs() {
             .assert_failure()
             .assert_stderr_contains(&format!(
                 "--no-dev-deps may not be used together with {} subcommand",
+                subcommand
+            ));
+    }
+}
+
+#[test]
+fn remove_dev_deps_failure() {
+    // with options requires dev-deps
+    for flag in
+        &["--example", "--examples", "--test", "--tests", "--bench", "--benches", "--all-targets"]
+    {
+        cargo_hack()
+            .args(&["check", "--remove-dev-deps", flag])
+            .current_dir(test_dir("tests/fixtures/real"))
+            .output()
+            .unwrap()
+            .assert_failure()
+            .assert_stderr_contains(&format!(
+                "--remove-dev-deps may not be used together with {}",
+                flag
+            ));
+    }
+
+    // with subcommands requires dev-deps
+    for subcommand in &["test", "bench"] {
+        cargo_hack()
+            .args(&[subcommand, "--remove-dev-deps"])
+            .current_dir(test_dir("tests/fixtures/real"))
+            .output()
+            .unwrap()
+            .assert_failure()
+            .assert_stderr_contains(&format!(
+                "--remove-dev-deps may not be used together with {} subcommand",
                 subcommand
             ));
     }
@@ -497,6 +486,19 @@ fn ignore_unknown_features() {
         .assert_stderr_not_contains("skipped applying unknown `f` feature to member2")
         .assert_stderr_contains(
             "running `cargo check --no-default-features --features f` on member2",
+        );
+}
+
+#[test]
+fn ignore_unknown_features_failure() {
+    cargo_hack()
+        .args(&["check", "--ignore-unknown-features"])
+        .current_dir(test_dir("tests/fixtures/virtual"))
+        .output()
+        .unwrap()
+        .assert_failure()
+        .assert_stderr_contains(
+            "--ignore-unknown-features can only be used together with --features",
         );
 }
 
@@ -653,6 +655,17 @@ fn feature_powerset_depth() {
 }
 
 #[test]
+fn depth_failure() {
+    cargo_hack()
+        .args(&["check", "--each-feature", "--depth", "2"])
+        .current_dir(test_dir("tests/fixtures/real"))
+        .output()
+        .unwrap()
+        .assert_failure()
+        .assert_stderr_contains("--depth can only be used together with --feature-powerset");
+}
+
+#[test]
 fn skip_failure() {
     cargo_hack()
         .args(&["check", "--skip", "a"])
@@ -661,7 +674,7 @@ fn skip_failure() {
         .unwrap()
         .assert_failure()
         .assert_stderr_contains(
-            "--skip can only be used with either --each-feature or --feature-powerset",
+            "--skip can only be used together with either --each-feature or --feature-powerset",
         );
 }
 
@@ -764,6 +777,19 @@ fn skip_no_default_features() {
 }
 
 #[test]
+fn skip_no_default_features_failure() {
+    cargo_hack()
+        .args(&["check", "--skip-no-default-features"])
+        .current_dir(test_dir("tests/fixtures/real"))
+        .output()
+        .unwrap()
+        .assert_failure()
+        .assert_stderr_contains(
+            "--skip-no-default-features can only be used together with either --each-feature or --feature-powerset",
+        );
+}
+
+#[test]
 fn skip_all_features() {
     cargo_hack()
         .args(&["check", "--each-feature", "--skip-all-features"])
@@ -784,6 +810,19 @@ fn skip_all_features() {
         )
         .assert_stderr_not_contains(
             "running `cargo check --no-default-features --all-features` on real",
+        );
+}
+
+#[test]
+fn skip_all_features_failure() {
+    cargo_hack()
+        .args(&["check", "--skip-all-features"])
+        .current_dir(test_dir("tests/fixtures/real"))
+        .output()
+        .unwrap()
+        .assert_failure()
+        .assert_stderr_contains(
+            "--skip-all-features can only be used together with either --each-feature or --feature-powerset",
         );
 }
 
@@ -1010,6 +1049,19 @@ fn optional_deps() {
         .unwrap()
         .assert_success()
         .assert_stderr_contains("running `cargo check` on optional_deps (1/1)");
+}
+
+#[test]
+fn optional_deps_failure() {
+    cargo_hack()
+        .args(&["check", "--optional-deps"])
+        .current_dir(test_dir("tests/fixtures/real"))
+        .output()
+        .unwrap()
+        .assert_failure()
+        .assert_stderr_contains(
+            "--optional-deps can only be used together with either --each-feature or --feature-powerset",
+        );
 }
 
 #[test]

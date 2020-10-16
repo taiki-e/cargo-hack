@@ -13,7 +13,9 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
     ("-p", "--package <SPEC>...", "Package(s) to check", &[]),
     ("", "--all", "Alias for --workspace", &[]),
     ("", "--workspace", "Perform command for all packages in the workspace", &[]),
-    ("", "--exclude <SPEC>...", "Exclude packages from the check", &[]),
+    ("", "--exclude <SPEC>...", "Exclude packages from the check", &[
+        "This flag can only be used together with --workspace",
+    ]),
     ("", "--manifest-path <PATH>", "Path to Cargo.toml", &[]),
     ("", "--features <FEATURES>...", "Space-separated list of features to activate", &[]),
     ("", "--each-feature", "Perform for each feature of the package", &[
@@ -24,17 +26,17 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
     ]),
     ("", "--optional-deps [DEPS]...", "Use optional dependencies as features", &[
         "If DEPS are not specified, all optional dependencies are considered as features.",
-        "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
+        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
     ]),
     ("", "--skip <FEATURES>...", "Space-separated list of features to skip", &[
         "To skip run of default feature, using value `--skip default`.",
-        "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
+        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
     ]),
     ("", "--skip-no-default-features", "Skip run of just --no-default-features flag", &[
-        "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
+        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
     ]),
     ("", "--skip-all-features", "Skip run of just --all-features flag", &[
-        "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
+        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
     ]),
     (
         "",
@@ -42,11 +44,11 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
         "Specify a max number of simultaneous feature flags of --feature-powerset",
         &[
             "If NUM is set to 1, --feature-powerset is equivalent to --each-feature.",
-            "This flag can only be used with --feature-powerset flag.",
+            "This flag can only be used together with --feature-powerset flag.",
         ],
     ),
     ("", "--no-dev-deps", "Perform without dev-dependencies", &[
-        "This flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished.",
+        "Note that this flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished.",
     ]),
     (
         "",
@@ -59,7 +61,9 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
         "",
         "--ignore-unknown-features",
         "Skip passing --features flag to `cargo` if that feature does not exist in the package",
-        &[],
+        &[
+            "This flag can only be used in the root of a virtual workspace or together with --workspace.",
+        ],
     ),
     ("", "--clean-per-run", "Remove artifacts for that package before running the command", &[
         "If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts will be removed before each run.",
@@ -423,7 +427,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                 "--clean-per-run" => parse_flag!(clean_per_run),
                 "--ignore-unknown-features" => parse_flag!(ignore_unknown_features),
                 "--ignore-non-exist-features" => bail!(
-                    "`--ignore-non-exist-features` flag was removed, use `--ignore-unknown-features` flag instead"
+                    "--ignore-non-exist-features was removed, use --ignore-unknown-features instead"
                 ),
                 // allow multiple uses
                 "--verbose" | "-v" | "-vv" => verbose = true,
@@ -453,27 +457,36 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     }
 
     if !exclude.is_empty() && workspace.is_none() {
+        // TODO: This is the same behavior as cargo, but should we allow it to be used
+        // in the root of a virtual workspace as well?
         bail!("--exclude can only be used together with --workspace");
     }
+    if ignore_unknown_features && features.is_empty() {
+        // TODO: Once https://github.com/taiki-e/cargo-hack/issues/52 implemented,
+        // allow --include-features.
+        bail!("--ignore-unknown-features can only be used together with --features");
+    }
     if !each_feature && !feature_powerset {
-        if !skip.is_empty() {
-            bail!("--skip can only be used with either --each-feature or --feature-powerset");
-        } else if optional_deps.is_some() {
+        if optional_deps.is_some() {
             bail!(
-                "--optional-deps can only be used with either --each-feature or --feature-powerset"
+                "--optional-deps can only be used together with either --each-feature or --feature-powerset"
+            );
+        } else if !skip.is_empty() {
+            bail!(
+                "--skip can only be used together with either --each-feature or --feature-powerset"
             );
         } else if skip_no_default_features {
             bail!(
-                "--skip-no-default-features can only be used with either --each-feature or --feature-powerset"
+                "--skip-no-default-features can only be used together with either --each-feature or --feature-powerset"
             );
         } else if skip_all_features {
             bail!(
-                "--skip-all-features can only be used with either --each-feature or --feature-powerset"
+                "--skip-all-features can only be used together with either --each-feature or --feature-powerset"
             );
         }
     }
     if depth.is_some() && !feature_powerset {
-        bail!("--depth can only be used with --feature-powerset");
+        bail!("--depth can only be used together with --feature-powerset");
     }
     let depth = depth.map(|s| s.parse::<usize>()).transpose()?;
 
@@ -529,7 +542,7 @@ For more information try --help
     if no_dev_deps {
         info!(
             color,
-            "`--no-dev-deps` flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished"
+            "--no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished"
         )
     }
 

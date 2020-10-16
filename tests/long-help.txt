@@ -19,6 +19,8 @@ OPTIONS:
         --exclude <SPEC>...
             Exclude packages from the check.
 
+            This flag can only be used together with --workspace
+
         --manifest-path <PATH>
             Path to Cargo.toml.
 
@@ -40,36 +42,36 @@ OPTIONS:
 
             If DEPS are not specified, all optional dependencies are considered as features.
 
-            This flag can only be used with either --each-feature flag or --feature-powerset flag.
+            This flag can only be used together with either --each-feature flag or --feature-powerset flag.
 
         --skip <FEATURES>...
             Space-separated list of features to skip.
 
             To skip run of default feature, using value `--skip default`.
 
-            This flag can only be used with either --each-feature flag or --feature-powerset flag.
+            This flag can only be used together with either --each-feature flag or --feature-powerset flag.
 
         --skip-no-default-features
             Skip run of just --no-default-features flag.
 
-            This flag can only be used with either --each-feature flag or --feature-powerset flag.
+            This flag can only be used together with either --each-feature flag or --feature-powerset flag.
 
         --skip-all-features
             Skip run of just --all-features flag.
 
-            This flag can only be used with either --each-feature flag or --feature-powerset flag.
+            This flag can only be used together with either --each-feature flag or --feature-powerset flag.
 
         --depth <NUM>
             Specify a max number of simultaneous feature flags of --feature-powerset.
 
             If NUM is set to 1, --feature-powerset is equivalent to --each-feature.
 
-            This flag can only be used with --feature-powerset flag.
+            This flag can only be used together with --feature-powerset flag.
 
         --no-dev-deps
             Perform without dev-dependencies.
 
-            This flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished.
+            Note that this flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished.
 
         --remove-dev-deps
             Equivalent to --no-dev-deps flag except for does not restore the original `Cargo.toml` after performed.
@@ -79,6 +81,8 @@ OPTIONS:
 
         --ignore-unknown-features
             Skip passing --features flag to `cargo` if that feature does not exist in the package.
+
+            This flag can only be used in the root of a virtual workspace or together with --workspace.
 
         --clean-per-run
             Remove artifacts for that package before running the command.

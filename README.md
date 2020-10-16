@@ -84,7 +84,7 @@ To install the current cargo-hack requires Rust 1.36 or later.
 
   Skip passing `--features` to `cargo` if that feature does not exist.
 
-  *This feature was formerly called `--ignore-non-exist-features`, but has been renamed. The old name can be used as an alias, but is deprecated.*
+  *This feature was formerly called `--ignore-non-exist-features`, but has been renamed.*
 
 * **`--clean-per-run`**
 
