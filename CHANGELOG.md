@@ -12,6 +12,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 * Add `--skip-all-features` flag. See [#42][42] for details.
 
+* Fix an issue where using `--features` with `--each-feature` or `--feature-powerset` together would result in the same feature combination being performed multiple times.
+
 [42]: https://github.com/taiki-e/cargo-hack/pull/42
 
 ## [0.3.14] - 2020-10-10

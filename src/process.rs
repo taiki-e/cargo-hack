@@ -66,8 +66,7 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    /// (chainable) Adds `--features` flag to the args list.
-    pub(crate) fn features(&mut self, args: &Args, package: &Package) -> &mut Self {
+    pub(crate) fn append_features_from_args(&mut self, args: &Args, package: &Package) {
         if args.ignore_unknown_features {
             self.append_features(args.features.iter().filter(|f| {
                 if package.features.get(*f).is_some()
@@ -86,7 +85,6 @@ impl<'a> ProcessBuilder<'a> {
         } else if !args.features.is_empty() {
             self.append_features(&args.features);
         }
-        self
     }
 
     /// (chainable) Adds `arg` to the args list.

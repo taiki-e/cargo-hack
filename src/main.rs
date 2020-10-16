@@ -134,7 +134,7 @@ fn exec_on_package(
         Ok(())
     } else {
         let mut line = line.clone();
-        line.features(args, package);
+        line.append_features_from_args(args, package);
 
         line.arg("--manifest-path");
         line.arg(&package.manifest_path);
