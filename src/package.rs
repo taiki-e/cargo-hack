@@ -81,13 +81,10 @@ impl<'a> Kind<'a> {
                 *total += 1;
                 Kind::Nomal { show_progress: true }
             } else {
-                *total += features.len();
-                if !args.skip.iter().any(|x| x == "default") {
-                    *total += 1;
-                }
-                if !args.skip_no_default_features {
-                    *total += 1;
-                }
+                *total += features.len()
+                    + (!args.skip.iter().any(|x| x == "default")) as usize
+                    + (!args.skip_no_default_features) as usize
+                    + (!args.skip_all_features) as usize;
                 Kind::Each { features }
             }
         } else if args.feature_powerset {
@@ -102,13 +99,10 @@ impl<'a> Kind<'a> {
                 Kind::Nomal { show_progress: true }
             } else {
                 // -1: the first element of a powerset is `[]`
-                *total += features.len() - 1;
-                if !args.skip.iter().any(|x| x == "default") {
-                    *total += 1;
-                }
-                if !args.skip_no_default_features {
-                    *total += 1;
-                }
+                *total += features.len() - 1
+                    + (!args.skip.iter().any(|x| x == "default")) as usize
+                    + (!args.skip_no_default_features) as usize
+                    + (!args.skip_all_features) as usize;
                 Kind::Powerset { features }
             }
         } else {
@@ -151,18 +145,28 @@ pub(crate) fn exec(
     }
 
     match &package.kind {
-        Kind::Each { features } => features
-            .iter()
-            .try_for_each(|f| exec_cargo_with_features(args, package, &line, info, Some(f))),
+        Kind::Each { features } => {
+            features
+                .iter()
+                .try_for_each(|f| exec_cargo_with_features(args, package, &line, info, Some(f)))?;
+        }
         Kind::Powerset { features } => {
             // The first element of a powerset is `[]` so it should be skipped.
             features
                 .iter()
                 .skip(1)
-                .try_for_each(|f| exec_cargo_with_features(args, package, &line, info, f))
+                .try_for_each(|f| exec_cargo_with_features(args, package, &line, info, f))?;
         }
         _ => unreachable!(),
     }
+
+    if !args.skip_all_features {
+        // run with all features
+        line.arg("--all-features");
+        exec_cargo(args, package, &mut line, info, true)?;
+    }
+
+    Ok(())
 }
 
 fn exec_cargo_with_features(
