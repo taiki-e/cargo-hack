@@ -125,8 +125,7 @@ fn multi_arg() {
         "--ignore-private",
         "--ignore-unknown-features",
         "--optional-deps",
-    ][..]
-    {
+    ] {
         cargo_hack()
             .args(&["check", flag, flag])
             .current_dir(test_dir("tests/fixtures/real"))
@@ -140,7 +139,7 @@ fn multi_arg() {
     }
 
     for (flag, msg) in
-        &[("--manifest-path", "--manifest-path <PATH>"), ("--color", "--color <WHEN>")][..]
+        &[("--manifest-path", "--manifest-path <PATH>"), ("--color", "--color <WHEN>")]
     {
         cargo_hack()
             .args(&["check", flag, "auto", flag, "auto"])
@@ -151,6 +150,22 @@ fn multi_arg() {
             .assert_stderr_contains(&format!(
                 "The argument '{}' was provided more than once, but cannot be used multiple times",
                 msg
+            ));
+    }
+}
+
+#[test]
+fn removed_flags() {
+    for (flag, alt) in &[("--ignore-non-exist-features", "--ignore-unknown-features")] {
+        cargo_hack()
+            .args(&["check", flag])
+            .current_dir(test_dir("tests/fixtures/real"))
+            .output()
+            .unwrap()
+            .assert_failure()
+            .assert_stderr_contains(&format!(
+                "`{}` flag was removed, use `{}` flag instead",
+                flag, alt
             ));
     }
 }
@@ -483,19 +498,6 @@ fn ignore_unknown_features() {
         .assert_stderr_contains(
             "running `cargo check --no-default-features --features f` on member2",
         );
-
-    // --ignore-non-exist-features is a deprecated alias of --ignore-unknown-features
-    cargo_hack()
-        .args(&["check", "--ignore-non-exist-features", "--features=f"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
-        .output()
-        .unwrap()
-        .assert_success()
-        .assert_stderr_contains("'--ignore-non-exist-features' flag is deprecated, use '--ignore-unknown-features' flag instead")
-        .assert_stderr_contains("skipped applying unknown `f` feature to member1")
-        .assert_stderr_contains("running `cargo check` on member1")
-        .assert_stderr_not_contains("skipped applying unknown `f` feature to member2")
-        .assert_stderr_contains("running `cargo check --features f` on member2");
 }
 
 #[test]

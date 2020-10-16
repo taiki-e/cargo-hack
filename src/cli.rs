@@ -186,7 +186,7 @@ pub(crate) struct Args {
     pub(crate) remove_dev_deps: bool,
     /// --ignore-private
     pub(crate) ignore_private: bool,
-    /// --ignore-unknown-features, (--ignore-non-exist-features)
+    /// --ignore-unknown-features
     pub(crate) ignore_unknown_features: bool,
     /// --optional-deps [DEPS]...
     pub(crate) optional_deps: Option<Vec<String>>,
@@ -276,7 +276,6 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut feature_powerset = false;
     let mut ignore_private = false;
     let mut ignore_unknown_features = false;
-    let mut ignore_non_exist_features = false;
     let mut skip_no_default_features = false;
     let mut skip_all_features = false;
     let mut clean_per_run = false;
@@ -422,18 +421,10 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                 "--skip-no-default-features" => parse_flag!(skip_no_default_features),
                 "--skip-all-features" => parse_flag!(skip_all_features),
                 "--clean-per-run" => parse_flag!(clean_per_run),
-                "--ignore-unknown-features" => {
-                    if ignore_unknown_features || ignore_non_exist_features {
-                        return Err(multi_arg(&arg, subcommand.as_ref()));
-                    }
-                    ignore_unknown_features = true;
-                }
-                "--ignore-non-exist-features" => {
-                    if ignore_unknown_features || ignore_non_exist_features {
-                        return Err(multi_arg("--ignore-unknown-features", subcommand.as_ref()));
-                    }
-                    ignore_non_exist_features = true;
-                }
+                "--ignore-unknown-features" => parse_flag!(ignore_unknown_features),
+                "--ignore-non-exist-features" => bail!(
+                    "`--ignore-non-exist-features` flag was removed, use `--ignore-unknown-features` flag instead"
+                ),
                 // allow multiple uses
                 "--verbose" | "-v" | "-vv" => verbose = true,
                 _ => leading.push(arg),
@@ -535,12 +526,6 @@ For more information try --help
         }
     }
 
-    if ignore_non_exist_features {
-        warn!(
-            color,
-            "'--ignore-non-exist-features' flag is deprecated, use '--ignore-unknown-features' flag instead"
-        );
-    }
     if no_dev_deps {
         info!(
             color,
@@ -564,7 +549,7 @@ For more information try --help
         no_dev_deps,
         remove_dev_deps,
         ignore_private,
-        ignore_unknown_features: ignore_unknown_features || ignore_non_exist_features,
+        ignore_unknown_features,
         optional_deps,
         skip_no_default_features,
         skip_all_features,

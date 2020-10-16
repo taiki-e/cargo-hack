@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+* Remove `--ignore-non-exist-features` flag, use `--ignore-unknown-features` flag instead.
+
 * Treat `--all-features` flag as one of feature combinations. See [#42][42] for details.
 
 * Add `--skip-all-features` flag. See [#42][42] for details.
