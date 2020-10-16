@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+* Treat `--all-features` flag as one of feature combinations. See [#42][42] for details.
+
+* Add `--skip-all-features` flag. See [#42][42] for details.
+
+[42]: https://github.com/taiki-e/cargo-hack/pull/42
+
 ## [0.3.14] - 2020-10-10
 
 * [Add `--depth` option.][59] See [#59][59] for details.

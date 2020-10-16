@@ -1,5 +1,4 @@
 cargo-hack 0.3.14
-
 A tool to work around some limitations on cargo.
 
 USAGE:
@@ -27,10 +26,14 @@ OPTIONS:
             Space-separated list of features to activate.
 
         --each-feature
-            Perform for each feature which includes --no-default-features flag and default features of the package.
+            Perform for each feature of the package.
+
+            This also includes runs with just --no-default-features flag, --all-features flag, and default features.
 
         --feature-powerset
-            Perform for the feature powerset which includes --no-default-features flag and default features of the package.
+            Perform for the feature powerset of the package.
+
+            This also includes runs with just --no-default-features flag, --all-features flag, and default features.
 
         --optional-deps [DEPS]...
             Use optional dependencies as features.
@@ -48,6 +51,11 @@ OPTIONS:
 
         --skip-no-default-features
             Skip run of just --no-default-features flag.
+
+            This flag can only be used with either --each-feature flag or --feature-powerset flag.
+
+        --skip-all-features
+            Skip run of just --all-features flag.
 
             This flag can only be used with either --each-feature flag or --feature-powerset flag.
 

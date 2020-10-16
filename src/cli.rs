@@ -16,18 +16,12 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
     ("", "--exclude <SPEC>...", "Exclude packages from the check", &[]),
     ("", "--manifest-path <PATH>", "Path to Cargo.toml", &[]),
     ("", "--features <FEATURES>...", "Space-separated list of features to activate", &[]),
-    (
-        "",
-        "--each-feature",
-        "Perform for each feature which includes --no-default-features flag and default features of the package",
-        &[],
-    ),
-    (
-        "",
-        "--feature-powerset",
-        "Perform for the feature powerset which includes --no-default-features flag and default features of the package",
-        &[],
-    ),
+    ("", "--each-feature", "Perform for each feature of the package", &[
+        "This also includes runs with just --no-default-features flag, --all-features flag, and default features.",
+    ]),
+    ("", "--feature-powerset", "Perform for the feature powerset of the package", &[
+        "This also includes runs with just --no-default-features flag, --all-features flag, and default features.",
+    ]),
     ("", "--optional-deps [DEPS]...", "Use optional dependencies as features", &[
         "If DEPS are not specified, all optional dependencies are considered as features.",
         "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
@@ -37,6 +31,9 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
         "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
     ]),
     ("", "--skip-no-default-features", "Skip run of just --no-default-features flag", &[
+        "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
+    ]),
+    ("", "--skip-all-features", "Skip run of just --all-features flag", &[
         "This flag can only be used with either --each-feature flag or --feature-powerset flag.",
     ]),
     (
@@ -121,7 +118,7 @@ impl fmt::Display for Help {
         writeln!(
             f,
             "\
-{0} {1}\n\n{2}
+{0} {1}\n{2}
 USAGE:
     cargo hack [OPTIONS] [SUBCOMMAND]\n
 Use -h for short descriptions and --help for more details.\n
@@ -195,6 +192,8 @@ pub(crate) struct Args {
     pub(crate) optional_deps: Option<Vec<String>>,
     /// --skip-no-default-features
     pub(crate) skip_no_default_features: bool,
+    /// --skip-all-features
+    pub(crate) skip_all_features: bool,
     /// --clean-per-run
     pub(crate) clean_per_run: bool,
     /// -v, --verbose, -vv
@@ -279,6 +278,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut ignore_unknown_features = false;
     let mut ignore_non_exist_features = false;
     let mut skip_no_default_features = false;
+    let mut skip_all_features = false;
     let mut clean_per_run = false;
     let mut verbose = false;
     let mut depth = None;
@@ -420,6 +420,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                 "--feature-powerset" => parse_flag!(feature_powerset),
                 "--ignore-private" => parse_flag!(ignore_private),
                 "--skip-no-default-features" => parse_flag!(skip_no_default_features),
+                "--skip-all-features" => parse_flag!(skip_all_features),
                 "--clean-per-run" => parse_flag!(clean_per_run),
                 "--ignore-unknown-features" => {
                     if ignore_unknown_features || ignore_non_exist_features {
@@ -473,6 +474,10 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
         } else if skip_no_default_features {
             bail!(
                 "--skip-no-default-features can only be used with either --each-feature or --feature-powerset"
+            );
+        } else if skip_all_features {
+            bail!(
+                "--skip-all-features can only be used with either --each-feature or --feature-powerset"
             );
         }
     }
@@ -562,6 +567,7 @@ For more information try --help
         ignore_unknown_features: ignore_unknown_features || ignore_non_exist_features,
         optional_deps,
         skip_no_default_features,
+        skip_all_features,
         clean_per_run,
         depth,
 
