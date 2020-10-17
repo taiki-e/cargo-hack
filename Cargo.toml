@@ -21,9 +21,9 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 anyhow = "1.0.20"
 ctrlc = "3.1.4"
-serde_json = "1.0"
-term_size = "0.3.2"
-termcolor = "1.1"
+serde_json = "1"
+term_size = "0.3"
+termcolor = "1"
 toml = "0.5.2"
 
 [dev-dependencies]
