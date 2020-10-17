@@ -17,6 +17,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 * Rename `--skip-no-default-features` flag to `--exclude-no-default-features`.
   The old name can be used as an alias, but is deprecated.
 
+* Add `--include-features` option.
+
 * Fix an issue where using `--features` with `--each-feature` or `--feature-powerset` together would result in the same feature combination being performed multiple times.
 
 [42]: https://github.com/taiki-e/cargo-hack/pull/42

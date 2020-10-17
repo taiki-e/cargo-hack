@@ -31,6 +31,8 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
     ("", "--skip <FEATURES>...", "Alias for --exclude-features", &[]),
     ("", "--exclude-features <FEATURES>...", "Space-separated list of features to exclude", &[
         "To exclude run of default feature, using value `--exclude-features default`.",
+        "To exclude run of just --no-default-features flag, using --exclude-no-default-features flag.",
+        "To exclude run of just --all-features flag, using --exclude-all-features flag.",
         "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
     ]),
     ("", "--exclude-no-default-features", "Exclude run of just --no-default-features flag", &[
@@ -48,6 +50,14 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
             "This flag can only be used together with --feature-powerset flag.",
         ],
     ),
+    (
+        "",
+        "--include-features <FEATURES>...",
+        "Include only the specified features in the feature combinations instead of package features",
+        &[
+            "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
+        ],
+    ),
     ("", "--no-dev-deps", "Perform without dev-dependencies", &[
         "Note that this flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished.",
     ]),
@@ -62,9 +72,7 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
         "",
         "--ignore-unknown-features",
         "Skip passing --features flag to `cargo` if that feature does not exist in the package",
-        &[
-            "This flag can only be used in the root of a virtual workspace or together with --workspace.",
-        ],
+        &["This flag can only be used together with either --features or --include-features."],
     ),
     ("", "--clean-per-run", "Remove artifacts for that package before running the command", &[
         "If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts will be removed before each run.",
@@ -197,6 +205,8 @@ pub(crate) struct Args {
     pub(crate) clean_per_run: bool,
     /// --depth <NUM>
     pub(crate) depth: Option<usize>,
+    /// --include-features
+    pub(crate) include_features: Vec<String>,
 
     /// --no-default-features
     pub(crate) no_default_features: bool,
@@ -278,6 +288,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut exclude = Vec::new();
     let mut features = Vec::new();
     let mut optional_deps = None;
+    let mut include_features = Vec::new();
 
     let mut workspace = None;
     let mut no_dev_deps = false;
@@ -408,6 +419,13 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                 "--exclude-features",
                 "--exclude-features <FEATURES>..."
             );
+            parse_multi_opt!(
+                include_features,
+                true,
+                true,
+                "--include-features",
+                "--include-features <FEATURES>..."
+            );
 
             if arg.starts_with("--optional-deps") {
                 if optional_deps.is_some() {
@@ -497,10 +515,10 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
         // in the root of a virtual workspace as well?
         bail!("--exclude can only be used together with --workspace");
     }
-    if ignore_unknown_features && features.is_empty() {
-        // TODO: Once https://github.com/taiki-e/cargo-hack/issues/52 implemented,
-        // allow --include-features.
-        bail!("--ignore-unknown-features can only be used together with --features");
+    if ignore_unknown_features && features.is_empty() && include_features.is_empty() {
+        bail!(
+            "--ignore-unknown-features can only be used together with either --features or --include-features"
+        );
     }
     if !each_feature && !feature_powerset {
         if optional_deps.is_some() {
@@ -518,6 +536,10 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
         } else if exclude_all_features {
             bail!(
                 "--exclude-all-features can only be used together with either --each-feature or --feature-powerset"
+            );
+        } else if !include_features.is_empty() {
+            bail!(
+                "--include-features can only be used together with either --each-feature or --feature-powerset"
             );
         }
     }
@@ -617,6 +639,7 @@ For more information try --help
         optional_deps,
         clean_per_run,
         depth,
+        include_features,
 
         no_default_features,
         verbose,

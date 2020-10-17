@@ -52,6 +52,10 @@ OPTIONS:
 
             To exclude run of default feature, using value `--exclude-features default`.
 
+            To exclude run of just --no-default-features flag, using --exclude-no-default-features flag.
+
+            To exclude run of just --all-features flag, using --exclude-all-features flag.
+
             This flag can only be used together with either --each-feature flag or --feature-powerset flag.
 
         --exclude-no-default-features
@@ -71,6 +75,11 @@ OPTIONS:
 
             This flag can only be used together with --feature-powerset flag.
 
+        --include-features <FEATURES>...
+            Include only the specified features in the feature combinations instead of package features.
+
+            This flag can only be used together with either --each-feature flag or --feature-powerset flag.
+
         --no-dev-deps
             Perform without dev-dependencies.
 
@@ -85,7 +94,7 @@ OPTIONS:
         --ignore-unknown-features
             Skip passing --features flag to `cargo` if that feature does not exist in the package.
 
-            This flag can only be used in the root of a virtual workspace or together with --workspace.
+            This flag can only be used together with either --features or --include-features.
 
         --clean-per-run
             Remove artifacts for that package before running the command.

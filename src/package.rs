@@ -62,24 +62,34 @@ impl<'a> Kind<'a> {
             return Kind::Nomal { show_progress: false };
         }
 
-        let features = package
-            .features
-            .keys()
-            .filter(|f| *f != "default" && !args.exclude_features.contains(f));
-        let opt_deps = args.optional_deps.as_ref().map(|opt_deps| {
-            package.dependencies.iter().filter_map(Dependency::as_feature).filter(move |f| {
-                !args.exclude_features.contains(f) && (opt_deps.is_empty() || opt_deps.contains(f))
-            })
-        });
+        let features = if args.include_features.is_empty() {
+            let mut features: Vec<_> = package
+                .features
+                .keys()
+                .filter(|f| *f != "default" && !args.exclude_features.contains(f))
+                .collect();
+            if let Some(opt_deps) = &args.optional_deps {
+                features.extend(
+                    package.dependencies.iter().filter_map(Dependency::as_feature).filter(
+                        move |f| {
+                            !args.exclude_features.contains(f)
+                                && (opt_deps.is_empty() || opt_deps.contains(f))
+                        },
+                    ),
+                );
+            }
+            features
+        } else {
+            args.include_features
+                .iter()
+                .filter(|f| *f != "default" && !args.exclude_features.contains(f))
+                .collect()
+        };
 
         if args.each_feature {
-            let features: Vec<_> = if let Some(opt_deps) = opt_deps {
-                features.chain(opt_deps).collect()
-            } else {
-                features.collect()
-            };
-
-            if package.features.is_empty() && features.is_empty() {
+            if (package.features.is_empty() || !args.include_features.is_empty())
+                && features.is_empty()
+            {
                 *total += 1;
                 Kind::Nomal { show_progress: true }
             } else {
@@ -90,13 +100,11 @@ impl<'a> Kind<'a> {
                 Kind::Each { features }
             }
         } else if args.feature_powerset {
-            let features = if let Some(opt_deps) = opt_deps {
-                powerset(features.chain(opt_deps), args.depth)
-            } else {
-                powerset(features, args.depth)
-            };
+            let features = powerset(features, args.depth);
 
-            if package.features.is_empty() && features.is_empty() {
+            if (package.features.is_empty() || !args.include_features.is_empty())
+                && features.is_empty()
+            {
                 *total += 1;
                 Kind::Nomal { show_progress: true }
             } else {
