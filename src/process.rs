@@ -19,9 +19,9 @@ pub(crate) struct ProcessBuilder<'a> {
     /// The program to execute.
     program: Rc<OsStr>,
     /// A list of arguments to pass to the program (until '--').
-    leading_args: &'a [String],
+    leading_args: &'a [&'a str],
     /// A list of arguments to pass to the program (after '--').
-    trailing_args: &'a [String],
+    trailing_args: &'a [&'a str],
 
     /// A list of arguments to pass to the program (between `leading_args` and '--').
     args: Vec<OsString>,
@@ -48,7 +48,7 @@ impl<'a> ProcessBuilder<'a> {
     }
 
     /// Creates a new `ProcessBuilder` from `Args`.
-    pub(crate) fn from_args(program: impl Into<Rc<OsStr>>, args: &'a Args) -> Self {
+    pub(crate) fn from_args(program: impl Into<Rc<OsStr>>, args: &'a Args<'a>) -> Self {
         Self {
             program: program.into(),
             leading_args: &args.leading_args,
@@ -66,11 +66,11 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    pub(crate) fn append_features_from_args(&mut self, args: &Args, package: &Package) {
+    pub(crate) fn append_features_from_args(&mut self, args: &Args<'_>, package: &Package) {
         if args.ignore_unknown_features {
-            self.append_features(args.features.iter().filter(|f| {
-                if package.features.get(*f).is_some()
-                    || package.dependencies.iter().any(|dep| dep.as_feature() == Some(*f))
+            self.append_features(args.features.iter().filter(|&&f| {
+                if package.features.get(f).is_some()
+                    || package.dependencies.iter().any(|dep| dep.as_feature() == Some(f))
                 {
                     true
                 } else {

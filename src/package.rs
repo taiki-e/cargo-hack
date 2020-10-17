@@ -12,7 +12,7 @@ pub(crate) struct Package<'a> {
 }
 
 impl<'a> Package<'a> {
-    fn new(args: &'a Args, total: &mut usize, package: &'a metadata::Package) -> Result<Self> {
+    fn new(args: &'a Args<'_>, total: &mut usize, package: &'a metadata::Package) -> Result<Self> {
         let manifest = Manifest::new(&package.manifest_path)?;
 
         if args.ignore_private && manifest.is_private() {
@@ -23,7 +23,7 @@ impl<'a> Package<'a> {
     }
 
     pub(crate) fn from_iter(
-        args: &'a Args,
+        args: &'a Args<'_>,
         total: &mut usize,
         packages: impl IntoIterator<Item = &'a metadata::Package>,
     ) -> Result<Vec<Self>> {
@@ -47,12 +47,12 @@ pub(crate) enum Kind<'a> {
     NoSubcommand,
     SkipAsPrivate,
     Nomal { show_progress: bool },
-    Each { features: Vec<&'a String> },
-    Powerset { features: Vec<Vec<&'a String>> },
+    Each { features: Vec<&'a str> },
+    Powerset { features: Vec<Vec<&'a str>> },
 }
 
 impl<'a> Kind<'a> {
-    fn determine(args: &'a Args, package: &'a metadata::Package, total: &mut usize) -> Self {
+    fn determine(args: &'a Args<'_>, package: &'a metadata::Package, total: &mut usize) -> Self {
         if args.subcommand.is_none() {
             return Kind::NoSubcommand;
         }
@@ -66,14 +66,15 @@ impl<'a> Kind<'a> {
             let mut features: Vec<_> = package
                 .features
                 .keys()
-                .filter(|f| *f != "default" && !args.exclude_features.contains(f))
+                .filter(|&f| f != "default" && !args.exclude_features.contains(&&**f))
+                .map(String::as_str)
                 .collect();
             if let Some(opt_deps) = &args.optional_deps {
                 features.extend(
                     package.dependencies.iter().filter_map(Dependency::as_feature).filter(
-                        move |f| {
-                            !args.exclude_features.contains(f)
-                                && (opt_deps.is_empty() || opt_deps.contains(f))
+                        move |&f| {
+                            !args.exclude_features.contains(&f)
+                                && (opt_deps.is_empty() || opt_deps.contains(&f))
                         },
                     ),
                 );
@@ -82,7 +83,8 @@ impl<'a> Kind<'a> {
         } else {
             args.include_features
                 .iter()
-                .filter(|f| *f != "default" && !args.exclude_features.contains(f))
+                .filter(|&&f| f != "default" && !args.exclude_features.contains(&f))
+                .copied()
                 .collect()
         };
 
@@ -94,7 +96,7 @@ impl<'a> Kind<'a> {
                 Kind::Nomal { show_progress: true }
             } else {
                 *total += features.len()
-                    + (!args.exclude_features.iter().any(|x| x == "default")) as usize
+                    + (!args.exclude_features.contains(&"default")) as usize
                     + (!args.exclude_no_default_features) as usize
                     + (!args.exclude_all_features) as usize;
                 Kind::Each { features }
@@ -110,7 +112,7 @@ impl<'a> Kind<'a> {
             } else {
                 // -1: the first element of a powerset is `[]`
                 *total += features.len() - 1
-                    + (!args.exclude_features.iter().any(|x| x == "default")) as usize
+                    + (!args.exclude_features.contains(&"default")) as usize
                     + (!args.exclude_no_default_features) as usize
                     + (!args.exclude_all_features) as usize;
                 Kind::Powerset { features }
@@ -122,7 +124,7 @@ impl<'a> Kind<'a> {
 }
 
 pub(crate) fn exec(
-    args: &Args,
+    args: &Args<'_>,
     package: &Package<'_>,
     line: &mut ProcessBuilder<'_>,
     info: &mut Info,
@@ -139,7 +141,7 @@ pub(crate) fn exec(
 
     let mut line = line.clone();
 
-    if !args.exclude_features.iter().any(|x| x == "default") {
+    if !args.exclude_features.contains(&"default") {
         // run with default features
         exec_cargo(args, package, &mut line, info, true)?;
     }
@@ -182,7 +184,7 @@ pub(crate) fn exec(
 }
 
 fn exec_cargo_with_features(
-    args: &Args,
+    args: &Args<'_>,
     package: &Package<'_>,
     line: &ProcessBuilder<'_>,
     info: &mut Info,
@@ -194,7 +196,7 @@ fn exec_cargo_with_features(
 }
 
 fn exec_cargo(
-    args: &Args,
+    args: &Args<'_>,
     package: &Package<'_>,
     line: &mut ProcessBuilder<'_>,
     info: &mut Info,
@@ -221,7 +223,7 @@ fn exec_cargo(
     line.exec()
 }
 
-fn cargo_clean(cargo: &OsStr, args: &Args, package: &Package<'_>) -> Result<()> {
+fn cargo_clean(cargo: &OsStr, args: &Args<'_>, package: &Package<'_>) -> Result<()> {
     let mut line = ProcessBuilder::new(cargo, args.verbose);
     line.arg("clean");
     line.arg("--package");

@@ -27,7 +27,7 @@ struct Current {
 }
 
 impl Restore {
-    pub(crate) fn new(args: &Args) -> Self {
+    pub(crate) fn new(args: &Args<'_>) -> Self {
         let this = Self {
             color: args.color,
             // if `--remove-dev-deps` flag is off, restore manifest file.

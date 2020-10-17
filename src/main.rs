@@ -42,7 +42,8 @@ fn main() {
 }
 
 fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
-    let args = cli::args(coloring)?.unwrap_or_else(|| std::process::exit(0));
+    let args = cli::RawArgs::new();
+    let args = cli::args(&args, coloring)?.unwrap_or_else(|| std::process::exit(0));
     let metadata = Metadata::new(&args)?;
 
     let current_manifest = match &args.manifest_path {
@@ -61,7 +62,11 @@ fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
     exec_on_workspace(&args, &current_manifest, &metadata)
 }
 
-fn exec_on_workspace(args: &Args, current_manifest: &Manifest, metadata: &Metadata) -> Result<()> {
+fn exec_on_workspace(
+    args: &Args<'_>,
+    current_manifest: &Manifest,
+    metadata: &Metadata,
+) -> Result<()> {
     assert!(
         args.subcommand.is_some() || args.remove_dev_deps,
         "no subcommand or valid flag specified"
@@ -89,7 +94,7 @@ fn exec_on_workspace(args: &Args, current_manifest: &Manifest, metadata: &Metada
         });
 
         let packages =
-            metadata.packages.iter().filter(|package| !args.exclude.contains(&package.name));
+            metadata.packages.iter().filter(|package| !args.exclude.contains(&&*package.name));
         Package::from_iter(args, &mut total, packages)?
     } else if !args.package.is_empty() {
         if let Some(spec) = args
@@ -101,7 +106,7 @@ fn exec_on_workspace(args: &Args, current_manifest: &Manifest, metadata: &Metada
         }
 
         let packages =
-            metadata.packages.iter().filter(|package| args.package.contains(&package.name));
+            metadata.packages.iter().filter(|package| args.package.contains(&&*package.name));
         Package::from_iter(args, &mut total, packages)?
     } else if current_manifest.is_virtual() {
         Package::from_iter(args, &mut total, &metadata.packages)?
@@ -123,7 +128,7 @@ struct Info {
 }
 
 fn exec_on_package(
-    args: &Args,
+    args: &Args<'_>,
     package: &Package<'_>,
     line: &ProcessBuilder<'_>,
     restore: &Restore,
@@ -144,7 +149,7 @@ fn exec_on_package(
 }
 
 fn no_dev_deps(
-    args: &Args,
+    args: &Args<'_>,
     package: &Package<'_>,
     line: &mut ProcessBuilder<'_>,
     restore: &Restore,

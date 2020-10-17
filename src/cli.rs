@@ -1,5 +1,5 @@
 use anyhow::{bail, format_err, Error};
-use std::{env, fmt, mem, str::FromStr};
+use std::{env, fmt, iter::Peekable, mem, str::FromStr};
 use termcolor::ColorChoice;
 
 use crate::{ProcessBuilder, Result};
@@ -173,18 +173,18 @@ Some common cargo commands are (see all commands with --list):
     }
 }
 
-pub(crate) struct Args {
-    pub(crate) leading_args: Vec<String>,
-    pub(crate) trailing_args: Vec<String>,
+pub(crate) struct Args<'a> {
+    pub(crate) leading_args: Vec<&'a str>,
+    pub(crate) trailing_args: Vec<&'a str>,
 
-    pub(crate) subcommand: Option<String>,
+    pub(crate) subcommand: Option<&'a str>,
 
     /// --manifest-path <PATH>
-    pub(crate) manifest_path: Option<String>,
+    pub(crate) manifest_path: Option<&'a str>,
     /// -p, --package <SPEC>...
-    pub(crate) package: Vec<String>,
+    pub(crate) package: Vec<&'a str>,
     /// --exclude <SPEC>...
-    pub(crate) exclude: Vec<String>,
+    pub(crate) exclude: Vec<&'a str>,
     /// --workspace, (--all)
     pub(crate) workspace: bool,
     /// --each-feature
@@ -200,13 +200,13 @@ pub(crate) struct Args {
     /// --ignore-unknown-features
     pub(crate) ignore_unknown_features: bool,
     /// --optional-deps [DEPS]...
-    pub(crate) optional_deps: Option<Vec<String>>,
+    pub(crate) optional_deps: Option<Vec<&'a str>>,
     /// --clean-per-run
     pub(crate) clean_per_run: bool,
     /// --depth <NUM>
     pub(crate) depth: Option<usize>,
     /// --include-features
-    pub(crate) include_features: Vec<String>,
+    pub(crate) include_features: Vec<&'a str>,
 
     /// --no-default-features
     pub(crate) no_default_features: bool,
@@ -216,7 +216,7 @@ pub(crate) struct Args {
     // Note: These values are not always exactly the same as the input.
     // Error messages should not assume that these options have been specified.
     /// --exclude-features <FEATURES>..., --skip <FEATURES>...
-    pub(crate) exclude_features: Vec<String>,
+    pub(crate) exclude_features: Vec<&'a str>,
     /// --exclude-no-default-features, (--skip-no-default-features)
     pub(crate) exclude_no_default_features: bool,
     /// --exclude-all-features
@@ -224,7 +224,7 @@ pub(crate) struct Args {
 
     // flags that will be propagated to cargo
     /// --features <FEATURES>...
-    pub(crate) features: Vec<String>,
+    pub(crate) features: Vec<&'a str>,
     /// --color <WHEN>
     pub(crate) color: Option<Coloring>,
 }
@@ -267,10 +267,28 @@ impl FromStr for Coloring {
     }
 }
 
-pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
-    let mut args = env::args().peekable();
-    let _ = args.next(); // executable name
-    match &args.next() {
+pub(crate) struct RawArgs {
+    inner: Vec<String>,
+}
+
+impl RawArgs {
+    pub(crate) fn new() -> Self {
+        let mut args = env::args();
+        let _ = args.next(); // executable name
+        Self { inner: args.collect() }
+    }
+
+    fn iter(&self) -> Peekable<impl Iterator<Item = &str> + '_> {
+        self.inner.iter().map(String::as_str).peekable()
+    }
+}
+
+pub(crate) fn args<'a>(
+    args: &'a RawArgs,
+    coloring: &mut Option<Coloring>,
+) -> Result<Option<Args<'a>>> {
+    let mut args = args.iter();
+    match args.next() {
         Some(a) if a == "hack" => {}
         Some(_) | None => {
             println!("{}", Help::new(false));
@@ -279,7 +297,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     }
 
     let mut leading = Vec::new();
-    let mut subcommand: Option<String> = None;
+    let mut subcommand: Option<&'a str> = None;
 
     let mut manifest_path = None;
     let mut color = None;
@@ -323,7 +341,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             }
 
             if !arg.starts_with('-') {
-                subcommand.get_or_insert_with(|| arg.clone());
+                subcommand.get_or_insert(arg);
                 leading.push(arg);
                 continue;
             }
@@ -332,21 +350,18 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                 ($opt:ident, $pat:expr, $help:expr) => {
                     if arg == $pat {
                         if $opt.is_some() {
-                            return Err(multi_arg($help, subcommand.as_ref()));
+                            return Err(multi_arg($help, subcommand));
                         }
-                        let next =
-                            args.next().ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
+                        let next = args.next().ok_or_else(|| req_arg($help, subcommand))?;
                         $opt = Some(next);
                         continue;
                     } else if arg.starts_with(concat!($pat, "=")) {
                         if $opt.is_some() {
-                            return Err(multi_arg($help, subcommand.as_ref()));
+                            return Err(multi_arg($help, subcommand));
                         }
-                        let next = arg
-                            .splitn(2, '=')
-                            .nth(1)
-                            .ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
-                        $opt = Some(next.to_string());
+                        let next =
+                            arg.splitn(2, '=').nth(1).ok_or_else(|| req_arg($help, subcommand))?;
+                        $opt = Some(next);
                         continue;
                     }
                 };
@@ -358,22 +373,20 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                         if !$require_value && args.peek().map_or(true, |s| s.starts_with('-')) {
                             continue;
                         }
-                        let arg = args.next().ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
+                        let arg = args.next().ok_or_else(|| req_arg($help, subcommand))?;
                         if $allow_split {
                             if arg.contains(',') {
-                                $v.extend(arg.split(',').map(ToString::to_string));
+                                $v.extend(arg.split(','));
                             } else {
-                                $v.extend(arg.split(' ').map(ToString::to_string));
+                                $v.extend(arg.split(' '));
                             }
                         } else {
                             $v.push(arg);
                         }
                         continue;
                     } else if arg.starts_with(concat!($pat, "=")) {
-                        let mut arg = arg
-                            .splitn(2, '=')
-                            .nth(1)
-                            .ok_or_else(|| req_arg($help, subcommand.as_ref()))?;
+                        let mut arg =
+                            arg.splitn(2, '=').nth(1).ok_or_else(|| req_arg($help, subcommand))?;
                         if $allow_split {
                             if arg.starts_with('\'') && arg.ends_with('\'')
                                 || arg.starts_with('"') && arg.ends_with('"')
@@ -381,12 +394,12 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                                 arg = &arg[1..arg.len() - 1];
                             }
                             if arg.contains(',') {
-                                $v.extend(arg.split(',').map(ToString::to_string));
+                                $v.extend(arg.split(','));
                             } else {
-                                $v.extend(arg.split(' ').map(ToString::to_string));
+                                $v.extend(arg.split(' '));
                             }
                         } else {
-                            $v.push(arg.to_string());
+                            $v.push(arg);
                         }
                         continue;
                     }
@@ -396,7 +409,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             macro_rules! parse_flag {
                 ($flag:ident) => {
                     if mem::replace(&mut $flag, true) {
-                        return Err(multi_arg(&arg, subcommand.as_ref()));
+                        return Err(multi_arg(&arg, subcommand));
                     } else {
                         continue;
                     }
@@ -429,7 +442,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
 
             if arg.starts_with("--optional-deps") {
                 if optional_deps.is_some() {
-                    return Err(multi_arg(&arg, subcommand.as_ref()));
+                    return Err(multi_arg(arg, subcommand));
                 }
                 let optional_deps = optional_deps.get_or_insert_with(Vec::new);
                 parse_multi_opt!(
@@ -444,7 +457,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             match &*arg {
                 "--workspace" | "--all" => {
                     if let Some(arg) = workspace.replace(arg) {
-                        return Err(multi_arg(&arg, subcommand.as_ref()));
+                        return Err(multi_arg(arg, subcommand));
                     }
                     continue;
                 }
@@ -455,17 +468,14 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                 "--ignore-private" => parse_flag!(ignore_private),
                 "--exclude-no-default-features" => {
                     if exclude_no_default_features || skip_no_default_features {
-                        return Err(multi_arg(&arg, subcommand.as_ref()));
+                        return Err(multi_arg(arg, subcommand));
                     }
                     exclude_no_default_features = true;
                     continue;
                 }
                 "--skip-no-default-features" => {
                     if exclude_no_default_features || skip_no_default_features {
-                        return Err(multi_arg(
-                            "--exclude-no-default-features",
-                            subcommand.as_ref(),
-                        ));
+                        return Err(multi_arg("--exclude-no-default-features", subcommand));
                     }
                     skip_no_default_features = true;
                     continue;
@@ -497,15 +507,13 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
 
     res?;
 
-    if leading.is_empty() && !remove_dev_deps
-        || subcommand.is_none() && leading.iter().any(|a| a == "-h")
-    {
+    if leading.is_empty() && !remove_dev_deps || subcommand.is_none() && leading.contains(&"-h") {
         println!("{}", Help::new(false));
         return Ok(None);
-    } else if subcommand.is_none() && leading.iter().any(|a| a == "--help") {
+    } else if subcommand.is_none() && leading.contains(&"--help") {
         println!("{}", Help::new(true));
         return Ok(None);
-    } else if leading.iter().any(|a| a == "--version" || a == "-V" || a == "-vV" || a == "-Vv") {
+    } else if leading.iter().any(|&a| a == "--version" || a == "-V" || a == "-vV" || a == "-Vv") {
         print_version();
         return Ok(None);
     }
@@ -548,7 +556,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     }
     let depth = depth.map(|s| s.parse::<usize>()).transpose()?;
 
-    if let Some(subcommand) = &subcommand {
+    if let Some(subcommand) = subcommand {
         if subcommand == "test" || subcommand == "bench" {
             if remove_dev_deps {
                 bail!("--remove-dev-deps may not be used together with {} subcommand", subcommand);
@@ -583,7 +591,7 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     }
 
     if subcommand.is_none() {
-        if leading.iter().any(|a| a == "--list") {
+        if leading.contains(&"--list") {
             let mut line = ProcessBuilder::new(crate::cargo_binary(), verbose);
             line.arg("--list");
             line.exec()?;
@@ -653,7 +661,7 @@ For more information try --help
     }))
 }
 
-fn req_arg(arg: &str, subcommand: Option<&String>) -> Error {
+fn req_arg(arg: &str, subcommand: Option<&str>) -> Error {
     format_err!(
         "\
 The argument '{0}' requires a value but none was supplied
@@ -672,7 +680,7 @@ For more information try --help
     )
 }
 
-fn multi_arg(arg: &str, subcommand: Option<&String>) -> Error {
+fn multi_arg(arg: &str, subcommand: Option<&str>) -> Error {
     format_err!(
         "\
 The argument '{0}' was provided more than once, but cannot be used multiple times
