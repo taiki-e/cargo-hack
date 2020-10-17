@@ -6,22 +6,28 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
-* Remove `--ignore-non-exist-features` flag, use `--ignore-unknown-features` flag instead.
+* [Remove `--ignore-non-exist-features` flag.][62] Use `--ignore-unknown-features` flag instead.
 
-* Treat `--all-features` flag as one of feature combinations. See [#42][42] for details.
+* [Treat `--all-features` flag as one of feature combinations.][61] See [#42][42] for details.
 
-* Add `--exclude-all-features` flag. See [#42][42] for details.
+* Add `--exclude-all-features` flag. ([#61][61], [#65][65]) See [#42][42] for details.
 
-* Add `--exclude-features` option. This is an alias of `--skip` option.
+* [Add `--exclude-features` option. This is an alias of `--skip` option.][65]
 
-* Rename `--skip-no-default-features` flag to `--exclude-no-default-features`.
+* [Rename `--skip-no-default-features` flag to `--exclude-no-default-features`.][65]
   The old name can be used as an alias, but is deprecated.
 
-* Add `--include-features` option.
+* [Add `--include-features` option.][66] See [#66][66] for details.
 
-* Fix an issue where using `--features` with `--each-feature` or `--feature-powerset` together would result in the same feature combination being performed multiple times.
+* [Fix an issue where using `--features` with `--each-feature` or `--feature-powerset` together would result in the same feature combination being performed multiple times.][64]
 
 [42]: https://github.com/taiki-e/cargo-hack/pull/42
+[61]: https://github.com/taiki-e/cargo-hack/pull/61
+[62]: https://github.com/taiki-e/cargo-hack/pull/62
+[63]: https://github.com/taiki-e/cargo-hack/pull/63
+[64]: https://github.com/taiki-e/cargo-hack/pull/64
+[65]: https://github.com/taiki-e/cargo-hack/pull/65
+[66]: https://github.com/taiki-e/cargo-hack/pull/66
 
 ## [0.3.14] - 2020-10-10
 
