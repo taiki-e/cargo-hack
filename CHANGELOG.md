@@ -10,7 +10,12 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 * Treat `--all-features` flag as one of feature combinations. See [#42][42] for details.
 
-* Add `--skip-all-features` flag. See [#42][42] for details.
+* Add `--exclude-all-features` flag. See [#42][42] for details.
+
+* Add `--exclude-features` option. This is an alias of `--skip` option.
+
+* Rename `--skip-no-default-features` flag to `--exclude-no-default-features`.
+  The old name can be used as an alias, but is deprecated.
 
 * Fix an issue where using `--features` with `--each-feature` or `--feature-powerset` together would result in the same feature combination being performed multiple times.
 

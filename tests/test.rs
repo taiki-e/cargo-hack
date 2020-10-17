@@ -112,7 +112,7 @@ impl Output {
 
 #[test]
 fn multi_arg() {
-    // --package, -p, --exclude, --features, --skip, and --verbose are allowed.
+    // --package, -p, --exclude, --features, --exclude-features, and --verbose are allowed.
 
     for flag in &[
         "--examples",
@@ -655,22 +655,22 @@ fn depth_failure() {
 }
 
 #[test]
-fn skip_failure() {
+fn exclude_features_failure() {
     cargo_hack()
-        .args(&["check", "--skip", "a"])
+        .args(&["check", "--exclude-features", "a"])
         .current_dir(test_dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_failure()
         .assert_stderr_contains(
-            "--skip can only be used together with either --each-feature or --feature-powerset",
+            "--exclude-features (--skip) can only be used together with either --each-feature or --feature-powerset",
         );
 }
 
 #[test]
 fn each_feature_skip_success() {
     cargo_hack()
-        .args(&["check", "--each-feature", "--skip", "a"])
+        .args(&["check", "--each-feature", "--exclude-features", "a"])
         .current_dir(test_dir("tests/fixtures/real"))
         .output()
         .unwrap()
@@ -687,12 +687,46 @@ fn each_feature_skip_success() {
             "running `cargo check --no-default-features --all-features` on real (5/5)",
         )
         .assert_stderr_not_contains("--features a");
+
+    cargo_hack()
+        .args(&["check", "--each-feature", "--exclude-features", "a b"])
+        .current_dir(test_dir("tests/fixtures/real"))
+        .output()
+        .unwrap()
+        .assert_success()
+        .assert_stderr_contains("running `cargo check` on real (1/4)")
+        .assert_stderr_contains("running `cargo check --no-default-features` on real (2/4)")
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features c` on real (3/4)",
+        )
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --all-features` on real (4/4)",
+        )
+        .assert_stderr_not_contains("--features a")
+        .assert_stderr_not_contains("--features b");
+
+    cargo_hack()
+        .args(&["check", "--each-feature", "--exclude-features", "a", "--exclude-features", "b"])
+        .current_dir(test_dir("tests/fixtures/real"))
+        .output()
+        .unwrap()
+        .assert_success()
+        .assert_stderr_contains("running `cargo check` on real (1/4)")
+        .assert_stderr_contains("running `cargo check --no-default-features` on real (2/4)")
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --features c` on real (3/4)",
+        )
+        .assert_stderr_contains(
+            "running `cargo check --no-default-features --all-features` on real (4/4)",
+        )
+        .assert_stderr_not_contains("--features a")
+        .assert_stderr_not_contains("--features b");
 }
 
 #[test]
 fn powerset_skip_success() {
     cargo_hack()
-        .args(&["check", "--feature-powerset", "--skip", "a"])
+        .args(&["check", "--feature-powerset", "--exclude-features", "a"])
         .current_dir(test_dir("tests/fixtures/real"))
         .output()
         .unwrap()
@@ -718,9 +752,9 @@ fn powerset_skip_success() {
 }
 
 #[test]
-fn skip_default() {
+fn exclude_features_default() {
     cargo_hack()
-        .args(&["check", "--each-feature", "--skip", "default"])
+        .args(&["check", "--each-feature", "--exclude-features", "default"])
         .current_dir(test_dir("tests/fixtures/real"))
         .output()
         .unwrap()
@@ -742,9 +776,9 @@ fn skip_default() {
 }
 
 #[test]
-fn skip_no_default_features() {
+fn exclude_no_default_features() {
     cargo_hack()
-        .args(&["check", "--each-feature", "--skip-no-default-features"])
+        .args(&["check", "--each-feature", "--exclude-no-default-features"])
         .current_dir(test_dir("tests/fixtures/real"))
         .output()
         .unwrap()
@@ -763,25 +797,36 @@ fn skip_no_default_features() {
         .assert_stderr_contains(
             "running `cargo check --no-default-features --all-features` on real (5/5)",
         );
+
+    // --skip-no-default-features is a deprecated alias of --exclude-no-default-features
+    cargo_hack()
+        .args(&["check", "--each-feature", "--skip-no-default-features"])
+        .current_dir(test_dir("tests/fixtures/virtual"))
+        .output()
+        .unwrap()
+        .assert_success()
+        .assert_stderr_contains(
+            "--skip-no-default-features is deprecated, use --exclude-no-default-features flag instead",
+        );
 }
 
 #[test]
-fn skip_no_default_features_failure() {
+fn exclude_no_default_features_failure() {
     cargo_hack()
-        .args(&["check", "--skip-no-default-features"])
+        .args(&["check", "--exclude-no-default-features"])
         .current_dir(test_dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_failure()
         .assert_stderr_contains(
-            "--skip-no-default-features can only be used together with either --each-feature or --feature-powerset",
+            "--exclude-no-default-features can only be used together with either --each-feature or --feature-powerset",
         );
 }
 
 #[test]
-fn skip_all_features() {
+fn exclude_all_features() {
     cargo_hack()
-        .args(&["check", "--each-feature", "--skip-all-features"])
+        .args(&["check", "--each-feature", "--exclude-all-features"])
         .current_dir(test_dir("tests/fixtures/real"))
         .output()
         .unwrap()
@@ -803,15 +848,15 @@ fn skip_all_features() {
 }
 
 #[test]
-fn skip_all_features_failure() {
+fn exclude_all_features_failure() {
     cargo_hack()
-        .args(&["check", "--skip-all-features"])
+        .args(&["check", "--exclude-all-features"])
         .current_dir(test_dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_failure()
         .assert_stderr_contains(
-            "--skip-all-features can only be used together with either --each-feature or --feature-powerset",
+            "--exclude-all-features can only be used together with either --each-feature or --feature-powerset",
         );
 }
 
@@ -1056,7 +1101,7 @@ fn optional_deps_failure() {
 #[test]
 fn skip_optional_deps() {
     cargo_hack()
-        .args(&["check", "--each-feature", "--optional-deps", "--skip", "real"])
+        .args(&["check", "--each-feature", "--optional-deps", "--exclude-features", "real"])
         .current_dir(test_dir("tests/fixtures/optional_deps"))
         .output()
         .unwrap()

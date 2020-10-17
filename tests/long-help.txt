@@ -45,19 +45,22 @@ OPTIONS:
             This flag can only be used together with either --each-feature flag or --feature-powerset flag.
 
         --skip <FEATURES>...
-            Space-separated list of features to skip.
+            Alias for --exclude-features.
 
-            To skip run of default feature, using value `--skip default`.
+        --exclude-features <FEATURES>...
+            Space-separated list of features to exclude.
 
-            This flag can only be used together with either --each-feature flag or --feature-powerset flag.
-
-        --skip-no-default-features
-            Skip run of just --no-default-features flag.
+            To exclude run of default feature, using value `--exclude-features default`.
 
             This flag can only be used together with either --each-feature flag or --feature-powerset flag.
 
-        --skip-all-features
-            Skip run of just --all-features flag.
+        --exclude-no-default-features
+            Exclude run of just --no-default-features flag.
+
+            This flag can only be used together with either --each-feature flag or --feature-powerset flag.
+
+        --exclude-all-features
+            Exclude run of just --all-features flag.
 
             This flag can only be used together with either --each-feature flag or --feature-powerset flag.
 

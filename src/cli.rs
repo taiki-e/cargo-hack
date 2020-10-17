@@ -5,7 +5,7 @@ use termcolor::ColorChoice;
 use crate::{ProcessBuilder, Result};
 
 fn print_version() {
-    println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"),)
+    println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
 }
 
 // (short flag, long flag, short descriptions, additional descriptions)
@@ -28,14 +28,15 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
         "If DEPS are not specified, all optional dependencies are considered as features.",
         "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
     ]),
-    ("", "--skip <FEATURES>...", "Space-separated list of features to skip", &[
-        "To skip run of default feature, using value `--skip default`.",
+    ("", "--skip <FEATURES>...", "Alias for --exclude-features", &[]),
+    ("", "--exclude-features <FEATURES>...", "Space-separated list of features to exclude", &[
+        "To exclude run of default feature, using value `--exclude-features default`.",
         "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
     ]),
-    ("", "--skip-no-default-features", "Skip run of just --no-default-features flag", &[
+    ("", "--exclude-no-default-features", "Exclude run of just --no-default-features flag", &[
         "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
     ]),
-    ("", "--skip-all-features", "Skip run of just --all-features flag", &[
+    ("", "--exclude-all-features", "Exclude run of just --all-features flag", &[
         "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
     ]),
     (
@@ -143,8 +144,8 @@ OPTIONS:",
                     writeln!(f, "\n")?;
                 }
             } else {
-                write!(f, "{:26} ", long)?;
-                write(f, 35, false, self.term_size, desc)?;
+                write!(f, "{:32} ", long)?;
+                write(f, 41, false, self.term_size, desc)?;
                 writeln!(f)?;
             }
         }
@@ -204,12 +205,12 @@ pub(crate) struct Args {
 
     // Note: These values are not always exactly the same as the input.
     // Error messages should not assume that these options have been specified.
-    /// --skip <FEATURES>...
-    pub(crate) skip: Vec<String>,
-    /// --skip-no-default-features
-    pub(crate) skip_no_default_features: bool,
-    /// --skip-all-features
-    pub(crate) skip_all_features: bool,
+    /// --exclude-features <FEATURES>..., --skip <FEATURES>...
+    pub(crate) exclude_features: Vec<String>,
+    /// --exclude-no-default-features, (--skip-no-default-features)
+    pub(crate) exclude_no_default_features: bool,
+    /// --exclude-all-features
+    pub(crate) exclude_all_features: bool,
 
     // flags that will be propagated to cargo
     /// --features <FEATURES>...
@@ -276,7 +277,6 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut package = Vec::new();
     let mut exclude = Vec::new();
     let mut features = Vec::new();
-    let mut skip = Vec::new();
     let mut optional_deps = None;
 
     let mut workspace = None;
@@ -286,10 +286,13 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
     let mut feature_powerset = false;
     let mut ignore_private = false;
     let mut ignore_unknown_features = false;
-    let mut skip_no_default_features = false;
-    let mut skip_all_features = false;
     let mut clean_per_run = false;
     let mut depth = None;
+
+    let mut exclude_features = Vec::new();
+    let mut exclude_no_default_features = false;
+    let mut exclude_all_features = false;
+    let mut skip_no_default_features = false;
 
     let mut verbose = false;
     let mut no_default_features = false;
@@ -397,7 +400,14 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             parse_multi_opt!(package, false, true, "-p", "--package <SPEC>...");
             parse_multi_opt!(exclude, false, true, "--exclude", "--exclude <SPEC>...");
             parse_multi_opt!(features, true, true, "--features", "--features <FEATURES>...");
-            parse_multi_opt!(skip, true, true, "--skip", "--skip <FEATURES>...");
+            parse_multi_opt!(exclude_features, true, true, "--skip", "--skip <FEATURES>...");
+            parse_multi_opt!(
+                exclude_features,
+                true,
+                true,
+                "--exclude-features",
+                "--exclude-features <FEATURES>..."
+            );
 
             if arg.starts_with("--optional-deps") {
                 if optional_deps.is_some() {
@@ -425,8 +435,24 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
                 "--each-feature" => parse_flag!(each_feature),
                 "--feature-powerset" => parse_flag!(feature_powerset),
                 "--ignore-private" => parse_flag!(ignore_private),
-                "--skip-no-default-features" => parse_flag!(skip_no_default_features),
-                "--skip-all-features" => parse_flag!(skip_all_features),
+                "--exclude-no-default-features" => {
+                    if exclude_no_default_features || skip_no_default_features {
+                        return Err(multi_arg(&arg, subcommand.as_ref()));
+                    }
+                    exclude_no_default_features = true;
+                    continue;
+                }
+                "--skip-no-default-features" => {
+                    if exclude_no_default_features || skip_no_default_features {
+                        return Err(multi_arg(
+                            "--exclude-no-default-features",
+                            subcommand.as_ref(),
+                        ));
+                    }
+                    skip_no_default_features = true;
+                    continue;
+                }
+                "--exclude-all-features" => parse_flag!(exclude_all_features),
                 "--clean-per-run" => parse_flag!(clean_per_run),
                 "--ignore-unknown-features" => parse_flag!(ignore_unknown_features),
                 "--ignore-non-exist-features" => bail!(
@@ -481,17 +507,17 @@ pub(crate) fn args(coloring: &mut Option<Coloring>) -> Result<Option<Args>> {
             bail!(
                 "--optional-deps can only be used together with either --each-feature or --feature-powerset"
             );
-        } else if !skip.is_empty() {
+        } else if !exclude_features.is_empty() {
             bail!(
-                "--skip can only be used together with either --each-feature or --feature-powerset"
+                "--exclude-features (--skip) can only be used together with either --each-feature or --feature-powerset"
             );
-        } else if skip_no_default_features {
+        } else if exclude_no_default_features || skip_no_default_features {
             bail!(
-                "--skip-no-default-features can only be used together with either --each-feature or --feature-powerset"
+                "--exclude-no-default-features can only be used together with either --each-feature or --feature-powerset"
             );
-        } else if skip_all_features {
+        } else if exclude_all_features {
             bail!(
-                "--skip-all-features can only be used together with either --each-feature or --feature-powerset"
+                "--exclude-all-features can only be used together with either --each-feature or --feature-powerset"
             );
         }
     }
@@ -555,6 +581,13 @@ For more information try --help
         }
     }
 
+    if skip_no_default_features {
+        warn!(
+            color,
+            "--skip-no-default-features is deprecated, use --exclude-no-default-features flag instead"
+        );
+        exclude_no_default_features = true;
+    }
     if no_dev_deps {
         info!(
             color,
@@ -562,8 +595,8 @@ For more information try --help
         )
     }
 
-    skip_no_default_features |= no_default_features;
-    skip.extend_from_slice(&features);
+    exclude_no_default_features |= no_default_features;
+    exclude_features.extend_from_slice(&features);
 
     Ok(Some(Args {
         leading_args: leading,
@@ -588,9 +621,9 @@ For more information try --help
         no_default_features,
         verbose,
 
-        skip,
-        skip_no_default_features,
-        skip_all_features,
+        exclude_features,
+        exclude_no_default_features,
+        exclude_all_features,
 
         features,
         color,
