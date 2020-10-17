@@ -1,7 +1,7 @@
 use std::io::{self, Write};
 use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 
-use crate::cli::Coloring;
+use crate::Coloring;
 
 pub(crate) fn print_inner(
     coloring: Option<Coloring>,

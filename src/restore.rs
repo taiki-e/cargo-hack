@@ -5,11 +5,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{
-    cli::{Args, Coloring},
-    manifest::Manifest,
-    Result,
-};
+use crate::{Args, Coloring, Manifest, Result};
 
 #[derive(Clone)]
 pub(crate) struct Restore {
