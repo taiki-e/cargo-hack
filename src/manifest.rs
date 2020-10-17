@@ -73,12 +73,7 @@ impl Package {
     fn from_table(mut table: Table) -> Option<Self> {
         let package = table.get_mut("package")?.as_table_mut()?;
         let name = into_string(package.remove("name")?)?;
-        let publish = match package.remove("publish") {
-            None => Publish::default(),
-            Some(Value::Array(a)) => Publish::Registry(a),
-            Some(Value::Boolean(b)) => Publish::Flag(b),
-            Some(_) => return None,
-        };
+        let publish = Publish::from_value(package.get("publish"))?;
 
         Some(Self { name, publish })
     }
@@ -86,7 +81,18 @@ impl Package {
 
 pub(crate) enum Publish {
     Flag(bool),
-    Registry(Vec<Value>),
+    Registry { is_empty: bool },
+}
+
+impl Publish {
+    fn from_value(value: Option<&Value>) -> Option<Self> {
+        Some(match value {
+            None => Self::default(),
+            Some(Value::Array(a)) => Publish::Registry { is_empty: a.is_empty() },
+            Some(Value::Boolean(b)) => Publish::Flag(*b),
+            Some(_) => return None,
+        })
+    }
 }
 
 impl Default for Publish {
@@ -97,9 +103,9 @@ impl Default for Publish {
 
 impl PartialEq<Publish> for bool {
     fn eq(&self, p: &Publish) -> bool {
-        match p {
-            Publish::Flag(flag) => *flag == *self,
-            Publish::Registry(reg) => reg.is_empty() != *self,
+        match *p {
+            Publish::Flag(flag) => flag == *self,
+            Publish::Registry { is_empty } => is_empty != *self,
         }
     }
 }
