@@ -25,7 +25,7 @@ pub(crate) struct Metadata {
 }
 
 impl Metadata {
-    pub(crate) fn new(args: &Args) -> Result<Self> {
+    pub(crate) fn new(args: &Args<'_>) -> Result<Self> {
         let cargo = env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo"));
         let mut command = Command::new(cargo);
         command.args(&["metadata", "--no-deps", "--format-version=1"]);
@@ -91,7 +91,7 @@ impl Package {
         Some(Self { name, dependencies, features, manifest_path })
     }
 
-    pub(crate) fn name_verbose(&self, args: &Args) -> Cow<'_, str> {
+    pub(crate) fn name_verbose(&self, args: &Args<'_>) -> Cow<'_, str> {
         if args.verbose {
             Cow::Owned(format!(
                 "{} ({})",
@@ -128,7 +128,7 @@ impl Dependency {
         Some(Self { name, optional, rename })
     }
 
-    pub(crate) fn as_feature(&self) -> Option<&String> {
+    pub(crate) fn as_feature(&self) -> Option<&str> {
         if self.optional { Some(self.rename.as_ref().unwrap_or(&self.name)) } else { None }
     }
 }
