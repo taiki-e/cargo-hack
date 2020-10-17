@@ -48,7 +48,7 @@ impl<'a> ProcessBuilder<'a> {
     }
 
     /// Creates a new `ProcessBuilder` from `Args`.
-    pub(crate) fn from_args(program: impl Into<Rc<OsStr>>, args: &'a Args<'a>) -> Self {
+    pub(crate) fn from_args(program: impl Into<Rc<OsStr>>, args: &'a Args<'_>) -> Self {
         Self {
             program: program.into(),
             leading_args: &args.leading_args,

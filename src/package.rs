@@ -80,8 +80,8 @@ impl<'a> Kind<'a> {
             let mut features: Vec<_> = package
                 .features
                 .keys()
-                .filter(|&f| f != "default" && !args.exclude_features.contains(&&**f))
                 .map(String::as_str)
+                .filter(|f| *f != "default" && !args.exclude_features.contains(f))
                 .collect();
             if let Some(opt_deps) = &args.optional_deps {
                 features.extend(
