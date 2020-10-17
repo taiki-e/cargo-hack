@@ -62,11 +62,13 @@ impl<'a> Kind<'a> {
             return Kind::Nomal { show_progress: false };
         }
 
-        let features =
-            package.features.keys().filter(|f| *f != "default" && !args.skip.contains(f));
+        let features = package
+            .features
+            .keys()
+            .filter(|f| *f != "default" && !args.exclude_features.contains(f));
         let opt_deps = args.optional_deps.as_ref().map(|opt_deps| {
             package.dependencies.iter().filter_map(Dependency::as_feature).filter(move |f| {
-                !args.skip.contains(f) && (opt_deps.is_empty() || opt_deps.contains(f))
+                !args.exclude_features.contains(f) && (opt_deps.is_empty() || opt_deps.contains(f))
             })
         });
 
@@ -82,9 +84,9 @@ impl<'a> Kind<'a> {
                 Kind::Nomal { show_progress: true }
             } else {
                 *total += features.len()
-                    + (!args.skip.iter().any(|x| x == "default")) as usize
-                    + (!args.skip_no_default_features) as usize
-                    + (!args.skip_all_features) as usize;
+                    + (!args.exclude_features.iter().any(|x| x == "default")) as usize
+                    + (!args.exclude_no_default_features) as usize
+                    + (!args.exclude_all_features) as usize;
                 Kind::Each { features }
             }
         } else if args.feature_powerset {
@@ -100,9 +102,9 @@ impl<'a> Kind<'a> {
             } else {
                 // -1: the first element of a powerset is `[]`
                 *total += features.len() - 1
-                    + (!args.skip.iter().any(|x| x == "default")) as usize
-                    + (!args.skip_no_default_features) as usize
-                    + (!args.skip_all_features) as usize;
+                    + (!args.exclude_features.iter().any(|x| x == "default")) as usize
+                    + (!args.exclude_no_default_features) as usize
+                    + (!args.exclude_all_features) as usize;
                 Kind::Powerset { features }
             }
         } else {
@@ -129,7 +131,7 @@ pub(crate) fn exec(
 
     let mut line = line.clone();
 
-    if !args.skip.iter().any(|x| x == "default") {
+    if !args.exclude_features.iter().any(|x| x == "default") {
         // run with default features
         exec_cargo(args, package, &mut line, info, true)?;
     }
@@ -138,7 +140,7 @@ pub(crate) fn exec(
         line.arg("--no-default-features");
     }
 
-    if !args.skip_no_default_features {
+    if !args.exclude_no_default_features {
         // run with no default features if the package has other features
         //
         // `default` is not skipped because `cfg(feature = "default")` is work
@@ -162,7 +164,7 @@ pub(crate) fn exec(
         _ => unreachable!(),
     }
 
-    if !args.skip_all_features {
+    if !args.exclude_all_features {
         // run with all features
         line.arg("--all-features");
         exec_cargo(args, package, &mut line, info, true)?;

@@ -96,15 +96,9 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
 
   Use optional dependencies as features.
 
-* **`--skip`**
+* **`--exclude-features`**, **`--skip`**
 
-  Space-separated list of features to skip.
-
-  To skip run of default feature, using value `--skip default`.
-
-* **`--skip-no-default-features`**
-
-  Skip run of just `--no-default-features` flag.
+  Space-separated list of features to exclude.
 
 * **`--depth`**
 
