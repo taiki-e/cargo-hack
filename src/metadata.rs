@@ -1,5 +1,5 @@
 use anyhow::{format_err, Context};
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::{
     borrow::Cow,
     collections::BTreeSet,
@@ -42,18 +42,18 @@ impl Metadata {
         }
 
         let value = serde_json::from_slice(&output.stdout).context("failed to parse metadata")?;
-        Self::from_value(&value).ok_or_else(|| format_err!("failed to parse metadata"))
+        Self::from_value(value).ok_or_else(|| format_err!("failed to parse metadata"))
     }
 
-    fn from_value(value: &Value) -> Option<Self> {
-        let map = value.as_object()?;
+    fn from_value(mut value: Value) -> Option<Self> {
+        let map = value.as_object_mut()?;
         let packages = map
-            .get("packages")?
-            .as_array()?
-            .iter()
+            .get_mut("packages")?
+            .as_array_mut()?
+            .iter_mut()
             .map(Package::from_value)
             .collect::<Option<Vec<_>>>()?;
-        let workspace_root = map.get("workspace_root")?.as_str()?.to_string().into();
+        let workspace_root = into_string(map.remove("workspace_root")?)?.into();
 
         Some(Self { packages, workspace_root })
     }
@@ -74,22 +74,21 @@ pub(crate) struct Package {
 }
 
 impl Package {
-    fn from_value(value: &Value) -> Option<Self> {
-        let map = value.as_object()?;
-        let name = map.get("name")?.as_str()?.to_string();
+    fn from_value(value: &mut Value) -> Option<Self> {
+        let map = value.as_object_mut()?;
+        let name = into_string(map.remove("name")?)?;
         let dependencies = map
-            .get("dependencies")?
-            .as_array()?
-            .iter()
+            .get_mut("dependencies")?
+            .as_array_mut()?
+            .iter_mut()
             .map(Dependency::from_value)
             .collect::<Option<Vec<_>>>()?;
-        let features = map
-            .get("features")?
-            .as_object()?
-            .iter()
-            .map(|(k, v)| v.as_array().map(|_| k.to_string()))
+        // Check if values are array, but don't collect because we don't use them.
+        let features = into_object(map.remove("features")?)?
+            .into_iter()
+            .map(|(k, v)| v.as_array().map(|_| k))
             .collect::<Option<BTreeSet<_>>>()?;
-        let manifest_path = map.get("manifest_path")?.as_str()?.to_string().into();
+        let manifest_path = into_string(map.remove("manifest_path")?)?.into();
 
         Some(Self { name, dependencies, features, manifest_path })
     }
@@ -124,16 +123,24 @@ pub(crate) struct Dependency {
 }
 
 impl Dependency {
-    fn from_value(value: &Value) -> Option<Self> {
-        let map = value.as_object()?;
-        let name = map.get("name")?.as_str()?.to_string();
-        let optional = map.get("optional")?.as_bool()?;
-        let rename = map.get("rename")?;
-        let rename = if rename.is_null() { None } else { Some(rename.as_str()?.to_string()) };
+    fn from_value(value: &mut Value) -> Option<Self> {
+        let map = value.as_object_mut()?;
+        let name = into_string(map.remove("name")?)?;
+        let optional = map.remove("optional")?.as_bool()?;
+        let rename = map.remove("rename")?;
+        let rename = if rename.is_null() { None } else { Some(into_string(rename)?) };
         Some(Self { name, optional, rename })
     }
 
     pub(crate) fn as_feature(&self) -> Option<&str> {
         if self.optional { Some(self.rename.as_ref().unwrap_or(&self.name)) } else { None }
     }
+}
+
+fn into_string(value: Value) -> Option<String> {
+    if let Value::String(string) = value { Some(string) } else { None }
+}
+
+fn into_object(value: Value) -> Option<Map<String, Value>> {
+    if let Value::Object(object) = value { Some(object) } else { None }
 }
