@@ -1,5 +1,5 @@
 use anyhow::{bail, format_err, Error};
-use std::{env, fmt, iter::Peekable, mem, str::FromStr};
+use std::{env, fmt, mem, slice, str::FromStr};
 use termcolor::ColorChoice;
 
 use crate::{ProcessBuilder, Result};
@@ -175,7 +175,7 @@ Some common cargo commands are (see all commands with --list):
 
 pub(crate) struct Args<'a> {
     pub(crate) leading_args: Vec<&'a str>,
-    pub(crate) trailing_args: Vec<&'a str>,
+    pub(crate) trailing_args: &'a [String],
 
     pub(crate) subcommand: Option<&'a str>,
 
@@ -278,16 +278,16 @@ impl RawArgs {
         Self { inner: args.collect() }
     }
 
-    fn iter(&self) -> Peekable<impl Iterator<Item = &str> + '_> {
-        self.inner.iter().map(String::as_str).peekable()
+    pub(crate) fn perse<'a>(&'a self, coloring: &mut Option<Coloring>) -> Result<Option<Args<'a>>> {
+        perse_args(self.inner.iter(), coloring)
     }
 }
 
-pub(crate) fn args<'a>(
-    args: &'a RawArgs,
+fn perse_args<'a>(
+    mut iter: slice::Iter<'a, String>,
     coloring: &mut Option<Coloring>,
 ) -> Result<Option<Args<'a>>> {
-    let mut args = args.iter();
+    let mut args = iter.by_ref().map(String::as_str).peekable();
     match args.next() {
         Some(a) if a == "hack" => {}
         Some(_) | None => {
@@ -630,7 +630,7 @@ For more information try --help
 
     Ok(Some(Args {
         leading_args: leading,
-        trailing_args: args.collect::<Vec<_>>(),
+        trailing_args: iter.as_slice(),
 
         subcommand,
 

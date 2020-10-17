@@ -21,7 +21,7 @@ pub(crate) struct ProcessBuilder<'a> {
     /// A list of arguments to pass to the program (until '--').
     leading_args: &'a [&'a str],
     /// A list of arguments to pass to the program (after '--').
-    trailing_args: &'a [&'a str],
+    trailing_args: &'a [String],
 
     /// A list of arguments to pass to the program (between `leading_args` and '--').
     args: Vec<OsString>,
@@ -52,7 +52,7 @@ impl<'a> ProcessBuilder<'a> {
         Self {
             program: program.into(),
             leading_args: &args.leading_args,
-            trailing_args: &args.trailing_args,
+            trailing_args: args.trailing_args,
             args: Vec::new(),
             features: String::new(),
             verbose: args.verbose,

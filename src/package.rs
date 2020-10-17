@@ -79,7 +79,7 @@ impl<'a> Kind<'a> {
         let features = if args.include_features.is_empty() {
             let mut features: Vec<_> = package
                 .features
-                .keys()
+                .iter()
                 .map(String::as_str)
                 .filter(|f| *f != "default" && !args.exclude_features.contains(f))
                 .collect();

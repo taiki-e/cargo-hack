@@ -2,7 +2,7 @@ use anyhow::{format_err, Context};
 use serde_json::Value;
 use std::{
     borrow::Cow,
-    collections::BTreeMap,
+    collections::BTreeSet,
     env,
     ffi::OsString,
     io::{self, Write},
@@ -62,10 +62,13 @@ impl Metadata {
 pub(crate) struct Package {
     /// Name as given in the `Cargo.toml`
     pub(crate) name: String,
+    // /// Version given in the `Cargo.toml`
+    // #[allow(dead_code)]
+    // pub(crate) version: String,
     /// List of dependencies of this particular package
     pub(crate) dependencies: Vec<Dependency>,
     /// Features provided by the crate, mapped to the features required by that feature.
-    pub(crate) features: BTreeMap<String, Vec<Value>>,
+    pub(crate) features: BTreeSet<String>,
     /// Path containing the `Cargo.toml`
     pub(crate) manifest_path: PathBuf,
 }
@@ -84,8 +87,8 @@ impl Package {
             .get("features")?
             .as_object()?
             .iter()
-            .map(|(k, v)| v.as_array().map(|a| (k.to_string(), a.to_vec())))
-            .collect::<Option<BTreeMap<_, _>>>()?;
+            .map(|(k, v)| v.as_array().map(|_| k.to_string()))
+            .collect::<Option<BTreeSet<_>>>()?;
         let manifest_path = map.get("manifest_path")?.as_str()?.to_string().into();
 
         Some(Self { name, dependencies, features, manifest_path })
@@ -108,6 +111,8 @@ impl Package {
 pub(crate) struct Dependency {
     /// Name as given in the `Cargo.toml`
     pub(crate) name: String,
+    // /// The required version
+    // pub(crate) req: String,
     /// Whether this dependency is required or optional
     pub(crate) optional: bool,
     // TODO: support this
