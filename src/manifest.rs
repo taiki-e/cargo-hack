@@ -23,7 +23,7 @@ impl Manifest {
             .with_context(|| format!("failed to read manifest from {}", path.display()))?;
         let toml = toml::from_str(&raw)
             .with_context(|| format!("failed to parse manifest file: {}", path.display()))?;
-        let package = Package::from_table(&toml);
+        let package = Package::from_table(toml);
         Ok(Self { path, raw, package })
     }
 
@@ -70,13 +70,13 @@ pub(crate) struct Package {
 }
 
 impl Package {
-    fn from_table(table: &Table) -> Option<Self> {
-        let package = table.get("package")?.as_table()?;
-        let name = package.get("name")?.as_str()?.to_string();
-        let publish = match package.get("publish") {
+    fn from_table(mut table: Table) -> Option<Self> {
+        let package = table.get_mut("package")?.as_table_mut()?;
+        let name = into_string(package.remove("name")?)?;
+        let publish = match package.remove("publish") {
             None => Publish::default(),
-            Some(Value::Array(a)) => Publish::Registry(a.to_vec()),
-            Some(Value::Boolean(b)) => Publish::Flag(*b),
+            Some(Value::Array(a)) => Publish::Registry(a),
+            Some(Value::Boolean(b)) => Publish::Flag(b),
             Some(_) => return None,
         };
 
@@ -108,4 +108,8 @@ impl PartialEq<bool> for Publish {
     fn eq(&self, b: &bool) -> bool {
         b.eq(self)
     }
+}
+
+fn into_string(value: Value) -> Option<String> {
+    if let Value::String(string) = value { Some(string) } else { None }
 }
