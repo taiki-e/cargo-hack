@@ -2,8 +2,14 @@ use std::{ffi::OsStr, fmt::Write, ops::Deref};
 
 use crate::{
     metadata::{self, Dependency},
-    Args, Info, Manifest, ProcessBuilder, Result,
+    Args, Manifest, ProcessBuilder, Result,
 };
+
+#[derive(Default)]
+pub(crate) struct Progress {
+    total: usize,
+    count: usize,
+}
 
 pub(crate) struct Package<'a> {
     package: &'a metadata::Package,
@@ -12,24 +18,28 @@ pub(crate) struct Package<'a> {
 }
 
 impl<'a> Package<'a> {
-    fn new(args: &'a Args<'_>, total: &mut usize, package: &'a metadata::Package) -> Result<Self> {
+    fn new(
+        args: &'a Args<'_>,
+        package: &'a metadata::Package,
+        progress: &mut Progress,
+    ) -> Result<Self> {
         let manifest = Manifest::new(&package.manifest_path)?;
 
         if args.ignore_private && manifest.is_private() {
             Ok(Self { package, manifest, kind: Kind::SkipAsPrivate })
         } else {
-            Ok(Self { package, manifest, kind: Kind::determine(args, package, total) })
+            Ok(Self { package, manifest, kind: Kind::determine(args, package, progress) })
         }
     }
 
     pub(crate) fn from_iter(
         args: &'a Args<'_>,
-        total: &mut usize,
         packages: impl IntoIterator<Item = &'a metadata::Package>,
+        progress: &mut Progress,
     ) -> Result<Vec<Self>> {
         packages
             .into_iter()
-            .map(|package| Package::new(args, total, package))
+            .map(|package| Package::new(args, package, progress))
             .collect::<Result<Vec<_>>>()
     }
 }
@@ -46,20 +56,24 @@ pub(crate) enum Kind<'a> {
     // If there is no subcommand, then kind need not be determined.
     NoSubcommand,
     SkipAsPrivate,
-    Nomal { show_progress: bool },
+    Nomal,
     Each { features: Vec<&'a str> },
     Powerset { features: Vec<Vec<&'a str>> },
 }
 
 impl<'a> Kind<'a> {
-    fn determine(args: &'a Args<'_>, package: &'a metadata::Package, total: &mut usize) -> Self {
+    fn determine(
+        args: &'a Args<'_>,
+        package: &'a metadata::Package,
+        progress: &mut Progress,
+    ) -> Self {
         if args.subcommand.is_none() {
             return Kind::NoSubcommand;
         }
 
         if !args.each_feature && !args.feature_powerset {
-            *total += 1;
-            return Kind::Nomal { show_progress: false };
+            progress.total += 1;
+            return Kind::Nomal;
         }
 
         let features = if args.include_features.is_empty() {
@@ -92,10 +106,10 @@ impl<'a> Kind<'a> {
             if (package.features.is_empty() || !args.include_features.is_empty())
                 && features.is_empty()
             {
-                *total += 1;
-                Kind::Nomal { show_progress: true }
+                progress.total += 1;
+                Kind::Nomal
             } else {
-                *total += features.len()
+                progress.total += features.len()
                     + (!args.exclude_features.contains(&"default")) as usize
                     + (!args.exclude_no_default_features) as usize
                     + (!args.exclude_all_features) as usize;
@@ -107,11 +121,11 @@ impl<'a> Kind<'a> {
             if (package.features.is_empty() || !args.include_features.is_empty())
                 && features.is_empty()
             {
-                *total += 1;
-                Kind::Nomal { show_progress: true }
+                progress.total += 1;
+                Kind::Nomal
             } else {
                 // -1: the first element of a powerset is `[]`
-                *total += features.len() - 1
+                progress.total += features.len() - 1
                     + (!args.exclude_features.contains(&"default")) as usize
                     + (!args.exclude_no_default_features) as usize
                     + (!args.exclude_all_features) as usize;
@@ -127,14 +141,14 @@ pub(crate) fn exec(
     args: &Args<'_>,
     package: &Package<'_>,
     line: &mut ProcessBuilder<'_>,
-    info: &mut Info,
+    progress: &mut Progress,
 ) -> Result<()> {
     match &package.kind {
         Kind::NoSubcommand => return Ok(()),
         Kind::SkipAsPrivate => unreachable!(),
-        Kind::Nomal { show_progress } => {
+        Kind::Nomal => {
             // only run with default features
-            return exec_cargo(args, package, line, info, *show_progress);
+            return exec_cargo(args, package, line, progress);
         }
         Kind::Each { .. } | Kind::Powerset { .. } => {}
     }
@@ -143,7 +157,7 @@ pub(crate) fn exec(
 
     if !args.exclude_features.contains(&"default") {
         // run with default features
-        exec_cargo(args, package, &mut line, info, true)?;
+        exec_cargo(args, package, &mut line, progress)?;
     }
 
     if !args.no_default_features {
@@ -155,21 +169,21 @@ pub(crate) fn exec(
         //
         // `default` is not skipped because `cfg(feature = "default")` is work
         // if `default` feature specified.
-        exec_cargo(args, package, &mut line, info, true)?;
+        exec_cargo(args, package, &mut line, progress)?;
     }
 
     match &package.kind {
         Kind::Each { features } => {
-            features
-                .iter()
-                .try_for_each(|f| exec_cargo_with_features(args, package, &line, info, Some(f)))?;
+            features.iter().try_for_each(|f| {
+                exec_cargo_with_features(args, package, &line, progress, Some(f))
+            })?;
         }
         Kind::Powerset { features } => {
             // The first element of a powerset is `[]` so it should be skipped.
             features
                 .iter()
                 .skip(1)
-                .try_for_each(|f| exec_cargo_with_features(args, package, &line, info, f))?;
+                .try_for_each(|f| exec_cargo_with_features(args, package, &line, progress, f))?;
         }
         _ => unreachable!(),
     }
@@ -177,7 +191,7 @@ pub(crate) fn exec(
     if !args.exclude_all_features {
         // run with all features
         line.arg("--all-features");
-        exec_cargo(args, package, &mut line, info, true)?;
+        exec_cargo(args, package, &mut line, progress)?;
     }
 
     Ok(())
@@ -187,22 +201,21 @@ fn exec_cargo_with_features(
     args: &Args<'_>,
     package: &Package<'_>,
     line: &ProcessBuilder<'_>,
-    info: &mut Info,
+    progress: &mut Progress,
     features: impl IntoIterator<Item = impl AsRef<str>>,
 ) -> Result<()> {
     let mut line = line.clone();
     line.append_features(features);
-    exec_cargo(args, package, &mut line, info, true)
+    exec_cargo(args, package, &mut line, progress)
 }
 
 fn exec_cargo(
     args: &Args<'_>,
     package: &Package<'_>,
     line: &mut ProcessBuilder<'_>,
-    info: &mut Info,
-    show_progress: bool,
+    progress: &mut Progress,
 ) -> Result<()> {
-    info.count += 1;
+    progress.count += 1;
 
     if args.clean_per_run {
         cargo_clean(line.get_program(), args, package)?;
@@ -215,9 +228,7 @@ fn exec_cargo(
     } else {
         write!(msg, "running {} on {}", line, &package.name).unwrap();
     }
-    if show_progress {
-        write!(msg, " ({}/{})", info.count, info.total).unwrap();
-    }
+    write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
     info!(args.color, "{}", msg);
 
     line.exec()
