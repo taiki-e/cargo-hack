@@ -26,7 +26,7 @@ use crate::{
     cli::{Args, Coloring},
     manifest::{find_root_manifest_for_wd, Manifest},
     metadata::Metadata,
-    package::{Kind, Package},
+    package::{Kind, Package, Progress},
     process::ProcessBuilder,
     restore::Restore,
 };
@@ -80,7 +80,7 @@ fn exec_on_workspace(
         line.arg(color.as_str());
     }
 
-    let mut total = 0;
+    let mut progress = Progress::default();
     let packages = if args.workspace {
         args.exclude.iter().for_each(|spec| {
             if !metadata.packages.iter().any(|package| package.name == *spec) {
@@ -95,7 +95,7 @@ fn exec_on_workspace(
 
         let packages =
             metadata.packages.iter().filter(|package| !args.exclude.contains(&&*package.name));
-        Package::from_iter(args, &mut total, packages)?
+        Package::from_iter(args, packages, &mut progress)?
     } else if !args.package.is_empty() {
         if let Some(spec) = args
             .package
@@ -107,24 +107,18 @@ fn exec_on_workspace(
 
         let packages =
             metadata.packages.iter().filter(|package| args.package.contains(&&*package.name));
-        Package::from_iter(args, &mut total, packages)?
+        Package::from_iter(args, packages, &mut progress)?
     } else if current_manifest.is_virtual() {
-        Package::from_iter(args, &mut total, &metadata.packages)?
+        Package::from_iter(args, &metadata.packages, &mut progress)?
     } else {
         let current_package = current_manifest.package_name();
         let package = metadata.packages.iter().find(|package| package.name == *current_package);
-        Package::from_iter(args, &mut total, package)?
+        Package::from_iter(args, package, &mut progress)?
     };
 
-    let mut info = Info { total, count: 0 };
     packages
         .iter()
-        .try_for_each(|package| exec_on_package(args, package, &line, &restore, &mut info))
-}
-
-struct Info {
-    total: usize,
-    count: usize,
+        .try_for_each(|package| exec_on_package(args, package, &line, &restore, &mut progress))
 }
 
 fn exec_on_package(
@@ -132,7 +126,7 @@ fn exec_on_package(
     package: &Package<'_>,
     line: &ProcessBuilder<'_>,
     restore: &Restore,
-    info: &mut Info,
+    progress: &mut Progress,
 ) -> Result<()> {
     if let Kind::SkipAsPrivate = package.kind {
         info!(args.color, "skipped running on private crate {}", package.name_verbose(args));
@@ -144,7 +138,7 @@ fn exec_on_package(
         line.arg("--manifest-path");
         line.arg(&package.manifest_path);
 
-        no_dev_deps(args, package, &mut line, restore, info)
+        no_dev_deps(args, package, &mut line, restore, progress)
     }
 }
 
@@ -153,7 +147,7 @@ fn no_dev_deps(
     package: &Package<'_>,
     line: &mut ProcessBuilder<'_>,
     restore: &Restore,
-    info: &mut Info,
+    progress: &mut Progress,
 ) -> Result<()> {
     if args.no_dev_deps || args.remove_dev_deps {
         let new = package.manifest.remove_dev_deps();
@@ -163,11 +157,11 @@ fn no_dev_deps(
             format!("failed to update manifest file: {}", package.manifest_path.display())
         })?;
 
-        package::exec(args, package, line, info)?;
+        package::exec(args, package, line, progress)?;
 
         handle.done()
     } else {
-        package::exec(args, package, line, info)
+        package::exec(args, package, line, progress)
     }
 }
 

@@ -186,10 +186,10 @@ fn real_manifest() {
         .output()
         .unwrap()
         .assert_success()
-        .assert_stderr_contains("running `cargo check` on member1")
-        .assert_stderr_contains("running `cargo check` on member2")
-        .assert_stderr_contains("running `cargo check` on member3")
-        .assert_stderr_contains("running `cargo check` on real");
+        .assert_stderr_contains("running `cargo check` on member1 (1/4)")
+        .assert_stderr_contains("running `cargo check` on member2 (2/4)")
+        .assert_stderr_contains("running `cargo check` on member3 (3/4)")
+        .assert_stderr_contains("running `cargo check` on real (4/4)");
 }
 
 #[test]
@@ -200,8 +200,8 @@ fn virtual_manifest() {
         .output()
         .unwrap()
         .assert_success()
-        .assert_stderr_contains("running `cargo check` on member1")
-        .assert_stderr_contains("running `cargo check` on member2");
+        .assert_stderr_contains("running `cargo check` on member1 (1/3)")
+        .assert_stderr_contains("running `cargo check` on member2 (2/3)");
 
     cargo_hack()
         .args(&["check", "--all"])
@@ -209,8 +209,8 @@ fn virtual_manifest() {
         .output()
         .unwrap()
         .assert_success()
-        .assert_stderr_contains("running `cargo check` on member1")
-        .assert_stderr_contains("running `cargo check` on member2");
+        .assert_stderr_contains("running `cargo check` on member1 (1/3)")
+        .assert_stderr_contains("running `cargo check` on member2 (2/3)");
 }
 
 #[test]
