@@ -1,8 +1,4 @@
 target
-Cargo.lock
-
-# This crate is binary crate, so publish the root Cargo.lock file.
-!/Cargo.lock
 
 # For platform and editor specific settings, it is recommended to add to
 # a global .gitignore file.

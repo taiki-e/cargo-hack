@@ -76,7 +76,9 @@ impl Metadata {
             packages: map
                 .remove_array("packages")?
                 .map(Package::from_value)
-                .filter(|opt| opt.as_ref().map_or(true, |(id, _)| workspace_members.contains(id)))
+                .filter(|res| {
+                    res.as_ref().map(|(id, _)| workspace_members.contains(id)).unwrap_or(true)
+                })
                 .collect::<Result<_, _>>()?,
             workspace_members,
             resolve: map.remove_object("resolve").and_then(Resolve::from_obj)?,
