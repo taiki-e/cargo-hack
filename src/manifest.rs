@@ -35,7 +35,7 @@ impl Manifest {
 }
 
 // Refs:
-// * https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/util/toml/mod.rs
+// * https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/util/toml/mod.rs
 // * https://gitlab.com/crates.rs/cargo_toml
 
 pub(crate) struct Package {

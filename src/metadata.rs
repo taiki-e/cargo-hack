@@ -16,8 +16,8 @@ type Object = Map<String, Value>;
 type ParseResult<T> = Result<T, &'static str>;
 
 // Refs:
-// * https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/ops/cargo_output_metadata.rs#L56-L63
-// * https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/core/package.rs#L57-L80
+// * https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/ops/cargo_output_metadata.rs#L56-L63
+// * https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/core/package.rs#L57-L80
 // * https://github.com/oli-obk/cargo_metadata
 
 /// An "opaque" identifier for a package.

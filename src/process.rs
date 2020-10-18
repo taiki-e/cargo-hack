@@ -10,7 +10,7 @@ use std::{
 
 use crate::{Context, PackageId, Result};
 
-// Based on https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/util/process_builder.rs
+// Based on https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/util/process_builder.rs
 
 /// A builder object for an external process, similar to `std::process::Command`.
 #[derive(Clone)]
