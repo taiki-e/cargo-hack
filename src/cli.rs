@@ -1,5 +1,5 @@
 use anyhow::{bail, format_err, Error};
-use std::{env, fmt, mem, slice, str::FromStr};
+use std::{env, fmt, mem, str::FromStr};
 use termcolor::ColorChoice;
 
 use crate::{ProcessBuilder, Result};
@@ -92,8 +92,12 @@ struct Help {
 }
 
 impl Help {
-    fn new(long: bool) -> Self {
-        Self { long, term_size: term_size::dimensions().map_or(120, |(w, _)| w) }
+    fn long() -> Self {
+        Self { long: true, term_size: term_size::dimensions().map_or(120, |(w, _)| w) }
+    }
+
+    fn short() -> Self {
+        Self { long: false, term_size: term_size::dimensions().map_or(120, |(w, _)| w) }
     }
 }
 
@@ -267,32 +271,25 @@ impl FromStr for Coloring {
     }
 }
 
-pub(crate) struct RawArgs {
-    inner: Vec<String>,
+pub(crate) fn raw() -> RawArgs {
+    let mut args = env::args();
+    let _ = args.next(); // executable name
+    RawArgs(args.collect())
 }
 
-impl RawArgs {
-    pub(crate) fn new() -> Self {
-        let mut args = env::args();
-        let _ = args.next(); // executable name
-        Self { inner: args.collect() }
-    }
+pub(crate) struct RawArgs(Vec<String>);
 
-    pub(crate) fn perse<'a>(&'a self, coloring: &mut Option<Coloring>) -> Result<Option<Args<'a>>> {
-        perse_args(self.inner.iter(), coloring)
-    }
-}
-
-fn perse_args<'a>(
-    mut iter: slice::Iter<'a, String>,
+pub(crate) fn perse_args<'a>(
+    raw: &'a RawArgs,
     coloring: &mut Option<Coloring>,
-) -> Result<Option<Args<'a>>> {
+) -> Result<Args<'a>> {
+    let mut iter = raw.0.iter();
     let mut args = iter.by_ref().map(String::as_str).peekable();
     match args.next() {
         Some(a) if a == "hack" => {}
         Some(_) | None => {
-            println!("{}", Help::new(false));
-            return Ok(None);
+            println!("{}", Help::short());
+            std::process::exit(0);
         }
     }
 
@@ -502,20 +499,20 @@ fn perse_args<'a>(
         Ok(())
     })();
 
-    let color = color.map(|c| c.parse()).transpose()?;
+    let color = color.map(str::parse).transpose()?;
     *coloring = color;
 
     res?;
 
     if leading.is_empty() && !remove_dev_deps || subcommand.is_none() && leading.contains(&"-h") {
-        println!("{}", Help::new(false));
-        return Ok(None);
+        println!("{}", Help::short());
+        std::process::exit(0);
     } else if subcommand.is_none() && leading.contains(&"--help") {
-        println!("{}", Help::new(true));
-        return Ok(None);
+        println!("{}", Help::long());
+        std::process::exit(0);
     } else if leading.iter().any(|&a| a == "--version" || a == "-V" || a == "-vV" || a == "-Vv") {
         print_version();
-        return Ok(None);
+        std::process::exit(0);
     }
 
     if !exclude.is_empty() && workspace.is_none() {
@@ -554,7 +551,7 @@ fn perse_args<'a>(
     if depth.is_some() && !feature_powerset {
         bail!("--depth can only be used together with --feature-powerset");
     }
-    let depth = depth.map(|s| s.parse::<usize>()).transpose()?;
+    let depth = depth.map(str::parse::<usize>).transpose()?;
 
     if let Some(subcommand) = subcommand {
         if subcommand == "test" || subcommand == "bench" {
@@ -595,7 +592,7 @@ fn perse_args<'a>(
             let mut line = ProcessBuilder::new(crate::cargo_binary(), verbose);
             line.arg("--list");
             line.exec()?;
-            return Ok(None);
+            std::process::exit(0);
         } else if !remove_dev_deps {
             // TODO: improve this
             bail!(
@@ -628,7 +625,7 @@ For more information try --help
     exclude_no_default_features |= no_default_features;
     exclude_features.extend_from_slice(&features);
 
-    Ok(Some(Args {
+    Ok(Args {
         leading_args: leading,
         trailing_args: iter.as_slice(),
 
@@ -658,7 +655,7 @@ For more information try --help
 
         features,
         color,
-    }))
+    })
 }
 
 fn req_arg(arg: &str, subcommand: Option<&str>) -> Error {
@@ -672,11 +669,7 @@ USAGE:
 For more information try --help
 ",
         arg,
-        if let Some(subcommand) = subcommand {
-            String::from(" ") + subcommand
-        } else {
-            String::from("")
-        }
+        subcommand.map_or_else(String::new, |subcommand| String::from(" ") + subcommand)
     )
 }
 
@@ -691,11 +684,7 @@ USAGE:
 For more information try --help
 ",
         arg,
-        if let Some(subcommand) = subcommand {
-            String::from(" ") + subcommand
-        } else {
-            String::from("")
-        }
+        subcommand.map_or_else(String::new, |subcommand| String::from(" ") + subcommand)
     )
 }
 

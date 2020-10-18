@@ -41,8 +41,8 @@ fn main() {
 }
 
 fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
-    let args = cli::RawArgs::new();
-    let args = args.perse(coloring)?.unwrap_or_else(|| std::process::exit(0));
+    let args = cli::raw();
+    let args = cli::perse_args(&args, coloring)?;
     let metadata = Metadata::new(&args)?;
 
     let current_manifest = match args.manifest_path {
