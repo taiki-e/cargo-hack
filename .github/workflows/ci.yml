@@ -47,6 +47,31 @@ jobs:
           cargo run -- hack check --each-feature --no-dev-deps
           cargo run -- hack --remove-dev-deps
 
+  run:
+    name: run
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        rust:
+        # cargo-hack is usually runnable with Cargo versions older than the Rust version required for installation.
+        # When updating this, the reminder to update the minimum supported Rust version in README.md.
+          - 1.26.0
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        run: ci/install-rust.sh ${{ matrix.rust }}
+      - name: Install cargo-hack from path
+        run: |
+          cargo +stable install --path .
+      - name: cargo +${{ matrix.rust }} check
+        run: |
+          cargo +${{ matrix.rust }} hack check --manifest-path tests/fixtures/real/Cargo.toml
+          cargo +${{ matrix.rust }} hack check --manifest-path tests/fixtures/virtual/Cargo.toml
+
   clippy:
     name: clippy
     runs-on: ubuntu-latest
@@ -89,6 +114,7 @@ jobs:
     if: github.event_name == 'push' && success()
     needs:
       - test
+      - run
       - clippy
       - rustfmt
       - shellcheck
@@ -101,6 +127,7 @@ jobs:
     if: github.event_name == 'push' && !success()
     needs:
       - test
+      - run
       - clippy
       - rustfmt
       - shellcheck
