@@ -29,33 +29,31 @@ pub(crate) struct ProcessBuilder<'a> {
     // cargo less than Rust 1.38 cannot handle multiple '--features' flags, so it creates another String.
     features: String,
 
-    /// Use verbose output.
-    verbose: bool,
+    /// `true` to include full program path in display.
+    display_program_path: bool,
+    /// `true` to include manifest path in display.
+    display_manifest_path: bool,
 }
 
 impl<'a> ProcessBuilder<'a> {
     /// Creates a new `ProcessBuilder`.
-    pub(crate) fn new(program: &'a OsStr, verbose: bool) -> Self {
+    pub(crate) fn new(program: &'a OsStr) -> Self {
         Self {
             program,
             leading_args: &[],
             trailing_args: &[],
             args: Vec::new(),
             features: String::new(),
-            verbose,
+            display_program_path: false,
+            display_manifest_path: false,
         }
     }
 
-    /// Creates a new `ProcessBuilder` from `Args` via `Context`.
-    pub(crate) fn from_args(cx: &'a Context<'_>) -> Self {
-        Self {
-            program: cx.cargo(),
-            leading_args: &cx.leading_args,
-            trailing_args: cx.trailing_args,
-            args: Vec::new(),
-            features: String::new(),
-            verbose: cx.verbose,
-        }
+    pub(crate) fn with_args(mut self, cx: &'a Context<'_>) -> Self {
+        self.leading_args = &cx.leading_args;
+        self.trailing_args = cx.trailing_args;
+        self.display_manifest_path = cx.verbose;
+        self
     }
 
     pub(crate) fn append_features(&mut self, features: impl IntoIterator<Item = impl AsRef<str>>) {
@@ -110,6 +108,24 @@ impl<'a> ProcessBuilder<'a> {
     //     self
     // }
 
+    /// (chainable) Enables full program path display.
+    pub(crate) fn display_program_path(&mut self) -> &mut Self {
+        self.display_program_path = true;
+        self
+    }
+
+    /// (chainable) Enables manifest path display.
+    pub(crate) fn display_manifest_path(&mut self) -> &mut Self {
+        self.display_manifest_path = true;
+        self
+    }
+
+    /// Enables all display* flags.
+    fn display_all(&mut self) {
+        self.display_program_path();
+        self.display_manifest_path();
+    }
+
     /// Gets the comma-separated features list
     fn get_features(&self) -> &str {
         // drop a trailing comma if it is not empty.
@@ -121,14 +137,14 @@ impl<'a> ProcessBuilder<'a> {
         let mut command = self.build_command();
 
         let exit = command.status().with_context(|| {
-            self.verbose = true;
+            self.display_all();
             ProcessError::new(&format!("could not execute process {}", self), None, None)
         })?;
 
         if exit.success() {
             Ok(())
         } else {
-            self.verbose = true;
+            self.display_all();
             Err(ProcessError::new(
                 &format!("process didn't exit successfully: {}", self),
                 Some(exit),
@@ -143,14 +159,14 @@ impl<'a> ProcessBuilder<'a> {
         let mut command = self.build_command();
 
         let output = command.output().with_context(|| {
-            self.verbose = true;
+            self.display_all();
             ProcessError::new(&format!("could not execute process {}", self), None, None)
         })?;
 
         if output.status.success() {
             Ok(output)
         } else {
-            self.verbose = true;
+            self.display_all();
             Err(ProcessError::new(
                 &format!("process didn't exit successfully: {}", self),
                 Some(output.status),
@@ -184,9 +200,13 @@ impl fmt::Display for ProcessBuilder<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "`")?;
 
-        write!(f, "{}", Path::new(&*self.program).file_stem().unwrap().to_string_lossy())?;
+        if self.display_program_path {
+            write!(f, "{}", self.program.to_string_lossy())?;
+        } else {
+            write!(f, "{}", Path::new(&*self.program).file_stem().unwrap().to_string_lossy())?;
+        }
 
-        for arg in &*self.leading_args {
+        for arg in self.leading_args {
             write!(f, " {}", arg)?;
         }
 
@@ -195,7 +215,7 @@ impl fmt::Display for ProcessBuilder<'_> {
             if arg == "--manifest-path" {
                 let path = Path::new(args.next().unwrap());
                 // Displaying `--manifest-path` is redundant.
-                if self.verbose {
+                if self.display_manifest_path {
                     let path = env::current_dir()
                         .ok()
                         .and_then(|cwd| path.strip_prefix(&cwd).ok())

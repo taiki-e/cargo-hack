@@ -1,16 +1,10 @@
-use std::{
-    collections::HashMap,
-    env,
-    ffi::{OsStr, OsString},
-    ops::Deref,
-    path::Path,
-};
+use std::{collections::HashMap, env, ffi::OsString, ops::Deref, path::Path};
 
 use crate::{
     cli::{self, Args, Coloring, RawArgs},
     manifest::Manifest,
     metadata::{Metadata, Package, PackageId},
-    Result,
+    ProcessBuilder, Result,
 };
 
 pub(crate) struct Context<'a> {
@@ -59,8 +53,13 @@ impl<'a> Context<'a> {
     pub(crate) fn manifests(&self, id: &PackageId) -> &Manifest {
         &self.manifests[id]
     }
-    pub(crate) fn cargo(&self) -> &OsStr {
-        &self.cargo
+
+    pub(crate) fn process(&self) -> ProcessBuilder<'_> {
+        let mut command = ProcessBuilder::new(&self.cargo);
+        if self.verbose {
+            command.display_manifest_path();
+        }
+        command
     }
 }
 

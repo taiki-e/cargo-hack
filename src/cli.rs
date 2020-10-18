@@ -590,7 +590,7 @@ pub(crate) fn perse_args<'a>(
 
     if subcommand.is_none() {
         if leading.contains(&"--list") {
-            let mut line = ProcessBuilder::new(cargo, verbose);
+            let mut line = ProcessBuilder::new(cargo);
             line.arg("--list");
             line.exec()?;
             std::process::exit(0);

@@ -56,7 +56,7 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
     //     )
     // }
 
-    let mut line = ProcessBuilder::from_args(cx);
+    let mut line = cx.process().with_args(cx);
 
     if let Some(color) = cx.color {
         line.arg("--color");
@@ -331,7 +331,7 @@ fn exec_cargo(
 }
 
 fn cargo_clean(cx: &Context<'_>, id: &PackageId) -> Result<()> {
-    let mut line = ProcessBuilder::new(cx.cargo(), cx.verbose);
+    let mut line = cx.process();
     line.arg("clean");
     line.arg("--package");
     line.arg(&cx.packages(id).name);

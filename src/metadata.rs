@@ -54,7 +54,7 @@ pub(crate) struct Metadata {
 
 impl Metadata {
     pub(crate) fn new(args: &Args<'_>, cargo: &OsStr) -> Result<Self> {
-        let mut command = ProcessBuilder::new(cargo, false);
+        let mut command = ProcessBuilder::new(cargo);
         command.args(&["metadata", "--format-version=1"]);
         if let Some(manifest_path) = &args.manifest_path {
             command.arg("--manifest-path");
