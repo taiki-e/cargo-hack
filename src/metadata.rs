@@ -110,6 +110,8 @@ impl Resolve {
 //     /// An opaque identifier for a package
 //     pub(crate) id: PackageId,
 //     /// Dependencies in a structured format.
+//     ///
+//     /// This field was added in Rust 1.30.
 //     pub(crate) deps: Vec<NodeDep>,
 //     /// Features enabled on the crate
 //     pub(crate) features: Vec<String>,
@@ -148,10 +150,14 @@ impl Resolve {
 
 //         Ok(Self {
 //             pkg: PackageId::new(map.remove_string("pkg")?),
+//             // This field was added in Rust 1.41.
 //             dep_kinds: map
-//                 .remove_array("dep_kinds")?
-//                 .map(DepKindInfo::from_value)
-//                 .collect::<Result<_, _>>()?,
+//                 .remove("dep_kinds")
+//                 .map(|v| into_array(v).ok_or("dep_kinds"))
+//                 .transpose()?
+//                 .map(|v| v.map(DepKindInfo::from_value).collect::<Result<_, _>>())
+//                 .transpose()?
+//                 .unwrap_or_default(),
 //         })
 //     }
 // }
@@ -247,6 +253,8 @@ pub(crate) struct Dependency {
     // pub(crate) target: Option<String>,
     /// If the dependency is renamed, this is the new name for the dependency
     /// as a string.  None if it is not renamed.
+    ///
+    /// This field was added in Rust 1.26.
     pub(crate) rename: Option<String>,
 }
 
