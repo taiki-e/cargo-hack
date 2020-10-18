@@ -69,8 +69,9 @@ jobs:
           cargo +stable install --path .
       - name: cargo +${{ matrix.rust }} check
         run: |
-          cargo +${{ matrix.rust }} hack check --manifest-path tests/fixtures/real/Cargo.toml
-          cargo +${{ matrix.rust }} hack check --manifest-path tests/fixtures/virtual/Cargo.toml
+          cargo hack check --manifest-path tests/fixtures/run/real/Cargo.toml
+          cargo hack check --manifest-path tests/fixtures/run/virtual/Cargo.toml
+          git diff --exit-code
 
   clippy:
     name: clippy
