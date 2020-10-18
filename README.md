@@ -24,6 +24,8 @@ cargo install cargo-hack
 
 To install the current cargo-hack requires Rust 1.36 or later.
 
+cargo-hack is usually runnable with Cargo versions older than the Rust version required for installation (e.g., `cargo +1.31.0 hack check`). To run the current cargo-hack requires Cargo 1.26 or later.
+
 ## Usage
 
 *See `cargo hack --help` for a complete list of options ([output is here](https://github.com/taiki-e/cargo-hack/blob/master/tests/long-help.txt)).*
