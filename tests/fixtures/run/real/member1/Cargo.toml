@@ -1,0 +1,16 @@
+[package]
+name = "member1"
+version = "0.1.0"
+authors = ["Taiki Endo <te316e89@gmail.com>"]
+
+[dependencies]
+
+[dev-dependencies]
+
+[target.'cfg(unix)'.dev-dependencies]
+
+[features]
+default = []
+a = []
+b = []
+c = []
