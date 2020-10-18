@@ -5,7 +5,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{Coloring, Context, Manifest, Result};
+use crate::{Coloring, Context, PackageId, Result};
 
 #[derive(Clone)]
 pub(crate) struct Restore {
@@ -45,10 +45,10 @@ impl Restore {
         this
     }
 
-    pub(crate) fn set_manifest(&self, manifest: &Manifest) -> Handle<'_> {
+    pub(crate) fn set_manifest(&self, cx: &Context<'_>, id: &PackageId) -> Handle<'_> {
         *self.current.lock().unwrap() = Some(Current {
-            manifest: manifest.raw.to_string(),
-            manifest_path: manifest.path.to_path_buf(),
+            manifest: cx.manifests(id).raw.to_string(),
+            manifest_path: cx.packages(id).manifest_path.to_path_buf(),
             restore_flag: self.restore_flag,
         });
 

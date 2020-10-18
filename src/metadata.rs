@@ -8,6 +8,7 @@ use std::{
     io::{self, Write},
     path::PathBuf,
     process::Command,
+    rc::Rc,
     vec,
 };
 
@@ -46,8 +47,8 @@ pub(crate) struct Metadata {
     pub(crate) packages: HashMap<PackageId, Package>,
     /// A list of all workspace members
     pub(crate) workspace_members: Vec<PackageId>,
-    // /// Nodes in a dependencies graph
-    // pub(crate) nodes: HashMap<PackageId, Node>,
+    /// Dependencies graph
+    pub(crate) resolve: Resolve,
     /// Workspace root
     pub(crate) workspace_root: PathBuf,
 }
@@ -55,7 +56,7 @@ pub(crate) struct Metadata {
 impl Metadata {
     pub(crate) fn new(args: &Args<'_>, cargo: &OsStr) -> Result<Self> {
         let mut command = Command::new(cargo);
-        command.args(&["metadata", "--no-deps", "--format-version=1"]);
+        command.args(&["metadata", "--format-version=1"]);
         if let Some(manifest_path) = &args.manifest_path {
             command.arg("--manifest-path");
             command.arg(manifest_path);
@@ -75,23 +76,39 @@ impl Metadata {
     fn from_value(mut value: Value) -> Option<Self> {
         let map = value.as_object_mut()?;
 
+        let workspace_members: Vec<_> = map
+            .remove_array("workspace_members")?
+            .map(|v| into_string(v).map(PackageId::new))
+            .collect::<Option<_>>()?;
         Some(Self {
             packages: map
                 .remove_array("packages")?
                 .map(Package::from_value)
+                .filter(|opt| opt.as_ref().map_or(true, |(id, _)| workspace_members.contains(id)))
                 .collect::<Option<_>>()?,
-            workspace_members: map
-                .remove_array("workspace_members")?
-                .map(|v| into_string(v).map(PackageId::new))
-                .collect::<Option<_>>()?,
-            // nodes: match map.get_mut("resolve") {
-            //     Some(value) => {
-            //         let map = value.as_object_mut()?;
-            //         map.remove_array("nodes")?.map(Node::from_value).collect::<Option<_>>()?
-            //     }
-            //     None => HashMap::new(),
-            // },
+            workspace_members,
+            resolve: Resolve::from_value(map.remove("resolve")?)?,
             workspace_root: map.remove_string("workspace_root")?.into(),
+        })
+    }
+}
+
+/// A dependency graph
+pub(crate) struct Resolve {
+    // /// Nodes in a dependencies graph
+    // pub(crate) nodes: HashMap<PackageId, Node>,
+    // if `None`, cargo-hack called in the root of a virtual workspace
+    /// The crate for which the metadata was read.
+    pub(crate) root: Option<PackageId>,
+}
+
+impl Resolve {
+    fn from_value(mut value: Value) -> Option<Self> {
+        let map = value.as_object_mut()?;
+
+        Some(Self {
+            // nodes: map.remove_array("nodes")?.map(Node::from_value).collect::<Option<_>>()?,
+            root: allow_null(map.remove("root")?, into_string)?.map(PackageId::new),
         })
     }
 }

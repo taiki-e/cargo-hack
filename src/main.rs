@@ -25,7 +25,6 @@ use std::{fmt::Write, fs};
 use crate::{
     cli::Coloring,
     context::Context,
-    manifest::Manifest,
     metadata::{Dependency, PackageId},
     process::ProcessBuilder,
     restore::Restore,
@@ -186,10 +185,10 @@ fn determine_package_list<'a>(
             .filter(|id| cx.package.contains(&&*cx.packages(id).name))
             .map(|id| (id, determine_kind(cx, id, progress)))
             .collect()
-    } else if cx.current_manifest().is_virtual() {
+    } else if cx.current_manifest().is_none() {
         cx.workspace_members().map(|id| (id, determine_kind(cx, id, progress))).collect()
     } else {
-        let current_package = cx.current_manifest().package_name();
+        let current_package = &cx.manifests(cx.current_manifest().unwrap()).package.name;
         cx.workspace_members()
             .find(|id| cx.packages(id).name == *current_package)
             .map(|id| vec![(id, determine_kind(cx, id, progress))])
@@ -219,7 +218,7 @@ fn exec_on_package(
 
     if cx.no_dev_deps || cx.remove_dev_deps {
         let new = cx.manifests(id).remove_dev_deps();
-        let handle = restore.set_manifest(cx.manifests(id));
+        let handle = restore.set_manifest(cx, id);
 
         fs::write(&package.manifest_path, new).with_context(|| {
             format!("failed to update manifest file: {}", package.manifest_path.display())

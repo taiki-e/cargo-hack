@@ -8,7 +8,7 @@ use std::{
 
 use crate::{
     cli::{self, Args, Coloring, RawArgs},
-    manifest::{find_root_manifest_for_wd, Manifest},
+    manifest::Manifest,
     metadata::{Metadata, Package, PackageId},
     Result,
 };
@@ -16,7 +16,6 @@ use crate::{
 pub(crate) struct Context<'a> {
     args: Args<'a>,
     metadata: Metadata,
-    current_manifest: Manifest,
     manifests: HashMap<PackageId, Manifest>,
     cargo: OsString,
 }
@@ -31,11 +30,6 @@ impl<'a> Context<'a> {
         );
         let metadata = Metadata::new(&args, &cargo)?;
 
-        let current_manifest = match args.manifest_path {
-            Some(path) => Manifest::new(Path::new(path))?,
-            None => Manifest::new(find_root_manifest_for_wd(&env::current_dir()?)?)?,
-        };
-
         let mut manifests = HashMap::with_capacity(metadata.workspace_members.len());
         for id in &metadata.workspace_members {
             let manifest_path = &metadata.packages[id].manifest_path;
@@ -43,7 +37,7 @@ impl<'a> Context<'a> {
             manifests.insert(id.clone(), manifest);
         }
 
-        Ok(Self { args, metadata, current_manifest, manifests, cargo })
+        Ok(Self { args, metadata, manifests, cargo })
     }
 
     // Accessor methods.
@@ -54,13 +48,13 @@ impl<'a> Context<'a> {
         self.metadata.workspace_members.iter()
     }
     // pub(crate) fn nodes(&self, id: &PackageId) -> &Node {
-    //     &self.metadata.nodes[id]
+    //     &self.metadata.resolve.nodes[id]
     // }
+    pub(crate) fn current_manifest(&self) -> Option<&PackageId> {
+        self.metadata.resolve.root.as_ref()
+    }
     pub(crate) fn workspace_root(&self) -> &Path {
         &self.metadata.workspace_root
-    }
-    pub(crate) fn current_manifest(&self) -> &Manifest {
-        &self.current_manifest
     }
     pub(crate) fn manifests(&self, id: &PackageId) -> &Manifest {
         &self.manifests[id]
