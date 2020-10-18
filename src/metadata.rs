@@ -3,8 +3,7 @@ use serde_json::{Map, Value};
 use std::{
     borrow::Cow,
     collections::{BTreeSet, HashMap},
-    env,
-    ffi::OsString,
+    ffi::OsStr,
     fmt,
     io::{self, Write},
     path::PathBuf,
@@ -12,7 +11,7 @@ use std::{
     vec,
 };
 
-use crate::{cli::Args, Result};
+use crate::{cli::Args, Context, Result};
 
 type Object = Map<String, Value>;
 
@@ -54,8 +53,7 @@ pub(crate) struct Metadata {
 }
 
 impl Metadata {
-    pub(crate) fn new(args: &Args<'_>) -> Result<Self> {
-        let cargo = env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo"));
+    pub(crate) fn new(args: &Args<'_>, cargo: &OsStr) -> Result<Self> {
         let mut command = Command::new(cargo);
         command.args(&["metadata", "--no-deps", "--format-version=1"]);
         if let Some(manifest_path) = &args.manifest_path {
@@ -210,8 +208,8 @@ impl Package {
         Some((this.id.clone(), this))
     }
 
-    pub(crate) fn name_verbose(&self, args: &Args<'_>) -> Cow<'_, str> {
-        if args.verbose {
+    pub(crate) fn name_verbose(&self, cx: &Context<'_>) -> Cow<'_, str> {
+        if cx.verbose {
             Cow::Owned(format!(
                 "{} ({})",
                 self.name,

@@ -5,11 +5,10 @@ use std::{
     fmt,
     path::Path,
     process::{Command, ExitStatus},
-    rc::Rc,
     str,
 };
 
-use crate::{metadata::Package, Args, Result};
+use crate::{Context, PackageId, Result};
 
 // Based on https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/util/process_builder.rs
 
@@ -17,7 +16,7 @@ use crate::{metadata::Package, Args, Result};
 #[derive(Clone)]
 pub(crate) struct ProcessBuilder<'a> {
     /// The program to execute.
-    program: Rc<OsStr>,
+    program: &'a OsStr,
     /// A list of arguments to pass to the program (until '--').
     leading_args: &'a [&'a str],
     /// A list of arguments to pass to the program (after '--').
@@ -36,9 +35,9 @@ pub(crate) struct ProcessBuilder<'a> {
 
 impl<'a> ProcessBuilder<'a> {
     /// Creates a new `ProcessBuilder`.
-    pub(crate) fn new(program: impl Into<Rc<OsStr>>, verbose: bool) -> Self {
+    pub(crate) fn new(program: &'a OsStr, verbose: bool) -> Self {
         Self {
-            program: program.into(),
+            program,
             leading_args: &[],
             trailing_args: &[],
             args: Vec::new(),
@@ -47,15 +46,15 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    /// Creates a new `ProcessBuilder` from `Args`.
-    pub(crate) fn from_args(program: impl Into<Rc<OsStr>>, args: &'a Args<'_>) -> Self {
+    /// Creates a new `ProcessBuilder` from `Args` via `Context`.
+    pub(crate) fn from_args(cx: &'a Context<'_>) -> Self {
         Self {
-            program: program.into(),
-            leading_args: &args.leading_args,
-            trailing_args: args.trailing_args,
+            program: cx.cargo(),
+            leading_args: &cx.leading_args,
+            trailing_args: cx.trailing_args,
             args: Vec::new(),
             features: String::new(),
-            verbose: args.verbose,
+            verbose: cx.verbose,
         }
     }
 
@@ -66,35 +65,33 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    pub(crate) fn append_features_from_args(&mut self, args: &Args<'_>, package: &Package) {
-        if args.ignore_unknown_features {
-            self.append_features(args.features.iter().filter(|&&f| {
-                if package.features.get(f).is_some()
-                    || package.dependencies.iter().any(|dep| dep.as_feature() == Some(f))
-                {
-                    true
-                } else {
-                    // ignored
-                    info!(
-                        args.color,
-                        "skipped applying unknown `{}` feature to {}", f, package.name,
-                    );
-                    false
-                }
-            }))
-        } else if !args.features.is_empty() {
-            self.append_features(&args.features);
+    pub(crate) fn append_features_from_args(&mut self, cx: &Context<'_>, id: &PackageId) {
+        if cx.ignore_unknown_features {
+            let package = cx.packages(id);
+            self.append_features(
+                cx.features.iter().filter(|&&f| {
+                    if package.features.get(f).is_some()
+                        || package.dependencies.iter().any(|dep| dep.as_feature() == Some(f))
+                    {
+                        true
+                    } else {
+                        // ignored
+                        info!(
+                            cx.color,
+                            "skipped applying unknown `{}` feature to {}", f, package.name,
+                        );
+                        false
+                    }
+                }),
+            )
+        } else if !cx.features.is_empty() {
+            self.append_features(&cx.features);
         }
     }
 
     /// Adds `arg` to the args list.
     pub(crate) fn arg(&mut self, arg: impl AsRef<OsStr>) {
         self.args.push(arg.as_ref().to_os_string());
-    }
-
-    /// Gets the executable name.
-    pub(crate) fn get_program(&self) -> &OsStr {
-        &self.program
     }
 
     /// Gets the comma-separated features list
