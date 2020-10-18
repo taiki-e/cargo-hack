@@ -5,16 +5,15 @@ use std::{
     collections::{BTreeSet, HashMap},
     ffi::OsStr,
     fmt,
-    io::{self, Write},
     path::PathBuf,
-    process::Command,
     rc::Rc,
     vec,
 };
 
-use crate::{cli::Args, Context, Result};
+use crate::{cli::Args, Context, ProcessBuilder, Result};
 
 type Object = Map<String, Value>;
+type ParseResult<T> = Result<T, &'static str>;
 
 // Refs:
 // * https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/ops/cargo_output_metadata.rs#L56-L63
@@ -55,39 +54,32 @@ pub(crate) struct Metadata {
 
 impl Metadata {
     pub(crate) fn new(args: &Args<'_>, cargo: &OsStr) -> Result<Self> {
-        let mut command = Command::new(cargo);
+        let mut command = ProcessBuilder::new(cargo, false);
         command.args(&["metadata", "--format-version=1"]);
         if let Some(manifest_path) = &args.manifest_path {
             command.arg("--manifest-path");
             command.arg(manifest_path);
         }
+        let output = command.exec_with_output()?;
 
-        let output = command.output().context("failed to run 'cargo metadata'")?;
-        if !output.status.success() {
-            let _ = io::stderr().write_all(&output.stderr);
-            let code = output.status.code().unwrap_or(1);
-            std::process::exit(code);
-        }
-
-        let value = serde_json::from_slice(&output.stdout).context("failed to parse metadata")?;
-        Self::from_value(value).ok_or_else(|| format_err!("failed to parse metadata"))
+        let map =
+            serde_json::from_slice(&output.stdout).context("failed to parse metadata as json")?;
+        Self::from_obj(map).map_err(|s| format_err!("failed to parse `{}` field from metadata", s))
     }
 
-    fn from_value(mut value: Value) -> Option<Self> {
-        let map = value.as_object_mut()?;
-
+    fn from_obj(mut map: Object) -> ParseResult<Self> {
         let workspace_members: Vec<_> = map
             .remove_array("workspace_members")?
-            .map(|v| into_string(v).map(PackageId::new))
-            .collect::<Option<_>>()?;
-        Some(Self {
+            .map(|v| into_string(v).map(PackageId::new).ok_or("workspace_members"))
+            .collect::<Result<_, _>>()?;
+        Ok(Self {
             packages: map
                 .remove_array("packages")?
                 .map(Package::from_value)
                 .filter(|opt| opt.as_ref().map_or(true, |(id, _)| workspace_members.contains(id)))
-                .collect::<Option<_>>()?,
+                .collect::<Result<_, _>>()?,
             workspace_members,
-            resolve: Resolve::from_value(map.remove("resolve")?)?,
+            resolve: map.remove_object("resolve").and_then(Resolve::from_obj)?,
             workspace_root: map.remove_string("workspace_root")?.into(),
         })
     }
@@ -103,12 +95,10 @@ pub(crate) struct Resolve {
 }
 
 impl Resolve {
-    fn from_value(mut value: Value) -> Option<Self> {
-        let map = value.as_object_mut()?;
-
-        Some(Self {
-            // nodes: map.remove_array("nodes")?.map(Node::from_value).collect::<Option<_>>()?,
-            root: allow_null(map.remove("root")?, into_string)?.map(PackageId::new),
+    fn from_obj(mut map: Object) -> ParseResult<Self> {
+        Ok(Self {
+            // nodes: map.remove_array("nodes")?.map(Node::from_value)                .collect::<Result<_, _>>()?,
+            root: map.remove_nullable("root", into_string)?.map(PackageId::new),
         })
     }
 }
@@ -124,15 +114,19 @@ impl Resolve {
 // }
 
 // impl Node {
-//     fn from_value(mut value: Value) -> Option<(PackageId, Self)> {
-//         let map = value.as_object_mut()?;
+//     fn from_value(mut value: Value) -> ParseResult<(PackageId, Self)> {
+//         let map = value.as_object_mut().ok_or("nodes")?;
 
 //         let this = Self {
-//             id: PackageId::new(map.remove_string("id")?),
-//             deps: map.remove_array("deps")?.map(NodeDep::from_value).collect::<Option<_>>()?,
-//             features: map.remove_array("features")?.map(into_string).collect::<Option<_>>()?,
+//             id: map.remove_string("id").map(PackageId::new)?,
+//             deps: map.remove_array("deps")?.map(NodeDep::from_value).collect::<Result<_, _>>()?,
+
+//             features: map
+//                 .remove_array("features")?
+//                 .map(|v| into_string(v).ok_or("features"))
+//                 .collect::<Result<_, _>>()?,
 //         };
-//         Some((this.id.clone(), this))
+//         Ok((this.id.clone(), this))
 //     }
 // }
 
@@ -147,15 +141,15 @@ impl Resolve {
 // }
 
 // impl NodeDep {
-//     fn from_value(mut value: Value) -> Option<Self> {
-//         let map = value.as_object_mut()?;
+//     fn from_value(mut value: Value) -> ParseResult<Self> {
+//         let map = value.as_object_mut().ok_or("deps")?;
 
-//         Some(Self {
+//         Ok(Self {
 //             pkg: PackageId::new(map.remove_string("pkg")?),
 //             dep_kinds: map
 //                 .remove_array("dep_kinds")?
 //                 .map(DepKindInfo::from_value)
-//                 .collect::<Option<_>>()?,
+//                 .collect::<Result<_, _>>()?,
 //         })
 //     }
 // }
@@ -175,12 +169,12 @@ impl Resolve {
 // }
 
 // impl DepKindInfo {
-//     fn from_value(mut value: Value) -> Option<Self> {
-//         let map = value.as_object_mut()?;
+//     fn from_value(mut value: Value) -> ParseResult<Self> {
+//         let map = value.as_object_mut().ok_or("dep_kinds")?;
 
-//         Some(Self {
-//             kind: allow_null(map.remove("kind")?, into_string)?,
-//             target: allow_null(map.remove("target")?, into_string)?,
+//         Ok(Self {
+//             kind: map.remove_nullable("kind", into_string)?,
+//             target: map.remove_nullable("target", into_string)?,
 //         })
 //     }
 // }
@@ -203,8 +197,8 @@ pub(crate) struct Package {
 }
 
 impl Package {
-    fn from_value(mut value: Value) -> Option<(PackageId, Self)> {
-        let map = value.as_object_mut()?;
+    fn from_value(mut value: Value) -> ParseResult<(PackageId, Self)> {
+        let map = value.as_object_mut().ok_or("packages")?;
 
         let this = Self {
             name: map.remove_string("name")?,
@@ -213,16 +207,16 @@ impl Package {
             dependencies: map
                 .remove_array("dependencies")?
                 .map(Dependency::from_value)
-                .collect::<Option<_>>()?,
+                .collect::<Result<_, _>>()?,
             // Check if values are array, but don't collect because we don't use them.
             features: map
                 .remove_object("features")?
                 .into_iter()
-                .map(|(k, v)| v.as_array().map(|_| k))
-                .collect::<Option<_>>()?,
+                .map(|(k, v)| v.as_array().map(|_| k).ok_or("features"))
+                .collect::<Result<_, _>>()?,
             manifest_path: map.remove_string("manifest_path")?.into(),
         };
-        Some((this.id.clone(), this))
+        Ok((this.id.clone(), this))
     }
 
     pub(crate) fn name_verbose(&self, cx: &Context<'_>) -> Cow<'_, str> {
@@ -255,14 +249,14 @@ pub(crate) struct Dependency {
 }
 
 impl Dependency {
-    fn from_value(mut value: Value) -> Option<Self> {
-        let map = value.as_object_mut()?;
+    fn from_value(mut value: Value) -> ParseResult<Self> {
+        let map = value.as_object_mut().ok_or("dependencies")?;
 
-        Some(Self {
+        Ok(Self {
             name: map.remove_string("name")?,
             // req: map.remove_string("req")?,
-            optional: map.remove("optional")?.as_bool()?,
-            rename: allow_null(map.remove("rename")?, into_string)?,
+            optional: map.get("optional").and_then(Value::as_bool).ok_or("optional")?,
+            rename: map.remove_nullable("rename", into_string)?,
         })
     }
 
@@ -279,24 +273,40 @@ fn into_string(value: Value) -> Option<String> {
     if let Value::String(string) = value { Some(string) } else { None }
 }
 
+fn into_array(value: Value) -> Option<vec::IntoIter<Value>> {
+    if let Value::Array(array) = value { Some(array.into_iter()) } else { None }
+}
+
 fn into_object(value: Value) -> Option<Object> {
     if let Value::Object(object) = value { Some(object) } else { None }
 }
 
 trait ObjectExt {
-    fn remove_string(&mut self, key: &str) -> Option<String>;
-    fn remove_array(&mut self, key: &str) -> Option<vec::IntoIter<Value>>;
-    fn remove_object(&mut self, key: &str) -> Option<Object>;
+    fn remove_string<'a>(&mut self, key: &'a str) -> Result<String, &'a str>;
+    fn remove_array<'a>(&mut self, key: &'a str) -> Result<vec::IntoIter<Value>, &'a str>;
+    fn remove_object<'a>(&mut self, key: &'a str) -> Result<Object, &'a str>;
+    fn remove_nullable<'a, T>(
+        &mut self,
+        key: &'a str,
+        f: impl FnOnce(Value) -> Option<T>,
+    ) -> Result<Option<T>, &'a str>;
 }
 
 impl ObjectExt for Object {
-    fn remove_string(&mut self, key: &str) -> Option<String> {
-        into_string(self.remove(key)?)
+    fn remove_string<'a>(&mut self, key: &'a str) -> Result<String, &'a str> {
+        self.remove(key).and_then(into_string).ok_or(key)
     }
-    fn remove_array(&mut self, key: &str) -> Option<vec::IntoIter<Value>> {
-        if let Value::Array(array) = self.remove(key)? { Some(array.into_iter()) } else { None }
+    fn remove_array<'a>(&mut self, key: &'a str) -> Result<vec::IntoIter<Value>, &'a str> {
+        self.remove(key).and_then(into_array).ok_or(key)
     }
-    fn remove_object(&mut self, key: &str) -> Option<Object> {
-        into_object(self.remove(key)?)
+    fn remove_object<'a>(&mut self, key: &'a str) -> Result<Object, &'a str> {
+        self.remove(key).and_then(into_object).ok_or(key)
+    }
+    fn remove_nullable<'a, T>(
+        &mut self,
+        key: &'a str,
+        f: impl FnOnce(Value) -> Option<T>,
+    ) -> Result<Option<T>, &'a str> {
+        self.remove(key).and_then(|v| allow_null(v, f)).ok_or(key)
     }
 }

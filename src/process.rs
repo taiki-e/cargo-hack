@@ -95,11 +95,11 @@ impl<'a> ProcessBuilder<'a> {
         self
     }
 
-    // /// (chainable) Adds multiple `args` to the args list.
-    // pub(crate) fn args(&mut self, args: impl IntoIterator<Item = impl AsRef<OsStr>>) -> &mut Self {
-    //     self.args.extend(args.into_iter().map(|t| t.as_ref().to_os_string()));
-    //     self
-    // }
+    /// (chainable) Adds multiple `args` to the args list.
+    pub(crate) fn args(&mut self, args: impl IntoIterator<Item = impl AsRef<OsStr>>) -> &mut Self {
+        self.args.extend(args.into_iter().map(|t| t.as_ref().to_os_string()));
+        self
+    }
 
     // /// (chainable) Replaces the args list with the given `args`.
     // pub(crate) fn args_replace(
@@ -116,9 +116,10 @@ impl<'a> ProcessBuilder<'a> {
         &self.features[..self.features.len().saturating_sub(1)]
     }
 
-    /// Runs the process, waiting for completion, and mapping non-success exit codes to an error.
+    /// Executes the process, waiting for completion, and mapping non-success exit codes to an error.
     pub(crate) fn exec(&mut self) -> Result<()> {
         let mut command = self.build_command();
+
         let exit = command.status().with_context(|| {
             self.verbose = true;
             ProcessError::new(&format!("could not execute process {}", self), None, None)
@@ -137,25 +138,27 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    // /// Executes the process, returning the stdio output, or an error if non-zero exit status.
-    // pub(crate) fn exec_with_output(&self) -> Result<Output> {
-    //     let mut command = self.build_command();
+    /// Executes the process, returning the stdio output, or an error if non-zero exit status.
+    pub(crate) fn exec_with_output(&mut self) -> Result<Output> {
+        let mut command = self.build_command();
 
-    //     let output = command.output().with_context(|| {
-    //         ProcessError::new(&format!("could not execute process {}", self), None, None)
-    //     })?;
+        let output = command.output().with_context(|| {
+            self.verbose = true;
+            ProcessError::new(&format!("could not execute process {}", self), None, None)
+        })?;
 
-    //     if output.status.success() {
-    //         Ok(output)
-    //     } else {
-    //         Err(ProcessError::new(
-    //             &format!("process didn't exit successfully: {}", self),
-    //             Some(output.status),
-    //             Some(&output),
-    //         )
-    //         .into())
-    //     }
-    // }
+        if output.status.success() {
+            Ok(output)
+        } else {
+            self.verbose = true;
+            Err(ProcessError::new(
+                &format!("process didn't exit successfully: {}", self),
+                Some(output.status),
+                Some(&output),
+            )
+            .into())
+        }
+    }
 
     /// Converts `ProcessBuilder` into a `std::process::Command`, and handles the jobserver, if
     /// present.
@@ -224,20 +227,20 @@ impl fmt::Display for ProcessBuilder<'_> {
 // =============================================================================
 // Process errors
 
-// Based on https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/util/errors.rs
+// Based on https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/util/errors.rs
 
 #[derive(Debug)]
 pub(crate) struct ProcessError {
     /// A detailed description to show to the user why the process failed.
-    pub(crate) desc: String,
+    desc: String,
     /// The exit status of the process.
     ///
     /// This can be `None` if the process failed to launch (like process not found).
-    pub(crate) exit: Option<ExitStatus>,
+    exit: Option<ExitStatus>,
     /// The output from the process.
     ///
     /// This can be `None` if the process failed to launch, or the output was not captured.
-    pub(crate) output: Option<Output>,
+    output: Option<Output>,
 }
 
 impl ProcessError {

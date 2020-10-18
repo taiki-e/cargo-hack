@@ -4,6 +4,8 @@ use toml::{value::Table, Value};
 
 use crate::Result;
 
+type ParseResult<T> = Result<T, &'static str>;
+
 pub(crate) struct Manifest {
     pub(crate) raw: String,
     // parsed manifest
@@ -14,11 +16,11 @@ impl Manifest {
     pub(crate) fn new(path: &Path) -> Result<Self> {
         let raw = fs::read_to_string(path)
             .with_context(|| format!("failed to read manifest from {}", path.display()))?;
-        let toml = toml::from_str(&raw).with_context(|| {
-            format!("failed to parse manifest file as toml: {}", path.display())
+        let toml = toml::from_str(&raw)
+            .with_context(|| format!("failed to parse manifest as toml: {}", path.display()))?;
+        let package = Package::from_table(toml).map_err(|s| {
+            format_err!("failed to parse `{}` field from manifest: {}", s, path.display())
         })?;
-        let package = Package::from_table(toml)
-            .ok_or_else(|| format_err!("failed to parse manifest file: {}", path.display()))?;
         Ok(Self { raw, package })
     }
 
@@ -42,12 +44,12 @@ pub(crate) struct Package {
 }
 
 impl Package {
-    fn from_table(mut table: Table) -> Option<Self> {
-        let package = table.get_mut("package")?.as_table_mut()?;
-        let name = into_string(package.remove("name")?)?;
-        let publish = Publish::from_value(package.get("publish"))?;
+    fn from_table(mut table: Table) -> ParseResult<Self> {
+        let package = table.get_mut("package").and_then(Value::as_table_mut).ok_or("package")?;
+        let name = package.remove("name").and_then(into_string).ok_or("name")?;
+        let publish = Publish::from_value(package.get("publish")).ok_or("publish")?;
 
-        Some(Self { name, publish })
+        Ok(Self { name, publish })
     }
 }
 
