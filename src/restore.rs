@@ -1,15 +1,16 @@
-use anyhow::Context;
+use anyhow::Context as _;
 use std::{
     fs, mem,
     path::PathBuf,
     sync::{Arc, Mutex},
 };
 
-use crate::{Args, Coloring, Manifest, Result};
+use crate::{Coloring, Context, PackageId, Result};
 
 #[derive(Clone)]
 pub(crate) struct Restore {
     color: Option<Coloring>,
+    // The default value of `Current::restore_flag`.
     restore_flag: bool,
 
     current: Arc<Mutex<Option<Current>>>,
@@ -23,11 +24,11 @@ struct Current {
 }
 
 impl Restore {
-    pub(crate) fn new(args: &Args<'_>) -> Self {
+    pub(crate) fn new(cx: &Context<'_>) -> Self {
         let this = Self {
-            color: args.color,
+            color: cx.color,
             // if `--remove-dev-deps` flag is off, restore manifest file.
-            restore_flag: args.no_dev_deps && !args.remove_dev_deps,
+            restore_flag: cx.no_dev_deps && !cx.remove_dev_deps,
             current: Arc::new(Mutex::new(None)),
         };
 
@@ -44,10 +45,10 @@ impl Restore {
         this
     }
 
-    pub(crate) fn set_manifest(&self, manifest: &Manifest) -> Handle<'_> {
+    pub(crate) fn set_manifest(&self, cx: &Context<'_>, id: &PackageId) -> Handle<'_> {
         *self.current.lock().unwrap() = Some(Current {
-            manifest: manifest.raw.to_string(),
-            manifest_path: manifest.path.to_path_buf(),
+            manifest: cx.manifests(id).raw.to_string(),
+            manifest_path: cx.packages(id).manifest_path.to_path_buf(),
             restore_flag: self.restore_flag,
         });
 
@@ -70,7 +71,7 @@ impl Restore {
 pub(crate) struct Handle<'a>(Option<&'a Restore>);
 
 impl Handle<'_> {
-    pub(crate) fn done(&mut self) -> Result<()> {
+    pub(crate) fn close(mut self) -> Result<()> {
         self.0.take().unwrap().restore_dev_deps()
     }
 }

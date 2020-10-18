@@ -1,5 +1,5 @@
 use anyhow::{bail, format_err, Error};
-use std::{env, fmt, mem, str::FromStr};
+use std::{env, ffi::OsStr, fmt, mem, str::FromStr};
 use termcolor::ColorChoice;
 
 use crate::{ProcessBuilder, Result};
@@ -282,6 +282,7 @@ pub(crate) struct RawArgs(Vec<String>);
 pub(crate) fn perse_args<'a>(
     raw: &'a RawArgs,
     coloring: &mut Option<Coloring>,
+    cargo: &OsStr,
 ) -> Result<Args<'a>> {
     let mut iter = raw.0.iter();
     let mut args = iter.by_ref().map(String::as_str).peekable();
@@ -589,7 +590,7 @@ pub(crate) fn perse_args<'a>(
 
     if subcommand.is_none() {
         if leading.contains(&"--list") {
-            let mut line = ProcessBuilder::new(crate::cargo_binary(), verbose);
+            let mut line = ProcessBuilder::new(cargo, verbose);
             line.arg("--list");
             line.exec()?;
             std::process::exit(0);

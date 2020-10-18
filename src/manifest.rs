@@ -1,45 +1,32 @@
-use anyhow::{bail, Context};
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use anyhow::{format_err, Context as _};
+use std::{fs, path::Path};
 use toml::{value::Table, Value};
 
 use crate::Result;
 
-pub(crate) struct Manifest {
-    pub(crate) path: PathBuf,
-    pub(crate) raw: String,
+type ParseResult<T> = Result<T, &'static str>;
 
+pub(crate) struct Manifest {
+    pub(crate) raw: String,
     // parsed manifest
-    // if `None`, workspace is virtual
-    pub(crate) package: Option<Package>,
+    pub(crate) package: Package,
 }
 
 impl Manifest {
-    pub(crate) fn new(path: impl Into<PathBuf>) -> Result<Self> {
-        let path = path.into();
-        let raw = fs::read_to_string(&path)
+    pub(crate) fn new(path: &Path) -> Result<Self> {
+        let raw = fs::read_to_string(path)
             .with_context(|| format!("failed to read manifest from {}", path.display()))?;
         let toml = toml::from_str(&raw)
-            .with_context(|| format!("failed to parse manifest file: {}", path.display()))?;
-        let package = Package::from_table(toml);
-        Ok(Self { path, raw, package })
-    }
-
-    pub(crate) fn package_name(&self) -> &str {
-        assert!(!self.is_virtual());
-        &self.package.as_ref().unwrap().name
-    }
-
-    pub(crate) fn is_virtual(&self) -> bool {
-        self.package.is_none()
+            .with_context(|| format!("failed to parse manifest as toml: {}", path.display()))?;
+        let package = Package::from_table(toml).map_err(|s| {
+            format_err!("failed to parse `{}` field from manifest: {}", s, path.display())
+        })?;
+        Ok(Self { raw, package })
     }
 
     // `metadata.package.publish` requires Rust 1.39
     pub(crate) fn is_private(&self) -> bool {
-        assert!(!self.is_virtual());
-        self.package.as_ref().unwrap().publish == false
+        self.package.publish == false
     }
 
     pub(crate) fn remove_dev_deps(&self) -> String {
@@ -47,21 +34,8 @@ impl Manifest {
     }
 }
 
-// Based on https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/util/important_paths.rs
-/// Finds the root `Cargo.toml`.
-pub(crate) fn find_root_manifest_for_wd(cwd: &Path) -> Result<PathBuf> {
-    for current in cwd.ancestors() {
-        let manifest = current.join("Cargo.toml");
-        if manifest.exists() {
-            return Ok(manifest);
-        }
-    }
-
-    bail!("could not find `Cargo.toml` in `{}` or any parent directory", cwd.display())
-}
-
 // Refs:
-// * https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/util/toml/mod.rs
+// * https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/util/toml/mod.rs
 // * https://gitlab.com/crates.rs/cargo_toml
 
 pub(crate) struct Package {
@@ -70,12 +44,12 @@ pub(crate) struct Package {
 }
 
 impl Package {
-    fn from_table(mut table: Table) -> Option<Self> {
-        let package = table.get_mut("package")?.as_table_mut()?;
-        let name = into_string(package.remove("name")?)?;
-        let publish = Publish::from_value(package.get("publish"))?;
+    fn from_table(mut table: Table) -> ParseResult<Self> {
+        let package = table.get_mut("package").and_then(Value::as_table_mut).ok_or("package")?;
+        let name = package.remove("name").and_then(into_string).ok_or("name")?;
+        let publish = Publish::from_value(package.get("publish")).ok_or("publish")?;
 
-        Some(Self { name, publish })
+        Ok(Self { name, publish })
     }
 }
 

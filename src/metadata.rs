@@ -1,70 +1,195 @@
-use anyhow::{format_err, Context};
+use anyhow::{format_err, Context as _};
 use serde_json::{Map, Value};
 use std::{
     borrow::Cow,
-    collections::BTreeSet,
-    env,
-    ffi::OsString,
-    io::{self, Write},
+    collections::{BTreeSet, HashMap},
+    ffi::OsStr,
+    fmt,
     path::PathBuf,
-    process::Command,
+    rc::Rc,
+    vec,
 };
 
-use crate::{Args, Result};
+use crate::{cli::Args, Context, ProcessBuilder, Result};
+
+type Object = Map<String, Value>;
+type ParseResult<T> = Result<T, &'static str>;
 
 // Refs:
-// * https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/ops/cargo_output_metadata.rs#L56-L63
-// * https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/core/package.rs#L57-L80
+// * https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/ops/cargo_output_metadata.rs#L56-L63
+// * https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/core/package.rs#L57-L80
 // * https://github.com/oli-obk/cargo_metadata
+
+/// An "opaque" identifier for a package.
+/// It is possible to inspect the `repr` field, if the need arises, but its
+/// precise format is an implementation detail and is subject to change.
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+pub(crate) struct PackageId {
+    /// The underlying string representation of id.
+    repr: Rc<str>,
+}
+
+impl PackageId {
+    fn new(repr: String) -> Self {
+        Self { repr: repr.into() }
+    }
+}
+
+impl fmt::Display for PackageId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.repr, f)
+    }
+}
 
 pub(crate) struct Metadata {
     /// A list of all crates referenced by this crate (and the crate itself)
-    pub(crate) packages: Vec<Package>,
+    pub(crate) packages: HashMap<PackageId, Package>,
+    /// A list of all workspace members
+    pub(crate) workspace_members: Vec<PackageId>,
+    /// Dependencies graph
+    pub(crate) resolve: Resolve,
     /// Workspace root
     pub(crate) workspace_root: PathBuf,
 }
 
 impl Metadata {
-    pub(crate) fn new(args: &Args<'_>) -> Result<Self> {
-        let cargo = env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo"));
-        let mut command = Command::new(cargo);
-        command.args(&["metadata", "--no-deps", "--format-version=1"]);
+    pub(crate) fn new(args: &Args<'_>, cargo: &OsStr) -> Result<Self> {
+        let mut command = ProcessBuilder::new(cargo, false);
+        command.args(&["metadata", "--format-version=1"]);
         if let Some(manifest_path) = &args.manifest_path {
             command.arg("--manifest-path");
             command.arg(manifest_path);
         }
+        let output = command.exec_with_output()?;
 
-        let output = command.output().context("failed to run 'cargo metadata'")?;
-        if !output.status.success() {
-            let _ = io::stderr().write_all(&output.stderr);
-            let code = output.status.code().unwrap_or(1);
-            std::process::exit(code);
-        }
-
-        let value = serde_json::from_slice(&output.stdout).context("failed to parse metadata")?;
-        Self::from_value(value).ok_or_else(|| format_err!("failed to parse metadata"))
+        let map =
+            serde_json::from_slice(&output.stdout).context("failed to parse metadata as json")?;
+        Self::from_obj(map).map_err(|s| format_err!("failed to parse `{}` field from metadata", s))
     }
 
-    fn from_value(mut value: Value) -> Option<Self> {
-        let map = value.as_object_mut()?;
-        let packages = map
-            .get_mut("packages")?
-            .as_array_mut()?
-            .iter_mut()
-            .map(Package::from_value)
-            .collect::<Option<Vec<_>>>()?;
-        let workspace_root = into_string(map.remove("workspace_root")?)?.into();
-
-        Some(Self { packages, workspace_root })
+    fn from_obj(mut map: Object) -> ParseResult<Self> {
+        let workspace_members: Vec<_> = map
+            .remove_array("workspace_members")?
+            .map(|v| into_string(v).map(PackageId::new).ok_or("workspace_members"))
+            .collect::<Result<_, _>>()?;
+        Ok(Self {
+            packages: map
+                .remove_array("packages")?
+                .map(Package::from_value)
+                .filter(|res| {
+                    res.as_ref().map(|(id, _)| workspace_members.contains(id)).unwrap_or(true)
+                })
+                .collect::<Result<_, _>>()?,
+            workspace_members,
+            resolve: map.remove_object("resolve").and_then(Resolve::from_obj)?,
+            workspace_root: map.remove_string("workspace_root")?.into(),
+        })
     }
 }
+
+/// A dependency graph
+pub(crate) struct Resolve {
+    // /// Nodes in a dependencies graph
+    // pub(crate) nodes: HashMap<PackageId, Node>,
+    // if `None`, cargo-hack called in the root of a virtual workspace
+    /// The crate for which the metadata was read.
+    pub(crate) root: Option<PackageId>,
+}
+
+impl Resolve {
+    fn from_obj(mut map: Object) -> ParseResult<Self> {
+        Ok(Self {
+            // nodes: map.remove_array("nodes")?.map(Node::from_value)                .collect::<Result<_, _>>()?,
+            root: map.remove_nullable("root", into_string)?.map(PackageId::new),
+        })
+    }
+}
+
+// /// A node in a dependencies graph
+// pub(crate) struct Node {
+//     /// An opaque identifier for a package
+//     pub(crate) id: PackageId,
+//     /// Dependencies in a structured format.
+//     pub(crate) deps: Vec<NodeDep>,
+//     /// Features enabled on the crate
+//     pub(crate) features: Vec<String>,
+// }
+
+// impl Node {
+//     fn from_value(mut value: Value) -> ParseResult<(PackageId, Self)> {
+//         let map = value.as_object_mut().ok_or("nodes")?;
+
+//         let this = Self {
+//             id: map.remove_string("id").map(PackageId::new)?,
+//             deps: map.remove_array("deps")?.map(NodeDep::from_value).collect::<Result<_, _>>()?,
+
+//             features: map
+//                 .remove_array("features")?
+//                 .map(|v| into_string(v).ok_or("features"))
+//                 .collect::<Result<_, _>>()?,
+//         };
+//         Ok((this.id.clone(), this))
+//     }
+// }
+
+// /// A dependency in a node
+// pub(crate) struct NodeDep {
+//     /// Package ID (opaque unique identifier)
+//     pub(crate) pkg: PackageId,
+//     /// The kinds of dependencies.
+//     ///
+//     /// This field was added in Rust 1.41.
+//     pub(crate) dep_kinds: Vec<DepKindInfo>,
+// }
+
+// impl NodeDep {
+//     fn from_value(mut value: Value) -> ParseResult<Self> {
+//         let map = value.as_object_mut().ok_or("deps")?;
+
+//         Ok(Self {
+//             pkg: PackageId::new(map.remove_string("pkg")?),
+//             dep_kinds: map
+//                 .remove_array("dep_kinds")?
+//                 .map(DepKindInfo::from_value)
+//                 .collect::<Result<_, _>>()?,
+//         })
+//     }
+// }
+
+// /// Information about a dependency kind.
+// pub(crate) struct DepKindInfo {
+//     /// The kind of dependency.
+//     pub(crate) kind: Option<String>,
+//     /// The target platform for the dependency.
+//     ///
+//     /// This is `None` if it is not a target dependency.
+//     ///
+//     /// By default all platform dependencies are included in the resolve
+//     /// graph. Use Cargo's `--filter-platform` flag if you only want to
+//     /// include dependencies for a specific platform.
+//     pub(crate) target: Option<Platform>,
+// }
+
+// impl DepKindInfo {
+//     fn from_value(mut value: Value) -> ParseResult<Self> {
+//         let map = value.as_object_mut().ok_or("dep_kinds")?;
+
+//         Ok(Self {
+//             kind: map.remove_nullable("kind", into_string)?,
+//             target: map.remove_nullable("target", into_string)?,
+//         })
+//     }
+// }
+
+// type Platform = String;
 
 pub(crate) struct Package {
     /// Name as given in the `Cargo.toml`
     pub(crate) name: String,
     // /// Version given in the `Cargo.toml`
-    // #[allow(dead_code)]
     // pub(crate) version: String,
+    /// An opaque identifier for a package
+    pub(crate) id: PackageId,
     /// List of dependencies of this particular package
     pub(crate) dependencies: Vec<Dependency>,
     /// Features provided by the crate, mapped to the features required by that feature.
@@ -74,27 +199,30 @@ pub(crate) struct Package {
 }
 
 impl Package {
-    fn from_value(value: &mut Value) -> Option<Self> {
-        let map = value.as_object_mut()?;
-        let name = into_string(map.remove("name")?)?;
-        let dependencies = map
-            .get_mut("dependencies")?
-            .as_array_mut()?
-            .iter_mut()
-            .map(Dependency::from_value)
-            .collect::<Option<Vec<_>>>()?;
-        // Check if values are array, but don't collect because we don't use them.
-        let features = into_object(map.remove("features")?)?
-            .into_iter()
-            .map(|(k, v)| v.as_array().map(|_| k))
-            .collect::<Option<BTreeSet<_>>>()?;
-        let manifest_path = into_string(map.remove("manifest_path")?)?.into();
+    fn from_value(mut value: Value) -> ParseResult<(PackageId, Self)> {
+        let map = value.as_object_mut().ok_or("packages")?;
 
-        Some(Self { name, dependencies, features, manifest_path })
+        let this = Self {
+            name: map.remove_string("name")?,
+            // version: map.remove_string("version")?,
+            id: PackageId::new(map.remove_string("id")?),
+            dependencies: map
+                .remove_array("dependencies")?
+                .map(Dependency::from_value)
+                .collect::<Result<_, _>>()?,
+            // Check if values are array, but don't collect because we don't use them.
+            features: map
+                .remove_object("features")?
+                .into_iter()
+                .map(|(k, v)| v.as_array().map(|_| k).ok_or("features"))
+                .collect::<Result<_, _>>()?,
+            manifest_path: map.remove_string("manifest_path")?.into(),
+        };
+        Ok((this.id.clone(), this))
     }
 
-    pub(crate) fn name_verbose(&self, args: &Args<'_>) -> Cow<'_, str> {
-        if args.verbose {
+    pub(crate) fn name_verbose(&self, cx: &Context<'_>) -> Cow<'_, str> {
+        if cx.verbose {
             Cow::Owned(format!(
                 "{} ({})",
                 self.name,
@@ -116,20 +244,22 @@ pub(crate) struct Dependency {
     pub(crate) optional: bool,
     // TODO: support this
     // /// The target this dependency is specific to.
-    // pub target: Option<String>,
+    // pub(crate) target: Option<String>,
     /// If the dependency is renamed, this is the new name for the dependency
     /// as a string.  None if it is not renamed.
     pub(crate) rename: Option<String>,
 }
 
 impl Dependency {
-    fn from_value(value: &mut Value) -> Option<Self> {
-        let map = value.as_object_mut()?;
-        let name = into_string(map.remove("name")?)?;
-        let optional = map.remove("optional")?.as_bool()?;
-        let rename = map.remove("rename")?;
-        let rename = if rename.is_null() { None } else { Some(into_string(rename)?) };
-        Some(Self { name, optional, rename })
+    fn from_value(mut value: Value) -> ParseResult<Self> {
+        let map = value.as_object_mut().ok_or("dependencies")?;
+
+        Ok(Self {
+            name: map.remove_string("name")?,
+            // req: map.remove_string("req")?,
+            optional: map.get("optional").and_then(Value::as_bool).ok_or("optional")?,
+            rename: map.remove_nullable("rename", into_string)?,
+        })
     }
 
     pub(crate) fn as_feature(&self) -> Option<&str> {
@@ -137,10 +267,48 @@ impl Dependency {
     }
 }
 
+fn allow_null<T>(value: Value, f: impl FnOnce(Value) -> Option<T>) -> Option<Option<T>> {
+    if value.is_null() { Some(None) } else { f(value).map(Some) }
+}
+
 fn into_string(value: Value) -> Option<String> {
     if let Value::String(string) = value { Some(string) } else { None }
 }
 
-fn into_object(value: Value) -> Option<Map<String, Value>> {
+fn into_array(value: Value) -> Option<vec::IntoIter<Value>> {
+    if let Value::Array(array) = value { Some(array.into_iter()) } else { None }
+}
+
+fn into_object(value: Value) -> Option<Object> {
     if let Value::Object(object) = value { Some(object) } else { None }
+}
+
+trait ObjectExt {
+    fn remove_string<'a>(&mut self, key: &'a str) -> Result<String, &'a str>;
+    fn remove_array<'a>(&mut self, key: &'a str) -> Result<vec::IntoIter<Value>, &'a str>;
+    fn remove_object<'a>(&mut self, key: &'a str) -> Result<Object, &'a str>;
+    fn remove_nullable<'a, T>(
+        &mut self,
+        key: &'a str,
+        f: impl FnOnce(Value) -> Option<T>,
+    ) -> Result<Option<T>, &'a str>;
+}
+
+impl ObjectExt for Object {
+    fn remove_string<'a>(&mut self, key: &'a str) -> Result<String, &'a str> {
+        self.remove(key).and_then(into_string).ok_or(key)
+    }
+    fn remove_array<'a>(&mut self, key: &'a str) -> Result<vec::IntoIter<Value>, &'a str> {
+        self.remove(key).and_then(into_array).ok_or(key)
+    }
+    fn remove_object<'a>(&mut self, key: &'a str) -> Result<Object, &'a str> {
+        self.remove(key).and_then(into_object).ok_or(key)
+    }
+    fn remove_nullable<'a, T>(
+        &mut self,
+        key: &'a str,
+        f: impl FnOnce(Value) -> Option<T>,
+    ) -> Result<Option<T>, &'a str> {
+        self.remove(key).and_then(|v| allow_null(v, f)).ok_or(key)
+    }
 }

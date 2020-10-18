@@ -1,23 +1,22 @@
-use anyhow::Context;
+use anyhow::Context as _;
 use std::{
     env,
     ffi::{OsStr, OsString},
     fmt,
     path::Path,
-    process::{Command, ExitStatus},
-    rc::Rc,
+    process::{Command, ExitStatus, Output},
     str,
 };
 
-use crate::{metadata::Package, Args, Result};
+use crate::{Context, PackageId, Result};
 
-// Based on https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/util/process_builder.rs
+// Based on https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/util/process_builder.rs
 
 /// A builder object for an external process, similar to `std::process::Command`.
 #[derive(Clone)]
 pub(crate) struct ProcessBuilder<'a> {
     /// The program to execute.
-    program: Rc<OsStr>,
+    program: &'a OsStr,
     /// A list of arguments to pass to the program (until '--').
     leading_args: &'a [&'a str],
     /// A list of arguments to pass to the program (after '--').
@@ -36,9 +35,9 @@ pub(crate) struct ProcessBuilder<'a> {
 
 impl<'a> ProcessBuilder<'a> {
     /// Creates a new `ProcessBuilder`.
-    pub(crate) fn new(program: impl Into<Rc<OsStr>>, verbose: bool) -> Self {
+    pub(crate) fn new(program: &'a OsStr, verbose: bool) -> Self {
         Self {
-            program: program.into(),
+            program,
             leading_args: &[],
             trailing_args: &[],
             args: Vec::new(),
@@ -47,15 +46,15 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    /// Creates a new `ProcessBuilder` from `Args`.
-    pub(crate) fn from_args(program: impl Into<Rc<OsStr>>, args: &'a Args<'_>) -> Self {
+    /// Creates a new `ProcessBuilder` from `Args` via `Context`.
+    pub(crate) fn from_args(cx: &'a Context<'_>) -> Self {
         Self {
-            program: program.into(),
-            leading_args: &args.leading_args,
-            trailing_args: args.trailing_args,
+            program: cx.cargo(),
+            leading_args: &cx.leading_args,
+            trailing_args: cx.trailing_args,
             args: Vec::new(),
             features: String::new(),
-            verbose: args.verbose,
+            verbose: cx.verbose,
         }
     }
 
@@ -66,36 +65,50 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    pub(crate) fn append_features_from_args(&mut self, args: &Args<'_>, package: &Package) {
-        if args.ignore_unknown_features {
-            self.append_features(args.features.iter().filter(|&&f| {
-                if package.features.get(f).is_some()
-                    || package.dependencies.iter().any(|dep| dep.as_feature() == Some(f))
-                {
-                    true
-                } else {
-                    // ignored
-                    info!(
-                        args.color,
-                        "skipped applying unknown `{}` feature to {}", f, package.name,
-                    );
-                    false
-                }
-            }))
-        } else if !args.features.is_empty() {
-            self.append_features(&args.features);
+    pub(crate) fn append_features_from_args(&mut self, cx: &Context<'_>, id: &PackageId) {
+        if cx.ignore_unknown_features {
+            let package = cx.packages(id);
+            self.append_features(
+                cx.features.iter().filter(|&&f| {
+                    if package.features.get(f).is_some()
+                        || package.dependencies.iter().any(|dep| dep.as_feature() == Some(f))
+                    {
+                        true
+                    } else {
+                        // ignored
+                        info!(
+                            cx.color,
+                            "skipped applying unknown `{}` feature to {}", f, package.name,
+                        );
+                        false
+                    }
+                }),
+            )
+        } else if !cx.features.is_empty() {
+            self.append_features(&cx.features);
         }
     }
 
-    /// Adds `arg` to the args list.
-    pub(crate) fn arg(&mut self, arg: impl AsRef<OsStr>) {
+    /// (chainable) Adds `arg` to the args list.
+    pub(crate) fn arg(&mut self, arg: impl AsRef<OsStr>) -> &mut Self {
         self.args.push(arg.as_ref().to_os_string());
+        self
     }
 
-    /// Gets the executable name.
-    pub(crate) fn get_program(&self) -> &OsStr {
-        &self.program
+    /// (chainable) Adds multiple `args` to the args list.
+    pub(crate) fn args(&mut self, args: impl IntoIterator<Item = impl AsRef<OsStr>>) -> &mut Self {
+        self.args.extend(args.into_iter().map(|t| t.as_ref().to_os_string()));
+        self
     }
+
+    // /// (chainable) Replaces the args list with the given `args`.
+    // pub(crate) fn args_replace(
+    //     &mut self,
+    //     args: impl IntoIterator<Item = impl AsRef<OsStr>>,
+    // ) -> &mut Self {
+    //     self.args = args.into_iter().map(|t| t.as_ref().to_os_string()).collect();
+    //     self
+    // }
 
     /// Gets the comma-separated features list
     fn get_features(&self) -> &str {
@@ -106,9 +119,10 @@ impl<'a> ProcessBuilder<'a> {
     /// Executes the process, waiting for completion, and mapping non-success exit codes to an error.
     pub(crate) fn exec(&mut self) -> Result<()> {
         let mut command = self.build_command();
+
         let exit = command.status().with_context(|| {
             self.verbose = true;
-            ProcessError::new(&format!("could not execute process {}", self), None)
+            ProcessError::new(&format!("could not execute process {}", self), None, None)
         })?;
 
         if exit.success() {
@@ -118,6 +132,29 @@ impl<'a> ProcessBuilder<'a> {
             Err(ProcessError::new(
                 &format!("process didn't exit successfully: {}", self),
                 Some(exit),
+                None,
+            )
+            .into())
+        }
+    }
+
+    /// Executes the process, returning the stdio output, or an error if non-zero exit status.
+    pub(crate) fn exec_with_output(&mut self) -> Result<Output> {
+        let mut command = self.build_command();
+
+        let output = command.output().with_context(|| {
+            self.verbose = true;
+            ProcessError::new(&format!("could not execute process {}", self), None, None)
+        })?;
+
+        if output.status.success() {
+            Ok(output)
+        } else {
+            self.verbose = true;
+            Err(ProcessError::new(
+                &format!("process didn't exit successfully: {}", self),
+                Some(output.status),
+                Some(&output),
             )
             .into())
         }
@@ -190,7 +227,7 @@ impl fmt::Display for ProcessBuilder<'_> {
 // =============================================================================
 // Process errors
 
-// Based on https://github.com/rust-lang/cargo/blob/0.44.0/src/cargo/util/errors.rs
+// Based on https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/util/errors.rs
 
 #[derive(Debug)]
 pub(crate) struct ProcessError {
@@ -200,20 +237,42 @@ pub(crate) struct ProcessError {
     ///
     /// This can be `None` if the process failed to launch (like process not found).
     exit: Option<ExitStatus>,
+    /// The output from the process.
+    ///
+    /// This can be `None` if the process failed to launch, or the output was not captured.
+    output: Option<Output>,
 }
 
 impl ProcessError {
     /// Creates a new process error.
     ///
     /// `status` can be `None` if the process did not launch.
-    fn new(msg: &str, status: Option<ExitStatus>) -> Self {
+    /// `output` can be `None` if the process did not launch, or output was not captured.
+    fn new(msg: &str, status: Option<ExitStatus>, output: Option<&Output>) -> Self {
         let exit = match status {
             Some(s) => s.to_string(),
             None => "never executed".to_string(),
         };
-        let desc = format!("{} ({})", &msg, exit);
+        let mut desc = format!("{} ({})", &msg, exit);
 
-        Self { desc, exit: status }
+        if let Some(out) = output {
+            match str::from_utf8(&out.stdout) {
+                Ok(s) if !s.trim().is_empty() => {
+                    desc.push_str("\n--- stdout\n");
+                    desc.push_str(s);
+                }
+                Ok(_) | Err(_) => {}
+            }
+            match str::from_utf8(&out.stderr) {
+                Ok(s) if !s.trim().is_empty() => {
+                    desc.push_str("\n--- stderr\n");
+                    desc.push_str(s);
+                }
+                Ok(_) | Err(_) => {}
+            }
+        }
+
+        Self { desc, exit: status, output: output.cloned() }
     }
 }
 

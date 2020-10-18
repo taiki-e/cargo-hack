@@ -131,17 +131,16 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
 
   *Workspace members will be performed according to the order of the 'packages' fields of [`cargo metadata`][cargo-metadata].*
 
-[#3]: https://github.com/taiki-e/cargo-hack/issues/3
 [#15]: https://github.com/taiki-e/cargo-hack/issues/15
 [rust-lang/cargo#3620]: https://github.com/rust-lang/cargo/issues/3620
 [rust-lang/cargo#4106]: https://github.com/rust-lang/cargo/issues/4106
+[rust-lang/cargo#4242]: https://github.com/rust-lang/cargo/issues/4242
 [rust-lang/cargo#4463]: https://github.com/rust-lang/cargo/issues/4463
 [rust-lang/cargo#4753]: https://github.com/rust-lang/cargo/issues/4753
 [rust-lang/cargo#4866]: https://github.com/rust-lang/cargo/issues/4866
 [rust-lang/cargo#5015]: https://github.com/rust-lang/cargo/issues/4463
 [rust-lang/cargo#5364]: https://github.com/rust-lang/cargo/issues/5364
 [rust-lang/cargo#6195]: https://github.com/rust-lang/cargo/issues/6195
-[rust-lang/cargo#4242]: https://github.com/rust-lang/cargo/issues/4242
 [cargo-metadata]: https://doc.rust-lang.org/cargo/commands/cargo-metadata.html
 
 ## License
