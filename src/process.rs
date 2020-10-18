@@ -4,7 +4,7 @@ use std::{
     ffi::{OsStr, OsString},
     fmt,
     path::Path,
-    process::{Command, ExitStatus, Output},
+    process::{Command, ExitStatus},
     rc::Rc,
     str,
 };
@@ -87,26 +87,10 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    /// (chainable) Adds `arg` to the args list.
-    pub(crate) fn arg(&mut self, arg: impl AsRef<OsStr>) -> &mut Self {
+    /// Adds `arg` to the args list.
+    pub(crate) fn arg(&mut self, arg: impl AsRef<OsStr>) {
         self.args.push(arg.as_ref().to_os_string());
-        self
     }
-
-    // /// (chainable) Adds multiple `args` to the args list.
-    // pub(crate) fn args(&mut self, args: impl IntoIterator<Item = impl AsRef<OsStr>>) -> &mut Self {
-    //     self.args.extend(args.into_iter().map(|t| t.as_ref().to_os_string()));
-    //     self
-    // }
-
-    // /// (chainable) Replaces the args list with the given `args`.
-    // pub(crate) fn args_replace(
-    //     &mut self,
-    //     args: impl IntoIterator<Item = impl AsRef<OsStr>>,
-    // ) -> &mut Self {
-    //     self.args = args.into_iter().map(|t| t.as_ref().to_os_string()).collect();
-    //     self
-    // }
 
     /// Gets the executable name.
     pub(crate) fn get_program(&self) -> &OsStr {
@@ -119,12 +103,12 @@ impl<'a> ProcessBuilder<'a> {
         &self.features[..self.features.len().saturating_sub(1)]
     }
 
-    /// Runs the process, waiting for completion, and mapping non-success exit codes to an error.
+    /// Executes the process, waiting for completion, and mapping non-success exit codes to an error.
     pub(crate) fn exec(&mut self) -> Result<()> {
         let mut command = self.build_command();
         let exit = command.status().with_context(|| {
             self.verbose = true;
-            ProcessError::new(&format!("could not execute process {}", self), None, None)
+            ProcessError::new(&format!("could not execute process {}", self), None)
         })?;
 
         if exit.success() {
@@ -134,31 +118,10 @@ impl<'a> ProcessBuilder<'a> {
             Err(ProcessError::new(
                 &format!("process didn't exit successfully: {}", self),
                 Some(exit),
-                None,
             )
             .into())
         }
     }
-
-    // /// Executes the process, returning the stdio output, or an error if non-zero exit status.
-    // pub(crate) fn exec_with_output(&self) -> Result<Output> {
-    //     let mut command = self.build_command();
-
-    //     let output = command.output().with_context(|| {
-    //         ProcessError::new(&format!("could not execute process {}", self), None, None)
-    //     })?;
-
-    //     if output.status.success() {
-    //         Ok(output)
-    //     } else {
-    //         Err(ProcessError::new(
-    //             &format!("process didn't exit successfully: {}", self),
-    //             Some(output.status),
-    //             Some(&output),
-    //         )
-    //         .into())
-    //     }
-    // }
 
     /// Converts `ProcessBuilder` into a `std::process::Command`, and handles the jobserver, if
     /// present.
@@ -232,47 +195,25 @@ impl fmt::Display for ProcessBuilder<'_> {
 #[derive(Debug)]
 pub(crate) struct ProcessError {
     /// A detailed description to show to the user why the process failed.
-    pub(crate) desc: String,
+    desc: String,
     /// The exit status of the process.
     ///
     /// This can be `None` if the process failed to launch (like process not found).
-    pub(crate) exit: Option<ExitStatus>,
-    /// The output from the process.
-    ///
-    /// This can be `None` if the process failed to launch, or the output was not captured.
-    pub(crate) output: Option<Output>,
+    exit: Option<ExitStatus>,
 }
 
 impl ProcessError {
     /// Creates a new process error.
     ///
     /// `status` can be `None` if the process did not launch.
-    /// `output` can be `None` if the process did not launch, or output was not captured.
-    fn new(msg: &str, status: Option<ExitStatus>, output: Option<&Output>) -> Self {
+    fn new(msg: &str, status: Option<ExitStatus>) -> Self {
         let exit = match status {
             Some(s) => s.to_string(),
             None => "never executed".to_string(),
         };
-        let mut desc = format!("{} ({})", &msg, exit);
+        let desc = format!("{} ({})", &msg, exit);
 
-        if let Some(out) = output {
-            match str::from_utf8(&out.stdout) {
-                Ok(s) if !s.trim().is_empty() => {
-                    desc.push_str("\n--- stdout\n");
-                    desc.push_str(s);
-                }
-                Ok(_) | Err(_) => {}
-            }
-            match str::from_utf8(&out.stderr) {
-                Ok(s) if !s.trim().is_empty() => {
-                    desc.push_str("\n--- stderr\n");
-                    desc.push_str(s);
-                }
-                Ok(_) | Err(_) => {}
-            }
-        }
-
-        Self { desc, exit: status, output: output.cloned() }
+        Self { desc, exit: status }
     }
 }
 
