@@ -1,4 +1,4 @@
-use anyhow::{bail, Context};
+use anyhow::{bail, Context as _};
 use std::fs;
 
 use crate::{

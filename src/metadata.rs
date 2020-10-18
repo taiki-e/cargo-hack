@@ -1,4 +1,4 @@
-use anyhow::{format_err, Context};
+use anyhow::{format_err, Context as _};
 use serde_json::{Map, Value};
 use std::{
     borrow::Cow,

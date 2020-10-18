@@ -12,6 +12,7 @@
 mod term;
 
 mod cli;
+mod context;
 mod manifest;
 mod metadata;
 mod package;

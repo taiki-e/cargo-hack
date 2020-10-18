@@ -1,4 +1,4 @@
-use anyhow::Context;
+use anyhow::Context as _;
 use std::{
     env,
     ffi::{OsStr, OsString},
