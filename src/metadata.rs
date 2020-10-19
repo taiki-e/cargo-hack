@@ -7,7 +7,6 @@ use std::{
     fmt,
     path::PathBuf,
     rc::Rc,
-    vec,
 };
 
 use crate::{cli::Args, Context, ProcessBuilder, Result};
@@ -53,7 +52,7 @@ pub(crate) struct Metadata {
 }
 
 impl Metadata {
-    pub(crate) fn new(args: &Args<'_>, cargo: &OsStr) -> Result<Self> {
+    pub(crate) fn new(args: &Args<'_>, cargo: &OsStr, version: u32) -> Result<Self> {
         let mut command = ProcessBuilder::new(cargo);
         command.args(&["metadata", "--format-version=1"]);
         if let Some(manifest_path) = &args.manifest_path {
@@ -64,24 +63,27 @@ impl Metadata {
 
         let map =
             serde_json::from_slice(&output.stdout).context("failed to parse metadata as json")?;
-        Self::from_obj(map).map_err(|s| format_err!("failed to parse `{}` field from metadata", s))
+        Self::from_obj(map, version)
+            .map_err(|s| format_err!("failed to parse `{}` field from metadata", s))
     }
 
-    fn from_obj(mut map: Object) -> ParseResult<Self> {
+    fn from_obj(mut map: Object, version: u32) -> ParseResult<Self> {
         let workspace_members: Vec<_> = map
             .remove_array("workspace_members")?
+            .into_iter()
             .map(|v| into_string(v).map(PackageId::new).ok_or("workspace_members"))
             .collect::<Result<_, _>>()?;
         Ok(Self {
             packages: map
                 .remove_array("packages")?
-                .map(Package::from_value)
+                .into_iter()
+                .map(|v| Package::from_value(v, version))
                 .filter(|res| {
                     res.as_ref().map(|(id, _)| workspace_members.contains(id)).unwrap_or(true)
                 })
                 .collect::<Result<_, _>>()?,
             workspace_members,
-            resolve: map.remove_object("resolve").and_then(Resolve::from_obj)?,
+            resolve: Resolve::from_obj(map.remove_object("resolve")?, version)?,
             workspace_root: map.remove_string("workspace_root")?.into(),
         })
     }
@@ -97,9 +99,13 @@ pub(crate) struct Resolve {
 }
 
 impl Resolve {
-    fn from_obj(mut map: Object) -> ParseResult<Self> {
+    fn from_obj(mut map: Object, _version: u32) -> ParseResult<Self> {
         Ok(Self {
-            // nodes: map.remove_array("nodes")?.map(Node::from_value)                .collect::<Result<_, _>>()?,
+            // nodes: map
+            //     .remove_array("nodes")?
+            //     .into_iter()
+            //     .map(|v| Node::from_value(v, version))
+            //     .collect::<Result<_, _>>()?,
             root: map.remove_nullable("root", into_string)?.map(PackageId::new),
         })
     }
@@ -111,22 +117,30 @@ impl Resolve {
 //     pub(crate) id: PackageId,
 //     /// Dependencies in a structured format.
 //     ///
-//     /// This field was added in Rust 1.30.
+//     /// This is always empty if running with a version of Cargo older than 1.30.
 //     pub(crate) deps: Vec<NodeDep>,
 //     /// Features enabled on the crate
 //     pub(crate) features: Vec<String>,
 // }
 
 // impl Node {
-//     fn from_value(mut value: Value) -> ParseResult<(PackageId, Self)> {
+//     fn from_value(mut value: Value, version: u32) -> ParseResult<(PackageId, Self)> {
 //         let map = value.as_object_mut().ok_or("nodes")?;
 
 //         let this = Self {
 //             id: map.remove_string("id").map(PackageId::new)?,
-//             deps: map.remove_array("deps")?.map(NodeDep::from_value).collect::<Result<_, _>>()?,
-
+//             // This field was added in Rust 1.30.
+//             deps: if version >= 30 {
+//                 map.remove_array("deps")?
+//                     .into_iter()
+//                     .map(|v| NodeDep::from_value(v, version))
+//                     .collect::<Result<_, _>>()?
+//             } else {
+//                 Vec::new()
+//             },
 //             features: map
 //                 .remove_array("features")?
+//                 .into_iter()
 //                 .map(|v| into_string(v).ok_or("features"))
 //                 .collect::<Result<_, _>>()?,
 //         };
@@ -140,24 +154,25 @@ impl Resolve {
 //     pub(crate) pkg: PackageId,
 //     /// The kinds of dependencies.
 //     ///
-//     /// This field was added in Rust 1.41.
+//     /// This is always empty if running with a version of Cargo older than 1.41.
 //     pub(crate) dep_kinds: Vec<DepKindInfo>,
 // }
 
 // impl NodeDep {
-//     fn from_value(mut value: Value) -> ParseResult<Self> {
+//     fn from_value(mut value: Value, version: u32) -> ParseResult<Self> {
 //         let map = value.as_object_mut().ok_or("deps")?;
 
 //         Ok(Self {
 //             pkg: PackageId::new(map.remove_string("pkg")?),
 //             // This field was added in Rust 1.41.
-//             dep_kinds: map
-//                 .remove("dep_kinds")
-//                 .map(|v| into_array(v).ok_or("dep_kinds"))
-//                 .transpose()?
-//                 .map(|v| v.map(DepKindInfo::from_value).collect::<Result<_, _>>())
-//                 .transpose()?
-//                 .unwrap_or_default(),
+//             dep_kinds: if version >= 41 {
+//                 map.remove_array("dep_kinds")?
+//                     .into_iter()
+//                     .map(DepKindInfo::from_value)
+//                     .collect::<Result<_, _>>()?
+//             } else {
+//                 Vec::new()
+//             },
 //         })
 //     }
 // }
@@ -202,10 +217,14 @@ pub(crate) struct Package {
     pub(crate) features: BTreeSet<String>,
     /// Path containing the `Cargo.toml`
     pub(crate) manifest_path: PathBuf,
+    /// List of registries to which this package may be published.
+    ///
+    /// This is always `true` if running with a version of Cargo older than 1.39.
+    pub(crate) publish: bool,
 }
 
 impl Package {
-    fn from_value(mut value: Value) -> ParseResult<(PackageId, Self)> {
+    fn from_value(mut value: Value, version: u32) -> ParseResult<(PackageId, Self)> {
         let map = value.as_object_mut().ok_or("packages")?;
 
         let this = Self {
@@ -214,6 +233,7 @@ impl Package {
             id: PackageId::new(map.remove_string("id")?),
             dependencies: map
                 .remove_array("dependencies")?
+                .into_iter()
                 .map(Dependency::from_value)
                 .collect::<Result<_, _>>()?,
             // Check if values are array, but don't collect because we don't use them.
@@ -223,6 +243,13 @@ impl Package {
                 .map(|(k, v)| v.as_array().map(|_| k).ok_or("features"))
                 .collect::<Result<_, _>>()?,
             manifest_path: map.remove_string("manifest_path")?.into(),
+            // This field was added in Rust 1.39.
+            publish: if version >= 39 {
+                // Publishing is unrestricted if `None`, and forbidden if the `Vec` is empty.
+                map.remove_nullable("publish", into_array)?.map_or(true, |a| !a.is_empty())
+            } else {
+                true
+            },
         };
         Ok((this.id.clone(), this))
     }
@@ -283,8 +310,8 @@ fn into_string(value: Value) -> Option<String> {
     if let Value::String(string) = value { Some(string) } else { None }
 }
 
-fn into_array(value: Value) -> Option<vec::IntoIter<Value>> {
-    if let Value::Array(array) = value { Some(array.into_iter()) } else { None }
+fn into_array(value: Value) -> Option<Vec<Value>> {
+    if let Value::Array(array) = value { Some(array) } else { None }
 }
 
 fn into_object(value: Value) -> Option<Object> {
@@ -293,7 +320,7 @@ fn into_object(value: Value) -> Option<Object> {
 
 trait ObjectExt {
     fn remove_string<'a>(&mut self, key: &'a str) -> Result<String, &'a str>;
-    fn remove_array<'a>(&mut self, key: &'a str) -> Result<vec::IntoIter<Value>, &'a str>;
+    fn remove_array<'a>(&mut self, key: &'a str) -> Result<Vec<Value>, &'a str>;
     fn remove_object<'a>(&mut self, key: &'a str) -> Result<Object, &'a str>;
     fn remove_nullable<'a, T>(
         &mut self,
@@ -306,7 +333,7 @@ impl ObjectExt for Object {
     fn remove_string<'a>(&mut self, key: &'a str) -> Result<String, &'a str> {
         self.remove(key).and_then(into_string).ok_or(key)
     }
-    fn remove_array<'a>(&mut self, key: &'a str) -> Result<vec::IntoIter<Value>, &'a str> {
+    fn remove_array<'a>(&mut self, key: &'a str) -> Result<Vec<Value>, &'a str> {
         self.remove(key).and_then(into_array).ok_or(key)
     }
     fn remove_object<'a>(&mut self, key: &'a str) -> Result<Object, &'a str> {

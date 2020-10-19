@@ -18,6 +18,7 @@ mod metadata;
 mod process;
 mod remove_dev_deps;
 mod restore;
+mod version;
 
 use anyhow::{bail, Context as _};
 use std::{fmt::Write, fs};
@@ -86,7 +87,7 @@ enum Kind<'a> {
 }
 
 fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progress) -> Kind<'a> {
-    if cx.ignore_private && cx.manifests(id).is_private() {
+    if cx.ignore_private && cx.is_private(id) {
         return Kind::SkipAsPrivate;
     }
     if cx.subcommand.is_none() {
@@ -185,10 +186,10 @@ fn determine_package_list<'a>(
             .filter(|id| cx.package.contains(&&*cx.packages(id).name))
             .map(|id| (id, determine_kind(cx, id, progress)))
             .collect()
-    } else if cx.current_manifest().is_none() {
+    } else if cx.current_package().is_none() {
         cx.workspace_members().map(|id| (id, determine_kind(cx, id, progress))).collect()
     } else {
-        let current_package = &cx.manifests(cx.current_manifest().unwrap()).package.name;
+        let current_package = &cx.packages(cx.current_package().unwrap()).name;
         cx.workspace_members()
             .find(|id| cx.packages(id).name == *current_package)
             .map(|id| vec![(id, determine_kind(cx, id, progress))])

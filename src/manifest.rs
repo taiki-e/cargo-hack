@@ -6,10 +6,14 @@ use crate::Result;
 
 type ParseResult<T> = Result<T, &'static str>;
 
+// Refs:
+// * https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/util/toml/mod.rs
+// * https://gitlab.com/crates.rs/cargo_toml
+
 pub(crate) struct Manifest {
     pub(crate) raw: String,
-    // parsed manifest
-    pub(crate) package: Package,
+    // `metadata.package.publish` requires Rust 1.39
+    pub(crate) publish: bool,
 }
 
 impl Manifest {
@@ -18,15 +22,10 @@ impl Manifest {
             .with_context(|| format!("failed to read manifest from {}", path.display()))?;
         let toml = toml::from_str(&raw)
             .with_context(|| format!("failed to parse manifest as toml: {}", path.display()))?;
-        let package = Package::from_table(toml).map_err(|s| {
+        let package = Package::from_table(&toml).map_err(|s| {
             format_err!("failed to parse `{}` field from manifest: {}", s, path.display())
         })?;
-        Ok(Self { raw, package })
-    }
-
-    // `metadata.package.publish` requires Rust 1.39
-    pub(crate) fn is_private(&self) -> bool {
-        self.package.publish == false
+        Ok(Self { raw, publish: package.publish })
     }
 
     pub(crate) fn remove_dev_deps(&self) -> String {
@@ -34,62 +33,23 @@ impl Manifest {
     }
 }
 
-// Refs:
-// * https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/util/toml/mod.rs
-// * https://gitlab.com/crates.rs/cargo_toml
-
-pub(crate) struct Package {
-    pub(crate) name: String,
-    pub(crate) publish: Publish,
+struct Package {
+    publish: bool,
 }
 
 impl Package {
-    fn from_table(mut table: Table) -> ParseResult<Self> {
-        let package = table.get_mut("package").and_then(Value::as_table_mut).ok_or("package")?;
-        let name = package.remove("name").and_then(into_string).ok_or("name")?;
-        let publish = Publish::from_value(package.get("publish")).ok_or("publish")?;
+    fn from_table(table: &Table) -> ParseResult<Self> {
+        let package = table.get("package").and_then(Value::as_table).ok_or("package")?;
+        let _name = package.get("name").and_then(Value::as_str).ok_or("name")?;
 
-        Ok(Self { name, publish })
-    }
-}
-
-pub(crate) enum Publish {
-    Flag(bool),
-    Registry { is_empty: bool },
-}
-
-impl Publish {
-    fn from_value(value: Option<&Value>) -> Option<Self> {
-        Some(match value {
-            None => Self::default(),
-            Some(Value::Array(a)) => Publish::Registry { is_empty: a.is_empty() },
-            Some(Value::Boolean(b)) => Publish::Flag(*b),
-            Some(_) => return None,
+        Ok(Self {
+            // Publishing is unrestricted if `true`, and forbidden if `false` or the `Array` is empty.
+            publish: match package.get("publish") {
+                None => true,
+                Some(Value::Boolean(b)) => *b,
+                Some(Value::Array(a)) => !a.is_empty(),
+                Some(_) => return Err("publish"),
+            },
         })
     }
-}
-
-impl Default for Publish {
-    fn default() -> Self {
-        Publish::Flag(true)
-    }
-}
-
-impl PartialEq<Publish> for bool {
-    fn eq(&self, p: &Publish) -> bool {
-        match *p {
-            Publish::Flag(flag) => flag == *self,
-            Publish::Registry { is_empty } => is_empty != *self,
-        }
-    }
-}
-
-impl PartialEq<bool> for Publish {
-    fn eq(&self, b: &bool) -> bool {
-        b.eq(self)
-    }
-}
-
-fn into_string(value: Value) -> Option<String> {
-    if let Value::String(string) = value { Some(string) } else { None }
 }
