@@ -211,6 +211,8 @@ pub(crate) struct Args<'a> {
     pub(crate) depth: Option<usize>,
     /// --include-features
     pub(crate) include_features: Vec<&'a str>,
+    /// --include-deps-features
+    pub(crate) include_deps_features: bool,
 
     /// --no-default-features
     pub(crate) no_default_features: bool,
@@ -290,6 +292,7 @@ pub(crate) fn perse_args<'a>(
     raw: &'a RawArgs,
     coloring: &mut Option<Coloring>,
     cargo: &OsStr,
+    version: u32,
 ) -> Result<Args<'a>> {
     let mut iter = raw.0.iter();
     let mut args = iter.by_ref().map(String::as_str).peekable();
@@ -322,6 +325,7 @@ pub(crate) fn perse_args<'a>(
     let mut ignore_unknown_features = false;
     let mut clean_per_run = false;
     let mut depth = None;
+    let mut include_deps_features = false;
 
     let mut exclude_features = Vec::new();
     let mut exclude_no_default_features = false;
@@ -486,6 +490,7 @@ pub(crate) fn perse_args<'a>(
                     continue;
                 }
                 "--exclude-all-features" => parse_flag!(exclude_all_features),
+                "--include-deps-features" => parse_flag!(include_deps_features),
                 "--clean-per-run" => parse_flag!(clean_per_run),
                 "--ignore-unknown-features" => parse_flag!(ignore_unknown_features),
                 "--ignore-non-exist-features" => bail!(
@@ -554,6 +559,10 @@ pub(crate) fn perse_args<'a>(
             bail!(
                 "--include-features can only be used together with either --each-feature or --feature-powerset"
             );
+        } else if include_deps_features {
+            bail!(
+                "--include-deps-features can only be used together with either --each-feature or --feature-powerset"
+            );
         }
     }
     if depth.is_some() && !feature_powerset {
@@ -593,6 +602,10 @@ pub(crate) fn perse_args<'a>(
     }
     if all_features && feature_powerset {
         bail!("--all-features may not be used together with --feature-powerset");
+    }
+
+    if include_deps_features && version < 41 {
+        bail!("--all-features requires Cargo 1.41 or leter")
     }
 
     if subcommand.is_none() {
@@ -653,6 +666,7 @@ For more information try --help
         clean_per_run,
         depth,
         include_features,
+        include_deps_features,
 
         no_default_features,
         verbose,

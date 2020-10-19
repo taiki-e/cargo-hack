@@ -6,7 +6,6 @@ use std::{
     ffi::OsStr,
     fmt,
     path::PathBuf,
-    rc::Rc,
 };
 
 use crate::{cli::Args, Context, ProcessBuilder, Result};
@@ -25,12 +24,12 @@ type ParseResult<T> = Result<T, &'static str>;
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub(crate) struct PackageId {
     /// The underlying string representation of id.
-    repr: Rc<str>,
+    repr: String,
 }
 
 impl PackageId {
     fn new(repr: String) -> Self {
-        Self { repr: repr.into() }
+        Self { repr }
     }
 }
 
@@ -78,9 +77,6 @@ impl Metadata {
                 .remove_array("packages")?
                 .into_iter()
                 .map(|v| Package::from_value(v, version))
-                .filter(|res| {
-                    res.as_ref().map(|(id, _)| workspace_members.contains(id)).unwrap_or(true)
-                })
                 .collect::<Result<_, _>>()?,
             workspace_members,
             resolve: Resolve::from_obj(map.remove_object("resolve")?, version)?,
@@ -91,126 +87,114 @@ impl Metadata {
 
 /// A dependency graph
 pub(crate) struct Resolve {
-    // /// Nodes in a dependencies graph
-    // pub(crate) nodes: HashMap<PackageId, Node>,
+    /// Nodes in a dependencies graph
+    pub(crate) nodes: HashMap<PackageId, Node>,
     // if `None`, cargo-hack called in the root of a virtual workspace
     /// The crate for which the metadata was read.
     pub(crate) root: Option<PackageId>,
 }
 
 impl Resolve {
-    fn from_obj(mut map: Object, _version: u32) -> ParseResult<Self> {
+    fn from_obj(mut map: Object, version: u32) -> ParseResult<Self> {
         Ok(Self {
-            // nodes: map
-            //     .remove_array("nodes")?
-            //     .into_iter()
-            //     .map(|v| Node::from_value(v, version))
-            //     .collect::<Result<_, _>>()?,
+            nodes: map
+                .remove_array("nodes")?
+                .into_iter()
+                .map(|v| Node::from_value(v, version))
+                .collect::<Result<_, _>>()?,
             root: map.remove_nullable("root", into_string)?.map(PackageId::new),
         })
     }
 }
 
-// /// A node in a dependencies graph
-// pub(crate) struct Node {
-//     /// An opaque identifier for a package
-//     pub(crate) id: PackageId,
-//     /// Dependencies in a structured format.
-//     ///
-//     /// This is always empty if running with a version of Cargo older than 1.30.
-//     pub(crate) deps: Vec<NodeDep>,
-//     /// Features enabled on the crate
-//     pub(crate) features: Vec<String>,
-// }
+/// A node in a dependencies graph
+pub(crate) struct Node {
+    /// Dependencies in a structured format.
+    ///
+    /// This is always empty if running with a version of Cargo older than 1.30.
+    pub(crate) deps: Vec<NodeDep>,
+}
 
-// impl Node {
-//     fn from_value(mut value: Value, version: u32) -> ParseResult<(PackageId, Self)> {
-//         let map = value.as_object_mut().ok_or("nodes")?;
+impl Node {
+    fn from_value(mut value: Value, version: u32) -> ParseResult<(PackageId, Self)> {
+        let map = value.as_object_mut().ok_or("nodes")?;
 
-//         let this = Self {
-//             id: map.remove_string("id").map(PackageId::new)?,
-//             // This field was added in Rust 1.30.
-//             deps: if version >= 30 {
-//                 map.remove_array("deps")?
-//                     .into_iter()
-//                     .map(|v| NodeDep::from_value(v, version))
-//                     .collect::<Result<_, _>>()?
-//             } else {
-//                 Vec::new()
-//             },
-//             features: map
-//                 .remove_array("features")?
-//                 .into_iter()
-//                 .map(|v| into_string(v).ok_or("features"))
-//                 .collect::<Result<_, _>>()?,
-//         };
-//         Ok((this.id.clone(), this))
-//     }
-// }
+        let id = map.remove_string("id").map(PackageId::new)?;
+        Ok((id, Self {
+            // This field was added in Rust 1.30.
+            deps: if version >= 30 {
+                map.remove_array("deps")?
+                    .into_iter()
+                    .map(|v| NodeDep::from_value(v, version))
+                    .collect::<Result<_, _>>()?
+            } else {
+                Vec::new()
+            },
+        }))
+    }
+}
 
-// /// A dependency in a node
-// pub(crate) struct NodeDep {
-//     /// Package ID (opaque unique identifier)
-//     pub(crate) pkg: PackageId,
-//     /// The kinds of dependencies.
-//     ///
-//     /// This is always empty if running with a version of Cargo older than 1.41.
-//     pub(crate) dep_kinds: Vec<DepKindInfo>,
-// }
+/// A dependency in a node
+pub(crate) struct NodeDep {
+    /// Package ID (opaque unique identifier)
+    pub(crate) pkg: PackageId,
+    /// The kinds of dependencies.
+    ///
+    /// This is always empty if running with a version of Cargo older than 1.41.
+    pub(crate) dep_kinds: Vec<DepKindInfo>,
+}
 
-// impl NodeDep {
-//     fn from_value(mut value: Value, version: u32) -> ParseResult<Self> {
-//         let map = value.as_object_mut().ok_or("deps")?;
+impl NodeDep {
+    fn from_value(mut value: Value, version: u32) -> ParseResult<Self> {
+        let map = value.as_object_mut().ok_or("deps")?;
 
-//         Ok(Self {
-//             pkg: PackageId::new(map.remove_string("pkg")?),
-//             // This field was added in Rust 1.41.
-//             dep_kinds: if version >= 41 {
-//                 map.remove_array("dep_kinds")?
-//                     .into_iter()
-//                     .map(DepKindInfo::from_value)
-//                     .collect::<Result<_, _>>()?
-//             } else {
-//                 Vec::new()
-//             },
-//         })
-//     }
-// }
+        Ok(Self {
+            pkg: PackageId::new(map.remove_string("pkg")?),
+            // This field was added in Rust 1.41.
+            dep_kinds: if version >= 41 {
+                map.remove_array("dep_kinds")?
+                    .into_iter()
+                    .map(DepKindInfo::from_value)
+                    .collect::<Result<_, _>>()?
+            } else {
+                Vec::new()
+            },
+        })
+    }
+}
 
-// /// Information about a dependency kind.
-// pub(crate) struct DepKindInfo {
-//     /// The kind of dependency.
-//     pub(crate) kind: Option<String>,
-//     /// The target platform for the dependency.
-//     ///
-//     /// This is `None` if it is not a target dependency.
-//     ///
-//     /// By default all platform dependencies are included in the resolve
-//     /// graph. Use Cargo's `--filter-platform` flag if you only want to
-//     /// include dependencies for a specific platform.
-//     pub(crate) target: Option<Platform>,
-// }
+/// Information about a dependency kind.
+pub(crate) struct DepKindInfo {
+    /// The kind of dependency.
+    pub(crate) kind: Option<String>,
+    /// The target platform for the dependency.
+    ///
+    /// This is `None` if it is not a target dependency.
+    ///
+    /// By default all platform dependencies are included in the resolve
+    /// graph. Use Cargo's `--filter-platform` flag if you only want to
+    /// include dependencies for a specific platform.
+    pub(crate) target: Option<Platform>,
+}
 
-// impl DepKindInfo {
-//     fn from_value(mut value: Value) -> ParseResult<Self> {
-//         let map = value.as_object_mut().ok_or("dep_kinds")?;
+impl DepKindInfo {
+    fn from_value(mut value: Value) -> ParseResult<Self> {
+        let map = value.as_object_mut().ok_or("dep_kinds")?;
 
-//         Ok(Self {
-//             kind: map.remove_nullable("kind", into_string)?,
-//             target: map.remove_nullable("target", into_string)?,
-//         })
-//     }
-// }
+        Ok(Self {
+            kind: map.remove_nullable("kind", into_string)?,
+            target: map.remove_nullable("target", into_string)?,
+        })
+    }
+}
 
-// type Platform = String;
+type Platform = String;
 
 pub(crate) struct Package {
     /// Name as given in the `Cargo.toml`
     pub(crate) name: String,
     // /// Version given in the `Cargo.toml`
     // pub(crate) version: String,
-    /// An opaque identifier for a package
-    pub(crate) id: PackageId,
     /// List of dependencies of this particular package
     pub(crate) dependencies: Vec<Dependency>,
     /// Features provided by the crate, mapped to the features required by that feature.
@@ -227,10 +211,10 @@ impl Package {
     fn from_value(mut value: Value, version: u32) -> ParseResult<(PackageId, Self)> {
         let map = value.as_object_mut().ok_or("packages")?;
 
-        let this = Self {
+        let id = PackageId::new(map.remove_string("id")?);
+        Ok((id, Self {
             name: map.remove_string("name")?,
             // version: map.remove_string("version")?,
-            id: PackageId::new(map.remove_string("id")?),
             dependencies: map
                 .remove_array("dependencies")?
                 .into_iter()
@@ -250,8 +234,7 @@ impl Package {
             } else {
                 true
             },
-        };
-        Ok((this.id.clone(), this))
+        }))
     }
 
     pub(crate) fn name_verbose(&self, cx: &Context<'_>) -> Cow<'_, str> {
