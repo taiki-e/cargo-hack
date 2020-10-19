@@ -233,6 +233,13 @@ pub(crate) struct Args<'a> {
     pub(crate) color: Option<Coloring>,
 }
 
+impl Args<'_> {
+    /// Return `true` if options that require information from cargo manifest is specified.
+    pub(crate) fn require_manifest_info(&self, version: u32) -> bool {
+        (version < 39 && self.ignore_private) || self.no_dev_deps || self.remove_dev_deps
+    }
+}
+
 #[derive(Clone, Copy)]
 pub(crate) enum Coloring {
     Auto,

@@ -21,6 +21,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 * [Fix an issue where using `--features` with `--each-feature` or `--feature-powerset` together would result in the same feature combination being performed multiple times.][64]
 
+* [Improve performance by avoiding reading and parsing Cargo manifest.][73]
+
 [42]: https://github.com/taiki-e/cargo-hack/pull/42
 [61]: https://github.com/taiki-e/cargo-hack/pull/61
 [62]: https://github.com/taiki-e/cargo-hack/pull/62
@@ -28,6 +30,7 @@ This project adheres to [Semantic Versioning](https://semver.org).
 [64]: https://github.com/taiki-e/cargo-hack/pull/64
 [65]: https://github.com/taiki-e/cargo-hack/pull/65
 [66]: https://github.com/taiki-e/cargo-hack/pull/66
+[73]: https://github.com/taiki-e/cargo-hack/pull/73
 
 ## [0.3.14] - 2020-10-10
 
