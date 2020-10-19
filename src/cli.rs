@@ -700,13 +700,11 @@ For more information try --help
 mod tests {
     use super::Help;
     use crate::Result;
-    use std::{env, fs, path::PathBuf};
+    use std::{env, fs, path::Path};
 
     fn assert_eq(expected_path: &str, actual: &str) {
         (|| -> Result<()> {
-            let manifest_dir = env::var_os("CARGO_MANIFEST_DIR")
-                .map(PathBuf::from)
-                .expect("CARGO_MANIFEST_DIR not set");
+            let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
             let expected_path = manifest_dir.join(expected_path);
             let expected = fs::read_to_string(&expected_path)?;
             if expected != actual {

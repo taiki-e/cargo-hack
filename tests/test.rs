@@ -3,7 +3,7 @@
 use std::{
     borrow::Cow,
     env,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Command, Output},
 };
 
@@ -14,18 +14,19 @@ const SEPARATOR: char = '\\';
 
 fn cargo_hack() -> Command {
     // TODO: update to use CARGO_BIN_EXE (https://github.com/rust-lang/cargo/pull/7697, require Rust 1.43).
-    let mut current = env::current_exe().unwrap();
-    current.pop();
-    if current.ends_with("deps") {
-        current.pop();
+    let mut exe = env::current_exe().unwrap();
+    exe.pop();
+    if exe.ends_with("deps") {
+        exe.pop();
     }
-    let mut cmd = Command::new(current.join("cargo-hack"));
+    exe.push("cargo-hack");
+    let mut cmd = Command::new(exe);
     cmd.arg("hack");
     cmd
 }
 
-fn test_dir(path: &str) -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(path)
+fn dir(path: &str) -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join(path)
 }
 
 #[easy_ext::ext]
@@ -128,7 +129,7 @@ fn multi_arg() {
     ] {
         cargo_hack()
             .args(&["check", flag, flag])
-            .current_dir(test_dir("tests/fixtures/real"))
+            .current_dir(dir("tests/fixtures/real"))
             .output()
             .unwrap()
             .assert_failure()
@@ -143,7 +144,7 @@ fn multi_arg() {
     {
         cargo_hack()
             .args(&["check", flag, "auto", flag, "auto"])
-            .current_dir(test_dir("tests/fixtures/real"))
+            .current_dir(dir("tests/fixtures/real"))
             .output()
             .unwrap()
             .assert_failure()
@@ -159,7 +160,7 @@ fn removed_flags() {
     for (flag, alt) in &[("--ignore-non-exist-features", "--ignore-unknown-features")] {
         cargo_hack()
             .args(&["check", flag])
-            .current_dir(test_dir("tests/fixtures/real"))
+            .current_dir(dir("tests/fixtures/real"))
             .output()
             .unwrap()
             .assert_failure()
@@ -171,7 +172,7 @@ fn removed_flags() {
 fn real_manifest() {
     cargo_hack()
         .args(&["check"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -182,7 +183,7 @@ fn real_manifest() {
 
     cargo_hack()
         .args(&["check", "--workspace"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -196,7 +197,7 @@ fn real_manifest() {
 fn virtual_manifest() {
     cargo_hack()
         .args(&["check"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
+        .current_dir(dir("tests/fixtures/virtual"))
         .output()
         .unwrap()
         .assert_success()
@@ -205,7 +206,7 @@ fn virtual_manifest() {
 
     cargo_hack()
         .args(&["check", "--all"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
+        .current_dir(dir("tests/fixtures/virtual"))
         .output()
         .unwrap()
         .assert_success()
@@ -217,7 +218,7 @@ fn virtual_manifest() {
 fn real_all_in_subcrate() {
     cargo_hack()
         .args(&["check"])
-        .current_dir(test_dir("tests/fixtures/real/member2"))
+        .current_dir(dir("tests/fixtures/real/member2"))
         .output()
         .unwrap()
         .assert_success()
@@ -228,7 +229,7 @@ fn real_all_in_subcrate() {
 
     cargo_hack()
         .args(&["check", "--all"])
-        .current_dir(test_dir("tests/fixtures/real/member2"))
+        .current_dir(dir("tests/fixtures/real/member2"))
         .output()
         .unwrap()
         .assert_success()
@@ -242,7 +243,7 @@ fn real_all_in_subcrate() {
 fn virtual_all_in_subcrate() {
     cargo_hack()
         .args(&["check"])
-        .current_dir(test_dir("tests/fixtures/virtual/member1"))
+        .current_dir(dir("tests/fixtures/virtual/member1"))
         .output()
         .unwrap()
         .assert_success()
@@ -251,7 +252,7 @@ fn virtual_all_in_subcrate() {
 
     cargo_hack()
         .args(&["check", "--all"])
-        .current_dir(test_dir("tests/fixtures/virtual/member1"))
+        .current_dir(dir("tests/fixtures/virtual/member1"))
         .output()
         .unwrap()
         .assert_success()
@@ -263,7 +264,7 @@ fn virtual_all_in_subcrate() {
 fn real_ignore_private() {
     cargo_hack()
         .args(&["check", "--ignore-private"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -276,7 +277,7 @@ fn real_ignore_private() {
 
     cargo_hack()
         .args(&["check", "--all", "--ignore-private"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -294,7 +295,7 @@ fn real_ignore_private() {
 fn virtual_ignore_private() {
     cargo_hack()
         .args(&["check", "--ignore-private"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
+        .current_dir(dir("tests/fixtures/virtual"))
         .output()
         .unwrap()
         .assert_success()
@@ -305,7 +306,7 @@ fn virtual_ignore_private() {
 
     cargo_hack()
         .args(&["check", "--all", "--ignore-private"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
+        .current_dir(dir("tests/fixtures/virtual"))
         .output()
         .unwrap()
         .assert_success()
@@ -319,7 +320,7 @@ fn virtual_ignore_private() {
 fn package() {
     cargo_hack()
         .args(&["check", "--package", "member1"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
+        .current_dir(dir("tests/fixtures/virtual"))
         .output()
         .unwrap()
         .assert_success()
@@ -331,7 +332,7 @@ fn package() {
 fn package_no_packages() {
     cargo_hack()
         .args(&["check", "--package", "foo"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
+        .current_dir(dir("tests/fixtures/virtual"))
         .output()
         .unwrap()
         .assert_failure()
@@ -342,7 +343,7 @@ fn package_no_packages() {
 fn exclude() {
     cargo_hack()
         .args(&["check", "--all", "--exclude", "member1"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
+        .current_dir(dir("tests/fixtures/virtual"))
         .output()
         .unwrap()
         .assert_success()
@@ -352,7 +353,7 @@ fn exclude() {
     // not_found is warning
     cargo_hack()
         .args(&["check", "--all", "--exclude", "foo"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
+        .current_dir(dir("tests/fixtures/virtual"))
         .output()
         .unwrap()
         .assert_success()
@@ -366,7 +367,7 @@ fn exclude_failure() {
     // not with --workspace
     cargo_hack()
         .args(&["check", "--exclude", "member1"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
+        .current_dir(dir("tests/fixtures/virtual"))
         .output()
         .unwrap()
         .assert_failure()
@@ -377,7 +378,7 @@ fn exclude_failure() {
 fn no_dev_deps() {
     cargo_hack()
         .args(&["check", "--no-dev-deps"])
-        .current_dir(test_dir("tests/fixtures/no_dev_deps"))
+        .current_dir(dir("tests/fixtures/no_dev_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -389,7 +390,7 @@ fn no_dev_deps() {
     // with --all
     cargo_hack()
         .args(&["check", "--no-dev-deps", "--all"])
-        .current_dir(test_dir("tests/fixtures/no_dev_deps"))
+        .current_dir(dir("tests/fixtures/no_dev_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -403,7 +404,7 @@ fn no_dev_deps_failure() {
     // with --remove-dev-deps
     cargo_hack()
         .args(&["check", "--no-dev-deps", "--remove-dev-deps"])
-        .current_dir(test_dir("tests/fixtures/no_dev_deps"))
+        .current_dir(dir("tests/fixtures/no_dev_deps"))
         .output()
         .unwrap()
         .assert_failure()
@@ -415,7 +416,7 @@ fn no_dev_deps_failure() {
     {
         cargo_hack()
             .args(&["check", "--no-dev-deps", flag])
-            .current_dir(test_dir("tests/fixtures/real"))
+            .current_dir(dir("tests/fixtures/real"))
             .output()
             .unwrap()
             .assert_failure()
@@ -429,7 +430,7 @@ fn no_dev_deps_failure() {
     for subcommand in &["test", "bench"] {
         cargo_hack()
             .args(&[subcommand, "--no-dev-deps"])
-            .current_dir(test_dir("tests/fixtures/real"))
+            .current_dir(dir("tests/fixtures/real"))
             .output()
             .unwrap()
             .assert_failure()
@@ -448,7 +449,7 @@ fn remove_dev_deps_failure() {
     {
         cargo_hack()
             .args(&["check", "--remove-dev-deps", flag])
-            .current_dir(test_dir("tests/fixtures/real"))
+            .current_dir(dir("tests/fixtures/real"))
             .output()
             .unwrap()
             .assert_failure()
@@ -462,7 +463,7 @@ fn remove_dev_deps_failure() {
     for subcommand in &["test", "bench"] {
         cargo_hack()
             .args(&[subcommand, "--remove-dev-deps"])
-            .current_dir(test_dir("tests/fixtures/real"))
+            .current_dir(dir("tests/fixtures/real"))
             .output()
             .unwrap()
             .assert_failure()
@@ -477,7 +478,7 @@ fn remove_dev_deps_failure() {
 fn ignore_unknown_features() {
     cargo_hack()
         .args(&["check", "--ignore-unknown-features", "--no-default-features", "--features", "f"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
+        .current_dir(dir("tests/fixtures/virtual"))
         .output()
         .unwrap()
         .assert_success()
@@ -493,7 +494,7 @@ fn ignore_unknown_features() {
 fn ignore_unknown_features_failure() {
     cargo_hack()
         .args(&["check", "--ignore-unknown-features"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
+        .current_dir(dir("tests/fixtures/virtual"))
         .output()
         .unwrap()
         .assert_failure()
@@ -506,7 +507,7 @@ fn ignore_unknown_features_failure() {
 fn each_feature() {
     cargo_hack()
         .args(&["check", "--each-feature"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -528,7 +529,7 @@ fn each_feature() {
     // with other feature
     cargo_hack()
         .args(&["check", "--each-feature", "--features", "a"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -552,7 +553,7 @@ fn each_feature() {
 fn feature_powerset() {
     cargo_hack()
         .args(&["check", "--feature-powerset"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -586,7 +587,7 @@ fn feature_powerset() {
     // with other feature
     cargo_hack()
         .args(&["check", "--feature-powerset", "--features", "a"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -613,7 +614,7 @@ fn feature_powerset() {
 fn feature_powerset_depth() {
     cargo_hack()
         .args(&["check", "--feature-powerset", "--depth", "2"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -647,7 +648,7 @@ fn feature_powerset_depth() {
 fn depth_failure() {
     cargo_hack()
         .args(&["check", "--each-feature", "--depth", "2"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_failure()
@@ -658,7 +659,7 @@ fn depth_failure() {
 fn include_features() {
     cargo_hack()
         .args(&["check", "--each-feature", "--include-features", "a,b"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -677,7 +678,7 @@ fn include_features() {
 
     cargo_hack()
         .args(&["check", "--feature-powerset", "--include-features", "a,b"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -701,7 +702,7 @@ fn include_features() {
 fn exclude_features_failure() {
     cargo_hack()
         .args(&["check", "--exclude-features", "a"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_failure()
@@ -714,7 +715,7 @@ fn exclude_features_failure() {
 fn each_feature_skip_success() {
     cargo_hack()
         .args(&["check", "--each-feature", "--exclude-features", "a"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -733,7 +734,7 @@ fn each_feature_skip_success() {
 
     cargo_hack()
         .args(&["check", "--each-feature", "--exclude-features", "a b"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -750,7 +751,7 @@ fn each_feature_skip_success() {
 
     cargo_hack()
         .args(&["check", "--each-feature", "--exclude-features", "a", "--exclude-features", "b"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -770,7 +771,7 @@ fn each_feature_skip_success() {
 fn powerset_skip_success() {
     cargo_hack()
         .args(&["check", "--feature-powerset", "--exclude-features", "a"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -798,7 +799,7 @@ fn powerset_skip_success() {
 fn exclude_features_default() {
     cargo_hack()
         .args(&["check", "--each-feature", "--exclude-features", "default"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -822,7 +823,7 @@ fn exclude_features_default() {
 fn exclude_no_default_features() {
     cargo_hack()
         .args(&["check", "--each-feature", "--exclude-no-default-features"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -844,7 +845,7 @@ fn exclude_no_default_features() {
     // --skip-no-default-features is a deprecated alias of --exclude-no-default-features
     cargo_hack()
         .args(&["check", "--each-feature", "--skip-no-default-features"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
+        .current_dir(dir("tests/fixtures/virtual"))
         .output()
         .unwrap()
         .assert_success()
@@ -857,7 +858,7 @@ fn exclude_no_default_features() {
 fn exclude_no_default_features_failure() {
     cargo_hack()
         .args(&["check", "--exclude-no-default-features"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_failure()
@@ -870,7 +871,7 @@ fn exclude_no_default_features_failure() {
 fn exclude_all_features() {
     cargo_hack()
         .args(&["check", "--each-feature", "--exclude-all-features"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -894,7 +895,7 @@ fn exclude_all_features() {
 fn exclude_all_features_failure() {
     cargo_hack()
         .args(&["check", "--exclude-all-features"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_failure()
@@ -907,7 +908,7 @@ fn exclude_all_features_failure() {
 fn each_feature_all() {
     cargo_hack()
         .args(&["check", "--each-feature", "--workspace"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -973,7 +974,7 @@ fn each_feature_all() {
 fn trailing_args() {
     cargo_hack()
         .args(&["test", "--", "--ignored"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -986,7 +987,7 @@ fn trailing_args() {
 fn package_collision() {
     cargo_hack()
         .args(&["check"])
-        .current_dir(test_dir("tests/fixtures/package_collision"))
+        .current_dir(dir("tests/fixtures/package_collision"))
         .output()
         .unwrap()
         .assert_success()
@@ -998,7 +999,7 @@ fn package_collision() {
 fn not_find_manifest() {
     cargo_hack()
         .args(&["check"])
-        .current_dir(test_dir("tests/fixtures/virtual/dir/not_find_manifest"))
+        .current_dir(dir("tests/fixtures/virtual/dir/not_find_manifest"))
         .output()
         .unwrap()
         .assert_success()
@@ -1008,7 +1009,7 @@ fn not_find_manifest() {
 
     cargo_hack()
         .args(&["check", "--all"])
-        .current_dir(test_dir("tests/fixtures/virtual/dir/not_find_manifest"))
+        .current_dir(dir("tests/fixtures/virtual/dir/not_find_manifest"))
         .output()
         .unwrap()
         .assert_success()
@@ -1018,7 +1019,7 @@ fn not_find_manifest() {
 
     cargo_hack()
         .args(&["check", "--manifest-path", "dir/not_find_manifest/Cargo.toml"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
+        .current_dir(dir("tests/fixtures/virtual"))
         .output()
         .unwrap()
         .assert_success()
@@ -1028,7 +1029,7 @@ fn not_find_manifest() {
 
     cargo_hack()
         .args(&["check", "--all", "--manifest-path", "dir/not_find_manifest/Cargo.toml"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
+        .current_dir(dir("tests/fixtures/virtual"))
         .output()
         .unwrap()
         .assert_success()
@@ -1041,7 +1042,7 @@ fn not_find_manifest() {
 fn optional_deps() {
     cargo_hack()
         .args(&["run", "--features=real,member2,renemed", "--ignore-unknown-features"])
-        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .current_dir(dir("tests/fixtures/optional_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -1054,7 +1055,7 @@ fn optional_deps() {
 
     cargo_hack()
         .args(&["check", "--each-feature"])
-        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .current_dir(dir("tests/fixtures/optional_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -1065,7 +1066,7 @@ fn optional_deps() {
 
     cargo_hack()
         .args(&["check", "--each-feature", "--optional-deps"])
-        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .current_dir(dir("tests/fixtures/optional_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -1085,7 +1086,7 @@ fn optional_deps() {
 
     cargo_hack()
         .args(&["check", "--each-feature", "--optional-deps", "real"])
-        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .current_dir(dir("tests/fixtures/optional_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -1103,7 +1104,7 @@ fn optional_deps() {
 
     cargo_hack()
         .args(&["check", "--each-feature", "--optional-deps=renemed"])
-        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .current_dir(dir("tests/fixtures/optional_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -1121,7 +1122,7 @@ fn optional_deps() {
 
     cargo_hack()
         .args(&["check", "--each-feature", "--optional-deps="])
-        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .current_dir(dir("tests/fixtures/optional_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -1132,7 +1133,7 @@ fn optional_deps() {
 fn optional_deps_failure() {
     cargo_hack()
         .args(&["check", "--optional-deps"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_failure()
@@ -1145,7 +1146,7 @@ fn optional_deps_failure() {
 fn skip_optional_deps() {
     cargo_hack()
         .args(&["check", "--each-feature", "--optional-deps", "--exclude-features", "real"])
-        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .current_dir(dir("tests/fixtures/optional_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -1166,7 +1167,7 @@ fn skip_optional_deps() {
 fn list_separator() {
     cargo_hack()
         .args(&["run", "--features='real,renemed'"])
-        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .current_dir(dir("tests/fixtures/optional_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -1174,7 +1175,7 @@ fn list_separator() {
 
     cargo_hack()
         .args(&["run", "--features=\"real,renemed\""])
-        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .current_dir(dir("tests/fixtures/optional_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -1182,7 +1183,7 @@ fn list_separator() {
 
     cargo_hack()
         .args(&["run", "--features=real,renemed"])
-        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .current_dir(dir("tests/fixtures/optional_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -1190,7 +1191,7 @@ fn list_separator() {
 
     cargo_hack()
         .args(&["run", "--features", "real,renemed"])
-        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .current_dir(dir("tests/fixtures/optional_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -1198,7 +1199,7 @@ fn list_separator() {
 
     cargo_hack()
         .args(&["run", "--features='real renemed'"])
-        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .current_dir(dir("tests/fixtures/optional_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -1206,7 +1207,7 @@ fn list_separator() {
 
     cargo_hack()
         .args(&["run", "--features=\"real renemed\""])
-        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .current_dir(dir("tests/fixtures/optional_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -1214,7 +1215,7 @@ fn list_separator() {
 
     cargo_hack()
         .args(&["run", "--features", "real renemed"])
-        .current_dir(test_dir("tests/fixtures/optional_deps"))
+        .current_dir(dir("tests/fixtures/optional_deps"))
         .output()
         .unwrap()
         .assert_success()
@@ -1225,7 +1226,7 @@ fn list_separator() {
 fn verbose() {
     cargo_hack()
         .args(&["check", "--verbose"])
-        .current_dir(test_dir("tests/fixtures/virtual"))
+        .current_dir(dir("tests/fixtures/virtual"))
         .output()
         .unwrap()
         .assert_success()
@@ -1247,7 +1248,7 @@ fn verbose() {
 fn propagate() {
     cargo_hack()
         .args(&["check", "--features", "a"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -1255,7 +1256,7 @@ fn propagate() {
 
     cargo_hack()
         .args(&["check", "--no-default-features"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -1263,7 +1264,7 @@ fn propagate() {
 
     cargo_hack()
         .args(&["check", "--all-features"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -1271,7 +1272,7 @@ fn propagate() {
 
     cargo_hack()
         .args(&["check", "--color", "auto"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()
@@ -1280,7 +1281,7 @@ fn propagate() {
     // --verbose does not be propagated
     cargo_hack()
         .args(&["check", "--verbose"])
-        .current_dir(test_dir("tests/fixtures/real"))
+        .current_dir(dir("tests/fixtures/real"))
         .output()
         .unwrap()
         .assert_success()

@@ -79,12 +79,13 @@ pub(crate) fn remove_dev_deps(bytes: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use super::remove_dev_deps;
 
     macro_rules! test {
         ($name:ident, $input:expr, $expected:expr) => {
             #[test]
             fn $name() {
-                let input = super::remove_dev_deps($input);
+                let input = remove_dev_deps($input);
                 assert_eq!(&$expected[..], input);
             }
         };
