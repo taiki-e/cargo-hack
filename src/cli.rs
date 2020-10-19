@@ -240,6 +240,10 @@ impl Args<'_> {
     pub(crate) fn require_manifest_info(&self, version: u32) -> bool {
         (version < 39 && self.ignore_private) || self.no_dev_deps || self.remove_dev_deps
     }
+
+    pub(crate) fn include_default_feature(&self) -> bool {
+        self.include_features.is_empty() && !self.exclude_features.contains(&"default")
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -591,6 +595,14 @@ pub(crate) fn perse_args<'a>(
         }
     }
 
+    if !include_features.is_empty() {
+        if optional_deps.is_some() {
+            bail!("--optional-deps may not be used together with --include-features");
+        } else if include_deps_features {
+            bail!("--include-deps-features may not be used together with --include-features");
+        }
+    }
+
     if no_dev_deps && remove_dev_deps {
         bail!("--no-dev-deps may not be used together with --remove-dev-deps");
     }
@@ -604,7 +616,7 @@ pub(crate) fn perse_args<'a>(
         bail!("--all-features may not be used together with --feature-powerset");
     }
 
-    if include_deps_features && version < 41 {
+    if version < 41 && include_deps_features {
         bail!("--all-features requires Cargo 1.41 or leter")
     }
 
@@ -643,7 +655,8 @@ For more information try --help
         )
     }
 
-    exclude_no_default_features |= no_default_features;
+    exclude_no_default_features |= no_default_features || !include_features.is_empty();
+    exclude_all_features |= !include_features.is_empty();
     exclude_features.extend_from_slice(&features);
 
     Ok(Args {
