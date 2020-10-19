@@ -7,6 +7,7 @@ on:
       - master
       - staging
       - trying
+      - ci
   schedule:
     - cron: '0 1 * * *'
 
@@ -23,22 +24,22 @@ jobs:
     name: test
     strategy:
       matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
         rust:
           # This is the minimum supported Rust version of this crate.
           # When updating this, the reminder to update the minimum supported Rust version in README.md.
           - 1.36.0
-          - 1.38.0
           - 1.39.0
-          - 1.40.0
           - 1.41.0
           - stable
           - beta
-          - nightly
-    runs-on: ${{ matrix.os }}
+        include:
+          - os: ubuntu-latest
+            rust: nightly
+          - os: macos-latest
+            rust: nightly
+          - os: windows-latest
+            rust: nightly
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v2
       - name: Install Rust
@@ -55,10 +56,6 @@ jobs:
     name: run
     strategy:
       matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
         rust:
         # cargo-hack is usually runnable with Cargo versions older than the Rust version required for installation.
         # When updating this, the reminder to update the minimum supported Rust version in README.md.
