@@ -6,7 +6,6 @@ use std::{
     ffi::OsStr,
     fmt,
     path::PathBuf,
-    rc::Rc,
 };
 
 use crate::{cli::Args, Context, ProcessBuilder, Result};
@@ -25,12 +24,12 @@ type ParseResult<T> = Result<T, &'static str>;
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub(crate) struct PackageId {
     /// The underlying string representation of id.
-    repr: Rc<str>,
+    repr: String,
 }
 
 impl PackageId {
     fn new(repr: String) -> Self {
-        Self { repr: repr.into() }
+        Self { repr }
     }
 }
 
@@ -113,22 +112,18 @@ impl Resolve {
 
 // /// A node in a dependencies graph
 // pub(crate) struct Node {
-//     /// An opaque identifier for a package
-//     pub(crate) id: PackageId,
 //     /// Dependencies in a structured format.
 //     ///
 //     /// This is always empty if running with a version of Cargo older than 1.30.
 //     pub(crate) deps: Vec<NodeDep>,
-//     /// Features enabled on the crate
-//     pub(crate) features: Vec<String>,
 // }
 
 // impl Node {
 //     fn from_value(mut value: Value, version: u32) -> ParseResult<(PackageId, Self)> {
 //         let map = value.as_object_mut().ok_or("nodes")?;
 
-//         let this = Self {
-//             id: map.remove_string("id").map(PackageId::new)?,
+//         let id = map.remove_string("id").map(PackageId::new)?;
+//         Ok((id, Self {
 //             // This field was added in Rust 1.30.
 //             deps: if version >= 30 {
 //                 map.remove_array("deps")?
@@ -138,13 +133,7 @@ impl Resolve {
 //             } else {
 //                 Vec::new()
 //             },
-//             features: map
-//                 .remove_array("features")?
-//                 .into_iter()
-//                 .map(|v| into_string(v).ok_or("features"))
-//                 .collect::<Result<_, _>>()?,
-//         };
-//         Ok((this.id.clone(), this))
+//         }))
 //     }
 // }
 
@@ -209,8 +198,6 @@ pub(crate) struct Package {
     pub(crate) name: String,
     // /// Version given in the `Cargo.toml`
     // pub(crate) version: String,
-    /// An opaque identifier for a package
-    pub(crate) id: PackageId,
     /// List of dependencies of this particular package
     pub(crate) dependencies: Vec<Dependency>,
     /// Features provided by the crate, mapped to the features required by that feature.
@@ -227,10 +214,10 @@ impl Package {
     fn from_value(mut value: Value, version: u32) -> ParseResult<(PackageId, Self)> {
         let map = value.as_object_mut().ok_or("packages")?;
 
-        let this = Self {
+        let id = PackageId::new(map.remove_string("id")?);
+        Ok((id, Self {
             name: map.remove_string("name")?,
             // version: map.remove_string("version")?,
-            id: PackageId::new(map.remove_string("id")?),
             dependencies: map
                 .remove_array("dependencies")?
                 .into_iter()
@@ -250,8 +237,7 @@ impl Package {
             } else {
                 true
             },
-        };
-        Ok((this.id.clone(), this))
+        }))
     }
 
     pub(crate) fn name_verbose(&self, cx: &Context<'_>) -> Cow<'_, str> {
