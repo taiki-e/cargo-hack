@@ -14,3 +14,6 @@ indent_size = 4
 
 [*.{json,yml,md}]
 indent_size = 2
+
+[*.sh]
+switch_case_indent = true
