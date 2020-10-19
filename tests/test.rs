@@ -1085,29 +1085,43 @@ fn verbose() {
 
 #[test]
 fn propagate() {
+    // --features
     cargo_hack()
         .args(&["check", "--features", "a"])
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains("--features a");
+    cargo_hack()
+        .args(&["check", "--features=a"])
+        .test_dir("tests/fixtures/real")
+        .assert_success()
+        .assert_stderr_contains("--features a");
 
+    // --no-default-features
     cargo_hack()
         .args(&["check", "--no-default-features"])
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains("--no-default-features");
 
+    // --all-features
     cargo_hack()
         .args(&["check", "--all-features"])
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains("--all-features");
 
+    // --color
     cargo_hack()
         .args(&["check", "--color", "auto"])
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains("`cargo check --color auto`");
+    cargo_hack()
+        .args(&["check", "--color=auto"])
+        .test_dir("tests/fixtures/real")
+        .assert_success()
+        .assert_stderr_contains("`cargo check --color=auto`");
 
     // --verbose does not be propagated
     cargo_hack()

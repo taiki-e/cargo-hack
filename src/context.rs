@@ -1,7 +1,7 @@
 use std::{collections::HashMap, env, ffi::OsString, ops::Deref, path::Path};
 
 use crate::{
-    cli::{self, Args, Coloring, RawArgs},
+    cli::{self, Args, RawArgs},
     manifest::Manifest,
     metadata::{Metadata, Node, Package, PackageId},
     version, ProcessBuilder, Result,
@@ -16,19 +16,19 @@ pub(crate) struct Context<'a> {
 }
 
 impl<'a> Context<'a> {
-    pub(crate) fn new(args: &'a RawArgs, coloring: &mut Option<Coloring>) -> Result<Self> {
+    pub(crate) fn new(args: &'a RawArgs) -> Result<Self> {
         let cargo = cargo_binary();
 
         // If failed to determine cargo version, assign 0 to skip all version-dependent decisions.
         let cargo_version = match version::from_path(&cargo) {
             Ok(version) => version.minor,
             Err(e) => {
-                warn!(*coloring, "{}", e);
+                warn!("{}", e);
                 0
             }
         };
 
-        let args = cli::perse_args(args, coloring, &cargo, cargo_version)?;
+        let args = cli::parse_args(args, &cargo, cargo_version)?;
         assert!(
             args.subcommand.is_some() || args.remove_dev_deps,
             "no subcommand or valid flag specified"

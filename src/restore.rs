@@ -5,11 +5,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{Coloring, Context, PackageId, Result};
+use crate::{Context, PackageId, Result};
 
 #[derive(Clone)]
 pub(crate) struct Restore {
-    color: Option<Coloring>,
     // The default value of `Current::restore_flag`.
     restore_flag: bool,
 
@@ -26,7 +25,6 @@ struct Current {
 impl Restore {
     pub(crate) fn new(cx: &Context<'_>) -> Self {
         let this = Self {
-            color: cx.color,
             // if `--remove-dev-deps` flag is off, restore manifest file.
             restore_flag: cx.no_dev_deps && !cx.remove_dev_deps,
             current: Arc::new(Mutex::new(None)),
@@ -35,7 +33,7 @@ impl Restore {
         let x = this.clone();
         ctrlc::set_handler(move || {
             if let Err(e) = x.restore_dev_deps() {
-                error!(x.color, "{:#}", e);
+                error!("{:#}", e);
                 std::process::exit(1)
             }
             std::process::exit(0)
@@ -80,7 +78,7 @@ impl Drop for Handle<'_> {
     fn drop(&mut self) {
         if let Some(this) = self.0 {
             if let Err(e) = this.restore_dev_deps() {
-                error!(this.color, "{:#}", e);
+                error!("{:#}", e);
             }
         }
     }

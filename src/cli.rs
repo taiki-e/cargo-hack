@@ -1,8 +1,7 @@
 use anyhow::{bail, format_err, Error};
-use std::{env, ffi::OsStr, fmt, mem, str::FromStr};
-use termcolor::ColorChoice;
+use std::{env, ffi::OsStr, fmt, mem};
 
-use crate::{ProcessBuilder, Result};
+use crate::{term, ProcessBuilder, Result};
 
 fn print_version() {
     println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
@@ -231,8 +230,6 @@ pub(crate) struct Args<'a> {
     // flags that will be propagated to cargo
     /// --features <FEATURES>...
     pub(crate) features: Vec<&'a str>,
-    /// --color <WHEN>
-    pub(crate) color: Option<Coloring>,
 }
 
 impl Args<'_> {
@@ -246,44 +243,6 @@ impl Args<'_> {
     }
 }
 
-#[derive(Clone, Copy)]
-pub(crate) enum Coloring {
-    Auto,
-    Always,
-    Never,
-}
-
-impl Coloring {
-    pub(crate) fn color_choice(color: Option<Self>) -> ColorChoice {
-        match color {
-            Some(Coloring::Auto) | None => ColorChoice::Auto,
-            Some(Coloring::Always) => ColorChoice::Always,
-            Some(Coloring::Never) => ColorChoice::Never,
-        }
-    }
-
-    pub(crate) fn as_str(self) -> &'static str {
-        match self {
-            Coloring::Auto => "auto",
-            Coloring::Always => "always",
-            Coloring::Never => "never",
-        }
-    }
-}
-
-impl FromStr for Coloring {
-    type Err = Error;
-
-    fn from_str(name: &str) -> Result<Self> {
-        match name {
-            "auto" => Ok(Coloring::Auto),
-            "always" => Ok(Coloring::Always),
-            "never" => Ok(Coloring::Never),
-            other => bail!("must be auto, always, or never, but found `{}`", other),
-        }
-    }
-}
-
 pub(crate) fn raw() -> RawArgs {
     let mut args = env::args();
     let _ = args.next(); // executable name
@@ -292,12 +251,7 @@ pub(crate) fn raw() -> RawArgs {
 
 pub(crate) struct RawArgs(Vec<String>);
 
-pub(crate) fn perse_args<'a>(
-    raw: &'a RawArgs,
-    coloring: &mut Option<Coloring>,
-    cargo: &OsStr,
-    version: u32,
-) -> Result<Args<'a>> {
+pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &OsStr, version: u32) -> Result<Args<'a>> {
     let mut iter = raw.0.iter();
     let mut args = iter.by_ref().map(String::as_str).peekable();
     match args.next() {
@@ -360,13 +314,17 @@ pub(crate) fn perse_args<'a>(
             }
 
             macro_rules! parse_opt {
-                ($opt:ident, $pat:expr, $help:expr) => {
+                ($opt:ident, $propagate:expr, $pat:expr, $help:expr) => {
                     if arg == $pat {
                         if $opt.is_some() {
                             return Err(multi_arg($help, subcommand));
                         }
                         let next = args.next().ok_or_else(|| req_arg($help, subcommand))?;
                         $opt = Some(next);
+                        if $propagate {
+                            leading.push(arg);
+                            leading.push(next);
+                        }
                         continue;
                     } else if arg.starts_with(concat!($pat, "=")) {
                         if $opt.is_some() {
@@ -375,6 +333,9 @@ pub(crate) fn perse_args<'a>(
                         let next =
                             arg.splitn(2, '=').nth(1).ok_or_else(|| req_arg($help, subcommand))?;
                         $opt = Some(next);
+                        if $propagate {
+                            leading.push(arg);
+                        }
                         continue;
                     }
                 };
@@ -429,9 +390,9 @@ pub(crate) fn perse_args<'a>(
                 };
             }
 
-            parse_opt!(manifest_path, "--manifest-path", "--manifest-path <PATH>");
-            parse_opt!(depth, "--depth", "--depth <NUM>");
-            parse_opt!(color, "--color", "--color <WHEN>");
+            parse_opt!(manifest_path, false, "--manifest-path", "--manifest-path <PATH>");
+            parse_opt!(depth, false, "--depth", "--depth <NUM>");
+            parse_opt!(color, true, "--color", "--color <WHEN>");
 
             parse_multi_opt!(package, false, true, "--package", "--package <SPEC>...");
             parse_multi_opt!(package, false, true, "-p", "--package <SPEC>...");
@@ -516,8 +477,7 @@ pub(crate) fn perse_args<'a>(
         Ok(())
     })();
 
-    let color = color.map(str::parse).transpose()?;
-    *coloring = color;
+    term::set_coloring(color)?;
 
     res?;
 
@@ -643,16 +603,14 @@ For more information try --help
 
     if skip_no_default_features {
         warn!(
-            color,
             "--skip-no-default-features is deprecated, use --exclude-no-default-features flag instead"
         );
         exclude_no_default_features = true;
     }
     if no_dev_deps {
         info!(
-            color,
             "--no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished"
-        )
+        );
     }
 
     exclude_no_default_features |= no_default_features || !include_features.is_empty();
@@ -689,7 +647,6 @@ For more information try --help
         exclude_all_features,
 
         features,
-        color,
     })
 }
 
