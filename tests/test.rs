@@ -605,11 +605,8 @@ fn include_features() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on real (1/5)
-             running `cargo check --no-default-features` on real (2/5)
-             running `cargo check --no-default-features --features a` on real (3/5)
-             running `cargo check --no-default-features --features b` on real (4/5)
-             running `cargo check --no-default-features --all-features` on real (5/5)",
+            "running `cargo check --no-default-features --features a` on real (1/2)
+             running `cargo check --no-default-features --features b` on real (2/2)",
         )
         .assert_stderr_not_contains("--features c");
 
@@ -618,12 +615,9 @@ fn include_features() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on real (1/6)
-             running `cargo check --no-default-features` on real (2/6)
-             running `cargo check --no-default-features --features a` on real (3/6)
-             running `cargo check --no-default-features --features b` on real (4/6)
-             running `cargo check --no-default-features --features a,b` on real (5/6)
-             running `cargo check --no-default-features --all-features` on real (6/6)",
+            "running `cargo check --no-default-features --features a` on real (1/3)
+             running `cargo check --no-default-features --features b` on real (2/3)
+             running `cargo check --no-default-features --features a,b` on real (3/3)",
         );
 }
 

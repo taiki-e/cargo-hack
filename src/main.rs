@@ -114,7 +114,7 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
                     .dependencies
                     .iter()
                     .filter_map(Dependency::as_feature)
-                    .filter(move |f| {
+                    .filter(|f| {
                         !cx.exclude_features.contains(f)
                             && (opt_deps.is_empty() || opt_deps.contains(f))
                     })
@@ -137,7 +137,11 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
                 if let Some(d) = package.dependencies.iter().find(|d| d.name == dep_package.name) {
                     let name = d.rename.as_ref().unwrap_or(&d.name);
                     features.extend(
-                        dep_package.features.iter().map(|f| Cow::Owned(format!("{}/{}", name, f))),
+                        dep_package
+                            .features
+                            .iter()
+                            .filter(|&f| !cx.exclude_features.contains(&&**f))
+                            .map(|f| Cow::Owned(format!("{}/{}", name, f))),
                     );
                 }
                 // TODO: Optional deps of `dep_package`.
@@ -148,7 +152,7 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
     } else {
         cx.include_features
             .iter()
-            .filter(|&&f| f != "default" && !cx.exclude_features.contains(&f))
+            .filter(|f| !cx.exclude_features.contains(f))
             .copied()
             .map(Cow::Borrowed)
             .collect()
@@ -160,9 +164,9 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
             Kind::Nomal
         } else {
             progress.total += features.len()
-                + (!cx.exclude_features.contains(&"default")) as usize
-                + (!cx.exclude_no_default_features) as usize
-                + (!cx.exclude_all_features) as usize;
+                + cx.include_default_feature() as usize
+                + !cx.exclude_no_default_features as usize
+                + !cx.exclude_all_features as usize;
             Kind::Each { features }
         }
     } else if cx.feature_powerset {
@@ -174,9 +178,9 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
         } else {
             // -1: the first element of a powerset is `[]`
             progress.total += features.len() - 1
-                + (!cx.exclude_features.contains(&"default")) as usize
-                + (!cx.exclude_no_default_features) as usize
-                + (!cx.exclude_all_features) as usize;
+                + cx.include_default_feature() as usize
+                + !cx.exclude_no_default_features as usize
+                + !cx.exclude_all_features as usize;
             Kind::Powerset { features }
         }
     } else {
@@ -283,7 +287,7 @@ fn exec_actual(
 
     let mut line = line.clone();
 
-    if !cx.exclude_features.contains(&"default") {
+    if cx.include_default_feature() {
         // run with default features
         exec_cargo(cx, id, &mut line, progress)?;
     }
