@@ -1,15 +1,44 @@
-use std::io::{self, Write};
-use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
+use anyhow::bail;
+use std::{
+    io::{self, Write},
+    sync::atomic::{AtomicU8, Ordering},
+};
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
-use crate::Coloring;
+use crate::Result;
+
+static COLORING: AtomicU8 = AtomicU8::new(0);
+
+const AUTO: u8 = 0;
+const ALWAYS: u8 = 1;
+const NEVER: u8 = 2;
+
+pub(crate) fn set_coloring(color: Option<&str>) -> Result<()> {
+    let coloring = match color {
+        Some("auto") | None => AUTO,
+        Some("always") => ALWAYS,
+        Some("never") => NEVER,
+        Some(other) => bail!("must be auto, always, or never, but found `{}`", other),
+    };
+    COLORING.store(coloring, Ordering::Relaxed);
+    Ok(())
+}
+
+fn coloring() -> ColorChoice {
+    match COLORING.load(Ordering::Relaxed) {
+        AUTO => ColorChoice::Auto,
+        ALWAYS => ColorChoice::Always,
+        NEVER => ColorChoice::Never,
+        _ => unreachable!(),
+    }
+}
 
 pub(crate) fn print_inner(
-    coloring: Option<Coloring>,
     color: Option<Color>,
     kind: &str,
     write_msg: impl FnOnce(&mut StandardStream) -> io::Result<()>,
 ) {
-    let mut stream = StandardStream::stderr(Coloring::color_choice(coloring));
+    let mut stream = StandardStream::stderr(coloring());
     let _ = stream.set_color(ColorSpec::new().set_bold(true).set_fg(color));
     let _ = write!(stream, "{}", kind);
     let _ = stream.reset();
@@ -18,22 +47,22 @@ pub(crate) fn print_inner(
 }
 
 macro_rules! error {
-    ($coloring:expr, $($msg:expr),* $(,)?) => {{
+    ($($msg:expr),* $(,)?) => {{
         use std::io::Write;
-        crate::term::print_inner($coloring, Some(termcolor::Color::Red), "error", |stream| writeln!(stream, $($msg),*));
+        crate::term::print_inner(Some(termcolor::Color::Red), "error", |stream| writeln!(stream, $($msg),*));
     }};
 }
 
 macro_rules! warn {
-    ($coloring:expr, $($msg:expr),* $(,)?) => {{
+    ($($msg:expr),* $(,)?) => {{
         use std::io::Write;
-        crate::term::print_inner($coloring, Some(termcolor::Color::Yellow), "warning", |stream| writeln!(stream, $($msg),*));
+        crate::term::print_inner(Some(termcolor::Color::Yellow), "warning", |stream| writeln!(stream, $($msg),*));
     }};
 }
 
 macro_rules! info {
-    ($coloring:expr, $($msg:expr),* $(,)?) => {{
+    ($($msg:expr),* $(,)?) => {{
         use std::io::Write;
-        crate::term::print_inner($coloring, None, "info", |stream| writeln!(stream, $($msg),*));
+        crate::term::print_inner(None, "info", |stream| writeln!(stream, $($msg),*));
     }};
 }

@@ -24,7 +24,6 @@ use anyhow::{bail, Context as _};
 use std::{borrow::Cow, fmt::Write, fs};
 
 use crate::{
-    cli::Coloring,
     context::Context,
     metadata::{Dependency, PackageId},
     process::ProcessBuilder,
@@ -34,16 +33,15 @@ use crate::{
 type Result<T, E = anyhow::Error> = std::result::Result<T, E>;
 
 fn main() {
-    let mut coloring = None;
-    if let Err(e) = try_main(&mut coloring) {
-        error!(coloring, "{:#}", e);
+    if let Err(e) = try_main() {
+        error!("{:#}", e);
         std::process::exit(1)
     }
 }
 
-fn try_main(coloring: &mut Option<Coloring>) -> Result<()> {
+fn try_main() -> Result<()> {
     let args = &cli::raw();
-    let cx = &Context::new(args, coloring)?;
+    let cx = &Context::new(args)?;
 
     exec_on_workspace(cx)
 }
@@ -57,12 +55,7 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
     //     )
     // }
 
-    let mut line = cx.process().with_args(cx);
-
-    if let Some(color) = cx.color {
-        line.arg("--color");
-        line.arg(color.as_str());
-    }
+    let line = cx.process().with_args(cx);
 
     let restore = Restore::new(cx);
     let mut progress = Progress::default();
@@ -196,7 +189,6 @@ fn determine_package_list<'a>(
         cx.exclude.iter().for_each(|spec| {
             if !cx.workspace_members().any(|id| cx.packages(id).name == *spec) {
                 warn!(
-                    cx.color,
                     "excluded package(s) {} not found in workspace `{}`",
                     spec,
                     cx.workspace_root().display()
@@ -242,7 +234,7 @@ fn exec_on_package(
 ) -> Result<()> {
     let package = cx.packages(id);
     if let Kind::SkipAsPrivate = kind {
-        info!(cx.color, "skipped running on private crate {}", package.name_verbose(cx));
+        info!("skipped running on private crate {}", package.name_verbose(cx));
         return Ok(());
     }
 
@@ -361,7 +353,7 @@ fn exec_cargo(
         write!(msg, "running {} on {}", line, cx.packages(id).name).unwrap();
     }
     write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
-    info!(cx.color, "{}", msg);
+    info!("{}", msg);
 
     line.exec()
 }
@@ -374,7 +366,7 @@ fn cargo_clean(cx: &Context<'_>, id: &PackageId) -> Result<()> {
 
     if cx.verbose {
         // running `cargo clean --package <package>`
-        info!(cx.color, "running {}", line);
+        info!("running {}", line);
     }
 
     line.exec()
