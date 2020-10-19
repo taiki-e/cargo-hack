@@ -19,10 +19,13 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 * [Add `--include-features` option.][66] See [#66][66] for details.
 
+* [Add --include-deps-features option.][70] See [#29][29] for details.
+
 * [Fix an issue where using `--features` with `--each-feature` or `--feature-powerset` together would result in the same feature combination being performed multiple times.][64]
 
 * [Improve performance by avoiding reading and parsing Cargo manifest.][73]
 
+[29]: https://github.com/taiki-e/cargo-hack/pull/29
 [42]: https://github.com/taiki-e/cargo-hack/pull/42
 [61]: https://github.com/taiki-e/cargo-hack/pull/61
 [62]: https://github.com/taiki-e/cargo-hack/pull/62
@@ -30,6 +33,7 @@ This project adheres to [Semantic Versioning](https://semver.org).
 [64]: https://github.com/taiki-e/cargo-hack/pull/64
 [65]: https://github.com/taiki-e/cargo-hack/pull/65
 [66]: https://github.com/taiki-e/cargo-hack/pull/66
+[70]: https://github.com/taiki-e/cargo-hack/pull/70
 [73]: https://github.com/taiki-e/cargo-hack/pull/73
 
 ## [0.3.14] - 2020-10-10

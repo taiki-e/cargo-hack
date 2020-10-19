@@ -821,6 +821,48 @@ fn each_feature_all() {
         );
 }
 
+#[rustversion::attr(not(since(1.41)), ignore)]
+#[test]
+fn include_deps_features() {
+    cargo_hack()
+        .args(&["check", "--each-feature", "--include-deps-features"])
+        .test_dir("tests")
+        .assert_success()
+        .assert_stderr_contains("
+            running `cargo check` on cargo-hack (1/21)
+            running `cargo check --no-default-features` on cargo-hack (2/21)
+            running `cargo check --no-default-features --features anyhow/default` on cargo-hack (3/21)
+            running `cargo check --no-default-features --features anyhow/std` on cargo-hack (4/21)
+            running `cargo check --no-default-features --features ctrlc/termination` on cargo-hack (5/21)
+            running `cargo check --no-default-features --features serde_json/alloc` on cargo-hack (6/21)
+            running `cargo check --no-default-features --features serde_json/arbitrary_precision` on cargo-hack (7/21)
+            running `cargo check --no-default-features --features serde_json/default` on cargo-hack (8/21)
+            running `cargo check --no-default-features --features serde_json/float_roundtrip` on cargo-hack (9/21)
+            running `cargo check --no-default-features --features serde_json/preserve_order` on cargo-hack (10/21)
+            running `cargo check --no-default-features --features serde_json/raw_value` on cargo-hack (11/21)
+            running `cargo check --no-default-features --features serde_json/std` on cargo-hack (12/21)
+            running `cargo check --no-default-features --features serde_json/unbounded_depth` on cargo-hack (13/21)
+            running `cargo check --no-default-features --features term_size/debug` on cargo-hack (14/21)
+            running `cargo check --no-default-features --features term_size/default` on cargo-hack (15/21)
+            running `cargo check --no-default-features --features term_size/nightly` on cargo-hack (16/21)
+            running `cargo check --no-default-features --features term_size/travis` on cargo-hack (17/21)
+            running `cargo check --no-default-features --features term_size/unstable` on cargo-hack (18/21)
+            running `cargo check --no-default-features --features toml/default` on cargo-hack (19/21)
+            running `cargo check --no-default-features --features toml/preserve_order` on cargo-hack (20/21)
+            running `cargo check --no-default-features --all-features` on cargo-hack (21/21)
+        ");
+}
+
+#[rustversion::attr(not(before(1.41)), ignore)]
+#[test]
+fn include_deps_features_version_failure() {
+    cargo_hack()
+        .args(&["check", "--each-feature", "--include-deps-features"])
+        .test_dir("tests")
+        .assert_failure()
+        .assert_stderr_contains("--all-features requires Cargo 1.41 or leter");
+}
+
 #[test]
 fn trailing_args() {
     cargo_hack()

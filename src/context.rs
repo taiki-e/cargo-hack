@@ -3,7 +3,7 @@ use std::{collections::HashMap, env, ffi::OsString, ops::Deref, path::Path};
 use crate::{
     cli::{self, Args, Coloring, RawArgs},
     manifest::Manifest,
-    metadata::{Metadata, Package, PackageId},
+    metadata::{Metadata, Node, Package, PackageId},
     version, ProcessBuilder, Result,
 };
 
@@ -28,7 +28,7 @@ impl<'a> Context<'a> {
             }
         };
 
-        let args = cli::perse_args(args, coloring, &cargo)?;
+        let args = cli::perse_args(args, coloring, &cargo, cargo_version)?;
         assert!(
             args.subcommand.is_some() || args.remove_dev_deps,
             "no subcommand or valid flag specified"
@@ -59,9 +59,9 @@ impl<'a> Context<'a> {
     pub(crate) fn workspace_members(&self) -> impl Iterator<Item = &PackageId> {
         self.metadata.workspace_members.iter()
     }
-    // pub(crate) fn nodes(&self, id: &PackageId) -> &Node {
-    //     &self.metadata.resolve.nodes[id]
-    // }
+    pub(crate) fn nodes(&self, id: &PackageId) -> &Node {
+        &self.metadata.resolve.nodes[id]
+    }
     pub(crate) fn current_package(&self) -> Option<&PackageId> {
         self.metadata.resolve.root.as_ref()
     }

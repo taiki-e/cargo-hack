@@ -21,7 +21,7 @@ mod restore;
 mod version;
 
 use anyhow::{bail, Context as _};
-use std::{fmt::Write, fs};
+use std::{borrow::Cow, fmt::Write, fs};
 
 use crate::{
     cli::Coloring,
@@ -82,8 +82,8 @@ enum Kind<'a> {
     NoSubcommand,
     SkipAsPrivate,
     Nomal,
-    Each { features: Vec<&'a str> },
-    Powerset { features: Vec<Vec<&'a str>> },
+    Each { features: Vec<Cow<'a, str>> },
+    Powerset { features: Vec<Vec<Cow<'a, str>>> },
 }
 
 fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progress) -> Kind<'a> {
@@ -105,21 +105,52 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
             .iter()
             .map(String::as_str)
             .filter(|f| *f != "default" && !cx.exclude_features.contains(f))
+            .map(Cow::Borrowed)
             .collect();
+
         if let Some(opt_deps) = &cx.optional_deps {
-            features.extend(package.dependencies.iter().filter_map(Dependency::as_feature).filter(
-                move |&f| {
-                    !cx.exclude_features.contains(&f)
-                        && (opt_deps.is_empty() || opt_deps.contains(&f))
-                },
-            ));
+            features.extend(
+                package
+                    .dependencies
+                    .iter()
+                    .filter_map(Dependency::as_feature)
+                    .filter(move |f| {
+                        !cx.exclude_features.contains(f)
+                            && (opt_deps.is_empty() || opt_deps.contains(f))
+                    })
+                    .map(Cow::Borrowed),
+            );
         }
+
+        if cx.include_deps_features {
+            let node = cx.nodes(id);
+            let package = cx.packages(id);
+            // TODO: Unpublished dependencies are not included in `node.deps`.
+            for dep in node.deps.iter().filter(|dep| {
+                // ignore if `dep_kinds` is empty (i.e., not Rust 1.41+), target specific or not a normal dependency.
+                dep.dep_kinds.iter().any(|kind| kind.kind.is_none() && kind.target.is_none())
+            }) {
+                let dep_package = cx.packages(&dep.pkg);
+                // TODO: `dep.name` (`resolve.nodes[].deps[].name`) is a valid rust identifier, not a valid feature flag.
+                // And `packages[].dependencies` doesn't have package identifier,
+                // so I'm not sure if there is a way to find the actual feature name exactly.
+                if let Some(d) = package.dependencies.iter().find(|d| d.name == dep_package.name) {
+                    let name = d.rename.as_ref().unwrap_or(&d.name);
+                    features.extend(
+                        dep_package.features.iter().map(|f| Cow::Owned(format!("{}/{}", name, f))),
+                    );
+                }
+                // TODO: Optional deps of `dep_package`.
+            }
+        }
+
         features
     } else {
         cx.include_features
             .iter()
             .filter(|&&f| f != "default" && !cx.exclude_features.contains(&f))
             .copied()
+            .map(Cow::Borrowed)
             .collect()
     };
 
