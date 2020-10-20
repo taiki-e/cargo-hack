@@ -102,6 +102,15 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
             .collect();
 
         if let Some(opt_deps) = &cx.optional_deps {
+            opt_deps.iter().for_each(|&d| {
+                if !package.dependencies.iter().filter_map(Dependency::as_feature).any(|f| f == d) {
+                    warn!(
+                        "specified optional dependency `{}` not found in package `{}`",
+                        d, package.name
+                    );
+                }
+            });
+
             features.extend(
                 package
                     .dependencies
