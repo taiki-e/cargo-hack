@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "has_default",
+    "no_default",
+]

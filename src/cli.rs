@@ -237,10 +237,6 @@ impl Args<'_> {
     pub(crate) fn require_manifest_info(&self, version: u32) -> bool {
         (version < 39 && self.ignore_private) || self.no_dev_deps || self.remove_dev_deps
     }
-
-    pub(crate) fn include_default_feature(&self) -> bool {
-        self.include_features.is_empty() && !self.exclude_features.contains(&"default")
-    }
 }
 
 pub(crate) fn raw() -> RawArgs {

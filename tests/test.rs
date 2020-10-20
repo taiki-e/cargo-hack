@@ -483,12 +483,14 @@ fn each_feature() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on real (1/6)
-             running `cargo check --no-default-features` on real (2/6)
-             running `cargo check --no-default-features --features a` on real (3/6)
-             running `cargo check --no-default-features --features b` on real (4/6)
-             running `cargo check --no-default-features --features c` on real (5/6)
-             running `cargo check --no-default-features --all-features` on real (6/6)",
+            "
+            running `cargo check --no-default-features` on real (1/6)
+            running `cargo check --no-default-features --features a` on real (2/6)
+            running `cargo check --no-default-features --features b` on real (3/6)
+            running `cargo check --no-default-features --features c` on real (4/6)
+            running `cargo check --no-default-features --features default` on real (5/6)
+            running `cargo check --no-default-features --all-features` on real (6/6)
+            ",
         );
 
     // with other feature
@@ -496,11 +498,13 @@ fn each_feature() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check --features a` on real (1/5)
-             running `cargo check --no-default-features --features a` on real (2/5)
-             running `cargo check --no-default-features --features a,b` on real (3/5)
-             running `cargo check --no-default-features --features a,c` on real (4/5)
-             running `cargo check --no-default-features --all-features --features a` on real (5/5)",
+            "
+            running `cargo check --no-default-features --features a` on real (1/5)
+            running `cargo check --no-default-features --features a,b` on real (2/5)
+            running `cargo check --no-default-features --features a,c` on real (3/5)
+            running `cargo check --no-default-features --features a,default` on real (4/5)
+            running `cargo check --no-default-features --all-features --features a` on real (5/5)
+            ",
         )
         .assert_stderr_not_contains("--features a,a");
 }
@@ -511,16 +515,25 @@ fn feature_powerset() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on real (1/10)
-             running `cargo check --no-default-features` on real (2/10)
-             running `cargo check --no-default-features --features a` on real (3/10)
-             running `cargo check --no-default-features --features b` on real (4/10)
-             running `cargo check --no-default-features --features c` on real (6/10)
-             running `cargo check --no-default-features --features a,b` on real (5/10)
-             running `cargo check --no-default-features --features a,c` on real (7/10)
-             running `cargo check --no-default-features --features b,c` on real (8/10)
-             running `cargo check --no-default-features --features a,b,c` on real (9/10)
-             running `cargo check --no-default-features --all-features` on real (10/10)",
+            "
+            running `cargo check --no-default-features` on real (1/17)
+            running `cargo check --no-default-features --features a` on real (2/17)
+            running `cargo check --no-default-features --features b` on real (3/17)
+            running `cargo check --no-default-features --features a,b` on real (4/17)
+            running `cargo check --no-default-features --features c` on real (5/17)
+            running `cargo check --no-default-features --features a,c` on real (6/17)
+            running `cargo check --no-default-features --features b,c` on real (7/17)
+            running `cargo check --no-default-features --features a,b,c` on real (8/17)
+            running `cargo check --no-default-features --features default` on real (9/17)
+            running `cargo check --no-default-features --features a,default` on real (10/17)
+            running `cargo check --no-default-features --features b,default` on real (11/17)
+            running `cargo check --no-default-features --features a,b,default` on real (12/17)
+            running `cargo check --no-default-features --features c,default` on real (13/17)
+            running `cargo check --no-default-features --features a,c,default` on real (14/17)
+            running `cargo check --no-default-features --features b,c,default` on real (15/17)
+            running `cargo check --no-default-features --features a,b,c,default` on real (16/17)
+            running `cargo check --no-default-features --all-features` on real (17/17)
+            ",
         );
 
     // with other feature
@@ -528,12 +541,17 @@ fn feature_powerset() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check --features a` on real (1/6)
-             running `cargo check --no-default-features --features a` on real (2/6)
-             running `cargo check --no-default-features --features a,b` on real (3/6)
-             running `cargo check --no-default-features --features a,c` on real (4/6)
-             running `cargo check --no-default-features --features a,b,c` on real (5/6)
-             running `cargo check --no-default-features --all-features --features a` on real (6/6)",
+            "
+            running `cargo check --no-default-features --features a` on real (1/9)
+            running `cargo check --no-default-features --features a,b` on real (2/9)
+            running `cargo check --no-default-features --features a,c` on real (3/9)
+            running `cargo check --no-default-features --features a,b,c` on real (4/9)
+            running `cargo check --no-default-features --features a,default` on real (5/9)
+            running `cargo check --no-default-features --features a,b,default` on real (6/9)
+            running `cargo check --no-default-features --features a,c,default` on real (7/9)
+            running `cargo check --no-default-features --features a,b,c,default` on real (8/9)
+            running `cargo check --no-default-features --all-features --features a` on real (9/9)
+            ",
         )
         .assert_stderr_not_contains("--features a,a");
 }
@@ -544,15 +562,20 @@ fn feature_powerset_depth() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on real (1/9)
-             running `cargo check --no-default-features` on real (2/9)
-             running `cargo check --no-default-features --features a` on real (3/9)
-             running `cargo check --no-default-features --features b` on real (4/9)
-             running `cargo check --no-default-features --features c` on real (6/9)
-             running `cargo check --no-default-features --features a,b` on real (5/9)
-             running `cargo check --no-default-features --features a,c` on real (7/9)
-             running `cargo check --no-default-features --features b,c` on real (8/9)
-             running `cargo check --no-default-features --all-features` on real (9/9)",
+            "
+            running `cargo check --no-default-features` on real (1/12)
+            running `cargo check --no-default-features --features a` on real (2/12)
+            running `cargo check --no-default-features --features b` on real (3/12)
+            running `cargo check --no-default-features --features a,b` on real (4/12)
+            running `cargo check --no-default-features --features c` on real (5/12)
+            running `cargo check --no-default-features --features a,c` on real (6/12)
+            running `cargo check --no-default-features --features b,c` on real (7/12)
+            running `cargo check --no-default-features --features default` on real (8/12)
+            running `cargo check --no-default-features --features a,default` on real (9/12)
+            running `cargo check --no-default-features --features b,default` on real (10/12)
+            running `cargo check --no-default-features --features c,default` on real (11/12)
+            running `cargo check --no-default-features --all-features` on real (12/12)
+            ",
         )
         .assert_stderr_not_contains("--features a,b,c");
 }
@@ -602,11 +625,13 @@ fn each_feature_skip_success() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on real (1/5)
-             running `cargo check --no-default-features` on real (2/5)
-             running `cargo check --no-default-features --features b` on real (3/5)
-             running `cargo check --no-default-features --features c` on real (4/5)
-             running `cargo check --no-default-features --all-features` on real (5/5)",
+            "
+            running `cargo check --no-default-features` on real (1/5)
+            running `cargo check --no-default-features --features b` on real (2/5)
+            running `cargo check --no-default-features --features c` on real (3/5)
+            running `cargo check --no-default-features --features default` on real (4/5)
+            running `cargo check --no-default-features --all-features` on real (5/5)
+            ",
         )
         .assert_stderr_not_contains("--features a");
 
@@ -614,10 +639,12 @@ fn each_feature_skip_success() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on real (1/4)
-             running `cargo check --no-default-features` on real (2/4)
-             running `cargo check --no-default-features --features c` on real (3/4)
-             running `cargo check --no-default-features --all-features` on real (4/4)",
+            "
+            running `cargo check --no-default-features` on real (1/4)
+            running `cargo check --no-default-features --features c` on real (2/4)
+            running `cargo check --no-default-features --features default` on real (3/4)
+            running `cargo check --no-default-features --all-features` on real (4/4)
+            ",
         )
         .assert_stderr_not_contains(
             "--features a
@@ -628,10 +655,12 @@ fn each_feature_skip_success() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on real (1/4)
-             running `cargo check --no-default-features` on real (2/4)
-             running `cargo check --no-default-features --features c` on real (3/4)
-             running `cargo check --no-default-features --all-features` on real (4/4)",
+            "
+            running `cargo check --no-default-features` on real (1/4)
+            running `cargo check --no-default-features --features c` on real (2/4)
+            running `cargo check --no-default-features --features default` on real (3/4)
+            running `cargo check --no-default-features --all-features` on real (4/4)
+            ",
         )
         .assert_stderr_not_contains(
             "--features a
@@ -645,12 +674,17 @@ fn powerset_skip_success() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on real (1/6)
-             running `cargo check --no-default-features` on real (2/6)
-             running `cargo check --no-default-features --features b` on real (3/6)
-             running `cargo check --no-default-features --features c` on real (4/6)
-             running `cargo check --no-default-features --features b,c` on real (5/6)
-             running `cargo check --no-default-features --all-features` on real (6/6)",
+            "
+            running `cargo check --no-default-features` on real (1/9)
+            running `cargo check --no-default-features --features b` on real (2/9)
+            running `cargo check --no-default-features --features c` on real (3/9)
+            running `cargo check --no-default-features --features b,c` on real (4/9)
+            running `cargo check --no-default-features --features default` on real (5/9)
+            running `cargo check --no-default-features --features b,default` on real (6/9)
+            running `cargo check --no-default-features --features c,default` on real (7/9)
+            running `cargo check --no-default-features --features b,c,default` on real (8/9)
+            running `cargo check --no-default-features --all-features` on real (9/9)
+            ",
         )
         .assert_stderr_not_contains(
             "--features a
@@ -681,11 +715,13 @@ fn exclude_no_default_features() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on real (1/5)
-             running `cargo check --no-default-features --features a` on real (2/5)
-             running `cargo check --no-default-features --features b` on real (3/5)
-             running `cargo check --no-default-features --features c` on real (4/5)
-             running `cargo check --no-default-features --all-features` on real (5/5)",
+            "
+            running `cargo check --no-default-features --features a` on real (1/5)
+            running `cargo check --no-default-features --features b` on real (2/5)
+            running `cargo check --no-default-features --features c` on real (3/5)
+            running `cargo check --no-default-features --features default` on real (4/5)
+            running `cargo check --no-default-features --all-features` on real (5/5)
+            ",
         )
         .assert_stderr_not_contains("running `cargo check --no-default-features` on real");
 
@@ -714,11 +750,13 @@ fn exclude_all_features() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on real (1/5)
-             running `cargo check --no-default-features` on real (2/5)
-             running `cargo check --no-default-features --features a` on real (3/5)
-             running `cargo check --no-default-features --features b` on real (4/5)
-             running `cargo check --no-default-features --features c` on real (5/5)",
+            "
+            running `cargo check --no-default-features` on real (1/5)
+            running `cargo check --no-default-features --features a` on real (2/5)
+            running `cargo check --no-default-features --features b` on real (3/5)
+            running `cargo check --no-default-features --features c` on real (4/5)
+            running `cargo check --no-default-features --features default` on real (5/5)
+            ",
         )
         .assert_stderr_not_contains(
             "running `cargo check --no-default-features --all-features` on real",
@@ -741,30 +779,32 @@ fn each_feature_all() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on member1 (1/24)
-             running `cargo check --no-default-features` on member1 (2/24)
-             running `cargo check --no-default-features --features a` on member1 (3/24)
-             running `cargo check --no-default-features --features b` on member1 (4/24)
-             running `cargo check --no-default-features --features c` on member1 (5/24)
-             running `cargo check --no-default-features --all-features` on member1 (6/24)
-             running `cargo check` on member2 (7/24)
-             running `cargo check --no-default-features` on member2 (8/24)
-             running `cargo check --no-default-features --features a` on member2 (9/24)
-             running `cargo check --no-default-features --features b` on member2 (10/24)
-             running `cargo check --no-default-features --features c` on member2 (11/24)
-             running `cargo check --no-default-features --all-features` on member2 (12/24)
-             running `cargo check` on member3 (13/24)
-             running `cargo check --no-default-features` on member3 (14/24)
-             running `cargo check --no-default-features --features a` on member3 (15/24)
-             running `cargo check --no-default-features --features b` on member3 (16/24)
-             running `cargo check --no-default-features --features c` on member3 (17/24)
-             running `cargo check --no-default-features --all-features` on member3 (18/24)
-             running `cargo check` on real (19/24)
-             running `cargo check --no-default-features` on real (20/24)
-             running `cargo check --no-default-features --features a` on real (21/24)
-             running `cargo check --no-default-features --features b` on real (22/24)
-             running `cargo check --no-default-features --features c` on real (23/24)
-             running `cargo check --no-default-features --all-features` on real (24/24)",
+            "
+            running `cargo check --no-default-features` on member1 (1/24)
+            running `cargo check --no-default-features --features a` on member1 (2/24)
+            running `cargo check --no-default-features --features b` on member1 (3/24)
+            running `cargo check --no-default-features --features c` on member1 (4/24)
+            running `cargo check --no-default-features --features default` on member1 (5/24)
+            running `cargo check --no-default-features --all-features` on member1 (6/24)
+            running `cargo check --no-default-features` on member2 (7/24)
+            running `cargo check --no-default-features --features a` on member2 (8/24)
+            running `cargo check --no-default-features --features b` on member2 (9/24)
+            running `cargo check --no-default-features --features c` on member2 (10/24)
+            running `cargo check --no-default-features --features default` on member2 (11/24)
+            running `cargo check --no-default-features --all-features` on member2 (12/24)
+            running `cargo check --no-default-features` on member3 (13/24)
+            running `cargo check --no-default-features --features a` on member3 (14/24)
+            running `cargo check --no-default-features --features b` on member3 (15/24)
+            running `cargo check --no-default-features --features c` on member3 (16/24)
+            running `cargo check --no-default-features --features default` on member3 (17/24)
+            running `cargo check --no-default-features --all-features` on member3 (18/24)
+            running `cargo check --no-default-features` on real (19/24)
+            running `cargo check --no-default-features --features a` on real (20/24)
+            running `cargo check --no-default-features --features b` on real (21/24)
+            running `cargo check --no-default-features --features c` on real (22/24)
+            running `cargo check --no-default-features --features default` on real (23/24)
+            running `cargo check --no-default-features --all-features` on real (24/24)
+            ",
         );
 }
 
@@ -774,29 +814,30 @@ fn include_deps_features() {
     cargo_hack(&["check", "--each-feature", "--include-deps-features"])
         .test_dir("tests")
         .assert_success()
-        .assert_stderr_contains("
-            running `cargo check` on cargo-hack (1/21)
-            running `cargo check --no-default-features` on cargo-hack (2/21)
-            running `cargo check --no-default-features --features anyhow/default` on cargo-hack (3/21)
-            running `cargo check --no-default-features --features anyhow/std` on cargo-hack (4/21)
-            running `cargo check --no-default-features --features ctrlc/termination` on cargo-hack (5/21)
-            running `cargo check --no-default-features --features serde_json/alloc` on cargo-hack (6/21)
-            running `cargo check --no-default-features --features serde_json/arbitrary_precision` on cargo-hack (7/21)
-            running `cargo check --no-default-features --features serde_json/default` on cargo-hack (8/21)
-            running `cargo check --no-default-features --features serde_json/float_roundtrip` on cargo-hack (9/21)
-            running `cargo check --no-default-features --features serde_json/preserve_order` on cargo-hack (10/21)
-            running `cargo check --no-default-features --features serde_json/raw_value` on cargo-hack (11/21)
-            running `cargo check --no-default-features --features serde_json/std` on cargo-hack (12/21)
-            running `cargo check --no-default-features --features serde_json/unbounded_depth` on cargo-hack (13/21)
-            running `cargo check --no-default-features --features term_size/debug` on cargo-hack (14/21)
-            running `cargo check --no-default-features --features term_size/default` on cargo-hack (15/21)
-            running `cargo check --no-default-features --features term_size/nightly` on cargo-hack (16/21)
-            running `cargo check --no-default-features --features term_size/travis` on cargo-hack (17/21)
-            running `cargo check --no-default-features --features term_size/unstable` on cargo-hack (18/21)
-            running `cargo check --no-default-features --features toml/default` on cargo-hack (19/21)
-            running `cargo check --no-default-features --features toml/preserve_order` on cargo-hack (20/21)
-            running `cargo check --no-default-features --all-features` on cargo-hack (21/21)
-        ");
+        .assert_stderr_contains(
+            "
+            running `cargo check --no-default-features` on cargo-hack (1/20)
+            running `cargo check --no-default-features --features anyhow/default` on cargo-hack (2/20)
+            running `cargo check --no-default-features --features anyhow/std` on cargo-hack (3/20)
+            running `cargo check --no-default-features --features ctrlc/termination` on cargo-hack (4/20)
+            running `cargo check --no-default-features --features serde_json/alloc` on cargo-hack (5/20)
+            running `cargo check --no-default-features --features serde_json/arbitrary_precision` on cargo-hack (6/20)
+            running `cargo check --no-default-features --features serde_json/default` on cargo-hack (7/20)
+            running `cargo check --no-default-features --features serde_json/float_roundtrip` on cargo-hack (8/20)
+            running `cargo check --no-default-features --features serde_json/preserve_order` on cargo-hack (9/20)
+            running `cargo check --no-default-features --features serde_json/raw_value` on cargo-hack (10/20)
+            running `cargo check --no-default-features --features serde_json/std` on cargo-hack (11/20)
+            running `cargo check --no-default-features --features serde_json/unbounded_depth` on cargo-hack (12/20)
+            running `cargo check --no-default-features --features term_size/debug` on cargo-hack (13/20)
+            running `cargo check --no-default-features --features term_size/default` on cargo-hack (14/20)
+            running `cargo check --no-default-features --features term_size/nightly` on cargo-hack (15/20)
+            running `cargo check --no-default-features --features term_size/travis` on cargo-hack (16/20)
+            running `cargo check --no-default-features --features term_size/unstable` on cargo-hack (17/20)
+            running `cargo check --no-default-features --features toml/default` on cargo-hack (18/20)
+            running `cargo check --no-default-features --features toml/preserve_order` on cargo-hack (19/20)
+            running `cargo check --no-default-features --all-features` on cargo-hack (20/20)
+            ",
+        );
 }
 
 #[rustversion::attr(not(before(1.41)), ignore)]
@@ -902,21 +943,23 @@ fn optional_deps() {
         .test_dir("tests/fixtures/optional_deps")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on optional_deps (1/5)
-             running `cargo check --no-default-features` on optional_deps (2/5)
-             running `cargo check --no-default-features --features real` on optional_deps (3/5)
-             running `cargo check --no-default-features --features renemed` on optional_deps (4/5)
-             running `cargo check --no-default-features --all-features` on optional_deps (5/5)",
+            "
+            running `cargo check --no-default-features` on optional_deps (1/4)
+            running `cargo check --no-default-features --features real` on optional_deps (2/4)
+            running `cargo check --no-default-features --features renemed` on optional_deps (3/4)
+            running `cargo check --no-default-features --all-features` on optional_deps (4/4)
+            ",
         );
 
     cargo_hack(&["check", "--each-feature", "--optional-deps", "real"])
         .test_dir("tests/fixtures/optional_deps")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on optional_deps (1/4)
-             running `cargo check --no-default-features` on optional_deps (2/4)
-             running `cargo check --no-default-features --features real` on optional_deps (3/4)
-             running `cargo check --no-default-features --all-features` on optional_deps (4/4)",
+            "
+            running `cargo check --no-default-features` on optional_deps (1/3)
+            running `cargo check --no-default-features --features real` on optional_deps (2/3)
+            running `cargo check --no-default-features --all-features` on optional_deps (3/3)
+            ",
         )
         .assert_stderr_not_contains("--features renemed");
 
@@ -924,10 +967,11 @@ fn optional_deps() {
         .test_dir("tests/fixtures/optional_deps")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on optional_deps (1/4)
-             running `cargo check --no-default-features` on optional_deps (2/4)
-             running `cargo check --no-default-features --features renemed` on optional_deps (3/4)
-             running `cargo check --no-default-features --all-features` on optional_deps (4/4)",
+            "
+            running `cargo check --no-default-features` on optional_deps (1/3)
+            running `cargo check --no-default-features --features renemed` on optional_deps (2/3)
+            running `cargo check --no-default-features --all-features` on optional_deps (3/3)
+            ",
         )
         .assert_stderr_not_contains("--features real");
 
@@ -953,10 +997,11 @@ fn skip_optional_deps() {
         .test_dir("tests/fixtures/optional_deps")
         .assert_success()
         .assert_stderr_contains(
-            "running `cargo check` on optional_deps (1/4)
-             running `cargo check --no-default-features` on optional_deps (2/4)
-             running `cargo check --no-default-features --features renemed` on optional_deps (3/4)
-             running `cargo check --no-default-features --all-features` on optional_deps (4/4)",
+            "
+            running `cargo check --no-default-features` on optional_deps (1/3)
+            running `cargo check --no-default-features --features renemed` on optional_deps (2/3)
+            running `cargo check --no-default-features --all-features` on optional_deps (3/3)
+            ",
         )
         .assert_stderr_not_contains("--features real");
 }
@@ -1051,4 +1096,31 @@ fn propagate() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .assert_stderr_not_contains("--verbose");
+}
+
+#[test]
+fn default_feature_behavior() {
+    cargo_hack(&["run"])
+        .test_dir("tests/fixtures/default_feature_behavior/has_default")
+        .assert_success()
+        .assert_stdout_contains("has default feature!")
+        .assert_stdout_not_contains("no default feature!");
+
+    cargo_hack(&["run", "--no-default-features"])
+        .test_dir("tests/fixtures/default_feature_behavior/has_default")
+        .assert_success()
+        .assert_stdout_contains("no default feature!")
+        .assert_stdout_not_contains("has default feature!");
+
+    cargo_hack(&["run"])
+        .test_dir("tests/fixtures/default_feature_behavior/no_default")
+        .assert_success()
+        .assert_stdout_contains("no default feature!")
+        .assert_stdout_not_contains("has default feature!");
+
+    cargo_hack(&["run", "--no-default-features"])
+        .test_dir("tests/fixtures/default_feature_behavior/no_default")
+        .assert_success()
+        .assert_stdout_contains("no default feature!")
+        .assert_stdout_not_contains("has default feature!");
 }
