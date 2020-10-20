@@ -244,7 +244,7 @@ fn exec_on_package(
 
     if cx.no_dev_deps || cx.remove_dev_deps {
         let new = cx.manifests(id).remove_dev_deps();
-        let handle = restore.set_manifest(cx, id);
+        let mut handle = restore.set_manifest(cx, id);
 
         fs::write(&package.manifest_path, new).with_context(|| {
             format!("failed to update manifest file: {}", package.manifest_path.display())
