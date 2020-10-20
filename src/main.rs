@@ -97,7 +97,7 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
             .features
             .iter()
             .map(String::as_str)
-            .filter(|f| *f != "default" && !cx.exclude_features.contains(f))
+            .filter(|f| !cx.exclude_features.contains(f))
             .map(Cow::Borrowed)
             .collect();
 
@@ -157,7 +157,6 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
             Kind::Nomal
         } else {
             progress.total += features.len()
-                + cx.include_default_feature() as usize
                 + !cx.exclude_no_default_features as usize
                 + !cx.exclude_all_features as usize;
             Kind::Each { features }
@@ -171,7 +170,6 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
         } else {
             // -1: the first element of a powerset is `[]`
             progress.total += features.len() - 1
-                + cx.include_default_feature() as usize
                 + !cx.exclude_no_default_features as usize
                 + !cx.exclude_all_features as usize;
             Kind::Powerset { features }
@@ -279,20 +277,17 @@ fn exec_actual(
 
     let mut line = line.clone();
 
-    if cx.include_default_feature() {
-        // run with default features
-        exec_cargo(cx, id, &mut line, progress)?;
-    }
-
     if !cx.no_default_features {
         line.arg("--no-default-features");
     }
 
+    // if `metadata.packages[].features` has `default` feature, users can
+    // specify `--features=default`, so it should be one of the combinations.
+    // Otherwise, "run with default features" is basically the same as
+    // "run with no default features".
+
     if !cx.exclude_no_default_features {
         // run with no default features if the package has other features
-        //
-        // `default` is not skipped because `cfg(feature = "default")` is work
-        // if `default` feature specified.
         exec_cargo(cx, id, &mut line, progress)?;
     }
 
