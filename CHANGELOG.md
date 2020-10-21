@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.4.0] - 2020-10-21
+
 * [Remove `--ignore-non-exist-features` flag.][62] Use `--ignore-unknown-features` flag instead.
 
 * [Treat `--all-features` flag as one of feature combinations.][61] See [#42][42] for details.
@@ -19,11 +21,15 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 * [Add `--include-features` option.][66] See [#66][66] for details.
 
-* [Add --include-deps-features option.][70] See [#29][29] for details.
+* [Add `--include-deps-features` option.][70] See [#29][29] for details.
 
 * [Fix an issue where using `--features` with `--each-feature` or `--feature-powerset` together would result in the same feature combination being performed multiple times.][64]
 
+* [Fix handling of default features.][77]
+
 * [Improve performance by avoiding reading and parsing Cargo manifest.][73]
+
+* Diagnostic improvements.
 
 [29]: https://github.com/taiki-e/cargo-hack/pull/29
 [42]: https://github.com/taiki-e/cargo-hack/pull/42
@@ -35,6 +41,7 @@ This project adheres to [Semantic Versioning](https://semver.org).
 [66]: https://github.com/taiki-e/cargo-hack/pull/66
 [70]: https://github.com/taiki-e/cargo-hack/pull/70
 [73]: https://github.com/taiki-e/cargo-hack/pull/73
+[77]: https://github.com/taiki-e/cargo-hack/pull/77
 
 ## [0.3.14] - 2020-10-10
 
@@ -164,7 +171,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.3.14...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/taiki-e/cargo-hack/compare/v0.3.14...v0.4.0
 [0.3.14]: https://github.com/taiki-e/cargo-hack/compare/v0.3.13...v0.3.14
 [0.3.13]: https://github.com/taiki-e/cargo-hack/compare/v0.3.12...v0.3.13
 [0.3.12]: https://github.com/taiki-e/cargo-hack/compare/v0.3.11...v0.3.12
