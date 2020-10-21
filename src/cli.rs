@@ -434,7 +434,13 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &OsStr, version: u32) -> R
                 "--no-dev-deps" => parse_flag!(no_dev_deps),
                 "--remove-dev-deps" => parse_flag!(remove_dev_deps),
                 "--each-feature" => parse_flag!(each_feature),
+                "--each-features" => {
+                    return Err(similar_arg(arg, subcommand, "--each-feature", None));
+                }
                 "--feature-powerset" => parse_flag!(feature_powerset),
+                "--features-powerset" => {
+                    return Err(similar_arg(arg, subcommand, "--feature-powerset", None));
+                }
                 "--ignore-private" => parse_flag!(ignore_private),
                 "--exclude-no-default-features" => {
                     if exclude_no_default_features || skip_no_default_features {
@@ -673,6 +679,24 @@ For more information try --help
 ",
         arg,
         subcommand.map_or_else(String::new, |subcommand| String::from(" ") + subcommand)
+    )
+}
+
+fn similar_arg(arg: &str, subcommand: Option<&str>, expected: &str, value: Option<&str>) -> Error {
+    format_err!(
+        "\
+Found argument '{0}' which wasn't expected, or isn't valid in this context
+        Did you mean {2}?
+
+USAGE:
+    cargo{1} {2} {3}
+
+For more information try --help
+",
+        arg,
+        subcommand.map_or_else(String::new, |subcommand| String::from(" ") + subcommand),
+        expected,
+        value.unwrap_or_default()
     )
 }
 
