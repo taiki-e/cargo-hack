@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.4.1] - 2020-10-24
+
 * [Add `--group-features` option.][82]
 
 [82]: https://github.com/taiki-e/cargo-hack/pull/82
@@ -175,7 +177,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/taiki-e/cargo-hack/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/taiki-e/cargo-hack/compare/v0.3.14...v0.4.0
 [0.3.14]: https://github.com/taiki-e/cargo-hack/compare/v0.3.13...v0.3.14
 [0.3.13]: https://github.com/taiki-e/cargo-hack/compare/v0.3.12...v0.3.13
