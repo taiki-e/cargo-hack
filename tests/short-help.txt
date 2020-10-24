@@ -21,6 +21,7 @@ OPTIONS:
         --exclude-no-default-features    Exclude run of just --no-default-features flag
         --exclude-all-features           Exclude run of just --all-features flag
         --depth <NUM>                    Specify a max number of simultaneous feature flags of --feature-powerset
+        --group-features <FEATURES>...   Space-separated list of features to group
         --include-features <FEATURES>... Include only the specified features in the feature combinations instead of package features
         --no-dev-deps                    Perform without dev-dependencies
         --remove-dev-deps                Equivalent to --no-dev-deps flag except for does not restore the original `Cargo.toml` after performed

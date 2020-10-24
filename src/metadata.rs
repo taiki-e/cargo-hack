@@ -248,6 +248,14 @@ impl Package {
             Cow::Borrowed(&self.name)
         }
     }
+
+    pub(crate) fn features(&self) -> impl Iterator<Item = &str> {
+        self.features.iter().map(String::as_str)
+    }
+
+    pub(crate) fn optional_deps(&self) -> impl Iterator<Item = &str> {
+        self.dependencies.iter().filter_map(Dependency::as_feature)
+    }
 }
 
 /// A dependency of the main crate

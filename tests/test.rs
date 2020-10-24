@@ -336,8 +336,43 @@ fn ignore_unknown_features_failure() {
         .test_dir("tests/fixtures/virtual")
         .assert_failure()
         .assert_stderr_contains(
-            "--ignore-unknown-features can only be used together with either --features or --include-features",
+            "
+            --ignore-unknown-features can only be used together with --features, --include-features, \
+            or --group-features
+            ",
         );
+
+    cargo_hack([
+        "check",
+        "--ignore-unknown-features",
+        "--feature-powerset",
+        "--include-features",
+        "a",
+    ])
+    .test_dir("tests/fixtures/real")
+    .assert_success()
+    .assert_stderr_contains(
+        "
+        --ignore-unknown-features for --include-features is not fully implemented and may not \
+        work as intended
+        ",
+    );
+
+    cargo_hack([
+        "check",
+        "--ignore-unknown-features",
+        "--feature-powerset",
+        "--group-features",
+        "a,b",
+    ])
+    .test_dir("tests/fixtures/real")
+    .assert_success()
+    .assert_stderr_contains(
+        "
+        --ignore-unknown-features for --group-features is not fully implemented and may not \
+        work as intended
+        ",
+    );
 }
 
 #[test]
@@ -449,6 +484,102 @@ fn depth_failure() {
         .test_dir("tests/fixtures/real")
         .assert_failure()
         .assert_stderr_contains("--depth can only be used together with --feature-powerset");
+}
+
+#[test]
+fn powerset_group_features() {
+    cargo_hack(["check", "--feature-powerset", "--group-features", "a,b"])
+        .test_dir("tests/fixtures/real")
+        .assert_success()
+        .assert_stderr_contains(
+            "
+            running `cargo check --no-default-features` on real (1/9)
+            running `cargo check --no-default-features --features c` on real (2/9)
+            running `cargo check --no-default-features --features default` on real (3/9)
+            running `cargo check --no-default-features --features c,default` on real (4/9)
+            running `cargo check --no-default-features --features a,b` on real (5/9)
+            running `cargo check --no-default-features --features c,a,b` on real (6/9)
+            running `cargo check --no-default-features --features default,a,b` on real (7/9)
+            running `cargo check --no-default-features --features c,default,a,b` on real (8/9)
+            running `cargo check --no-default-features --all-features` on real (9/9)
+            ",
+        )
+        .assert_stderr_not_contains(
+            "
+            --features a`
+            --features b`
+            ",
+        );
+
+    cargo_hack(["check", "--feature-powerset", "--group-features", "a,b,c"])
+        .test_dir("tests/fixtures/real")
+        .assert_success()
+        .assert_stderr_contains(
+            "
+            running `cargo check --no-default-features` on real (1/5)
+            running `cargo check --no-default-features --features default` on real (2/5)
+            running `cargo check --no-default-features --features a,b,c` on real (3/5)
+            running `cargo check --no-default-features --features default,a,b,c` on real (4/5)
+            running `cargo check --no-default-features --all-features` on real (5/5)
+            ",
+        )
+        .assert_stderr_not_contains(
+            "
+            --features a`
+            --features b`
+            --features c`
+            ",
+        );
+
+    // overlapping
+    // TODO: Maybe we should warn this, but allow it for now.
+    cargo_hack([
+        "check",
+        "--feature-powerset",
+        "--group-features",
+        "a,b",
+        "--group-features",
+        "a,c",
+    ])
+    .test_dir("tests/fixtures/real")
+    .assert_success()
+    .assert_stderr_contains(
+        "
+        running `cargo check --no-default-features` on real (1/9)
+        running `cargo check --no-default-features --features default` on real (2/9)
+        running `cargo check --no-default-features --features a,b` on real (3/9)
+        running `cargo check --no-default-features --features default,a,b` on real (4/9)
+        running `cargo check --no-default-features --features a,c` on real (5/9)
+        running `cargo check --no-default-features --features default,a,c` on real (6/9)
+        running `cargo check --no-default-features --features a,b,a,c` on real (7/9)
+        running `cargo check --no-default-features --features default,a,b,a,c` on real (8/9)
+        running `cargo check --no-default-features --all-features` on real (9/9)
+        ",
+    )
+    .assert_stderr_not_contains(
+        "
+        --features a`
+        --features b`
+        --features c`
+        ",
+    );
+}
+
+#[test]
+fn group_features_failure() {
+    cargo_hack(["check", "--each-feature", "--group-features", "a,b"])
+        .test_dir("tests/fixtures/real")
+        .assert_failure()
+        .assert_stderr_contains(
+            "--group-features can only be used together with --feature-powerset",
+        );
+
+    cargo_hack(["check", "--feature-powerset", "--group-features", "a"])
+        .test_dir("tests/fixtures/real")
+        .assert_failure()
+        .assert_stderr_contains(
+            "--group-features requires a list of two or more features separated by space or comma",
+        );
 }
 
 #[test]
