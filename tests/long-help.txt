@@ -75,6 +75,13 @@ OPTIONS:
 
             This flag can only be used together with --feature-powerset flag.
 
+        --group-features <FEATURES>...
+            Space-separated list of features to group.
+
+            To specify multiple groups, use this option multiple times: `--group-features a,b --group-features c,d`
+
+            This flag can only be used together with --feature-powerset flag.
+
         --include-features <FEATURES>...
             Include only the specified features in the feature combinations instead of package features.
 

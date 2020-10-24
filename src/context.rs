@@ -87,6 +87,28 @@ impl<'a> Context<'a> {
         }
         command
     }
+
+    pub(crate) fn deps_features(&self, id: &PackageId) -> Vec<String> {
+        let node = self.nodes(id);
+        let package = self.packages(id);
+        let mut features = Vec::new();
+        // TODO: Unpublished dependencies are not included in `node.deps`.
+        for dep in node.deps.iter().filter(|dep| {
+            // ignore if `dep_kinds` is empty (i.e., not Rust 1.41+), target specific or not a normal dependency.
+            dep.dep_kinds.iter().any(|kind| kind.kind.is_none() && kind.target.is_none())
+        }) {
+            let dep_package = self.packages(&dep.pkg);
+            // TODO: `dep.name` (`resolve.nodes[].deps[].name`) is a valid rust identifier, not a valid feature flag.
+            // And `packages[].dependencies` doesn't have package identifier,
+            // so I'm not sure if there is a way to find the actual feature name exactly.
+            if let Some(d) = package.dependencies.iter().find(|d| d.name == dep_package.name) {
+                let name = d.rename.as_ref().unwrap_or(&d.name);
+                features.extend(dep_package.features().map(|f| format!("{}/{}", name, f)));
+            }
+            // TODO: Optional deps of `dep_package`.
+        }
+        features
+    }
 }
 
 impl<'a> Deref for Context<'a> {

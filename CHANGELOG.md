@@ -6,6 +6,10 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+* [Add `--group-features` option.][82]
+
+[82]: https://github.com/taiki-e/cargo-hack/pull/82
+
 ## [0.4.0] - 2020-10-21
 
 * [Remove `--ignore-non-exist-features` flag.][62] Use `--ignore-unknown-features` flag instead.

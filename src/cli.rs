@@ -49,6 +49,10 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
             "This flag can only be used together with --feature-powerset flag.",
         ],
     ),
+    ("", "--group-features <FEATURES>...", "Space-separated list of features to group", &[
+        "To specify multiple groups, use this option multiple times: `--group-features a,b --group-features c,d`",
+        "This flag can only be used together with --feature-powerset flag.",
+    ]),
     (
         "",
         "--include-features <FEATURES>...",
@@ -202,21 +206,16 @@ pub(crate) struct Args<'a> {
     pub(crate) ignore_private: bool,
     /// --ignore-unknown-features
     pub(crate) ignore_unknown_features: bool,
-    /// --optional-deps [DEPS]...
-    pub(crate) optional_deps: Option<Vec<&'a str>>,
     /// --clean-per-run
     pub(crate) clean_per_run: bool,
-    /// --depth <NUM>
-    pub(crate) depth: Option<usize>,
+
+    // options for --each-feature and --feature-powerset
+    /// --optional-deps [DEPS]...
+    pub(crate) optional_deps: Option<Vec<&'a str>>,
     /// --include-features
     pub(crate) include_features: Vec<&'a str>,
     /// --include-deps-features
     pub(crate) include_deps_features: bool,
-
-    /// --no-default-features
-    pub(crate) no_default_features: bool,
-    /// -v, --verbose, -vv
-    pub(crate) verbose: bool,
 
     // Note: These values are not always exactly the same as the input.
     // Error messages should not assume that these options have been specified.
@@ -227,7 +226,18 @@ pub(crate) struct Args<'a> {
     /// --exclude-all-features
     pub(crate) exclude_all_features: bool,
 
-    // flags that will be propagated to cargo
+    // options for --feature-powerset
+    /// --depth <NUM>
+    pub(crate) depth: Option<usize>,
+    /// --group-features <FEATURES>...
+    pub(crate) group_features: Vec<Vec<&'a str>>,
+
+    /// --no-default-features
+    pub(crate) no_default_features: bool,
+    /// -v, --verbose, -vv
+    pub(crate) verbose: bool,
+
+    // options that will be propagated to cargo
     /// --features <FEATURES>...
     pub(crate) features: Vec<&'a str>,
 }
@@ -267,8 +277,6 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &OsStr, version: u32) -> R
     let mut package = Vec::new();
     let mut exclude = Vec::new();
     let mut features = Vec::new();
-    let mut optional_deps = None;
-    let mut include_features = Vec::new();
 
     let mut workspace = None;
     let mut no_dev_deps = false;
@@ -278,13 +286,18 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &OsStr, version: u32) -> R
     let mut ignore_private = false;
     let mut ignore_unknown_features = false;
     let mut clean_per_run = false;
-    let mut depth = None;
+
+    let mut optional_deps = None;
+    let mut include_features = Vec::new();
     let mut include_deps_features = false;
 
     let mut exclude_features = Vec::new();
     let mut exclude_no_default_features = false;
     let mut exclude_all_features = false;
     let mut skip_no_default_features = false;
+
+    let mut group_features = Vec::new();
+    let mut depth = None;
 
     let mut verbose = false;
     let mut no_default_features = false;
@@ -310,7 +323,7 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &OsStr, version: u32) -> R
             }
 
             macro_rules! parse_opt {
-                ($opt:ident, $propagate:expr, $pat:expr, $help:expr) => {
+                ($opt:ident, $propagate:expr, $pat:expr, $help:expr $(,)?) => {
                     if arg == $pat {
                         if $opt.is_some() {
                             return Err(multi_arg($help, subcommand));
@@ -338,7 +351,7 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &OsStr, version: u32) -> R
             }
 
             macro_rules! parse_multi_opt {
-                ($v:ident, $allow_split:expr, $require_value:expr, $pat:expr, $help:expr) => {
+                ($v:ident, $allow_split:expr, $require_value:expr, $pat:expr, $help:expr $(,)?) => {
                     if arg == $pat {
                         if !$require_value && args.peek().map_or(true, |s| s.starts_with('-')) {
                             continue;
@@ -400,14 +413,21 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &OsStr, version: u32) -> R
                 true,
                 true,
                 "--exclude-features",
-                "--exclude-features <FEATURES>..."
+                "--exclude-features <FEATURES>...",
             );
             parse_multi_opt!(
                 include_features,
                 true,
                 true,
                 "--include-features",
-                "--include-features <FEATURES>..."
+                "--include-features <FEATURES>...",
+            );
+            parse_multi_opt!(
+                group_features,
+                false,
+                true,
+                "--group-features",
+                "--group-features <FEATURES>...",
             );
 
             if arg.starts_with("--optional-deps") {
@@ -499,10 +519,24 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &OsStr, version: u32) -> R
         // in the root of a virtual workspace as well?
         bail!("--exclude can only be used together with --workspace");
     }
-    if ignore_unknown_features && features.is_empty() && include_features.is_empty() {
-        bail!(
-            "--ignore-unknown-features can only be used together with either --features or --include-features"
-        );
+    if ignore_unknown_features {
+        if features.is_empty() && include_features.is_empty() && group_features.is_empty() {
+            bail!(
+                "--ignore-unknown-features can only be used together with --features, --include-features, or --group-features"
+            );
+        }
+        if !include_features.is_empty() {
+            // TODO
+            warn!(
+                "--ignore-unknown-features for --include-features is not fully implemented and may not work as intended"
+            )
+        }
+        if !group_features.is_empty() {
+            // TODO
+            warn!(
+                "--ignore-unknown-features for --group-features is not fully implemented and may not work as intended"
+            )
+        }
     }
     if !each_feature && !feature_powerset {
         if optional_deps.is_some() {
@@ -531,10 +565,25 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &OsStr, version: u32) -> R
             );
         }
     }
-    if depth.is_some() && !feature_powerset {
-        bail!("--depth can only be used together with --feature-powerset");
+    if !feature_powerset {
+        if depth.is_some() {
+            bail!("--depth can only be used together with --feature-powerset");
+        } else if !group_features.is_empty() {
+            bail!("--group-features can only be used together with --feature-powerset");
+        }
     }
     let depth = depth.map(str::parse::<usize>).transpose()?;
+    let group_features =
+        group_features.iter().try_fold(Vec::with_capacity(group_features.len()), |mut v, g| {
+            if g.contains(',') {
+                v.push(g.split(',').collect::<Vec<_>>());
+            } else if g.contains(' ') {
+                v.push(g.split(' ').collect());
+            } else {
+                bail!("--group-features requires a list of two or more features separated by space or comma");
+            }
+            Ok(v)
+        })?;
 
     if let Some(subcommand) = subcommand {
         if subcommand == "test" || subcommand == "bench" {
@@ -637,9 +686,11 @@ For more information try --help
         ignore_unknown_features,
         optional_deps,
         clean_per_run,
-        depth,
         include_features,
         include_deps_features,
+
+        depth,
+        group_features,
 
         no_default_features,
         verbose,

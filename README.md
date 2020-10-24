@@ -108,6 +108,12 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
 
   If the number is set to 1, `--feature-powerset` is equivalent to `--each-feature`.
 
+* **`--group-features`**
+
+  Space-separated list of features to group.
+
+  To specify multiple groups, use this option multiple times: `--group-features a,b --group-features c,d`
+
 `cargo-hack` changes the behavior of the following existing flags.
 
 * **`--features`**, **`--no-default-features`**
