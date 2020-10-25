@@ -1,11 +1,14 @@
 #![forbid(unsafe_code)]
 #![warn(future_incompatible, rust_2018_idioms, single_use_lifetimes, unreachable_pub)]
 #![warn(clippy::all, clippy::default_trait_access)]
-// mem::take and #[non_exhaustive] requires Rust 1.40, matches! requires Rust 1.42
+// mem::take, #[non_exhaustive], and Option::{as_deref, as_deref_mut} require Rust 1.40,
+// matches! requires Rust 1.42, str::{strip_prefix, strip_suffix} requires Rust 1.45
 #![allow(
     clippy::mem_replace_with_default,
     clippy::manual_non_exhaustive,
-    clippy::match_like_matches_macro
+    clippy::option_as_ref_deref,
+    clippy::match_like_matches_macro,
+    clippy::manual_strip
 )]
 
 #[macro_use]
