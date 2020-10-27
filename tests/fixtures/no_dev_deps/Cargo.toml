@@ -13,14 +13,12 @@ members = [
     ".",
 ]
 
-[dependencies]
-
-[dev-dependencies]
-
-[target.'cfg(unix)'.dev-dependencies]
-
 [features]
 default = []
 a = []
 b = []
 c = []
+
+[dependencies]
+
+[dev-dependencies]

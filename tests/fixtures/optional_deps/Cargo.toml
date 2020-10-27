@@ -7,9 +7,9 @@ publish = false
 
 [workspace]
 
+[features]
+
 [dependencies]
 real = { path = "../real", optional = true }
 member2 = { path = "../real/member2" }
 renemed = { path = "../real/member3", package = "member3", optional = true }
-
-[features]
