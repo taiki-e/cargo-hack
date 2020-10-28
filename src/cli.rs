@@ -755,23 +755,26 @@ For more information try --help
 mod tests {
     use super::Help;
     use crate::Result;
-    use std::{env, fs, path::Path};
+    use std::{env, fs, path::Path, process::Command};
 
     fn assert_eq(expected_path: &str, actual: &str) {
         (|| -> Result<()> {
             let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-            let expected_path = manifest_dir.join(expected_path);
-            let expected = fs::read_to_string(&expected_path)?;
+            let expected_path = &manifest_dir.join(expected_path);
+            let expected = fs::read_to_string(expected_path)?;
             if expected != actual {
                 if env::var_os("CI").map_or(false, |v| v == "true") {
-                    panic!(
-                        "assertion failed:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
-                        "-".repeat(60),
-                        expected,
-                        actual,
-                    );
+                    let actual_path =
+                        &manifest_dir.join("target").join(expected_path.file_name().unwrap());
+                    fs::write(actual_path, actual)?;
+                    let status = Command::new("git")
+                        .args(&["--no-pager", "diff", "--no-index", "--"])
+                        .args(&[expected_path, actual_path])
+                        .status()?;
+                    assert!(!status.success());
+                    panic!("assertion failed");
                 } else {
-                    fs::write(&expected_path, actual)?;
+                    fs::write(expected_path, actual)?;
                 }
             }
             Ok(())
