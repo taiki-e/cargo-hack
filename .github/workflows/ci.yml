@@ -19,7 +19,6 @@ defaults:
 
 jobs:
   test:
-    name: test
     strategy:
       matrix:
         rust:
@@ -49,7 +48,6 @@ jobs:
         run: bash scripts/check-minimal-versions.sh
 
   run:
-    name: run
     strategy:
       matrix:
         rust:
@@ -67,7 +65,6 @@ jobs:
       - run: git diff --exit-code
 
   clippy:
-    name: clippy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -76,7 +73,6 @@ jobs:
       - run: cargo clippy --all --all-features --all-targets
 
   rustfmt:
-    name: rustfmt
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -85,7 +81,6 @@ jobs:
       - run: cargo fmt --all -- --check
 
   shellcheck:
-    name: shellcheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

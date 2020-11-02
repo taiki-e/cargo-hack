@@ -4,9 +4,6 @@ set -euo pipefail
 
 toolchain="${1:-nightly}"
 
+# --no-self-update is necessary because the windows environment cannot self-update rustup.exe.
 rustup toolchain install "${toolchain}" --no-self-update --profile minimal
 rustup default "${toolchain}"
-
-rustup -V
-rustc -V
-cargo -V
