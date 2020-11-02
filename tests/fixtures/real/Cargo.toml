@@ -19,5 +19,6 @@ b = []
 c = []
 
 [dependencies]
+member1 = { path = "member1", optional = true }
 
 [dev-dependencies]

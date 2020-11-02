@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+* Diagnostic improvements.
+
 ## [0.4.1] - 2020-10-24
 
 * [Add `--group-features` option.][82]

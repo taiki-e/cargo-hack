@@ -16,6 +16,7 @@ mod term;
 
 mod cli;
 mod context;
+mod features;
 mod manifest;
 mod metadata;
 mod process;
@@ -24,7 +25,7 @@ mod restore;
 mod version;
 
 use anyhow::{bail, Context as _};
-use std::{borrow::Cow, fmt::Write, fs};
+use std::{fmt::Write, fs};
 
 use crate::{context::Context, metadata::PackageId, process::ProcessBuilder, restore::Restore};
 
@@ -73,8 +74,8 @@ enum Kind<'a> {
     NoSubcommand,
     SkipAsPrivate,
     Nomal,
-    Each { features: Vec<Cow<'a, str>> },
-    Powerset { features: Vec<Vec<Cow<'a, str>>> },
+    Each { features: Vec<&'a str> },
+    Powerset { features: Vec<Vec<&'a str>> },
 }
 
 fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progress) -> Kind<'a> {
@@ -90,15 +91,24 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
     }
 
     let package = cx.packages(id);
-    let filter = |f: &&_| {
-        !cx.exclude_features.contains(f) && !cx.group_features.iter().any(|g| g.contains(f))
+    let filter = |f: &&str| {
+        !cx.exclude_features.contains(f) && !cx.group_features.iter().any(|(g, _)| g.contains(f))
     };
     let features = if cx.include_features.is_empty() {
-        let mut features: Vec<_> = package.features().filter(filter).map(Cow::Borrowed).collect();
+        let feature_list = cx.pkg_features(id);
+
+        cx.exclude_features.iter().for_each(|d| {
+            if !feature_list.contains(d) {
+                warn!("specified feature `{}` not found in package `{}`", d, package.name);
+            }
+        });
+
+        let mut features: Vec<_> =
+            feature_list.normal().iter().map(String::as_str).filter(filter).collect();
 
         if let Some(opt_deps) = &cx.optional_deps {
             opt_deps.iter().for_each(|&d| {
-                if !package.optional_deps().any(|f| f == d) {
+                if !feature_list.optional_deps().iter().any(|f| f == d) {
                     warn!(
                         "specified optional dependency `{}` not found in package `{}`",
                         d, package.name
@@ -107,26 +117,25 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
             });
 
             features.extend(
-                package
+                feature_list
                     .optional_deps()
-                    .filter(|f| filter(f) && (opt_deps.is_empty() || opt_deps.contains(f)))
-                    .map(Cow::Borrowed),
+                    .iter()
+                    .map(String::as_str)
+                    .filter(|f| filter(f) && (opt_deps.is_empty() || opt_deps.contains(f))),
             );
         }
 
-        let deps_features =
-            if cx.include_deps_features { cx.deps_features(id) } else { Vec::new() };
         if cx.include_deps_features {
-            features.extend(deps_features.into_iter().map(Cow::Owned).filter(|f| filter(&&**f)));
+            features.extend(feature_list.deps_features().iter().map(String::as_str).filter(filter));
         }
 
         if !cx.group_features.is_empty() {
-            features.extend(cx.group_features.iter().map(|g| Cow::Owned(g.join(","))));
+            features.extend(cx.group_features.iter().map(|(_, s)| &**s));
         }
 
         features
     } else {
-        cx.include_features.iter().copied().filter(filter).map(Cow::Borrowed).collect()
+        cx.include_features.iter().copied().filter(filter).collect()
     };
 
     if cx.each_feature {
