@@ -18,4 +18,7 @@ dependencies = [
 [[package]]
 name = "real"
 version = "0.1.0"
+dependencies = [
+ "member1 0.1.0",
+]
 

@@ -230,7 +230,7 @@ pub(crate) struct Args<'a> {
     /// --depth <NUM>
     pub(crate) depth: Option<usize>,
     /// --group-features <FEATURES>...
-    pub(crate) group_features: Vec<Vec<&'a str>>,
+    pub(crate) group_features: Vec<(Vec<&'a str>, String)>,
 
     /// --no-default-features
     pub(crate) no_default_features: bool,
@@ -575,13 +575,18 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &OsStr, version: u32) -> R
     let depth = depth.map(str::parse::<usize>).transpose()?;
     let group_features =
         group_features.iter().try_fold(Vec::with_capacity(group_features.len()), |mut v, g| {
-            if g.contains(',') {
-                v.push(g.split(',').collect::<Vec<_>>());
+            let g: Vec<_> = if g.contains(',') {
+                g.split(',').collect()
             } else if g.contains(' ') {
-                v.push(g.split(' ').collect());
+                g.split(' ').collect()
             } else {
-                bail!("--group-features requires a list of two or more features separated by space or comma");
-            }
+                bail!(
+                    "--group-features requires a list of two or more features separated by space \
+                     or comma"
+                );
+            };
+            let s = g.join(",");
+            v.push((g, s));
             Ok(v)
         })?;
 
@@ -663,6 +668,21 @@ For more information try --help
             "--no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished"
         );
     }
+
+    exclude_features.iter().for_each(|f| {
+        if features.contains(f) {
+            warn!("feature `{}` specified by both --exclude-features and --features", f);
+        }
+        if optional_deps.as_ref().map_or(false, |d| d.contains(f)) {
+            warn!("feature `{}` specified by both --exclude-features and --optional-deps", f);
+        }
+        if group_features.iter().any(|(v, _)| v.contains(f)) {
+            warn!("feature `{}` specified by both --exclude-features and --group-features", f);
+        }
+        if include_features.contains(f) {
+            warn!("feature `{}` specified by both --exclude-features and --include-features", f);
+        }
+    });
 
     exclude_no_default_features |= no_default_features || !include_features.is_empty();
     exclude_all_features |= !include_features.is_empty();

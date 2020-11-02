@@ -611,6 +611,42 @@ fn exclude_features_failure() {
         .assert_stderr_contains(
             "--exclude-features (--skip) can only be used together with either --each-feature or --feature-powerset",
         );
+
+    cargo_hack(["check", "--each-feature", "--exclude-features=a", "--features=a"])
+        .test_dir("tests/fixtures/real")
+        .assert_success() // warn
+        .assert_stderr_contains("feature `a` specified by both --exclude-features and --features");
+
+    cargo_hack([
+        "check",
+        "--each-feature",
+        "--exclude-features=member1",
+        "--optional-deps=member1",
+    ])
+    .test_dir("tests/fixtures/real")
+    .assert_success() // warn
+    .assert_stderr_contains(
+        "feature `member1` specified by both --exclude-features and --optional-deps",
+    );
+
+    cargo_hack(["check", "--feature-powerset", "--exclude-features=a", "--group-features=a,b"])
+        .test_dir("tests/fixtures/real")
+        .assert_success() // warn
+        .assert_stderr_contains(
+            "feature `a` specified by both --exclude-features and --group-features",
+        );
+
+    cargo_hack(["check", "--each-feature", "--exclude-features=a", "--include-features=a,b"])
+        .test_dir("tests/fixtures/real")
+        .assert_success() // warn
+        .assert_stderr_contains(
+            "feature `a` specified by both --exclude-features and --include-features",
+        );
+
+    cargo_hack(["check", "--each-feature", "--exclude-features=z"])
+        .test_dir("tests/fixtures/real")
+        .assert_success() // warn
+        .assert_stderr_contains("specified feature `z` not found in package `real`");
 }
 
 #[test]

@@ -2,10 +2,11 @@ use anyhow::{format_err, Context as _};
 use serde_json::{Map, Value};
 use std::{
     borrow::Cow,
-    collections::{BTreeSet, HashMap},
+    collections::{BTreeMap, HashMap},
     ffi::OsStr,
     fmt,
     path::PathBuf,
+    rc::Rc,
 };
 
 use crate::{cli::Args, Context, ProcessBuilder, Result};
@@ -24,12 +25,12 @@ type ParseResult<T> = Result<T, &'static str>;
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub(crate) struct PackageId {
     /// The underlying string representation of id.
-    repr: String,
+    repr: Rc<str>,
 }
 
 impl PackageId {
     fn new(repr: String) -> Self {
-        Self { repr }
+        Self { repr: repr.into() }
     }
 }
 
@@ -198,7 +199,7 @@ pub(crate) struct Package {
     /// List of dependencies of this particular package
     pub(crate) dependencies: Vec<Dependency>,
     /// Features provided by the crate, mapped to the features required by that feature.
-    pub(crate) features: BTreeSet<String>,
+    pub(crate) features: BTreeMap<String, Vec<String>>,
     /// Path containing the `Cargo.toml`
     pub(crate) manifest_path: PathBuf,
     /// List of registries to which this package may be published.
@@ -220,12 +221,16 @@ impl Package {
                 .into_iter()
                 .map(Dependency::from_value)
                 .collect::<Result<_, _>>()?,
-            // Check if values are array, but don't collect because we don't use them.
             features: map
                 .remove_object("features")?
                 .into_iter()
-                .map(|(k, v)| v.as_array().map(|_| k).ok_or("features"))
-                .collect::<Result<_, _>>()?,
+                .map(|(k, v)| {
+                    into_array(v)
+                        .and_then(|v| v.into_iter().map(into_string).collect::<Option<_>>())
+                        .map(|v| (k, v))
+                })
+                .collect::<Option<_>>()
+                .ok_or("features")?,
             manifest_path: map.remove_string("manifest_path")?.into(),
             // This field was added in Rust 1.39.
             publish: if version >= 39 {
@@ -247,14 +252,6 @@ impl Package {
         } else {
             Cow::Borrowed(&self.name)
         }
-    }
-
-    pub(crate) fn features(&self) -> impl Iterator<Item = &str> {
-        self.features.iter().map(String::as_str)
-    }
-
-    pub(crate) fn optional_deps(&self) -> impl Iterator<Item = &str> {
-        self.dependencies.iter().filter_map(Dependency::as_feature)
     }
 }
 

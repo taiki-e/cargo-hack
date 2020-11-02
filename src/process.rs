@@ -65,15 +65,12 @@ impl<'a> ProcessBuilder<'a> {
 
     pub(crate) fn append_features_from_args(&mut self, cx: &Context<'_>, id: &PackageId) {
         if cx.ignore_unknown_features {
-            let package = cx.packages(id);
             self.append_features(cx.features.iter().filter(|&&f| {
-                if package.features.get(f).is_some()
-                    || package.dependencies.iter().any(|dep| dep.as_feature() == Some(f))
-                {
+                if cx.pkg_features(id).contains(f) {
                     true
                 } else {
                     // ignored
-                    info!("skipped applying unknown `{}` feature to {}", f, package.name);
+                    info!("skipped applying unknown `{}` feature to {}", f, cx.packages(id).name);
                     false
                 }
             }))
