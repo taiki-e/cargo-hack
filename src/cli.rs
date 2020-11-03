@@ -686,6 +686,7 @@ For more information try --help
 
     exclude_no_default_features |= no_default_features || !include_features.is_empty();
     exclude_all_features |= !include_features.is_empty();
+    exclude_all_features |= !exclude_features.is_empty();
     exclude_features.extend_from_slice(&features);
 
     Ok(Args {
