@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.4.2] - 2020-11-03
+
 * `cargo-hack` no longer include `--all-features` in feature combination if one or more features already excluded.
 
 * Diagnostic improvements.
@@ -181,7 +183,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/taiki-e/cargo-hack/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/taiki-e/cargo-hack/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/taiki-e/cargo-hack/compare/v0.3.14...v0.4.0
 [0.3.14]: https://github.com/taiki-e/cargo-hack/compare/v0.3.13...v0.3.14

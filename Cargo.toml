@@ -1,6 +1,6 @@
 [package]
 name = "cargo-hack"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["Taiki Endo <te316e89@gmail.com>"]
 edition = "2018"
 license = "Apache-2.0 OR MIT"
