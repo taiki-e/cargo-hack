@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+* `cargo-hack` no longer include `--all-features` in feature combination if one or more features already excluded.
+
 * Diagnostic improvements.
 
 ## [0.4.1] - 2020-10-24
