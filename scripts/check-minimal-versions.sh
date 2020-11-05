@@ -3,7 +3,7 @@
 # Check all public crates with minimal version dependencies.
 #
 # Usage:
-#    bash scripts/check-minimal-versions.sh [check|test]
+#    bash scripts/check-minimal-versions.sh [+toolchain] [check|test]
 #
 # Note:
 # - This script modifies Cargo.toml and Cargo.lock while running
@@ -17,28 +17,27 @@ set -euo pipefail
 cd "$(cd "$(dirname "${0}")" && pwd)"/..
 
 # Decide Rust toolchain.
-# If the `CI` environment variable is not set to `true`, then nightly is used by default.
-if [[ "${1:-none}" == "+"* ]]; then
+# Nightly is used by default if the `CI` environment variable is not set to `true`.
+if [[ "${1:-}" == "+"* ]]; then
     toolchain="${1}"
     shift
-elif [[ "${CI:-false}" != "true" ]]; then
-    cargo +nightly -V >/dev/null || exit 1
+elif [[ "${CI:-}" != "true" ]]; then
     toolchain="+nightly"
 fi
+# Make sure toolchain is installed.
+cargo ${toolchain:-} -V >/dev/null || exit 1
 # This script requires nightly Rust and cargo-hack
 if [[ "${toolchain:-+nightly}" != "+nightly"* ]] || ! cargo hack -V &>/dev/null; then
     echo "error: check-minimal-versions.sh requires nightly Rust and cargo-hack"
     exit 1
 fi
 
+# Parse subcommand.
 subcmd="${1:-check}"
-case "${subcmd}" in
-    check | test) ;;
-    *)
-        echo "error: invalid argument \`${1}\`"
-        exit 1
-        ;;
-esac
+if [[ ! "${subcmd}" =~ check|test ]]; then
+    echo "error: invalid argument \`${1}\`"
+    exit 1
+fi
 
 # This script modifies Cargo.toml and Cargo.lock, so make sure there are no
 # unstaged changes.
