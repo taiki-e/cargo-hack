@@ -8,7 +8,7 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [0.4.2] - 2020-11-03
 
-* `cargo-hack` no longer include `--all-features` in feature combination if one or more features already excluded.
+* [`cargo-hack` no longer include `--all-features` in feature combination if one or more features already excluded.](https://github.com/taiki-e/cargo-hack/pull/86)
 
 * Diagnostic improvements.
 
