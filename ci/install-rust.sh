@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -euo pipefail
+IFS=$'\n\t'
 
 toolchain="${1:-nightly}"
 

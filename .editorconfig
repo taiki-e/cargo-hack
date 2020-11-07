@@ -16,4 +16,5 @@ indent_size = 4
 indent_size = 2
 
 [*.sh]
+indent_size = 2
 switch_case_indent = true

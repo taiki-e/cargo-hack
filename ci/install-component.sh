@@ -10,6 +10,7 @@
 # Refs: https://github.com/rust-lang/rustup-components-history#the-web-part
 
 set -euo pipefail
+IFS=$'\n\t'
 
 package="${1:?}"
 target="${2:-x86_64-unknown-linux-gnu}"
