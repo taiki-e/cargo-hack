@@ -10,6 +10,7 @@ on:
     - cron: '0 1 * * *'
 
 env:
+  CARGO_INCREMENTAL: 0
   RUSTFLAGS: -Dwarnings
   RUST_BACKTRACE: 1
 
