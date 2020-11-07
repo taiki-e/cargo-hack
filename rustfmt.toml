@@ -24,4 +24,6 @@ format_code_in_doc_comments = true
 # Set the default settings again to always apply the proper formatting without
 # being affected by the editor settings.
 edition = "2018"
+hard_tabs = false
+newline_style = "Unix"
 tab_spaces = 4
