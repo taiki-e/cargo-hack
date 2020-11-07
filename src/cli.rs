@@ -784,7 +784,7 @@ mod tests {
             let expected_path = &manifest_dir.join(expected_path);
             let expected = fs::read_to_string(expected_path)?;
             if expected != actual {
-                if env::var_os("CI").map_or(false, |v| v == "true") {
+                if env::var("CI").is_ok() {
                     let actual_path =
                         &manifest_dir.join("target").join(expected_path.file_name().unwrap());
                     fs::write(actual_path, actual)?;
