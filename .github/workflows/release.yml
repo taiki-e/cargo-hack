@@ -1,0 +1,20 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  create-release:
+    if: github.repository_owner == 'taiki-e'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: ci/create-release.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
