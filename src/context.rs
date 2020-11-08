@@ -1,11 +1,11 @@
-use std::{collections::HashMap, env, ffi::OsString, ops::Deref, path::Path};
+use std::{collections::HashMap, ops::Deref, path::Path};
 
 use crate::{
     cli::{self, Args, RawArgs},
     features::Features,
     manifest::Manifest,
     metadata::{Metadata, Package, PackageId},
-    version, ProcessBuilder, Result,
+    Cargo, ProcessBuilder, Result,
 };
 
 pub(crate) struct Context<'a> {
@@ -13,43 +13,20 @@ pub(crate) struct Context<'a> {
     metadata: Metadata,
     manifests: HashMap<PackageId, Manifest>,
     pkg_features: HashMap<PackageId, Features>,
-    cargo: OsString,
-    cargo_version: u32,
+    cargo: Cargo,
 }
 
 impl<'a> Context<'a> {
     pub(crate) fn new(args: &'a RawArgs) -> Result<Self> {
-        let cargo = cargo_binary();
+        let cargo = Cargo::new();
 
-        // If failed to determine cargo version, assign 0 to skip all version-dependent decisions.
-        let cargo_version = match version::from_path(&cargo) {
-            Ok(version) => version.minor,
-            Err(e) => {
-                warn!("{}", e);
-                0
-            }
-        };
-
-        let args = cli::parse_args(args, &cargo, cargo_version)?;
+        let args = cli::parse_args(args, &cargo)?;
         assert!(
             args.subcommand.is_some() || args.remove_dev_deps,
             "no subcommand or valid flag specified"
         );
-        let metadata = Metadata::new(&args, &cargo, cargo_version)?;
 
-        // Only a few options require information from cargo manifest.
-        // If manifest information is not required, do not read and parse them.
-        let manifests = if args.require_manifest_info(cargo_version) {
-            let mut manifests = HashMap::with_capacity(metadata.workspace_members.len());
-            for id in &metadata.workspace_members {
-                let manifest_path = &metadata.packages[id].manifest_path;
-                let manifest = Manifest::new(manifest_path)?;
-                manifests.insert(id.clone(), manifest);
-            }
-            manifests
-        } else {
-            HashMap::new()
-        };
+        let metadata = Metadata::new(&args, &cargo)?;
 
         let mut pkg_features = HashMap::with_capacity(metadata.workspace_members.len());
         for id in &metadata.workspace_members {
@@ -57,7 +34,20 @@ impl<'a> Context<'a> {
             pkg_features.insert(id.clone(), features);
         }
 
-        Ok(Self { args, metadata, manifests, pkg_features, cargo, cargo_version })
+        let mut this = Self { args, metadata, manifests: HashMap::new(), pkg_features, cargo };
+
+        // Only a few options require information from cargo manifest.
+        // If manifest information is not required, do not read and parse them.
+        if this.require_manifest_info() {
+            this.manifests.reserve(this.metadata.workspace_members.len());
+            for id in &this.metadata.workspace_members {
+                let manifest_path = &this.metadata.packages[id].manifest_path;
+                let manifest = Manifest::new(manifest_path)?;
+                this.manifests.insert(id.clone(), manifest);
+            }
+        }
+
+        Ok(this)
     }
 
     // Accessor methods.
@@ -79,7 +69,7 @@ impl<'a> Context<'a> {
     }
 
     pub(crate) fn manifests(&self, id: &PackageId) -> &Manifest {
-        debug_assert!(self.require_manifest_info(self.cargo_version));
+        debug_assert!(self.require_manifest_info());
         &self.manifests[id]
     }
 
@@ -88,15 +78,20 @@ impl<'a> Context<'a> {
     }
 
     pub(crate) fn is_private(&self, id: &PackageId) -> bool {
-        if self.cargo_version >= 39 {
+        if self.cargo.version >= 39 {
             !self.packages(id).publish
         } else {
             !self.manifests(id).publish
         }
     }
 
+    /// Return `true` if options that require information from cargo manifest is specified.
+    pub(crate) fn require_manifest_info(&self) -> bool {
+        (self.cargo.version < 39 && self.ignore_private) || self.no_dev_deps || self.remove_dev_deps
+    }
+
     pub(crate) fn process(&self) -> ProcessBuilder<'_> {
-        let mut command = ProcessBuilder::new(&self.cargo);
+        let mut command = self.cargo.process();
         if self.verbose {
             command.display_manifest_path();
         }
@@ -110,9 +105,4 @@ impl<'a> Deref for Context<'a> {
     fn deref(&self) -> &Self::Target {
         &self.args
     }
-}
-
-fn cargo_binary() -> OsString {
-    env::var_os("CARGO_HACK_CARGO_SRC")
-        .unwrap_or_else(|| env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo")))
 }
