@@ -833,7 +833,6 @@ fn each_feature_all() {
         );
 }
 
-#[rustversion::attr(not(since(1.41)), ignore)]
 #[test]
 fn include_deps_features() {
     cargo_hack(["check", "--each-feature", "--include-deps-features"])
@@ -868,7 +867,7 @@ fn include_deps_features() {
 #[rustversion::attr(not(before(1.41)), ignore)]
 #[test]
 fn include_deps_features_version_failure() {
-    cargo_hack(["check", "--each-feature", "--include-deps-features"])
+    cargo_hack(["check", "--each-feature", "--include-deps-features", "--strict-metadata-version"])
         .test_dir("tests")
         .assert_failure()
         .assert_stderr_contains("--include-deps-features requires Cargo 1.41 or leter");

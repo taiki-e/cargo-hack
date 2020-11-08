@@ -52,7 +52,16 @@ pub(crate) struct Metadata {
 
 impl Metadata {
     pub(crate) fn new(args: &Args<'_>, cargo: &Cargo) -> Result<Self> {
+        // To prevent stable cargo from generating a lockfile in the new format,
+        // first generate a lockfile.
         let mut command = cargo.process();
+        command.args(&["generate-lockfile"]);
+        if let Some(manifest_path) = &args.manifest_path {
+            command.arg("--manifest-path");
+            command.arg(manifest_path);
+        }
+
+        let mut command = cargo.metadata_process();
         command.args(&["metadata", "--format-version=1"]);
         if let Some(manifest_path) = &args.manifest_path {
             command.arg("--manifest-path");
@@ -122,7 +131,7 @@ impl Node {
         let id = map.remove_string("id").map(PackageId::new)?;
         Ok((id, Self {
             // This field was added in Rust 1.30.
-            deps: if cargo.version >= 30 {
+            deps: if cargo.metadata() >= 30 {
                 map.remove_array("deps")?
                     .into_iter()
                     .map(|v| NodeDep::from_value(v, cargo))
@@ -151,7 +160,7 @@ impl NodeDep {
         Ok(Self {
             pkg: PackageId::new(map.remove_string("pkg")?),
             // This field was added in Rust 1.41.
-            dep_kinds: if cargo.version >= 41 {
+            dep_kinds: if cargo.metadata() >= 41 {
                 map.remove_array("dep_kinds")?
                     .into_iter()
                     .map(DepKindInfo::from_value)
@@ -232,7 +241,7 @@ impl Package {
                 .ok_or("features")?,
             manifest_path: map.remove_string("manifest_path")?.into(),
             // This field was added in Rust 1.39.
-            publish: if cargo.version >= 39 {
+            publish: if cargo.metadata() >= 39 {
                 // Publishing is unrestricted if `None`, and forbidden if the `Vec` is empty.
                 map.remove_nullable("publish", into_array)?.map_or(true, |a| !a.is_empty())
             } else {

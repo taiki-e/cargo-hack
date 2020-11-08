@@ -250,7 +250,7 @@ pub(crate) fn raw() -> RawArgs {
 
 pub(crate) struct RawArgs(Vec<String>);
 
-pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>> {
+pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &mut Cargo) -> Result<Args<'a>> {
     let mut iter = raw.0.iter();
     let mut args = iter.by_ref().map(String::as_str).peekable();
     match args.next() {
@@ -295,6 +295,9 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
     let mut verbose = false;
     let mut no_default_features = false;
     let mut all_features = false;
+
+    // Internal flags for testing
+    let mut strict_metadata_version = false;
 
     let res = (|| -> Result<()> {
         while let Some(arg) = args.next() {
@@ -483,6 +486,7 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
                 }
                 "--no-default-features" => no_default_features = true,
                 "--all-features" => all_features = true,
+                "--strict-metadata-version" => parse_flag!(strict_metadata_version),
                 _ => {}
             }
 
@@ -625,7 +629,10 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
         bail!("--all-features may not be used together with --feature-powerset");
     }
 
-    if cargo.version < 41 && include_deps_features {
+    if strict_metadata_version {
+        cargo.strict_metadata_version();
+    }
+    if cargo.metadata() < 41 && include_deps_features {
         bail!("--include-deps-features requires Cargo 1.41 or leter");
     }
 

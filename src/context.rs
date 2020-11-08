@@ -18,9 +18,9 @@ pub(crate) struct Context<'a> {
 
 impl<'a> Context<'a> {
     pub(crate) fn new(args: &'a RawArgs) -> Result<Self> {
-        let cargo = Cargo::new();
+        let mut cargo = Cargo::new();
 
-        let args = cli::parse_args(args, &cargo)?;
+        let args = cli::parse_args(args, &mut cargo)?;
         assert!(
             args.subcommand.is_some() || args.remove_dev_deps,
             "no subcommand or valid flag specified"
@@ -78,7 +78,7 @@ impl<'a> Context<'a> {
     }
 
     pub(crate) fn is_private(&self, id: &PackageId) -> bool {
-        if self.cargo.version >= 39 {
+        if self.cargo.metadata() >= 39 {
             !self.packages(id).publish
         } else {
             !self.manifests(id).publish
@@ -87,7 +87,9 @@ impl<'a> Context<'a> {
 
     /// Return `true` if options that require information from cargo manifest is specified.
     pub(crate) fn require_manifest_info(&self) -> bool {
-        (self.cargo.version < 39 && self.ignore_private) || self.no_dev_deps || self.remove_dev_deps
+        (self.cargo.metadata() < 39 && self.ignore_private)
+            || self.no_dev_deps
+            || self.remove_dev_deps
     }
 
     pub(crate) fn process(&self) -> ProcessBuilder<'_> {
