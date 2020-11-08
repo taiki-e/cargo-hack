@@ -37,15 +37,25 @@ jobs:
             rust: nightly
           - os: windows-latest
             rust: nightly
+          - os: windows-latest
+            rust: nightly-x86_64-gnu
+          - os: ubuntu-latest
+            rust: nightly
+            target: x86_64-unknown-linux-musl
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v2
       - name: Install Rust
         run: ci/install-rust.sh ${{ matrix.rust }}
-      - if: matrix.rust == 'nightly'
+      - if: startsWith(matrix.rust, 'nightly') && matrix.target == ''
         run: cargo install cargo-hack
-      - run: cargo test
-      - if: matrix.rust == 'nightly'
+      - if: matrix.target != ''
+        run: cargo install cross
+      - if: matrix.target != ''
+        run: cross test --target ${{ matrix.target }}
+      - if: matrix.target == ''
+        run: cargo test
+      - if: startsWith(matrix.rust, 'nightly') && matrix.target == ''
         run: bash scripts/check-minimal-versions.sh
 
   run:
