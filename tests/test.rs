@@ -871,7 +871,7 @@ fn include_deps_features_version_failure() {
     cargo_hack(["check", "--each-feature", "--include-deps-features"])
         .test_dir("tests")
         .assert_failure()
-        .assert_stderr_contains("--all-features requires Cargo 1.41 or leter");
+        .assert_stderr_contains("--include-deps-features requires Cargo 1.41 or leter");
 }
 
 #[test]

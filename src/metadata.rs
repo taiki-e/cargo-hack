@@ -3,13 +3,12 @@ use serde_json::{Map, Value};
 use std::{
     borrow::Cow,
     collections::{BTreeMap, HashMap},
-    ffi::OsStr,
     fmt,
     path::PathBuf,
     rc::Rc,
 };
 
-use crate::{cli::Args, Context, ProcessBuilder, Result};
+use crate::{cli::Args, Cargo, Context, Result};
 
 type Object = Map<String, Value>;
 type ParseResult<T> = Result<T, &'static str>;
@@ -52,8 +51,8 @@ pub(crate) struct Metadata {
 }
 
 impl Metadata {
-    pub(crate) fn new(args: &Args<'_>, cargo: &OsStr, version: u32) -> Result<Self> {
-        let mut command = ProcessBuilder::new(cargo);
+    pub(crate) fn new(args: &Args<'_>, cargo: &Cargo) -> Result<Self> {
+        let mut command = cargo.process();
         command.args(&["metadata", "--format-version=1"]);
         if let Some(manifest_path) = &args.manifest_path {
             command.arg("--manifest-path");
@@ -63,11 +62,11 @@ impl Metadata {
 
         let map =
             serde_json::from_slice(&output.stdout).context("failed to parse metadata as json")?;
-        Self::from_obj(map, version)
+        Self::from_obj(map, cargo)
             .map_err(|s| format_err!("failed to parse `{}` field from metadata", s))
     }
 
-    fn from_obj(mut map: Object, version: u32) -> ParseResult<Self> {
+    fn from_obj(mut map: Object, cargo: &Cargo) -> ParseResult<Self> {
         let workspace_members: Vec<_> = map
             .remove_array("workspace_members")?
             .into_iter()
@@ -77,10 +76,10 @@ impl Metadata {
             packages: map
                 .remove_array("packages")?
                 .into_iter()
-                .map(|v| Package::from_value(v, version))
+                .map(|v| Package::from_value(v, cargo))
                 .collect::<Result<_, _>>()?,
             workspace_members,
-            resolve: Resolve::from_obj(map.remove_object("resolve")?, version)?,
+            resolve: Resolve::from_obj(map.remove_object("resolve")?, cargo)?,
             workspace_root: map.remove_string("workspace_root")?.into(),
         })
     }
@@ -96,12 +95,12 @@ pub(crate) struct Resolve {
 }
 
 impl Resolve {
-    fn from_obj(mut map: Object, version: u32) -> ParseResult<Self> {
+    fn from_obj(mut map: Object, cargo: &Cargo) -> ParseResult<Self> {
         Ok(Self {
             nodes: map
                 .remove_array("nodes")?
                 .into_iter()
-                .map(|v| Node::from_value(v, version))
+                .map(|v| Node::from_value(v, cargo))
                 .collect::<Result<_, _>>()?,
             root: map.remove_nullable("root", into_string)?.map(PackageId::new),
         })
@@ -117,16 +116,16 @@ pub(crate) struct Node {
 }
 
 impl Node {
-    fn from_value(mut value: Value, version: u32) -> ParseResult<(PackageId, Self)> {
+    fn from_value(mut value: Value, cargo: &Cargo) -> ParseResult<(PackageId, Self)> {
         let map = value.as_object_mut().ok_or("nodes")?;
 
         let id = map.remove_string("id").map(PackageId::new)?;
         Ok((id, Self {
             // This field was added in Rust 1.30.
-            deps: if version >= 30 {
+            deps: if cargo.version >= 30 {
                 map.remove_array("deps")?
                     .into_iter()
-                    .map(|v| NodeDep::from_value(v, version))
+                    .map(|v| NodeDep::from_value(v, cargo))
                     .collect::<Result<_, _>>()?
             } else {
                 Vec::new()
@@ -146,13 +145,13 @@ pub(crate) struct NodeDep {
 }
 
 impl NodeDep {
-    fn from_value(mut value: Value, version: u32) -> ParseResult<Self> {
+    fn from_value(mut value: Value, cargo: &Cargo) -> ParseResult<Self> {
         let map = value.as_object_mut().ok_or("deps")?;
 
         Ok(Self {
             pkg: PackageId::new(map.remove_string("pkg")?),
             // This field was added in Rust 1.41.
-            dep_kinds: if version >= 41 {
+            dep_kinds: if cargo.version >= 41 {
                 map.remove_array("dep_kinds")?
                     .into_iter()
                     .map(DepKindInfo::from_value)
@@ -209,7 +208,7 @@ pub(crate) struct Package {
 }
 
 impl Package {
-    fn from_value(mut value: Value, version: u32) -> ParseResult<(PackageId, Self)> {
+    fn from_value(mut value: Value, cargo: &Cargo) -> ParseResult<(PackageId, Self)> {
         let map = value.as_object_mut().ok_or("packages")?;
 
         let id = PackageId::new(map.remove_string("id")?);
@@ -233,7 +232,7 @@ impl Package {
                 .ok_or("features")?,
             manifest_path: map.remove_string("manifest_path")?.into(),
             // This field was added in Rust 1.39.
-            publish: if version >= 39 {
+            publish: if cargo.version >= 39 {
                 // Publishing is unrestricted if `None`, and forbidden if the `Vec` is empty.
                 map.remove_nullable("publish", into_array)?.map_or(true, |a| !a.is_empty())
             } else {

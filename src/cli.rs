@@ -1,7 +1,7 @@
 use anyhow::{bail, format_err, Error};
-use std::{env, ffi::OsStr, fmt, mem};
+use std::{env, fmt, mem};
 
-use crate::{term, ProcessBuilder, Result};
+use crate::{term, Cargo, Result};
 
 fn print_version() {
     println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
@@ -242,13 +242,6 @@ pub(crate) struct Args<'a> {
     pub(crate) features: Vec<&'a str>,
 }
 
-impl Args<'_> {
-    /// Return `true` if options that require information from cargo manifest is specified.
-    pub(crate) fn require_manifest_info(&self, version: u32) -> bool {
-        (version < 39 && self.ignore_private) || self.no_dev_deps || self.remove_dev_deps
-    }
-}
-
 pub(crate) fn raw() -> RawArgs {
     let mut args = env::args();
     let _ = args.next(); // executable name
@@ -257,7 +250,7 @@ pub(crate) fn raw() -> RawArgs {
 
 pub(crate) struct RawArgs(Vec<String>);
 
-pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &OsStr, version: u32) -> Result<Args<'a>> {
+pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>> {
     let mut iter = raw.0.iter();
     let mut args = iter.by_ref().map(String::as_str).peekable();
     match args.next() {
@@ -632,13 +625,13 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &OsStr, version: u32) -> R
         bail!("--all-features may not be used together with --feature-powerset");
     }
 
-    if version < 41 && include_deps_features {
-        bail!("--all-features requires Cargo 1.41 or leter")
+    if cargo.version < 41 && include_deps_features {
+        bail!("--include-deps-features requires Cargo 1.41 or leter");
     }
 
     if subcommand.is_none() {
         if leading.contains(&"--list") {
-            let mut line = ProcessBuilder::new(cargo);
+            let mut line = cargo.process();
             line.arg("--list");
             line.exec()?;
             std::process::exit(0);

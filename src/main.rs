@@ -14,6 +14,7 @@
 #[macro_use]
 mod term;
 
+mod cargo;
 mod cli;
 mod context;
 mod features;
@@ -22,12 +23,13 @@ mod metadata;
 mod process;
 mod remove_dev_deps;
 mod restore;
-mod version;
 
 use anyhow::{bail, Context as _};
 use std::{fmt::Write, fs};
 
-use crate::{context::Context, metadata::PackageId, process::ProcessBuilder, restore::Restore};
+use crate::{
+    cargo::Cargo, context::Context, metadata::PackageId, process::ProcessBuilder, restore::Restore,
+};
 
 type Result<T, E = anyhow::Error> = std::result::Result<T, E>;
 

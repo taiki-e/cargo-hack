@@ -1,13 +1,34 @@
 use anyhow::{format_err, Context as _};
-use std::{ffi::OsStr, str};
+use std::{
+    env,
+    ffi::{OsStr, OsString},
+    str,
+};
 
 use crate::{ProcessBuilder, Result};
 
-pub(crate) struct Version {
-    pub(crate) minor: u32,
+pub(crate) struct Cargo {
+    path: OsString,
+    pub(crate) version: u32,
 }
 
-pub(crate) fn from_path(path: &OsStr) -> Result<Version> {
+impl Cargo {
+    pub(crate) fn new() -> Self {
+        let path = cargo_binary();
+
+        // If failed to determine cargo version, assign 0 to skip all version-dependent decisions.
+        let version = cargo_minor_version(&path).map_err(|e| warn!("{}", e)).unwrap_or(0);
+
+        Self { path, version }
+    }
+
+    pub(crate) fn process(&self) -> ProcessBuilder<'_> {
+        ProcessBuilder::new(&self.path)
+    }
+}
+
+// Based on https://github.com/cuviper/autocfg/blob/1.0.1/src/version.rs#L25-L59
+fn cargo_minor_version(path: &OsStr) -> Result<u32> {
     let mut command = ProcessBuilder::new(path);
     command.args(&["--version", "--verbose"]);
     let output = command.exec_with_output()?;
@@ -40,5 +61,10 @@ pub(crate) fn from_path(path: &OsStr) -> Result<Version> {
     })()
     .ok_or_else(|| format_err!("unexpected output from {}", command))?;
 
-    Ok(Version { minor })
+    Ok(minor)
+}
+
+fn cargo_binary() -> OsString {
+    env::var_os("CARGO_HACK_CARGO_SRC")
+        .unwrap_or_else(|| env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo")))
 }
