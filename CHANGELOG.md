@@ -6,6 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.4.3] - 2020-11-08
+
+No public API changes from 0.4.2.
+
+Since this release, we have distributed compiled binary files of `cargo-hack` via GitHub release.
+See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
+
 ## [0.4.2] - 2020-11-03
 
 * [`cargo-hack` no longer include `--all-features` in feature combination if one or more features already excluded.](https://github.com/taiki-e/cargo-hack/pull/86)
@@ -183,7 +190,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/taiki-e/cargo-hack/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/taiki-e/cargo-hack/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/taiki-e/cargo-hack/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/taiki-e/cargo-hack/compare/v0.3.14...v0.4.0

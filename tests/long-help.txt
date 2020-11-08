@@ -1,4 +1,4 @@
-cargo-hack 0.4.2
+cargo-hack 0.4.3
 A tool to work around some limitations on cargo.
 
 USAGE:
