@@ -5,6 +5,11 @@ on:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
+env:
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: -D warnings
+  RUST_BACKTRACE: 1
+
 defaults:
   run:
     shell: bash
@@ -16,5 +21,31 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: ci/create-release.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  upload-assets:
+    if: github.repository_owner == 'taiki-e'
+    needs:
+      - create-release
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        run: ci/install-rust.sh
+      # Work around https://github.com/actions/cache/issues/403 by using GNU tar
+      # instead of BSD tar.
+      - name: Install GNU tar
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install gnu-tar
+          echo "/usr/local/opt/gnu-tar/libexec/gnubin" >> "${GITHUB_PATH}"
+      - run: ci/upload-assets.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
