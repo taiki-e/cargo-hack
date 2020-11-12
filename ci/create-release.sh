@@ -24,10 +24,10 @@ IFS=$'\n\t'
 ref="${GITHUB_REF:?}"
 tag="${ref#*/tags/}"
 
-if [[ ! "${tag}" =~ v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z_0-9\.-]+)?(\+[a-zA-Z_0-9\.-]+)?$ ]]; then
+if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z_0-9\.-]+)?(\+[a-zA-Z_0-9\.-]+)?$ ]]; then
   echo "error: invalid tag format: ${tag}"
   exit 1
-elif [[ "${tag}" =~ v[0-9\.]+-[a-zA-Z_0-9\.-]+(\+[a-zA-Z_0-9\.-]+)?$ ]]; then
+elif [[ "${tag}" =~ ^v[0-9\.]+-[a-zA-Z_0-9\.-]+(\+[a-zA-Z_0-9\.-]+)?$ ]]; then
   prerelease="--prerelease"
 fi
 version="${tag/v/}"
