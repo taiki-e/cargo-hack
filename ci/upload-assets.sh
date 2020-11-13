@@ -3,6 +3,8 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+cd "$(cd "$(dirname "${0}")" && pwd)"/..
+
 ref="${GITHUB_REF:?}"
 tag="${ref#*/tags/}"
 
@@ -16,12 +18,18 @@ cd target/release
 case "${OSTYPE}" in
   linux* | darwin*)
     strip "${package}"
-    asset="${package}-${tag}-${host}.tar.gz"
+    asset="${package}-${host}.tar.gz"
+    # TODO: remove this when release the next major version.
+    asset2="${package}-${tag}-${host}.tar.gz"
     tar czf ../../"${asset}" "${package}"
+    tar czf ../../"${asset2}" "${package}"
     ;;
   cygwin* | msys*)
-    asset="${package}-${tag}-${host}.zip"
+    asset="${package}-${host}.zip"
+    # TODO: remove this when release the next major version.
+    asset2="${package}-${tag}-${host}.zip"
     7z a ../../"${asset}" "${package}".exe
+    7z a ../../"${asset2}" "${package}".exe
     ;;
   *)
     echo "unrecognized OSTYPE: ${OSTYPE}"
@@ -34,5 +42,5 @@ if [[ -z "${GITHUB_TOKEN:-}" ]]; then
   echo "GITHUB_TOKEN not set, skipping deploy"
   exit 1
 else
-  gh release upload "${tag}" "${asset}" --clobber
+  gh release upload "${tag}" "${asset}" "${asset2}" --clobber
 fi
