@@ -2,14 +2,34 @@
 
 mod auxiliary;
 
-use auxiliary::{cargo_hack, CommandExt, SEPARATOR};
+use auxiliary::{cargo_bin_exe, cargo_hack, CommandExt, SEPARATOR};
+
+#[test]
+fn failures() {
+    cargo_bin_exe().test_dir("tests/fixtures/real").assert_failure();
+
+    cargo_bin_exe()
+        .arg("--all")
+        .test_dir("tests/fixtures/real")
+        .assert_failure()
+        .assert_stderr_contains("expected subcommand 'hack', found argument '--all'");
+
+    cargo_hack([] as [&str; 0])
+        .test_dir("tests/fixtures/real")
+        .assert_failure()
+        .assert_stderr_contains("no subcommand or valid flag specified");
+
+    cargo_hack(["--all"])
+        .test_dir("tests/fixtures/real")
+        .assert_failure()
+        .assert_stderr_contains("no subcommand or valid flag specified");
+}
 
 #[test]
 fn multi_arg() {
     // --package, -p, --exclude, --features, --exclude-features, and --verbose are allowed.
 
     for flag in &[
-        "--examples",
         "--workspace",
         "--all",
         "--each-feature",
@@ -408,6 +428,26 @@ fn each_feature() {
 }
 
 #[test]
+fn each_feature_failure() {
+    cargo_hack(["check", "--each-feature", "--feature-powerset"])
+        .test_dir("tests/fixtures/real")
+        .assert_failure()
+        .assert_stderr_contains("--each-feature may not be used together with --feature-powerset");
+
+    cargo_hack(["check", "--each-feature", "--all-features"])
+        .test_dir("tests/fixtures/real")
+        .assert_failure()
+        .assert_stderr_contains("--all-features may not be used together with --each-feature");
+
+    cargo_hack(["check", "--each-feature", "--no-default-features"])
+        .test_dir("tests/fixtures/real")
+        .assert_success()
+        .assert_stderr_contains(
+            "--no-default-features may not be used together with --each-feature",
+        );
+}
+
+#[test]
 fn feature_powerset() {
     cargo_hack(["check", "--feature-powerset"])
         .test_dir("tests/fixtures/real")
@@ -452,6 +492,26 @@ fn feature_powerset() {
             ",
         )
         .assert_stderr_not_contains("--features a,a");
+}
+
+#[test]
+fn feature_powerset_failure() {
+    cargo_hack(["check", "--each-feature", "--feature-powerset"])
+        .test_dir("tests/fixtures/real")
+        .assert_failure()
+        .assert_stderr_contains("--each-feature may not be used together with --feature-powerset");
+
+    cargo_hack(["check", "--feature-powerset", "--all-features"])
+        .test_dir("tests/fixtures/real")
+        .assert_failure()
+        .assert_stderr_contains("--all-features may not be used together with --feature-powerset");
+
+    cargo_hack(["check", "--feature-powerset", "--no-default-features"])
+        .test_dir("tests/fixtures/real")
+        .assert_success()
+        .assert_stderr_contains(
+            "--no-default-features may not be used together with --feature-powerset",
+        );
 }
 
 #[test]

@@ -255,9 +255,12 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
     let mut args = iter.by_ref().map(String::as_str).peekable();
     match args.next() {
         Some(a) if a == "hack" => {}
-        Some(_) | None => {
+        Some(a) => {
+            return Err(mini_usage(&format!("expected subcommand 'hack', found argument '{}'", a)));
+        }
+        None => {
             println!("{}", Help::short());
-            std::process::exit(0);
+            std::process::exit(1);
         }
     }
 
@@ -496,17 +499,6 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
 
     res?;
 
-    if leading.is_empty() && !remove_dev_deps || subcommand.is_none() && leading.contains(&"-h") {
-        println!("{}", Help::short());
-        std::process::exit(0);
-    } else if subcommand.is_none() && leading.contains(&"--help") {
-        println!("{}", Help::long());
-        std::process::exit(0);
-    } else if leading.iter().any(|&a| a == "--version" || a == "-V" || a == "-vV" || a == "-Vv") {
-        print_version();
-        std::process::exit(0);
-    }
-
     if !exclude.is_empty() && workspace.is_none() {
         // TODO: This is the same behavior as cargo, but should we allow it to be used
         // in the root of a virtual workspace as well?
@@ -519,13 +511,13 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
             );
         }
         if !include_features.is_empty() {
-            // TODO
+            // TODO: implement
             warn!(
                 "--ignore-unknown-features for --include-features is not fully implemented and may not work as intended"
             )
         }
         if !group_features.is_empty() {
-            // TODO
+            // TODO: implement
             warn!(
                 "--ignore-unknown-features for --group-features is not fully implemented and may not work as intended"
             )
@@ -618,11 +610,20 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
     if each_feature && feature_powerset {
         bail!("--each-feature may not be used together with --feature-powerset");
     }
-    if all_features && each_feature {
-        bail!("--all-features may not be used together with --each-feature");
+    if all_features {
+        if each_feature {
+            bail!("--all-features may not be used together with --each-feature");
+        } else if feature_powerset {
+            bail!("--all-features may not be used together with --feature-powerset");
+        }
     }
-    if all_features && feature_powerset {
-        bail!("--all-features may not be used together with --feature-powerset");
+    if no_default_features {
+        // TODO: change to error when release the next major version.
+        if each_feature {
+            warn!("--no-default-features may not be used together with --each-feature");
+        } else if feature_powerset {
+            warn!("--no-default-features may not be used together with --feature-powerset");
+        }
     }
 
     if cargo.version < 41 && include_deps_features {
@@ -630,27 +631,29 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
     }
 
     if subcommand.is_none() {
-        if leading.contains(&"--list") {
+        if leading.contains(&"-h") {
+            println!("{}", Help::short());
+            std::process::exit(0);
+        } else if leading.contains(&"--help") {
+            println!("{}", Help::long());
+            std::process::exit(0);
+        } else if leading.iter().any(|&a| a == "--version" || a == "-V" || a == "-vV" || a == "-Vv")
+        {
+            print_version();
+            std::process::exit(0);
+        } else if leading.contains(&"--list") {
             let mut line = cargo.process();
             line.arg("--list");
             line.exec()?;
             std::process::exit(0);
         } else if !remove_dev_deps {
             // TODO: improve this
-            bail!(
-                "\
-No subcommand or valid flag specified.
-
-USAGE:
-    cargo hack [OPTIONS] [SUBCOMMAND]
-
-For more information try --help
-"
-            );
+            return Err(mini_usage("no subcommand or valid flag specified"));
         }
     }
 
     if skip_no_default_features {
+        // TODO: remove --skip-no-default-features when release the next major version.
         warn!(
             "--skip-no-default-features is deprecated, use --exclude-no-default-features flag instead"
         );
@@ -663,6 +666,7 @@ For more information try --help
     }
 
     exclude_features.iter().for_each(|f| {
+        // TODO: change to error when release the next major version?
         if features.contains(f) {
             warn!("feature `{}` specified by both --exclude-features and --features", f);
         }
@@ -677,9 +681,8 @@ For more information try --help
         }
     });
 
-    exclude_no_default_features |= no_default_features || !include_features.is_empty();
-    exclude_all_features |= !include_features.is_empty();
-    exclude_all_features |= !exclude_features.is_empty();
+    exclude_no_default_features |= !include_features.is_empty();
+    exclude_all_features |= !include_features.is_empty() || !exclude_features.is_empty();
     exclude_features.extend_from_slice(&features);
 
     Ok(Args {
@@ -715,6 +718,19 @@ For more information try --help
 
         features,
     })
+}
+
+fn mini_usage(msg: &str) -> Error {
+    format_err!(
+        "\
+{}
+
+USAGE:
+    cargo hack [OPTIONS] [SUBCOMMAND]
+
+For more information try --help",
+        msg,
+    )
 }
 
 fn req_arg(arg: &str, subcommand: Option<&str>) -> Error {
