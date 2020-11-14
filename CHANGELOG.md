@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.4.5] - 2020-11-14
+
 * Fix an issue where `cargo-hack` exits with exit code `0` if no subcommand or valid flag was passed.
 
 * Fix an issue where `--no-default-features` flag was treated as `--exclude-no-default-features` when used together with `--each-feature` or `--feature-powerset`.
@@ -202,7 +204,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.4.4...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.4.5...HEAD
+[0.4.5]: https://github.com/taiki-e/cargo-hack/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/taiki-e/cargo-hack/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/taiki-e/cargo-hack/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/taiki-e/cargo-hack/compare/v0.4.1...v0.4.2
