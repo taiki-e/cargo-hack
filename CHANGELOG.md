@@ -6,6 +6,10 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+* Fix an issue where `cargo-hack` exits with exit code `0` if no subcommand or valid flag was passed.
+
+* Fix an issue where `--no-default-features` flag was treated as `--exclude-no-default-features` when used together with `--each-feature` or `--feature-powerset`.
+
 ## [0.4.4] - 2020-11-13
 
 No public API changes from 0.4.3.

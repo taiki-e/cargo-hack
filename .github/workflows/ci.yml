@@ -74,6 +74,7 @@ jobs:
       - run: cargo hack check --manifest-path tests/fixtures/run/real/Cargo.toml
       - run: cargo hack check --manifest-path tests/fixtures/run/virtual/Cargo.toml
       - run: git diff --exit-code
+      - run: cargo hack --remove-dev-deps --manifest-path tests/fixtures/run/real/Cargo.toml
 
   clippy:
     runs-on: ubuntu-latest

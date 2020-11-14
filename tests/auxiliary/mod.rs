@@ -11,7 +11,7 @@ pub const SEPARATOR: char = '/';
 #[cfg(windows)]
 pub const SEPARATOR: char = '\\';
 
-pub fn cargo_hack<O: AsRef<OsStr>>(args: impl AsRef<[O]>) -> Command {
+pub fn cargo_bin_exe() -> Command {
     // TODO: update to use CARGO_BIN_EXE (https://github.com/rust-lang/cargo/pull/7697, require Rust 1.43).
     let mut exe = env::current_exe().unwrap();
     exe.pop();
@@ -19,7 +19,11 @@ pub fn cargo_hack<O: AsRef<OsStr>>(args: impl AsRef<[O]>) -> Command {
         exe.pop();
     }
     exe.push("cargo-hack");
-    let mut cmd = Command::new(exe);
+    Command::new(exe)
+}
+
+pub fn cargo_hack<O: AsRef<OsStr>>(args: impl AsRef<[O]>) -> Command {
+    let mut cmd = cargo_bin_exe();
     cmd.arg("hack");
     cmd.args(args.as_ref());
     cmd
