@@ -45,8 +45,9 @@ jobs:
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v2
-      - name: Install Rust
-        run: ci/install-rust.sh ${{ matrix.rust }}
+      - uses: taiki-e/github-actions/install-rust@main
+        with:
+          toolchain: ${{ matrix.rust }}
       - if: startsWith(matrix.rust, 'nightly') && matrix.target == ''
         run: cargo install cargo-hack
       - if: matrix.target != ''
@@ -54,7 +55,7 @@ jobs:
       - if: matrix.target != ''
         run: cross test --target ${{ matrix.target }}
       - if: matrix.target == ''
-        run: cargo test
+        run: cargo test --all
       - if: startsWith(matrix.rust, 'nightly') && matrix.target == ''
         run: bash scripts/check-minimal-versions.sh
 
@@ -68,8 +69,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Install Rust
-        run: ci/install-rust.sh ${{ matrix.rust }}
+      - uses: taiki-e/github-actions/install-rust@main
+        with:
+          toolchain: ${{ matrix.rust }}
       - run: cargo +stable install --path .
       - run: cargo hack check --manifest-path tests/fixtures/run/real/Cargo.toml
       - run: cargo hack check --manifest-path tests/fixtures/run/virtual/Cargo.toml
@@ -80,16 +82,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Install Rust and Clippy
-        run: ci/install-component.sh clippy
+      - uses: taiki-e/github-actions/install-rust@main
+        with:
+          component: clippy
       - run: cargo clippy --all --all-features --all-targets
 
   rustfmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Install Rust and Rustfmt
-        run: ci/install-component.sh rustfmt
+      - uses: taiki-e/github-actions/install-rust@main
+        with:
+          component: rustfmt
       - run: cargo fmt --all -- --check
 
   shellcheck:

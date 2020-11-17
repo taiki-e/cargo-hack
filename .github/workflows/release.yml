@@ -1,9 +1,9 @@
-name: release
+name: Release
 
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v*'
 
 env:
   CARGO_INCREMENTAL: 0
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: ci/create-release.sh
+      - uses: taiki-e/github-actions/create-release@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -37,8 +37,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
-      - name: Install Rust
-        run: ci/install-rust.sh
+      - uses: taiki-e/github-actions/install-rust@main
       # Work around https://github.com/actions/cache/issues/403 by using GNU tar
       # instead of BSD tar.
       - name: Install GNU tar

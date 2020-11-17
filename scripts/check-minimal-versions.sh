@@ -35,8 +35,11 @@ fi
 
 # Parse subcommand.
 subcmd="${1:-check}"
-if [[ ! "${subcmd}" =~ check|test ]]; then
-  echo "error: invalid argument \`${1}\`"
+if [[ ! "${subcmd}" =~ ^(check|test)$ ]]; then
+  echo "error: invalid argument: ${1}"
+  exit 1
+elif [[ -n "${2:-}" ]]; then
+  echo "error: invalid argument: ${2}"
   exit 1
 fi
 
