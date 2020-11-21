@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/cargo-hack.svg?style=flat-square&logo=rust)](https://crates.io/crates/cargo-hack)
 [![license](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue.svg?style=flat-square)](#license)
-[![rustc](https://img.shields.io/badge/rustc-1.37+-blue.svg?style=flat-square)](https://www.rust-lang.org)
+[![rustc](https://img.shields.io/badge/rustc-1.36+-blue.svg?style=flat-square)](https://www.rust-lang.org)
 [![build status](https://img.shields.io/github/workflow/status/taiki-e/cargo-hack/CI/master?style=flat-square)](https://github.com/taiki-e/cargo-hack/actions?query=workflow%3ACI+branch%3Amaster)
 
 A tool to work around some limitations on cargo.
@@ -16,9 +16,9 @@ This tool provides additional flags to avoid some of these limitations.
 cargo install cargo-hack
 ```
 
-To install cargo-hack requires Rust 1.36 or later.
+To install cargo-hack requires rustc 1.36+.
 
-cargo-hack is usually runnable with Cargo versions older than the Rust version required for installation (e.g., `cargo +1.31.0 hack check`). Currently, to run cargo-hack requires Cargo 1.26 or later.
+cargo-hack is usually runnable with Cargo versions older than the Rust version required for installation (e.g., `cargo +1.31.0 hack check`). Currently, to run cargo-hack requires Cargo 1.26+.
 
 ## Usage
 
