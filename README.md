@@ -1,15 +1,9 @@
 # cargo-hack
 
-[![crates-badge]][crates-url]
-[![license-badge]][license]
-[![rustc-badge]][rustc-url]
-
-[crates-badge]: https://img.shields.io/crates/v/cargo-hack.svg
-[crates-url]: https://crates.io/crates/cargo-hack
-[license-badge]: https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg
-[license]: #license
-[rustc-badge]: https://img.shields.io/badge/rustc-1.36+-lightgray.svg
-[rustc-url]: https://blog.rust-lang.org/2019/07/04/Rust-1.36.0.html
+[![crates.io](https://img.shields.io/crates/v/cargo-hack.svg?style=flat-square&logo=rust)](https://crates.io/crates/cargo-hack)
+[![license](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue.svg?style=flat-square)](#license)
+[![rustc](https://img.shields.io/badge/rustc-1.37+-blue.svg?style=flat-square)](https://www.rust-lang.org)
+[![build status](https://img.shields.io/github/workflow/status/taiki-e/cargo-hack/CI/master?style=flat-square)](https://github.com/taiki-e/cargo-hack/actions?query=workflow%3ACI+branch%3Amaster)
 
 A tool to work around some limitations on cargo.
 
@@ -22,9 +16,9 @@ This tool provides additional flags to avoid some of these limitations.
 cargo install cargo-hack
 ```
 
-To install the current cargo-hack requires Rust 1.36 or later.
+To install cargo-hack requires Rust 1.36 or later.
 
-cargo-hack is usually runnable with Cargo versions older than the Rust version required for installation (e.g., `cargo +1.31.0 hack check`). To run the current cargo-hack requires Cargo 1.26 or later.
+cargo-hack is usually runnable with Cargo versions older than the Rust version required for installation (e.g., `cargo +1.31.0 hack check`). Currently, to run cargo-hack requires Cargo 1.26 or later.
 
 ## Usage
 
@@ -154,7 +148,5 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
 ## License
 
 Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or [MIT license](LICENSE-MIT) at your option.
-
-### Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
