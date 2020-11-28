@@ -1,0 +1,24 @@
+[package]
+name = "deduplication"
+version = "0.1.0"
+authors = ["Taiki Endo <te316e89@gmail.com>"]
+publish = false
+
+[workspace]
+members = [
+    "member1",
+    ".",
+]
+
+[features]
+a = []
+b = ["a"]
+c = ["b"]
+d = ["member1"]
+e = ["b", "d"]
+
+[dependencies]
+member1 = { path = "member1", optional = true }
+easytime = { version = "0.1", default-features = false }
+
+[dev-dependencies]

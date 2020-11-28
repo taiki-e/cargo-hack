@@ -515,6 +515,126 @@ fn feature_powerset_failure() {
 }
 
 #[test]
+fn powerset_deduplication() {
+    cargo_hack(["check", "--feature-powerset"])
+        .test_dir("tests/fixtures/powerset_deduplication")
+        .assert_success()
+        .assert_stderr_contains(
+            "
+            running `cargo check --no-default-features` on deduplication (1/11)
+            running `cargo check --no-default-features --features a` on deduplication (2/11)
+            running `cargo check --no-default-features --features b` on deduplication (3/11)
+            running `cargo check --no-default-features --features c` on deduplication (4/11)
+            running `cargo check --no-default-features --features d` on deduplication (5/11)
+            running `cargo check --no-default-features --features a,d` on deduplication (6/11)
+            running `cargo check --no-default-features --features b,d` on deduplication (7/11)
+            running `cargo check --no-default-features --features c,d` on deduplication (8/11)
+            running `cargo check --no-default-features --features e` on deduplication (9/11)
+            running `cargo check --no-default-features --features c,e` on deduplication (10/11)
+            running `cargo check --no-default-features --all-features` on deduplication (11/11)
+            ",
+        )
+        .assert_stderr_not_contains(
+            "
+            a,b
+            b,c
+            a,c
+            a,e
+            b,e
+            d,e
+            ",
+        );
+
+    cargo_hack(["check", "--feature-powerset", "--optional-deps"])
+        .test_dir("tests/fixtures/powerset_deduplication")
+        .assert_success()
+        .assert_stderr_contains(
+            "
+            running `cargo check --no-default-features` on deduplication (1/15)
+            running `cargo check --no-default-features --features a` on deduplication (2/15)
+            running `cargo check --no-default-features --features b` on deduplication (3/15)
+            running `cargo check --no-default-features --features c` on deduplication (4/15)
+            running `cargo check --no-default-features --features d` on deduplication (5/15)
+            running `cargo check --no-default-features --features a,d` on deduplication (6/15)
+            running `cargo check --no-default-features --features b,d` on deduplication (7/15)
+            running `cargo check --no-default-features --features c,d` on deduplication (8/15)
+            running `cargo check --no-default-features --features e` on deduplication (9/15)
+            running `cargo check --no-default-features --features c,e` on deduplication (10/15)
+            running `cargo check --no-default-features --features member1` on deduplication (11/15)
+            running `cargo check --no-default-features --features a,member1` on deduplication (12/15)
+            running `cargo check --no-default-features --features b,member1` on deduplication (13/15)
+            running `cargo check --no-default-features --features c,member1` on deduplication (14/15)
+            running `cargo check --no-default-features --all-features` on deduplication (15/15)
+            ",
+        )
+        .assert_stderr_not_contains(
+            "
+            a,b
+            b,c
+            a,c
+            a,e
+            b,e
+            d,e
+            ",
+        );
+}
+
+#[rustversion::attr(not(since(1.41)), ignore)]
+#[test]
+fn powerset_deduplication_include_deps_features() {
+    // TODO: Since easytime/default depends on easytime/std, their combination should be excluded,
+    // but it's not working yet because include-deps-features itself isn't fully implemented.
+    cargo_hack(["check", "--feature-powerset", "--include-deps-features"])
+        .test_dir("tests/fixtures/powerset_deduplication")
+        .assert_success()
+        .assert_stderr_contains(
+            "
+            running `cargo check --no-default-features` on deduplication (1/41)
+            running `cargo check --no-default-features --features a` on deduplication (2/41)
+            running `cargo check --no-default-features --features b` on deduplication (3/41)
+            running `cargo check --no-default-features --features c` on deduplication (4/41)
+            running `cargo check --no-default-features --features d` on deduplication (5/41)
+            running `cargo check --no-default-features --features a,d` on deduplication (6/41)
+            running `cargo check --no-default-features --features b,d` on deduplication (7/41)
+            running `cargo check --no-default-features --features c,d` on deduplication (8/41)
+            running `cargo check --no-default-features --features e` on deduplication (9/41)
+            running `cargo check --no-default-features --features c,e` on deduplication (10/41)
+            running `cargo check --no-default-features --features easytime/default` on deduplication (11/41)
+            running `cargo check --no-default-features --features a,easytime/default` on deduplication (12/41)
+            running `cargo check --no-default-features --features b,easytime/default` on deduplication (13/41)
+            running `cargo check --no-default-features --features c,easytime/default` on deduplication (14/41)
+            running `cargo check --no-default-features --features d,easytime/default` on deduplication (15/41)
+            running `cargo check --no-default-features --features a,d,easytime/default` on deduplication (16/41)
+            running `cargo check --no-default-features --features b,d,easytime/default` on deduplication (17/41)
+            running `cargo check --no-default-features --features c,d,easytime/default` on deduplication (18/41)
+            running `cargo check --no-default-features --features e,easytime/default` on deduplication (19/41)
+            running `cargo check --no-default-features --features c,e,easytime/default` on deduplication (20/41)
+            running `cargo check --no-default-features --features easytime/std` on deduplication (21/41)
+            running `cargo check --no-default-features --features a,easytime/std` on deduplication (22/41)
+            running `cargo check --no-default-features --features b,easytime/std` on deduplication (23/41)
+            running `cargo check --no-default-features --features c,easytime/std` on deduplication (24/41)
+            running `cargo check --no-default-features --features d,easytime/std` on deduplication (25/41)
+            running `cargo check --no-default-features --features a,d,easytime/std` on deduplication (26/41)
+            running `cargo check --no-default-features --features b,d,easytime/std` on deduplication (27/41)
+            running `cargo check --no-default-features --features c,d,easytime/std` on deduplication (28/41)
+            running `cargo check --no-default-features --features e,easytime/std` on deduplication (29/41)
+            running `cargo check --no-default-features --features c,e,easytime/std` on deduplication (30/41)
+            running `cargo check --no-default-features --features easytime/default,easytime/std` on deduplication (31/41)
+            running `cargo check --no-default-features --features a,easytime/default,easytime/std` on deduplication (32/41)
+            running `cargo check --no-default-features --features b,easytime/default,easytime/std` on deduplication (33/41)
+            running `cargo check --no-default-features --features c,easytime/default,easytime/std` on deduplication (34/41)
+            running `cargo check --no-default-features --features d,easytime/default,easytime/std` on deduplication (35/41)
+            running `cargo check --no-default-features --features a,d,easytime/default,easytime/std` on deduplication (36/41)
+            running `cargo check --no-default-features --features b,d,easytime/default,easytime/std` on deduplication (37/41)
+            running `cargo check --no-default-features --features c,d,easytime/default,easytime/std` on deduplication (38/41)
+            running `cargo check --no-default-features --features e,easytime/default,easytime/std` on deduplication (39/41)
+            running `cargo check --no-default-features --features c,e,easytime/default,easytime/std` on deduplication (40/41)
+            running `cargo check --no-default-features --all-features` on deduplication (41/41)
+            ",
+        );
+}
+
+#[test]
 fn feature_powerset_depth() {
     cargo_hack(["check", "--feature-powerset", "--depth", "2"])
         .test_dir("tests/fixtures/real")

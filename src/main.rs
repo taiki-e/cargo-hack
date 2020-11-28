@@ -151,7 +151,7 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
             Kind::Each { features }
         }
     } else if cx.feature_powerset {
-        let features = features::powerset(features, cx.depth);
+        let features = features::feature_powerset(features, cx.depth, &package.features);
 
         if (package.features.is_empty() || !cx.include_features.is_empty()) && features.is_empty() {
             progress.total += 1;
