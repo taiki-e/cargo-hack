@@ -231,7 +231,7 @@ fn exec_on_package(
     line.append_features_from_args(cx, id);
 
     line.arg("--manifest-path");
-    line.arg(&package.manifest_path);
+    line.arg(package.manifest_path.strip_prefix(&cx.current_dir).unwrap_or(&package.manifest_path));
 
     if cx.no_dev_deps || cx.remove_dev_deps {
         let new = cx.manifests(id).remove_dev_deps();
