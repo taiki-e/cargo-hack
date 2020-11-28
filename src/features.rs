@@ -1,3 +1,5 @@
+use std::collections::{BTreeMap, BTreeSet};
+
 use crate::{
     metadata::{Dependency, Metadata},
     PackageId,
@@ -60,10 +62,46 @@ impl Features {
     }
 }
 
-pub(crate) fn powerset<T: Clone>(
-    iter: impl IntoIterator<Item = T>,
+pub(crate) fn feature_powerset<'a>(
+    features: impl IntoIterator<Item = &'a str>,
     depth: Option<usize>,
-) -> Vec<Vec<T>> {
+    map: &BTreeMap<String, Vec<String>>,
+) -> Vec<Vec<&'a str>> {
+    let feature_deps = feature_deps(map);
+    let powerset = powerset(features, depth);
+    powerset
+        .into_iter()
+        .filter(|a| {
+            !a.iter().filter_map(|b| feature_deps.get(b)).any(|c| a.iter().any(|d| c.contains(d)))
+        })
+        .collect()
+}
+
+fn feature_deps(map: &BTreeMap<String, Vec<String>>) -> BTreeMap<&str, BTreeSet<&str>> {
+    let mut feat_deps = BTreeMap::new();
+    for feat in map.keys() {
+        let mut set = BTreeSet::new();
+        fn f<'a>(
+            map: &'a BTreeMap<String, Vec<String>>,
+            set: &mut BTreeSet<&'a str>,
+            curr: &str,
+            root: &str,
+        ) {
+            if let Some(v) = map.get(curr) {
+                for x in v {
+                    if x != root && set.insert(x) {
+                        f(map, set, x, root);
+                    }
+                }
+            }
+        }
+        f(map, &mut set, feat, feat);
+        feat_deps.insert(&**feat, set);
+    }
+    feat_deps
+}
+
+fn powerset<T: Clone>(iter: impl IntoIterator<Item = T>, depth: Option<usize>) -> Vec<Vec<T>> {
     iter.into_iter().fold(vec![vec![]], |mut acc, elem| {
         let ext = acc.clone().into_iter().map(|mut curr| {
             curr.push(elem.clone());
@@ -80,7 +118,66 @@ pub(crate) fn powerset<T: Clone>(
 
 #[cfg(test)]
 mod tests {
-    use super::powerset;
+    use super::{feature_deps, feature_powerset, powerset};
+    use std::{
+        collections::{BTreeMap, BTreeSet},
+        iter::FromIterator,
+    };
+
+    macro_rules! svec {
+        ($($expr:expr),* $(,)?) => {
+            vec![$($expr.into()),*]
+        };
+    }
+
+    macro_rules! map {
+        ($(($key:expr, $value:expr)),* $(,)?) => {
+            BTreeMap::from_iter(vec![$(($key.into(), $value)),*])
+        };
+    }
+
+    macro_rules! set {
+        ($($expr:expr),* $(,)?) => {
+            BTreeSet::from_iter(vec![$($expr),*])
+        };
+    }
+
+    #[test]
+    fn feature_deps1() {
+        let map =
+            map![("a", svec![]), ("b", svec!["a"]), ("c", svec!["b"]), ("d", svec!["a", "b"])];
+        let fd = feature_deps(&map);
+        assert_eq!(fd, map![
+            ("a", set![]),
+            ("b", set!["a"]),
+            ("c", set!["a", "b"]),
+            ("d", set!["a", "b"])
+        ]);
+        let list = vec!["a", "b", "c", "d"];
+        let ps = powerset(list.clone(), None);
+        assert_eq!(ps, vec![
+            vec![],
+            vec!["a"],
+            vec!["b"],
+            vec!["a", "b"],
+            vec!["c"],
+            vec!["a", "c"],
+            vec!["b", "c"],
+            vec!["a", "b", "c"],
+            vec!["d"],
+            vec!["a", "d"],
+            vec!["b", "d"],
+            vec!["a", "b", "d"],
+            vec!["c", "d"],
+            vec!["a", "c", "d"],
+            vec!["b", "c", "d"],
+            vec!["a", "b", "c", "d"],
+        ]);
+        let filtered = feature_powerset(list, None, &map);
+        assert_eq!(filtered, vec![vec![], vec!["a"], vec!["b"], vec!["c"], vec!["d"], vec![
+            "c", "d"
+        ]]);
+    }
 
     #[test]
     fn powerset_full() {
