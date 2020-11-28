@@ -1,4 +1,9 @@
-use std::{collections::HashMap, ops::Deref, path::Path};
+use std::{
+    collections::HashMap,
+    env,
+    ops::Deref,
+    path::{Path, PathBuf},
+};
 
 use crate::{
     cli::{self, Args, RawArgs},
@@ -14,11 +19,13 @@ pub(crate) struct Context<'a> {
     manifests: HashMap<PackageId, Manifest>,
     pkg_features: HashMap<PackageId, Features>,
     cargo: Cargo,
+    pub(crate) current_dir: PathBuf,
 }
 
 impl<'a> Context<'a> {
     pub(crate) fn new(args: &'a RawArgs) -> Result<Self> {
         let cargo = Cargo::new();
+        let current_dir = env::current_dir()?;
 
         let args = cli::parse_args(args, &cargo)?;
         assert!(
@@ -34,7 +41,8 @@ impl<'a> Context<'a> {
             pkg_features.insert(id.clone(), features);
         }
 
-        let mut this = Self { args, metadata, manifests: HashMap::new(), pkg_features, cargo };
+        let mut this =
+            Self { args, metadata, manifests: HashMap::new(), pkg_features, cargo, current_dir };
 
         // Only a few options require information from cargo manifest.
         // If manifest information is not required, do not read and parse them.
