@@ -3,12 +3,12 @@
 # Check all public crates with minimal version dependencies.
 #
 # Usage:
-#    bash scripts/check-minimal-versions.sh [+toolchain] [check|test]
+#    bash scripts/check-minimal-versions.sh [+toolchain] [check|test] [options]
 #
 # Note:
 # - This script modifies Cargo.toml and Cargo.lock while running
 # - This script exits with 1 if there are any unstaged changes
-# - This script requires nightly Rust and cargo-hack
+# - This script requires nightly toolchain and cargo-hack
 #
 # Refs: https://github.com/rust-lang/cargo/issues/5657
 
@@ -27,20 +27,16 @@ elif [[ -z "${CI:-}" ]]; then
 fi
 # Make sure toolchain is installed.
 cargo ${toolchain:-} -V >/dev/null
-# This script requires nightly Rust and cargo-hack
 if [[ "${toolchain:-+nightly}" != "+nightly"* ]] || ! cargo hack -V &>/dev/null; then
-  echo "error: check-minimal-versions.sh requires nightly Rust and cargo-hack"
+  echo "error: this script requires nightly toolchain and cargo-hack"
   exit 1
 fi
 
-# Parse subcommand.
-subcmd="${1:-check}"
-if [[ ! "${subcmd}" =~ ^(check|test)$ ]]; then
-  echo "error: invalid argument: ${1}"
-  exit 1
-elif [[ -n "${2:-}" ]]; then
-  echo "error: invalid argument: ${2}"
-  exit 1
+# Decide subcommand.
+subcmd="check"
+if [[ "${1:-}" =~ ^(check|test)$ ]]; then
+  subcmd="${1}"
+  shift
 fi
 
 # This script modifies Cargo.toml and Cargo.lock, so make sure there are no
@@ -58,4 +54,6 @@ fi
 # Update Cargo.lock to minimal version dependencies.
 cargo ${toolchain:-} update -Z minimal-versions
 # Run check for all public members of the workspace.
-cargo ${toolchain:-} hack "${subcmd}" --workspace --all-features --ignore-private -Z features=all
+cargo ${toolchain:-} hack "${subcmd}" \
+  --workspace --all-features --ignore-private -Z features=all \
+  "$@"
