@@ -8,7 +8,7 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [0.4.6] - 2020-11-30
 
-* [Exclude feature combinations by detecting dependencies of features.](https://github.com/taiki-e/cargo-hack/pull/85) See [#81](https://github.com/taiki-e/cargo-hack/pull/81) for more.
+* [Exclude feature combinations by detecting dependencies of features.](https://github.com/taiki-e/cargo-hack/pull/85) This may significantly reduce the runtime of `--feature-powerset` on projects that have many features. See [#81](https://github.com/taiki-e/cargo-hack/pull/81) for more.
 
 * [Fix an issue where `CARGO_HACK_CARGO_SRC=cross` did not work.](https://github.com/taiki-e/cargo-hack/pull/94)
 
