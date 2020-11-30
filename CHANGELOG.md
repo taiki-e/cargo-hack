@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.4.6] - 2020-11-30
+
+* [Exclude feature combinations by detecting dependencies of features.](https://github.com/taiki-e/cargo-hack/pull/85) See [#81](https://github.com/taiki-e/cargo-hack/pull/81) for more.
+
+* [Fix an issue where `CARGO_HACK_CARGO_SRC=cross` did not work.](https://github.com/taiki-e/cargo-hack/pull/94)
+
 ## [0.4.5] - 2020-11-14
 
 * Fix an issue where `cargo-hack` exits with exit code `0` if no subcommand or valid flag was passed.
