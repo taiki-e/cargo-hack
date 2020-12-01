@@ -786,16 +786,18 @@ mod tests {
     use super::Help;
     use crate::Result;
     use std::{env, fs, path::Path, process::Command};
+    use tempfile::Builder;
 
-    fn assert_eq(expected_path: &str, actual: &str) {
-        (|| -> Result<()> {
-            let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-            let expected_path = &manifest_dir.join(expected_path);
+    fn assert_diff(expected_path: impl AsRef<Path>, actual: impl AsRef<str>) {
+        let actual = actual.as_ref();
+        let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let expected_path = &manifest_dir.join(expected_path);
+        (|| -> Result<(), Box<dyn std::error::Error>> {
             let expected = fs::read_to_string(expected_path)?;
             if expected != actual {
                 if env::var_os("CI").is_some() {
-                    let actual_path =
-                        &manifest_dir.join("target").join(expected_path.file_name().unwrap());
+                    let outdir = Builder::new().prefix("assert_diff").tempdir()?;
+                    let actual_path = &outdir.path().join(expected_path.file_name().unwrap());
                     fs::write(actual_path, actual)?;
                     let status = Command::new("git")
                         .args(&["--no-pager", "diff", "--no-index", "--"])
@@ -809,18 +811,18 @@ mod tests {
             }
             Ok(())
         })()
-        .unwrap_or_else(|e| panic!("{:#}", e))
+        .unwrap_or_else(|e| panic!("{}", e))
     }
 
     #[test]
     fn long_help() {
-        let actual = &Help { long: true, term_size: 200 }.to_string();
-        assert_eq("tests/long-help.txt", actual);
+        let actual = Help { long: true, term_size: 200 }.to_string();
+        assert_diff("tests/long-help.txt", actual);
     }
 
     #[test]
     fn short_help() {
-        let actual = &Help { long: false, term_size: 200 }.to_string();
-        assert_eq("tests/short-help.txt", actual);
+        let actual = Help { long: false, term_size: 200 }.to_string();
+        assert_diff("tests/short-help.txt", actual);
     }
 }

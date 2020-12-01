@@ -28,3 +28,4 @@ toml = "0.5.2"
 [dev-dependencies]
 easy-ext = "0.2"
 rustversion = "1"
+tempfile = "3"
