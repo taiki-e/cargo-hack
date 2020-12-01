@@ -83,7 +83,7 @@ fn line_separated(lines: &str, f: impl FnMut(&str)) {
 
 impl AssertOutput {
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stderr contains each pattern.
-    pub fn assert_stderr_contains(&self, pats: &str) -> &Self {
+    pub fn stderr_contains(&self, pats: &str) -> &Self {
         line_separated(pats, |pat| {
             if !self.stderr.contains(pat) {
                 panic!(
@@ -98,7 +98,7 @@ impl AssertOutput {
     }
 
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stdout contains each pattern.
-    pub fn assert_stderr_not_contains(&self, pats: &str) -> &Self {
+    pub fn stderr_not_contains(&self, pats: &str) -> &Self {
         line_separated(pats, |pat| {
             if self.stderr.contains(pat) {
                 panic!(
@@ -113,7 +113,7 @@ impl AssertOutput {
     }
 
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stdout contains each pattern.
-    pub fn assert_stdout_contains(&self, pats: &str) -> &Self {
+    pub fn stdout_contains(&self, pats: &str) -> &Self {
         line_separated(pats, |pat| {
             if !self.stdout.contains(pat) {
                 panic!(
@@ -128,7 +128,7 @@ impl AssertOutput {
     }
 
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stdout contains each pattern.
-    pub fn assert_stdout_not_contains(&self, pats: &str) -> &Self {
+    pub fn stdout_not_contains(&self, pats: &str) -> &Self {
         line_separated(pats, |pat| {
             if self.stdout.contains(pat) {
                 panic!(
