@@ -15,6 +15,14 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+function error {
+  if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+    echo "::error::$*"
+  else
+    echo "error: $*" >&2
+  fi
+}
+
 cd "$(cd "$(dirname "${0}")" && pwd)"/..
 
 # Decide Rust toolchain.
@@ -28,7 +36,7 @@ fi
 # Make sure toolchain is installed.
 cargo ${toolchain:-} -V >/dev/null
 if [[ "${toolchain:-+nightly}" != "+nightly"* ]] || ! cargo hack -V &>/dev/null; then
-  echo "error: this script requires nightly toolchain and cargo-hack"
+  error "this script requires nightly toolchain and cargo-hack"
   exit 1
 fi
 

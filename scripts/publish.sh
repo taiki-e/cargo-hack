@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# A script that automates the local side release step.
+# Automate the local side release step.
 #
-# Note that this script does not intend for use with projects that have multiple
+# Note: This script does not intend to use with projects that have multiple
 # public packages with different version numbers in the workspace, like crossbeam.
 
 set -euo pipefail
@@ -14,13 +14,17 @@ MEMBERS=(
   "."
 )
 
+function error {
+  echo "error: $*" >&2
+}
+
 function retry() {
   local -i max_retry=${1}
   local -i count=0
   while ! eval "${2}"; do
     ((count++))
     if ((count > max_retry)); then
-      echo "error: ${3}"
+      error "${3}"
       exit 1
     fi
     echo "info: retry after $((10 * count)) seconds"
@@ -34,7 +38,7 @@ cd "$(cd "$(dirname "${0}")" && pwd)"/..
 version="${1:?}"
 tag="v${version}"
 if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z_0-9\.-]+)?(\+[a-zA-Z_0-9\.-]+)?$ ]]; then
-  echo "error: invalid version format: ${version}"
+  error "invalid version format: ${version}"
   exit 1
 fi
 if [[ "${2:-}" == "--dry-run" ]]; then
@@ -42,19 +46,19 @@ if [[ "${2:-}" == "--dry-run" ]]; then
   shift
 fi
 if [[ -n "${2:-}" ]]; then
-  echo "error: invalid argument: ${2}"
+  error "invalid argument: ${2}"
   exit 1
 fi
 for member in "${MEMBERS[@]}"; do
   if [[ ! -d "${member}" ]]; then
-    echo "error: not found workspace member ${member}"
+    error "not found workspace member ${member}"
     exit 1
   fi
   (
     cd "${member}"
     actual=$(cargo pkgid | sed 's/.*#//')
     if [[ "${actual}" != "${version}" ]]; then
-      echo "error: expected to release version ${version}, but ${member}/Cargo.toml contained ${actual}"
+      error "expected to release version ${version}, but ${member}/Cargo.toml contained ${actual}"
       exit 1
     fi
   )
@@ -73,6 +77,7 @@ else
 
     # .github/workflows/release.yml should be able to create a new github release in less than a minute.
     echo "info: waiting for github actions to create a new github release for ${version}"
+    sleep 10
     retry 3 "gh release view ${tag} &>/dev/null" "unable to create a new github release for ${version}"
   fi
 fi
