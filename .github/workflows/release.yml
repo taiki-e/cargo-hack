@@ -25,26 +25,30 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   upload-assets:
+    name: ${{ matrix.target }}
     if: github.repository_owner == 'taiki-e'
     needs:
       - create-release
     strategy:
       matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-    runs-on: ${{ matrix.os }}
+        include:
+          - target: x86_64-unknown-linux-gnu
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+          - target: x86_64-unknown-linux-musl
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v2
       - uses: taiki-e/github-actions/install-rust@main
       # Work around https://github.com/actions/cache/issues/403 by using GNU tar
       # instead of BSD tar.
       - name: Install GNU tar
-        if: matrix.os == 'macos-latest'
+        if: startsWith(matrix.os, 'macos')
         run: |
           brew install gnu-tar
           echo "/usr/local/opt/gnu-tar/libexec/gnubin" >> "${GITHUB_PATH}"
-      - run: ci/upload-assets.sh
+      - run: ci/upload-assets.sh ${{ matrix.target }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
