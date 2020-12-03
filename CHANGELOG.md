@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+* [Remove deprecated `--skip-no-default-features` flag.](https://github.com/taiki-e/cargo-hack/pull/100) Use `--exclude-no-default-features` flag instead.
+
+* [Change some warnings to errors.](https://github.com/taiki-e/cargo-hack/pull/100)
+
+* Diagnostic improvements.
+
 ## [0.4.8] - 2020-12-03
 
 * [Fix an issue that feature combinations exclusion does not work properly when used with `--group-features`.](https://github.com/taiki-e/cargo-hack/pull/99)
@@ -59,7 +65,7 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 ## [0.4.0] - 2020-10-21
 
-* [Remove `--ignore-non-exist-features` flag.][62] Use `--ignore-unknown-features` flag instead.
+* [Remove deprecated `--ignore-non-exist-features` flag.][62] Use `--ignore-unknown-features` flag instead.
 
 * [Treat `--all-features` flag as one of feature combinations.][61] See [#42][42] for details.
 

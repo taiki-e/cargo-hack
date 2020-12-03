@@ -175,7 +175,7 @@ fn determine_package_list<'a>(
         cx.exclude.iter().for_each(|spec| {
             if !cx.workspace_members().any(|id| cx.packages(id).name == *spec) {
                 warn!(
-                    "excluded package(s) {} not found in workspace `{}`",
+                    "excluded package(s) `{}` not found in workspace `{}`",
                     spec,
                     cx.workspace_root().display()
                 );
@@ -220,7 +220,7 @@ fn exec_on_package(
 ) -> Result<()> {
     let package = cx.packages(id);
     if let Kind::SkipAsPrivate = kind {
-        info!("skipped running on private crate {}", package.name_verbose(cx));
+        info!("skipped running on private crate `{}`", package.name_verbose(cx));
         return Ok(());
     }
 
@@ -235,7 +235,7 @@ fn exec_on_package(
         let mut handle = restore.set_manifest(cx, id);
 
         fs::write(&package.manifest_path, new).with_context(|| {
-            format!("failed to update manifest file: {}", package.manifest_path.display())
+            format!("failed to update manifest file `{}`", package.manifest_path.display())
         })?;
 
         exec_actual(cx, id, kind, &mut line, progress)?;

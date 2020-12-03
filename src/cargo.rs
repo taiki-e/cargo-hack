@@ -17,7 +17,9 @@ impl Cargo {
         let path = cargo_binary();
 
         // If failed to determine cargo version, assign 0 to skip all version-dependent decisions.
-        let version = cargo_minor_version(&path).map_err(|e| warn!("{}", e)).unwrap_or(0);
+        let version = cargo_minor_version(&path)
+            .map_err(|e| warn!("unable to determine cargo version: {}", e))
+            .unwrap_or(0);
 
         Self { path, version }
     }

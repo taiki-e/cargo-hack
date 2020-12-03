@@ -63,7 +63,7 @@ impl Restore {
         let mut current = self.current.lock().unwrap();
         if let Some(current) = current.take() {
             fs::write(&current.manifest_path, &current.manifest).with_context(|| {
-                format!("failed to restore manifest file: {}", current.manifest_path.display())
+                format!("failed to restore manifest file `{}`", current.manifest_path.display())
             })?;
         }
         Ok(())
