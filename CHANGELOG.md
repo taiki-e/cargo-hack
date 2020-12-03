@@ -6,6 +6,14 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.4.7] - 2020-12-03
+
+No public API changes from 0.4.6.
+
+* Distribute `*.tar.gz` file for Windows via GitHub Releases. See [#98](https://github.com/taiki-e/cargo-hack/pull/98) for more.
+
+* Distribute x86_64-unknown-linux-musl binary via GitHub Releases.
+
 ## [0.4.6] - 2020-11-30
 
 * [Exclude feature combinations by detecting dependencies of features.](https://github.com/taiki-e/cargo-hack/pull/85) This may significantly reduce the runtime of `--feature-powerset` on projects that have many features. See [#81](https://github.com/taiki-e/cargo-hack/pull/81) for more.
@@ -210,7 +218,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.4.6...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.4.7...HEAD
+[0.4.7]: https://github.com/taiki-e/cargo-hack/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/taiki-e/cargo-hack/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/taiki-e/cargo-hack/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/taiki-e/cargo-hack/compare/v0.4.3...v0.4.4
