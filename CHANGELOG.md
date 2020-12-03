@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.4.8] - 2020-12-03
+
 * [Fix an issue that feature combinations exclusion does not work properly when used with `--group-features`.](https://github.com/taiki-e/cargo-hack/pull/99)
 
 ## [0.4.7] - 2020-12-03
@@ -220,7 +222,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.4.7...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.4.8...HEAD
+[0.4.8]: https://github.com/taiki-e/cargo-hack/compare/v0.4.7...v0.4.8
 [0.4.7]: https://github.com/taiki-e/cargo-hack/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/taiki-e/cargo-hack/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/taiki-e/cargo-hack/compare/v0.4.4...v0.4.5
