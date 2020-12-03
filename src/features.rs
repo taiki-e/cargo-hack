@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    slice,
+};
 
 use crate::{
     metadata::{Dependency, Metadata},
@@ -6,7 +9,7 @@ use crate::{
 };
 
 pub(crate) struct Features {
-    features: Vec<String>,
+    features: Vec<Feature>,
     /// [package features len, package features + optional deps len]
     len: [usize; 2],
 }
@@ -18,11 +21,11 @@ impl Features {
 
         let mut features = Vec::with_capacity(package.features.len());
 
-        for name in package.features.keys().cloned() {
-            features.push(name);
+        for name in package.features.keys() {
+            features.push(name.into());
         }
         for name in package.dependencies.iter().filter_map(Dependency::as_feature) {
-            features.push(name.to_string());
+            features.push(name.into());
         }
         let len = [package.features.len(), features.len()];
 
@@ -37,7 +40,7 @@ impl Features {
             // so I'm not sure if there is a way to find the actual feature name exactly.
             if let Some(d) = package.dependencies.iter().find(|d| d.name == dep_package.name) {
                 let name = d.rename.as_ref().unwrap_or(&d.name);
-                features.extend(dep_package.features.keys().map(|f| format!("{}/{}", name, f)));
+                features.extend(dep_package.features.keys().map(|f| Feature::path(name, f)));
             }
             // TODO: Optional deps of `dep_package`.
         }
@@ -45,15 +48,15 @@ impl Features {
         Self { features, len }
     }
 
-    pub(crate) fn normal(&self) -> &[String] {
+    pub(crate) fn normal(&self) -> &[Feature] {
         &self.features[..self.len[0]]
     }
 
-    pub(crate) fn optional_deps(&self) -> &[String] {
+    pub(crate) fn optional_deps(&self) -> &[Feature] {
         &self.features[self.len[0]..self.len[1]]
     }
 
-    pub(crate) fn deps_features(&self) -> &[String] {
+    pub(crate) fn deps_features(&self) -> &[Feature] {
         &self.features[self.len[1]..]
     }
 
@@ -62,17 +65,92 @@ impl Features {
     }
 }
 
+/// The representation of Cargo feature.
+#[derive(Debug)]
+pub(crate) enum Feature {
+    /// A feature of the current crate.
+    Normal {
+        /// Feature name. It is considered indivisible.
+        name: String,
+    },
+    /// Grouped features.
+    Group {
+        /// Feature name concatenated with `,`.
+        name: String,
+        /// Original feature list.
+        list: Vec<String>,
+    },
+    /// A feature of a dependency.
+    Path {
+        /// Feature path separated with `/`.
+        name: String,
+        /// Index of `/`.
+        slash: usize,
+    },
+}
+
+impl Feature {
+    pub(crate) fn group(group: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        let list: Vec<_> = group.into_iter().map(Into::into).collect();
+        Feature::Group { name: list.join(","), list }
+    }
+
+    pub(crate) fn path(parent: &str, name: &str) -> Self {
+        Feature::Path { name: format!("{}/{}", parent, name), slash: parent.len() }
+    }
+
+    pub(crate) fn name(&self) -> &str {
+        match self {
+            Feature::Normal { name } | Feature::Group { name, .. } | Feature::Path { name, .. } => {
+                name
+            }
+        }
+    }
+
+    pub(crate) fn as_group(&self) -> &[String] {
+        match self {
+            Feature::Group { list, .. } => list,
+            Feature::Normal { name } | Feature::Path { name, .. } => slice::from_ref(name),
+        }
+    }
+
+    pub(crate) fn matches(&self, s: &str) -> bool {
+        self.as_group().iter().any(|n| **n == *s)
+    }
+}
+
+impl PartialEq<str> for Feature {
+    fn eq(&self, other: &str) -> bool {
+        self.name() == other
+    }
+}
+
+impl<S: Into<String>> From<S> for Feature {
+    fn from(name: S) -> Self {
+        Feature::Normal { name: name.into() }
+    }
+}
+
+impl AsRef<str> for Feature {
+    fn as_ref(&self) -> &str {
+        self.name()
+    }
+}
+
 pub(crate) fn feature_powerset<'a>(
-    features: impl IntoIterator<Item = &'a str>,
+    features: impl IntoIterator<Item = &'a Feature>,
     depth: Option<usize>,
     map: &BTreeMap<String, Vec<String>>,
-) -> Vec<Vec<&'a str>> {
-    let feature_deps = feature_deps(map);
-    let powerset = powerset(features, depth);
-    powerset
+) -> Vec<Vec<&'a Feature>> {
+    let deps_map = feature_deps(map);
+    powerset(features, depth)
         .into_iter()
-        .filter(|a| {
-            !a.iter().filter_map(|b| feature_deps.get(b)).any(|c| a.iter().any(|d| c.contains(d)))
+        .filter(|fs| {
+            !fs.iter().any(|f| {
+                f.as_group().iter().filter_map(|f| deps_map.get(&&**f)).any(|deps| {
+                    fs.iter().any(|f| f.as_group().iter().all(|f| deps.contains(&&**f)))
+                })
+            })
         })
         .collect()
 }
@@ -101,10 +179,10 @@ fn feature_deps(map: &BTreeMap<String, Vec<String>>) -> BTreeMap<&str, BTreeSet<
     feat_deps
 }
 
-fn powerset<T: Clone>(iter: impl IntoIterator<Item = T>, depth: Option<usize>) -> Vec<Vec<T>> {
+fn powerset<T: Copy>(iter: impl IntoIterator<Item = T>, depth: Option<usize>) -> Vec<Vec<T>> {
     iter.into_iter().fold(vec![vec![]], |mut acc, elem| {
         let ext = acc.clone().into_iter().map(|mut curr| {
-            curr.push(elem.clone());
+            curr.push(elem);
             curr
         });
         if let Some(depth) = depth {
@@ -118,7 +196,7 @@ fn powerset<T: Clone>(iter: impl IntoIterator<Item = T>, depth: Option<usize>) -
 
 #[cfg(test)]
 mod tests {
-    use super::{feature_deps, feature_powerset, powerset};
+    use super::{feature_deps, feature_powerset, powerset, Feature};
     use std::{
         collections::{BTreeMap, BTreeSet},
         iter::FromIterator,
@@ -153,8 +231,8 @@ mod tests {
             ("c", set!["a", "b"]),
             ("d", set!["a", "b"])
         ]);
-        let list = vec!["a", "b", "c", "d"];
-        let ps = powerset(list.clone(), None);
+        let list: Vec<Feature> = svec!["a", "b", "c", "d"];
+        let ps = powerset(list.iter().collect::<Vec<_>>(), None);
         assert_eq!(ps, vec![
             vec![],
             vec!["a"],
@@ -173,7 +251,7 @@ mod tests {
             vec!["b", "c", "d"],
             vec!["a", "b", "c", "d"],
         ]);
-        let filtered = feature_powerset(list, None, &map);
+        let filtered = feature_powerset(list.iter().collect::<Vec<_>>(), None, &map);
         assert_eq!(filtered, vec![vec![], vec!["a"], vec!["b"], vec!["c"], vec!["d"], vec![
             "c", "d"
         ]]);

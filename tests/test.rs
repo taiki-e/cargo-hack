@@ -503,6 +503,7 @@ fn feature_powerset_failure() {
 
 #[test]
 fn powerset_deduplication() {
+    // basic
     cargo_hack(["check", "--feature-powerset"])
         .test_dir("tests/fixtures/powerset_deduplication")
         .assert_success()
@@ -532,6 +533,7 @@ fn powerset_deduplication() {
             ",
         );
 
+    // with --optional-deps
     cargo_hack(["check", "--feature-powerset", "--optional-deps"])
         .test_dir("tests/fixtures/powerset_deduplication")
         .assert_success()
@@ -563,6 +565,59 @@ fn powerset_deduplication() {
             b,e
             d,e
             ",
+        );
+
+    // with --group-features
+    cargo_hack(["check", "--feature-powerset", "--group-features", "b,d"])
+        .test_dir("tests/fixtures/powerset_deduplication")
+        .assert_success()
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on deduplication (1/8)
+            running `cargo check --no-default-features --features a` on deduplication (2/8)
+            running `cargo check --no-default-features --features c` on deduplication (3/8)
+            running `cargo check --no-default-features --features e` on deduplication (4/8)
+            running `cargo check --no-default-features --features c,e` on deduplication (5/8)
+            running `cargo check --no-default-features --features b,d` on deduplication (6/8)
+            running `cargo check --no-default-features --features c,b,d` on deduplication (7/8)
+            running `cargo check --no-default-features --all-features` on deduplication (8/8)
+            ",
+        )
+        .stderr_not_contains(
+            "
+            a,b,d
+            e,b,d
+            ",
+        );
+
+    // with --group-features + --optional-deps
+    cargo_hack(["check", "--feature-powerset", "--group-features", "b,d", "--optional-deps"])
+        .test_dir("tests/fixtures/powerset_deduplication")
+        .assert_success()
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on deduplication (1/11)
+            running `cargo check --no-default-features --features a` on deduplication (2/11)
+            running `cargo check --no-default-features --features c` on deduplication (3/11)
+            running `cargo check --no-default-features --features e` on deduplication (4/11)
+            running `cargo check --no-default-features --features c,e` on deduplication (5/11)
+            running `cargo check --no-default-features --features member1` on deduplication (6/11)
+            running `cargo check --no-default-features --features a,member1` on deduplication (7/11)
+            running `cargo check --no-default-features --features c,member1` on deduplication (8/11)
+            running `cargo check --no-default-features --features b,d` on deduplication (9/11)
+            running `cargo check --no-default-features --features c,b,d` on deduplication (10/11)
+            running `cargo check --no-default-features --all-features` on deduplication (11/11)
+            ",
+        )
+        .stderr_not_contains(
+            "
+        a,b,d
+        b,d,a
+        e,b,d
+        b,d,e
+        member1,b,d
+        b,d,member1
+        ",
         );
 }
 

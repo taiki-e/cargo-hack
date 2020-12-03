@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+* [Fix an issue that feature combinations exclusion does not work properly when used with `--group-features`.](https://github.com/taiki-e/cargo-hack/pull/99)
+
 ## [0.4.7] - 2020-12-03
 
 No public API changes from 0.4.6.
