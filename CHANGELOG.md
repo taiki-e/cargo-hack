@@ -12,6 +12,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 * Diagnostic improvements.
 
+* GitHub Releases binaries containing version numbers are no longer distributed. See [#91](https://github.com/taiki-e/cargo-hack/pull/91) for more.
+
 ## [0.4.8] - 2020-12-03
 
 * [Fix an issue that feature combinations exclusion does not work properly when used with `--group-features`.](https://github.com/taiki-e/cargo-hack/pull/99)
