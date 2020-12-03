@@ -1,7 +1,7 @@
 use anyhow::{bail, format_err, Error};
 use std::{env, fmt, mem};
 
-use crate::{term, Cargo, Result};
+use crate::{term, Cargo, Feature, Result};
 
 fn print_version() {
     println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
@@ -213,7 +213,7 @@ pub(crate) struct Args<'a> {
     /// --optional-deps [DEPS]...
     pub(crate) optional_deps: Option<Vec<&'a str>>,
     /// --include-features
-    pub(crate) include_features: Vec<&'a str>,
+    pub(crate) include_features: Vec<Feature>,
     /// --include-deps-features
     pub(crate) include_deps_features: bool,
 
@@ -230,7 +230,7 @@ pub(crate) struct Args<'a> {
     /// --depth <NUM>
     pub(crate) depth: Option<usize>,
     /// --group-features <FEATURES>...
-    pub(crate) group_features: Vec<(Vec<&'a str>, String)>,
+    pub(crate) group_features: Vec<Feature>,
 
     /// --no-default-features
     pub(crate) no_default_features: bool,
@@ -560,18 +560,17 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
     let depth = depth.map(str::parse::<usize>).transpose()?;
     let group_features =
         group_features.iter().try_fold(Vec::with_capacity(group_features.len()), |mut v, g| {
-            let g: Vec<_> = if g.contains(',') {
-                g.split(',').collect()
+            let g = if g.contains(',') {
+                g.split(',')
             } else if g.contains(' ') {
-                g.split(' ').collect()
+                g.split(' ')
             } else {
                 bail!(
                     "--group-features requires a list of two or more features separated by space \
                      or comma"
                 );
             };
-            let s = g.join(",");
-            v.push((g, s));
+            v.push(Feature::group(g));
             Ok(v)
         })?;
 
@@ -673,7 +672,7 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
         if optional_deps.as_ref().map_or(false, |d| d.contains(f)) {
             warn!("feature `{}` specified by both --exclude-features and --optional-deps", f);
         }
-        if group_features.iter().any(|(v, _)| v.contains(f)) {
+        if group_features.iter().any(|v| v.matches(f)) {
             warn!("feature `{}` specified by both --exclude-features and --group-features", f);
         }
         if include_features.contains(f) {
@@ -703,7 +702,7 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
         ignore_unknown_features,
         optional_deps,
         clean_per_run,
-        include_features,
+        include_features: include_features.into_iter().map(Into::into).collect(),
         include_deps_features,
 
         depth,

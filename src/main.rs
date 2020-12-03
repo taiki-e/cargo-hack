@@ -28,7 +28,8 @@ use anyhow::{bail, Context as _};
 use std::{fmt::Write, fs};
 
 use crate::{
-    cargo::Cargo, context::Context, metadata::PackageId, process::ProcessBuilder, restore::Restore,
+    cargo::Cargo, context::Context, features::Feature, metadata::PackageId,
+    process::ProcessBuilder, restore::Restore,
 };
 
 type Result<T, E = anyhow::Error> = std::result::Result<T, E>;
@@ -76,8 +77,8 @@ enum Kind<'a> {
     NoSubcommand,
     SkipAsPrivate,
     Nomal,
-    Each { features: Vec<&'a str> },
-    Powerset { features: Vec<Vec<&'a str>> },
+    Each { features: Vec<&'a Feature> },
+    Powerset { features: Vec<Vec<&'a Feature>> },
 }
 
 fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progress) -> Kind<'a> {
@@ -93,8 +94,9 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
     }
 
     let package = cx.packages(id);
-    let filter = |f: &&str| {
-        !cx.exclude_features.contains(f) && !cx.group_features.iter().any(|(g, _)| g.contains(f))
+    let filter = |&f: &&Feature| {
+        !cx.exclude_features.iter().any(|s| f == *s)
+            && !cx.group_features.iter().any(|g| g.matches(f.as_ref()))
     };
     let features = if cx.include_features.is_empty() {
         let feature_list = cx.pkg_features(id);
@@ -105,8 +107,7 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
             }
         });
 
-        let mut features: Vec<_> =
-            feature_list.normal().iter().map(String::as_str).filter(filter).collect();
+        let mut features: Vec<_> = feature_list.normal().iter().filter(filter).collect();
 
         if let Some(opt_deps) = &cx.optional_deps {
             opt_deps.iter().for_each(|&d| {
@@ -118,26 +119,22 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
                 }
             });
 
-            features.extend(
-                feature_list
-                    .optional_deps()
-                    .iter()
-                    .map(String::as_str)
-                    .filter(|f| filter(f) && (opt_deps.is_empty() || opt_deps.contains(f))),
-            );
+            features.extend(feature_list.optional_deps().iter().filter(|f| {
+                filter(f) && (opt_deps.is_empty() || opt_deps.iter().any(|x| *f == *x))
+            }));
         }
 
         if cx.include_deps_features {
-            features.extend(feature_list.deps_features().iter().map(String::as_str).filter(filter));
+            features.extend(feature_list.deps_features().iter().filter(filter));
         }
 
         if !cx.group_features.is_empty() {
-            features.extend(cx.group_features.iter().map(|(_, s)| &**s));
+            features.extend(cx.group_features.iter());
         }
 
         features
     } else {
-        cx.include_features.iter().copied().filter(filter).collect()
+        cx.include_features.iter().filter(filter).collect()
     };
 
     if cx.each_feature {
