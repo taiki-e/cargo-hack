@@ -78,9 +78,11 @@ fn real_manifest() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .stderr_not_contains(
-            "running `cargo check` on member1
-             running `cargo check` on member2
-             running `cargo check` on member3",
+            "
+            running `cargo check` on member1
+            running `cargo check` on member2
+            running `cargo check` on member3
+            ",
         )
         .stderr_contains("running `cargo check` on real");
 
@@ -88,26 +90,32 @@ fn real_manifest() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .stderr_contains(
-            "running `cargo check` on member1 (1/4)
-             running `cargo check` on member2 (2/4)
-             running `cargo check` on member3 (3/4)
-             running `cargo check` on real (4/4)",
+            "
+            running `cargo check` on member1 (1/4)
+            running `cargo check` on member2 (2/4)
+            running `cargo check` on member3 (3/4)
+            running `cargo check` on real (4/4)
+            ",
         );
 }
 
 #[test]
 fn virtual_manifest() {
     cargo_hack(["check"]).test_dir("tests/fixtures/virtual").assert_success().stderr_contains(
-        "running `cargo check` on member1 (1/3)
-             running `cargo check` on member2 (2/3)",
+        "
+        running `cargo check` on member1 (1/3)
+        running `cargo check` on member2 (2/3)
+        ",
     );
 
     cargo_hack(["check", "--all"])
         .test_dir("tests/fixtures/virtual")
         .assert_success()
         .stderr_contains(
-            "running `cargo check` on member1 (1/3)
-             running `cargo check` on member2 (2/3)",
+            "
+            running `cargo check` on member1 (1/3)
+            running `cargo check` on member2 (2/3)
+            ",
         );
 }
 
@@ -118,19 +126,23 @@ fn real_all_in_subcrate() {
         .assert_success()
         .stderr_contains("running `cargo check` on member2")
         .stderr_not_contains(
-            "running `cargo check` on member1
-             running `cargo check` on member3
-             running `cargo check` on real",
+            "
+            running `cargo check` on member1
+            running `cargo check` on member3
+            running `cargo check` on real
+            ",
         );
 
     cargo_hack(["check", "--all"])
         .test_dir("tests/fixtures/real/member2")
         .assert_success()
         .stderr_contains(
-            "running `cargo check` on member1
-             running `cargo check` on member2
-             running `cargo check` on member3
-             running `cargo check` on real",
+            "
+            running `cargo check` on member1
+            running `cargo check` on member2
+            running `cargo check` on member3
+            running `cargo check` on real
+            ",
         );
 }
 
@@ -146,8 +158,10 @@ fn virtual_all_in_subcrate() {
         .test_dir("tests/fixtures/virtual/member1")
         .assert_success()
         .stderr_contains(
-            "running `cargo check` on member1
-             running `cargo check` on member2",
+            "
+            running `cargo check` on member1
+            running `cargo check` on member2
+            ",
         );
 }
 
@@ -157,11 +171,13 @@ fn real_ignore_private() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .stderr_not_contains(
-            "running `cargo check` on member1
-             skipped running on private crate member1
-             running `cargo check` on member2
-             skipped running on private crate member2
-             running `cargo check` on real",
+            "
+            running `cargo check` on member1
+            skipped running on private crate member1
+            running `cargo check` on member2
+            skipped running on private crate member2
+            running `cargo check` on real
+            ",
         )
         .stderr_contains("skipped running on private crate real");
 
@@ -169,16 +185,20 @@ fn real_ignore_private() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .stderr_contains(
-            "running `cargo check` on member1
-             skipped running on private crate member2
-             running `cargo check` on member3
-             skipped running on private crate real",
+            "
+            running `cargo check` on member1
+            skipped running on private crate member2
+            running `cargo check` on member3
+            skipped running on private crate real
+            ",
         )
         .stderr_not_contains(
-            "skipped running on private crate member1
-             running `cargo check` on member2
-             skipped running on private crate member3
-             running `cargo check` on real",
+            "
+            skipped running on private crate member1
+            running `cargo check` on member2
+            skipped running on private crate member3
+            running `cargo check` on real
+            ",
         );
 }
 
@@ -188,24 +208,32 @@ fn virtual_ignore_private() {
         .test_dir("tests/fixtures/virtual")
         .assert_success()
         .stderr_contains(
-            "running `cargo check` on member1
-             skipped running on private crate member2",
+            "
+            running `cargo check` on member1
+            skipped running on private crate member2
+            ",
         )
         .stderr_not_contains(
-            "skipped running on private crate member1
-             running `cargo check` on member2",
+            "
+            skipped running on private crate member1
+            running `cargo check` on member2
+            ",
         );
 
     cargo_hack(["check", "--all", "--ignore-private"])
         .test_dir("tests/fixtures/virtual")
         .assert_success()
         .stderr_contains(
-            "running `cargo check` on member1
-             skipped running on private crate member2",
+            "
+            running `cargo check` on member1
+            skipped running on private crate member2
+            ",
         )
         .stderr_not_contains(
-            "running `cargo check` on member2
-             skipped running on private crate member1",
+            "
+            running `cargo check` on member2
+            skipped running on private crate member1
+            ",
         );
 }
 
@@ -239,9 +267,11 @@ fn exclude() {
         .test_dir("tests/fixtures/virtual")
         .assert_success()
         .stderr_contains(
-            "excluded package(s) foo not found in workspace
-             running `cargo check` on member1
-             running `cargo check` on member2",
+            "
+            excluded package(s) foo not found in workspace
+            running `cargo check` on member1
+            running `cargo check` on member2
+            ",
         );
 }
 
@@ -260,9 +290,11 @@ fn no_dev_deps() {
         .test_dir("tests/fixtures/no_dev_deps")
         .assert_success()
         .stderr_contains(
-            "running `cargo check` on no_dev_deps
-             --no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is \
-             running and restores it when finished",
+            "
+            running `cargo check` on no_dev_deps
+            --no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is \
+            running and restores it when finished
+            ",
         );
 
     // with --all
@@ -270,7 +302,10 @@ fn no_dev_deps() {
         .test_dir("tests/fixtures/no_dev_deps")
         .assert_success()
         .stderr_contains(
-            "--no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished",
+            "
+            --no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is \
+            running and restores it when finished
+            ",
         );
 }
 
@@ -334,9 +369,11 @@ fn ignore_unknown_features() {
         .test_dir("tests/fixtures/virtual")
         .assert_success()
         .stderr_contains(
-            "skipped applying unknown `f` feature to member1
-             running `cargo check --no-default-features` on member1
-             running `cargo check --no-default-features --features f` on member2",
+            "
+            skipped applying unknown `f` feature to member1
+            running `cargo check --no-default-features` on member1
+            running `cargo check --no-default-features --features f` on member2
+            ",
         )
         .stderr_not_contains("skipped applying unknown `f` feature to member2");
 }
@@ -808,8 +845,10 @@ fn include_features() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .stderr_contains(
-            "running `cargo check --no-default-features --features a` on real (1/2)
-             running `cargo check --no-default-features --features b` on real (2/2)",
+            "
+            running `cargo check --no-default-features --features a` on real (1/2)
+            running `cargo check --no-default-features --features b` on real (2/2)
+            ",
         )
         .stderr_not_contains("--features c");
 
@@ -817,9 +856,11 @@ fn include_features() {
         .test_dir("tests/fixtures/real")
         .assert_success()
         .stderr_contains(
-            "running `cargo check --no-default-features --features a` on real (1/3)
-             running `cargo check --no-default-features --features b` on real (2/3)
-             running `cargo check --no-default-features --features a,b` on real (3/3)",
+            "
+            running `cargo check --no-default-features --features a` on real (1/3)
+            running `cargo check --no-default-features --features b` on real (2/3)
+            running `cargo check --no-default-features --features a,b` on real (3/3)
+            ",
         );
 }
 
@@ -933,10 +974,12 @@ fn powerset_skip_success() {
             ",
         )
         .stderr_not_contains(
-            "--features a
-             --features a,b
-             --features a,c
-             --features a,b,c",
+            "
+            --features a
+            --features a,b
+            --features a,c
+            --features a,b,c
+            ",
         );
 }
 
@@ -947,10 +990,12 @@ fn exclude_features_default() {
         .assert_success()
         .stderr_not_contains("running `cargo check` on real")
         .stderr_contains(
-            "running `cargo check --no-default-features` on real (1/4)
-             running `cargo check --no-default-features --features a` on real (2/4)
-             running `cargo check --no-default-features --features b` on real (3/4)
-             running `cargo check --no-default-features --features c` on real (4/4)",
+            "
+            running `cargo check --no-default-features` on real (1/4)
+            running `cargo check --no-default-features --features a` on real (2/4)
+            running `cargo check --no-default-features --features b` on real (3/4)
+            running `cargo check --no-default-features --features c` on real (4/4)
+            ",
         );
 }
 
@@ -1099,8 +1144,10 @@ fn trailing_args() {
         .assert_success()
         .stderr_contains("running `cargo test -- --ignored` on real")
         .stdout_contains(
-            "running 1 test
-             test tests::test_ignored",
+            "
+            running 1 test
+            test tests::test_ignored
+            ",
         );
 }
 
@@ -1110,8 +1157,10 @@ fn package_collision() {
         .test_dir("tests/fixtures/package_collision")
         .assert_success()
         .stderr_contains(
-            "running `cargo check` on member1
-             running `cargo check` on member2",
+            "
+            running `cargo check` on member1
+            running `cargo check` on member2
+            ",
         );
 }
 
@@ -1121,8 +1170,10 @@ fn not_find_manifest() {
         .test_dir("tests/fixtures/virtual/dir/not_find_manifest")
         .assert_success()
         .stderr_not_contains(
-            "running `cargo check` on member1
-             running `cargo check` on member2",
+            "
+            running `cargo check` on member1
+            running `cargo check` on member2
+            ",
         )
         .stderr_contains("running `cargo check` on not_find_manifest");
 
@@ -1130,17 +1181,21 @@ fn not_find_manifest() {
         .test_dir("tests/fixtures/virtual/dir/not_find_manifest")
         .assert_success()
         .stderr_contains(
-            "running `cargo check` on member1
-             running `cargo check` on member2
-             running `cargo check` on not_find_manifest",
+            "
+            running `cargo check` on member1
+            running `cargo check` on member2
+            running `cargo check` on not_find_manifest
+            ",
         );
 
     cargo_hack(["check", "--manifest-path", "dir/not_find_manifest/Cargo.toml"])
         .test_dir("tests/fixtures/virtual")
         .assert_success()
         .stderr_not_contains(
-            "running `cargo check` on member1
-             running `cargo check` on member2",
+            "
+            running `cargo check` on member1
+            running `cargo check` on member2
+            ",
         )
         .stderr_contains("running `cargo check` on not_find_manifest");
 
@@ -1148,9 +1203,11 @@ fn not_find_manifest() {
         .test_dir("tests/fixtures/virtual")
         .assert_success()
         .stderr_contains(
-            "running `cargo check` on member1
-             running `cargo check` on member2
-             running `cargo check` on not_find_manifest",
+            "
+            running `cargo check` on member1
+            running `cargo check` on member2
+            running `cargo check` on not_find_manifest
+            ",
         );
 }
 
@@ -1160,16 +1217,22 @@ fn optional_deps() {
         .test_dir("tests/fixtures/optional_deps")
         .assert_success()
         .stderr_contains(
-            "skipped applying unknown `member2` feature to optional_deps
-             running `cargo run --features real,renemed` on optional_deps",
+            "
+            skipped applying unknown `member2` feature to optional_deps
+            running `cargo run --features real,renemed` on optional_deps
+            ",
         )
         .stdout_contains(
-            "renemed
-             real",
+            "
+            renemed
+            real
+            ",
         )
         .stdout_not_contains(
-            "member3
-             member2",
+            "
+            member3
+            member2
+            ",
         );
 
     cargo_hack(["check", "--each-feature"])
@@ -1177,9 +1240,11 @@ fn optional_deps() {
         .assert_success()
         .stderr_contains("running `cargo check` on optional_deps (1/1)")
         .stderr_not_contains(
-            "--no-default-features
-             --features real
-             --features renemed",
+            "
+            --no-default-features
+            --features real
+            --features renemed
+            ",
         );
 
     cargo_hack(["check", "--each-feature", "--optional-deps"])
@@ -1292,9 +1357,11 @@ fn verbose() {
         .test_dir("tests/fixtures/virtual")
         .assert_success()
         .stderr_contains(&format!(
-            "running `cargo check --manifest-path member1{0}Cargo.toml`
-             running `cargo check --manifest-path member2{0}Cargo.toml`
-             running `cargo check --manifest-path dir{0}not_find_manifest{0}Cargo.toml`",
+            "
+            running `cargo check --manifest-path member1{0}Cargo.toml`
+            running `cargo check --manifest-path member2{0}Cargo.toml`
+            running `cargo check --manifest-path dir{0}not_find_manifest{0}Cargo.toml`
+            ",
             SEPARATOR
         ));
 }
