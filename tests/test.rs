@@ -64,7 +64,10 @@ fn multi_arg() {
 
 #[test]
 fn removed_flags() {
-    for (flag, alt) in &[("--ignore-non-exist-features", "--ignore-unknown-features")] {
+    for (flag, alt) in &[
+        ("--ignore-non-exist-features", "--ignore-unknown-features"),
+        ("--skip-no-default-features", "--exclude-no-default-features"),
+    ] {
         cargo_hack(["check", flag])
             .test_dir("tests/fixtures/real")
             .assert_failure()
@@ -173,13 +176,13 @@ fn real_ignore_private() {
         .stderr_not_contains(
             "
             running `cargo check` on member1
-            skipped running on private crate member1
+            skipped running on private crate `member1`
             running `cargo check` on member2
-            skipped running on private crate member2
+            skipped running on private crate `member2`
             running `cargo check` on real
             ",
         )
-        .stderr_contains("skipped running on private crate real");
+        .stderr_contains("skipped running on private crate `real`");
 
     cargo_hack(["check", "--all", "--ignore-private"])
         .test_dir("tests/fixtures/real")
@@ -187,16 +190,16 @@ fn real_ignore_private() {
         .stderr_contains(
             "
             running `cargo check` on member1
-            skipped running on private crate member2
+            skipped running on private crate `member2`
             running `cargo check` on member3
-            skipped running on private crate real
+            skipped running on private crate `real`
             ",
         )
         .stderr_not_contains(
             "
-            skipped running on private crate member1
+            skipped running on private crate `member1`
             running `cargo check` on member2
-            skipped running on private crate member3
+            skipped running on private crate `member3`
             running `cargo check` on real
             ",
         );
@@ -210,12 +213,12 @@ fn virtual_ignore_private() {
         .stderr_contains(
             "
             running `cargo check` on member1
-            skipped running on private crate member2
+            skipped running on private crate `member2`
             ",
         )
         .stderr_not_contains(
             "
-            skipped running on private crate member1
+            skipped running on private crate `member1`
             running `cargo check` on member2
             ",
         );
@@ -226,13 +229,13 @@ fn virtual_ignore_private() {
         .stderr_contains(
             "
             running `cargo check` on member1
-            skipped running on private crate member2
+            skipped running on private crate `member2`
             ",
         )
         .stderr_not_contains(
             "
             running `cargo check` on member2
-            skipped running on private crate member1
+            skipped running on private crate `member1`
             ",
         );
 }
@@ -268,7 +271,7 @@ fn exclude() {
         .assert_success()
         .stderr_contains(
             "
-            excluded package(s) foo not found in workspace
+            excluded package(s) `foo` not found in workspace
             running `cargo check` on member1
             running `cargo check` on member2
             ",
@@ -469,7 +472,7 @@ fn each_feature_failure() {
 
     cargo_hack(["check", "--each-feature", "--no-default-features"])
         .test_dir("tests/fixtures/real")
-        .assert_success()
+        .assert_failure()
         .stderr_contains("--no-default-features may not be used together with --each-feature");
 }
 
@@ -534,7 +537,7 @@ fn feature_powerset_failure() {
 
     cargo_hack(["check", "--feature-powerset", "--no-default-features"])
         .test_dir("tests/fixtures/real")
-        .assert_success()
+        .assert_failure()
         .stderr_contains("--no-default-features may not be used together with --feature-powerset");
 }
 
@@ -875,7 +878,7 @@ fn exclude_features_failure() {
 
     cargo_hack(["check", "--each-feature", "--exclude-features=a", "--features=a"])
         .test_dir("tests/fixtures/real")
-        .assert_success() // warn
+        .assert_failure()
         .stderr_contains("feature `a` specified by both --exclude-features and --features");
 
     cargo_hack([
@@ -885,24 +888,18 @@ fn exclude_features_failure() {
         "--optional-deps=member1",
     ])
     .test_dir("tests/fixtures/real")
-    .assert_success() // warn
-    .stderr_contains(
-        "feature `member1` specified by both --exclude-features and --optional-deps",
-    );
+    .assert_failure()
+    .stderr_contains("feature `member1` specified by both --exclude-features and --optional-deps");
 
     cargo_hack(["check", "--feature-powerset", "--exclude-features=a", "--group-features=a,b"])
         .test_dir("tests/fixtures/real")
-        .assert_success() // warn
-        .stderr_contains(
-            "feature `a` specified by both --exclude-features and --group-features",
-        );
+        .assert_failure()
+        .stderr_contains("feature `a` specified by both --exclude-features and --group-features");
 
     cargo_hack(["check", "--each-feature", "--exclude-features=a", "--include-features=a,b"])
         .test_dir("tests/fixtures/real")
-        .assert_success() // warn
-        .stderr_contains(
-            "feature `a` specified by both --exclude-features and --include-features",
-        );
+        .assert_failure()
+        .stderr_contains("feature `a` specified by both --exclude-features and --include-features");
 
     cargo_hack(["check", "--each-feature", "--exclude-features=z"])
         .test_dir("tests/fixtures/real")
@@ -1014,14 +1011,6 @@ fn exclude_no_default_features() {
             ",
         )
         .stderr_not_contains("running `cargo check --no-default-features` on real");
-
-    // --skip-no-default-features is a deprecated alias of --exclude-no-default-features
-    cargo_hack(["check", "--each-feature", "--skip-no-default-features"])
-        .test_dir("tests/fixtures/virtual")
-        .assert_success()
-        .stderr_contains(
-            "--skip-no-default-features is deprecated, use --exclude-no-default-features flag instead",
-        );
 }
 
 #[test]

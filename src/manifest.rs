@@ -19,11 +19,11 @@ pub(crate) struct Manifest {
 impl Manifest {
     pub(crate) fn new(path: &Path) -> Result<Self> {
         let raw = fs::read_to_string(path)
-            .with_context(|| format!("failed to read manifest from {}", path.display()))?;
+            .with_context(|| format!("failed to read manifest from `{}`", path.display()))?;
         let toml = toml::from_str(&raw)
-            .with_context(|| format!("failed to parse manifest as toml: {}", path.display()))?;
+            .with_context(|| format!("failed to parse manifest `{}` as toml", path.display()))?;
         let package = Package::from_table(&toml).map_err(|s| {
-            format_err!("failed to parse `{}` field from manifest: {}", s, path.display())
+            format_err!("failed to parse `{}` field from manifest `{}`", s, path.display())
         })?;
         Ok(Self { raw, publish: package.publish })
     }

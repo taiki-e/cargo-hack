@@ -80,8 +80,6 @@ cargo-hack is usually runnable with Cargo versions older than the Rust version r
 
   Skip passing `--features` to `cargo` if that feature does not exist.
 
-  *This feature was formerly called `--ignore-non-exist-features`, but has been renamed.*
-
 * **`--clean-per-run`**
 
   Remove artifacts for that package before running the command.

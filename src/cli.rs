@@ -221,7 +221,7 @@ pub(crate) struct Args<'a> {
     // Error messages should not assume that these options have been specified.
     /// --exclude-features <FEATURES>..., --skip <FEATURES>...
     pub(crate) exclude_features: Vec<&'a str>,
-    /// --exclude-no-default-features, (--skip-no-default-features)
+    /// --exclude-no-default-features
     pub(crate) exclude_no_default_features: bool,
     /// --exclude-all-features
     pub(crate) exclude_all_features: bool,
@@ -290,7 +290,6 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
     let mut exclude_features = Vec::new();
     let mut exclude_no_default_features = false;
     let mut exclude_all_features = false;
-    let mut skip_no_default_features = false;
 
     let mut group_features = Vec::new();
     let mut depth = None;
@@ -458,36 +457,24 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
                     return Err(similar_arg(arg, subcommand, "--feature-powerset", None));
                 }
                 "--ignore-private" => parse_flag!(ignore_private),
-                "--exclude-no-default-features" => {
-                    if exclude_no_default_features || skip_no_default_features {
-                        return Err(multi_arg(arg, subcommand));
-                    }
-                    exclude_no_default_features = true;
-                    continue;
-                }
-                "--skip-no-default-features" => {
-                    if exclude_no_default_features || skip_no_default_features {
-                        return Err(multi_arg("--exclude-no-default-features", subcommand));
-                    }
-                    skip_no_default_features = true;
-                    continue;
-                }
+                "--exclude-no-default-features" => parse_flag!(exclude_no_default_features),
                 "--exclude-all-features" => parse_flag!(exclude_all_features),
                 "--include-deps-features" => parse_flag!(include_deps_features),
                 "--clean-per-run" => parse_flag!(clean_per_run),
                 "--ignore-unknown-features" => parse_flag!(ignore_unknown_features),
-                "--ignore-non-exist-features" => bail!(
-                    "--ignore-non-exist-features was removed, use --ignore-unknown-features instead"
-                ),
                 // allow multiple uses
                 "--verbose" | "-v" | "-vv" => {
                     verbose = true;
                     continue;
                 }
+
+                // propagated
                 "--no-default-features" => no_default_features = true,
                 "--all-features" => all_features = true,
                 _ => {}
             }
+
+            removed_flags(arg)?;
 
             leading.push(arg);
         }
@@ -532,7 +519,7 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
             bail!(
                 "--exclude-features (--skip) can only be used together with either --each-feature or --feature-powerset"
             );
-        } else if exclude_no_default_features || skip_no_default_features {
+        } else if exclude_no_default_features {
             bail!(
                 "--exclude-no-default-features can only be used together with either --each-feature or --feature-powerset"
             );
@@ -617,11 +604,25 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
         }
     }
     if no_default_features {
-        // TODO: change to error when release the next major version.
         if each_feature {
-            warn!("--no-default-features may not be used together with --each-feature");
+            bail!("--no-default-features may not be used together with --each-feature");
         } else if feature_powerset {
-            warn!("--no-default-features may not be used together with --feature-powerset");
+            bail!("--no-default-features may not be used together with --feature-powerset");
+        }
+    }
+
+    for f in &exclude_features {
+        if features.contains(f) {
+            bail!("feature `{}` specified by both --exclude-features and --features", f);
+        }
+        if optional_deps.as_ref().map_or(false, |d| d.contains(f)) {
+            bail!("feature `{}` specified by both --exclude-features and --optional-deps", f);
+        }
+        if group_features.iter().any(|v| v.matches(f)) {
+            bail!("feature `{}` specified by both --exclude-features and --group-features", f);
+        }
+        if include_features.contains(f) {
+            bail!("feature `{}` specified by both --exclude-features and --include-features", f);
         }
     }
 
@@ -651,34 +652,15 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
         }
     }
 
-    if skip_no_default_features {
-        // TODO: remove --skip-no-default-features when release the next major version.
-        warn!(
-            "--skip-no-default-features is deprecated, use --exclude-no-default-features flag instead"
-        );
-        exclude_no_default_features = true;
+    if cargo.version < 41 && include_deps_features {
+        bail!("--include-deps-features requires Cargo 1.41 or leter");
     }
+
     if no_dev_deps {
         info!(
             "--no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished"
         );
     }
-
-    exclude_features.iter().for_each(|f| {
-        // TODO: change to error when release the next major version?
-        if features.contains(f) {
-            warn!("feature `{}` specified by both --exclude-features and --features", f);
-        }
-        if optional_deps.as_ref().map_or(false, |d| d.contains(f)) {
-            warn!("feature `{}` specified by both --exclude-features and --optional-deps", f);
-        }
-        if group_features.iter().any(|v| v.matches(f)) {
-            warn!("feature `{}` specified by both --exclude-features and --group-features", f);
-        }
-        if include_features.contains(f) {
-            warn!("feature `{}` specified by both --exclude-features and --include-features", f);
-        }
-    });
 
     exclude_no_default_features |= !include_features.is_empty();
     exclude_all_features |= !include_features.is_empty() || !exclude_features.is_empty();
@@ -717,6 +699,16 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
 
         features,
     })
+}
+
+// NB: When adding a flag here, update the test with the same name in `tests/test.rs` file.
+fn removed_flags(flag: &str) -> Result<()> {
+    let alt = match flag {
+        "--ignore-non-exist-features" => "--ignore-unknown-features",
+        "--skip-no-default-features" => "--exclude-no-default-features",
+        _ => return Ok(()),
+    };
+    bail!("{} was removed, use {} instead", flag, alt)
 }
 
 fn mini_usage(msg: &str) -> Error {
