@@ -1,64 +1,64 @@
 use std::cmp;
 
 // Note: The input must be a valid TOML.
-pub(crate) fn remove_dev_deps(bytes: &str) -> String {
+pub(crate) fn remove_dev_deps(text: &str) -> String {
     const DEV_DEPS: &str = "dev-dependencies";
     const TARGET: &str = "target.";
+    const LN: char = '\n';
 
-    let mut bytes = bytes.to_string();
+    let mut text = text.to_string();
     let mut prev = 0;
-    let mut next = bytes.find('[');
+    let mut next = text.find('[');
 
     'outer: while let Some(mut pos) = next {
-        prev = bytes[prev..pos].rfind('\n').map_or(prev, |n| cmp::min(n + prev + 1, pos));
+        prev = text[prev..pos].rfind(LN).map_or(prev, |n| cmp::min(n + prev + 1, pos));
 
         // skip '# [...' and 'foo = [...'
-        if bytes[prev..pos].trim().is_empty() {
-            let slice = bytes[pos + 1..].trim_start();
+        if text[prev..pos].trim().is_empty() {
+            let slice = text[pos + 1..].trim_start();
             if slice.starts_with(DEV_DEPS) {
                 let maybe_close = pos + DEV_DEPS.len();
-                for (i, _) in bytes[maybe_close..].match_indices('[') {
-                    let back = bytes[maybe_close..maybe_close + i]
-                        .rfind('\n')
+                for (i, _) in text[maybe_close..].match_indices('[') {
+                    let back = text[maybe_close..maybe_close + i]
+                        .rfind(LN)
                         .map_or(0, |n| cmp::min(n + 1, i));
 
                     // skip '# [...' and 'foo = [...'
-                    if bytes[maybe_close + back..maybe_close + i].trim().is_empty() {
-                        bytes.drain(prev..maybe_close + back);
+                    if text[maybe_close + back..maybe_close + i].trim().is_empty() {
+                        text.drain(prev..maybe_close + back);
                         next = Some(prev + i - back);
                         continue 'outer;
                     }
                 }
 
-                bytes.drain(prev..);
+                text.drain(prev..);
                 break;
             } else if slice.starts_with(TARGET) {
-                let close = bytes[pos + TARGET.len()..].find(']').unwrap() + pos + TARGET.len();
-                let mut split = bytes[pos..close].split('.');
+                let close = text[pos + TARGET.len()..].find(']').unwrap() + pos + TARGET.len();
+                let mut split = text[pos..close].split('.');
                 let _ = split.next(); // `target`
                 let _ = split.next(); // `'cfg(...)'`
                 if let Some(deps) = split.next() {
                     if deps.trim() == DEV_DEPS {
-                        for (i, _) in bytes[close..].match_indices('[') {
-                            let back = bytes[close..close + i]
-                                .rfind('\n')
-                                .map_or(0, |n| cmp::min(n + 1, i));
+                        for (i, _) in text[close..].match_indices('[') {
+                            let back =
+                                text[close..close + i].rfind(LN).map_or(0, |n| cmp::min(n + 1, i));
 
                             // skip '# [...' and 'foo = [...'
-                            if bytes[close + back..close + i].trim().is_empty() {
-                                bytes.drain(prev..close + back);
+                            if text[close + back..close + i].trim().is_empty() {
+                                text.drain(prev..close + back);
                                 next = Some(prev + i - back);
                                 continue 'outer;
                             }
                         }
 
-                        bytes.drain(prev..);
+                        text.drain(prev..);
                         break;
                     }
                 }
 
                 prev = pos;
-                next = bytes[close..].find('[').map(|n| close + n);
+                next = text[close..].find('[').map(|n| close + n);
                 continue;
             }
         }
@@ -70,11 +70,11 @@ pub(crate) fn remove_dev_deps(bytes: &str) -> String {
         // pos + 3: '\n' or eof (or part of table name or ']')
         // pos + 4: start of next table or eof (or part of this table)
         pos += 4;
-        next = bytes.get(pos..).and_then(|s| s.find('[')).map(|n| pos + n);
+        next = text.get(pos..).and_then(|s| s.find('[')).map(|n| pos + n);
         continue;
     }
 
-    bytes
+    text
 }
 
 #[cfg(test)]
