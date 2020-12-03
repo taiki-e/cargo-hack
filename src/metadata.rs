@@ -3,7 +3,6 @@ use serde_json::{Map, Value};
 use std::{
     borrow::Cow,
     collections::{BTreeMap, HashMap},
-    fmt,
     path::PathBuf,
     rc::Rc,
 };
@@ -27,15 +26,9 @@ pub(crate) struct PackageId {
     repr: Rc<str>,
 }
 
-impl PackageId {
-    fn new(repr: String) -> Self {
+impl From<String> for PackageId {
+    fn from(repr: String) -> Self {
         Self { repr: repr.into() }
-    }
-}
-
-impl fmt::Display for PackageId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&self.repr, f)
     }
 }
 
@@ -70,7 +63,7 @@ impl Metadata {
         let workspace_members: Vec<_> = map
             .remove_array("workspace_members")?
             .into_iter()
-            .map(|v| into_string(v).map(PackageId::new).ok_or("workspace_members"))
+            .map(|v| into_string(v).ok_or("workspace_members"))
             .collect::<Result<_, _>>()?;
         Ok(Self {
             packages: map
@@ -80,7 +73,7 @@ impl Metadata {
                 .collect::<Result<_, _>>()?,
             workspace_members,
             resolve: Resolve::from_obj(map.remove_object("resolve")?, cargo)?,
-            workspace_root: map.remove_string("workspace_root")?.into(),
+            workspace_root: map.remove_string("workspace_root")?,
         })
     }
 }
@@ -102,7 +95,7 @@ impl Resolve {
                 .into_iter()
                 .map(|v| Node::from_value(v, cargo))
                 .collect::<Result<_, _>>()?,
-            root: map.remove_nullable("root", into_string)?.map(PackageId::new),
+            root: map.remove_nullable("root", into_string)?,
         })
     }
 }
@@ -119,7 +112,7 @@ impl Node {
     fn from_value(mut value: Value, cargo: &Cargo) -> ParseResult<(PackageId, Self)> {
         let map = value.as_object_mut().ok_or("nodes")?;
 
-        let id = map.remove_string("id").map(PackageId::new)?;
+        let id = map.remove_string("id")?;
         Ok((id, Self {
             // This field was added in Rust 1.30.
             deps: if cargo.version >= 30 {
@@ -149,7 +142,7 @@ impl NodeDep {
         let map = value.as_object_mut().ok_or("deps")?;
 
         Ok(Self {
-            pkg: PackageId::new(map.remove_string("pkg")?),
+            pkg: map.remove_string("pkg")?,
             // This field was added in Rust 1.41.
             dep_kinds: if cargo.version >= 41 {
                 map.remove_array("dep_kinds")?
@@ -211,7 +204,7 @@ impl Package {
     fn from_value(mut value: Value, cargo: &Cargo) -> ParseResult<(PackageId, Self)> {
         let map = value.as_object_mut().ok_or("packages")?;
 
-        let id = PackageId::new(map.remove_string("id")?);
+        let id = map.remove_string("id")?;
         Ok((id, Self {
             name: map.remove_string("name")?,
             // version: map.remove_string("version")?,
@@ -230,7 +223,7 @@ impl Package {
                 })
                 .collect::<Option<_>>()
                 .ok_or("features")?,
-            manifest_path: map.remove_string("manifest_path")?.into(),
+            manifest_path: map.remove_string("manifest_path")?,
             // This field was added in Rust 1.39.
             publish: if cargo.version >= 39 {
                 // Publishing is unrestricted if `None`, and forbidden if the `Vec` is empty.
@@ -293,8 +286,8 @@ fn allow_null<T>(value: Value, f: impl FnOnce(Value) -> Option<T>) -> Option<Opt
     if value.is_null() { Some(None) } else { f(value).map(Some) }
 }
 
-fn into_string(value: Value) -> Option<String> {
-    if let Value::String(string) = value { Some(string) } else { None }
+fn into_string<S: From<String>>(value: Value) -> Option<S> {
+    if let Value::String(string) = value { Some(string.into()) } else { None }
 }
 
 fn into_array(value: Value) -> Option<Vec<Value>> {
@@ -306,7 +299,7 @@ fn into_object(value: Value) -> Option<Object> {
 }
 
 trait ObjectExt {
-    fn remove_string<'a>(&mut self, key: &'a str) -> Result<String, &'a str>;
+    fn remove_string<'a, S: From<String>>(&mut self, key: &'a str) -> Result<S, &'a str>;
     fn remove_array<'a>(&mut self, key: &'a str) -> Result<Vec<Value>, &'a str>;
     fn remove_object<'a>(&mut self, key: &'a str) -> Result<Object, &'a str>;
     fn remove_nullable<'a, T>(
@@ -317,7 +310,7 @@ trait ObjectExt {
 }
 
 impl ObjectExt for Object {
-    fn remove_string<'a>(&mut self, key: &'a str) -> Result<String, &'a str> {
+    fn remove_string<'a, S: From<String>>(&mut self, key: &'a str) -> Result<S, &'a str> {
         self.remove(key).and_then(into_string).ok_or(key)
     }
     fn remove_array<'a>(&mut self, key: &'a str) -> Result<Vec<Value>, &'a str> {
