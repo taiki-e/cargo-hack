@@ -42,13 +42,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: taiki-e/github-actions/install-rust@main
-      # Work around https://github.com/actions/cache/issues/403 by using GNU tar
-      # instead of BSD tar.
-      - name: Install GNU tar
-        if: startsWith(matrix.os, 'macos')
-        run: |
-          brew install gnu-tar
-          echo "/usr/local/opt/gnu-tar/libexec/gnubin" >> "${GITHUB_PATH}"
-      - run: ci/upload-assets.sh ${{ matrix.target }}
+      - uses: taiki-e/github-actions/upload-rust-binary@main
+        with:
+          bin: cargo-hack
+          target: ${{ matrix.target }}
+          zip: windows
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_PROFILE_RELEASE_LTO: true
