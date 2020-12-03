@@ -39,19 +39,11 @@ case "${OSTYPE}" in
   linux* | darwin*)
     strip "${PACKAGE}"
     tar czf ../../"${assets[0]}" "${PACKAGE}"
-    # TODO: remove this when release the next major version.
-    if [[ ${target} != "x86_64-unknown-linux-musl" ]]; then
-      assets+=("${PACKAGE}-${tag}-${target}.tar.gz")
-      tar czf ../../"${assets[1]}" "${PACKAGE}"
-    fi
     ;;
   cygwin* | msys*)
     assets+=("${PACKAGE}-${target}.zip")
     tar czf ../../"${assets[0]}" "${PACKAGE}".exe
     7z a ../../"${assets[1]}" "${PACKAGE}".exe
-    # TODO: remove this when release the next major version.
-    assets+=("${PACKAGE}-${tag}-${target}.zip")
-    7z a ../../"${assets[2]}" "${PACKAGE}".exe
     ;;
   *)
     error "unrecognized OSTYPE: ${OSTYPE}"
