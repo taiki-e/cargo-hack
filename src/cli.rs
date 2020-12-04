@@ -652,10 +652,6 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
         }
     }
 
-    if cargo.version < 41 && include_deps_features {
-        bail!("--include-deps-features requires Cargo 1.41 or leter");
-    }
-
     if no_dev_deps {
         info!(
             "--no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished"

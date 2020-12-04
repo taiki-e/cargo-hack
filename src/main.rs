@@ -23,6 +23,7 @@ mod metadata;
 mod process;
 mod remove_dev_deps;
 mod restore;
+mod version;
 
 use anyhow::{bail, Context as _};
 use std::{fmt::Write, fs};
@@ -83,6 +84,7 @@ enum Kind<'a> {
 
 fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progress) -> Kind<'a> {
     if cx.ignore_private && cx.is_private(id) {
+        info!("skipped running on private package `{}`", cx.name_verbose(id));
         return Kind::SkipAsPrivate;
     }
     if cx.subcommand.is_none() {
@@ -218,11 +220,11 @@ fn exec_on_package(
     restore: &Restore,
     progress: &mut Progress,
 ) -> Result<()> {
-    let package = cx.packages(id);
     if let Kind::SkipAsPrivate = kind {
-        info!("skipped running on private crate `{}`", package.name_verbose(cx));
         return Ok(());
     }
+
+    let package = cx.packages(id);
 
     let mut line = line.clone();
     line.append_features_from_args(cx, id);

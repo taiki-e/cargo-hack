@@ -176,13 +176,13 @@ fn real_ignore_private() {
         .stderr_not_contains(
             "
             running `cargo check` on member1
-            skipped running on private crate `member1`
+            skipped running on private package `member1`
             running `cargo check` on member2
-            skipped running on private crate `member2`
+            skipped running on private package `member2`
             running `cargo check` on real
             ",
         )
-        .stderr_contains("skipped running on private crate `real`");
+        .stderr_contains("skipped running on private package `real`");
 
     cargo_hack(["check", "--all", "--ignore-private"])
         .test_dir("tests/fixtures/real")
@@ -190,16 +190,16 @@ fn real_ignore_private() {
         .stderr_contains(
             "
             running `cargo check` on member1
-            skipped running on private crate `member2`
+            skipped running on private package `member2`
             running `cargo check` on member3
-            skipped running on private crate `real`
+            skipped running on private package `real`
             ",
         )
         .stderr_not_contains(
             "
-            skipped running on private crate `member1`
+            skipped running on private package `member1`
             running `cargo check` on member2
-            skipped running on private crate `member3`
+            skipped running on private package `member3`
             running `cargo check` on real
             ",
         );
@@ -213,12 +213,12 @@ fn virtual_ignore_private() {
         .stderr_contains(
             "
             running `cargo check` on member1
-            skipped running on private crate `member2`
+            skipped running on private package `member2`
             ",
         )
         .stderr_not_contains(
             "
-            skipped running on private crate `member1`
+            skipped running on private package `member1`
             running `cargo check` on member2
             ",
         );
@@ -229,13 +229,13 @@ fn virtual_ignore_private() {
         .stderr_contains(
             "
             running `cargo check` on member1
-            skipped running on private crate `member2`
+            skipped running on private package `member2`
             ",
         )
         .stderr_not_contains(
             "
             running `cargo check` on member2
-            skipped running on private crate `member1`
+            skipped running on private package `member1`
             ",
         );
 }

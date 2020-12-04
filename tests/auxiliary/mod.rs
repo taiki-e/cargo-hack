@@ -12,7 +12,8 @@ pub const SEPARATOR: char = '/';
 pub const SEPARATOR: char = '\\';
 
 pub fn cargo_bin_exe() -> Command {
-    // TODO: update to use CARGO_BIN_EXE (https://github.com/rust-lang/cargo/pull/7697, require Rust 1.43).
+    // TODO: update to use `env!("CARGO_BIN_EXE_cargo-hack")`
+    // https://github.com/rust-lang/cargo/pull/7697, require Rust 1.43
     let mut exe = env::current_exe().unwrap();
     exe.pop();
     if exe.ends_with("deps") {
