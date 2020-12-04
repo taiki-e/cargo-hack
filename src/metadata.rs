@@ -1,13 +1,12 @@
 use anyhow::{format_err, Context as _};
 use serde_json::{Map, Value};
 use std::{
-    borrow::Cow,
     collections::{BTreeMap, HashMap},
     path::PathBuf,
     rc::Rc,
 };
 
-use crate::{cli::Args, Cargo, Context, Result};
+use crate::{cli::Args, Cargo, Result};
 
 type Object = Map<String, Value>;
 type ParseResult<T> = Result<T, &'static str>;
@@ -45,13 +44,13 @@ pub(crate) struct Metadata {
 
 impl Metadata {
     pub(crate) fn new(args: &Args<'_>, cargo: &Cargo) -> Result<Self> {
-        let mut command = cargo.process();
-        command.args(&["metadata", "--format-version=1"]);
+        let mut cmd = cargo.process();
+        cmd.args(&["metadata", "--format-version=1"]);
         if let Some(manifest_path) = &args.manifest_path {
-            command.arg("--manifest-path");
-            command.arg(manifest_path);
+            cmd.arg("--manifest-path");
+            cmd.arg(manifest_path);
         }
-        let output = command.exec_with_output()?;
+        let output = cmd.exec_with_output()?;
 
         let map =
             serde_json::from_slice(&output.stdout).context("failed to parse metadata as json")?;
@@ -232,18 +231,6 @@ impl Package {
                 true
             },
         }))
-    }
-
-    pub(crate) fn name_verbose(&self, cx: &Context<'_>) -> Cow<'_, str> {
-        if cx.verbose {
-            Cow::Owned(format!(
-                "{} ({})",
-                self.name,
-                self.manifest_path.parent().unwrap().display()
-            ))
-        } else {
-            Cow::Borrowed(&self.name)
-        }
     }
 }
 

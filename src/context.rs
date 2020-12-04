@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     collections::HashMap,
     env,
     ops::Deref,
@@ -93,17 +94,30 @@ impl<'a> Context<'a> {
         }
     }
 
+    pub(crate) fn name_verbose(&self, id: &PackageId) -> Cow<'_, str> {
+        let package = self.packages(id);
+        if self.verbose {
+            Cow::Owned(format!(
+                "{} ({})",
+                package.name,
+                package.manifest_path.parent().unwrap().display()
+            ))
+        } else {
+            Cow::Borrowed(&package.name)
+        }
+    }
+
     /// Return `true` if options that require information from cargo manifest is specified.
     pub(crate) fn require_manifest_info(&self) -> bool {
         (self.cargo.version < 39 && self.ignore_private) || self.no_dev_deps || self.remove_dev_deps
     }
 
     pub(crate) fn process(&self) -> ProcessBuilder<'_> {
-        let mut command = self.cargo.process();
+        let mut cmd = self.cargo.process();
         if self.verbose {
-            command.display_manifest_path();
+            cmd.display_manifest_path();
         }
-        command
+        cmd
     }
 }
 
