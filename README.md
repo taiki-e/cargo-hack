@@ -18,7 +18,7 @@ cargo install cargo-hack
 
 To install cargo-hack requires rustc 1.36+.
 
-cargo-hack is usually runnable with Cargo versions older than the Rust version required for installation (e.g., `cargo +1.31.0 hack check`). Currently, to run cargo-hack requires Cargo 1.26+.
+cargo-hack is usually runnable with Cargo versions older than the Rust version required for installation (e.g., `cargo +1.31 hack check`). Currently, to run cargo-hack requires Cargo 1.26+.
 
 ## Usage
 

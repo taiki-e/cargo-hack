@@ -25,9 +25,9 @@ jobs:
         include:
           # This is the minimum supported Rust version of this crate.
           # When updating this, the reminder to update the minimum supported Rust version in README.md.
-          - rust: 1.36.0
-          - rust: 1.39.0
-          - rust: 1.41.0
+          - rust: 1.36
+          - rust: 1.39
+          - rust: 1.41
           - rust: stable
           - rust: beta
           - rust: nightly
@@ -60,7 +60,7 @@ jobs:
         rust:
           # cargo-hack is usually runnable with Cargo versions older than the Rust version required for installation.
           # When updating this, the reminder to update the minimum supported Rust version in README.md.
-          - 1.26.0
+          - 1.26
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
