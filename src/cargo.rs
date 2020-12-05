@@ -14,7 +14,7 @@ impl Cargo {
 
         // If failed to determine cargo version, assign 0 to skip all version-dependent decisions.
         let version = minor_version(&mut ProcessBuilder::new(&path))
-            .map_err(|e| warn!("unable to determine cargo version: {}", e))
+            .map_err(|e| warn!("unable to determine cargo version: {:#}", e))
             .unwrap_or(0);
 
         Self { path, version }
@@ -38,7 +38,9 @@ pub(crate) fn minor_version(cmd: &mut ProcessBuilder<'_>) -> Result<u32> {
         .lines()
         .find(|line| line.starts_with("release: "))
         .map(|line| &line["release: ".len()..])
-        .ok_or_else(|| format_err!("could not find rustc release from output of {}", cmd))?;
+        .ok_or_else(|| {
+            format_err!("could not find rustc release from output of {}: {}", cmd, output)
+        })?;
 
     // Split the version and channel info.
     let mut version_channel = release.split('-');
@@ -47,7 +49,7 @@ pub(crate) fn minor_version(cmd: &mut ProcessBuilder<'_>) -> Result<u32> {
 
     let version = parse_version(version)?;
     if version.major != 1 || version.patch.is_none() {
-        bail!("unexpected output from {}", cmd);
+        bail!("unexpected output from {}: {}", cmd, output);
     }
 
     Ok(version.minor)

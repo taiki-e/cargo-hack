@@ -11,7 +11,7 @@ use crate::{
     features::Features,
     manifest::Manifest,
     metadata::{Metadata, Package, PackageId},
-    Cargo, ProcessBuilder, Result,
+    Cargo, ProcessBuilder, Result, Rustup,
 };
 
 pub(crate) struct Context<'a> {
@@ -26,9 +26,10 @@ pub(crate) struct Context<'a> {
 impl<'a> Context<'a> {
     pub(crate) fn new(args: &'a RawArgs) -> Result<Self> {
         let cargo = Cargo::new();
+        let rustup = Rustup::new();
         let current_dir = env::current_dir()?;
 
-        let args = cli::parse_args(args, &cargo)?;
+        let args = cli::parse_args(args, &cargo, &rustup)?;
         assert!(
             args.subcommand.is_some() || args.remove_dev_deps,
             "no subcommand or valid flag specified"
@@ -112,7 +113,7 @@ impl<'a> Context<'a> {
         (self.cargo.version < 39 && self.ignore_private) || self.no_dev_deps || self.remove_dev_deps
     }
 
-    pub(crate) fn process(&self) -> ProcessBuilder<'_> {
+    pub(crate) fn cargo(&self) -> ProcessBuilder<'_> {
         let mut cmd = self.cargo.process();
         if self.verbose {
             cmd.display_manifest_path();

@@ -1422,3 +1422,35 @@ fn default_feature_behavior() {
         .stdout_contains("no default feature!")
         .stdout_not_contains("has default feature!");
 }
+
+// It seems rustup is not installed in the docker image provided by cross.
+#[cfg_attr(any(not(target_arch = "x86_64"), target_env = "musl"), ignore)]
+#[test]
+fn version_range_failure() {
+    // zero step
+    cargo_hack(["check", "--version-range", "1.45..", "--version-step", "0"])
+        .test_dir("tests/fixtures/real")
+        .assert_failure()
+        .stderr_contains("--version-step cannot be zero");
+
+    // empty
+    cargo_hack(["check", "--version-range", "1.45..1.44"])
+        .test_dir("tests/fixtures/real")
+        .assert_failure()
+        .stderr_contains("specified version range `1.45..1.44` is empty");
+
+    // v0
+    cargo_hack(["check", "--version-range", "0.45.."])
+        .test_dir("tests/fixtures/real")
+        .assert_failure()
+        .stderr_contains("major version must be 1");
+
+    // patch version
+    cargo_hack(["check", "--version-range", "1.45.2.."])
+        .test_dir("tests/fixtures/real")
+        .assert_success() // warn
+        .stderr_contains(
+            "--version-range always selects the latest patch release per minor release, \
+             not the specified patch release `2`",
+        );
+}

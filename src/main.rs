@@ -23,6 +23,7 @@ mod metadata;
 mod process;
 mod remove_dev_deps;
 mod restore;
+mod rustup;
 mod version;
 
 use anyhow::{bail, Context as _};
@@ -30,7 +31,7 @@ use std::{fmt::Write, fs};
 
 use crate::{
     cargo::Cargo, context::Context, features::Feature, metadata::PackageId,
-    process::ProcessBuilder, restore::Restore,
+    process::ProcessBuilder, restore::Restore, rustup::Rustup,
 };
 
 type Result<T, E = anyhow::Error> = std::result::Result<T, E>;
@@ -58,13 +59,31 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
     //     )
     // }
 
-    let line = cx.process().with_args(cx);
-
-    let restore = Restore::new(cx);
     let mut progress = Progress::default();
-    determine_package_list(cx, &mut progress)?
-        .iter()
-        .try_for_each(|(id, kind)| exec_on_package(cx, id, kind, &line, &restore, &mut progress))
+    let packages = determine_package_list(cx, &mut progress)?;
+    let restore = Restore::new(cx);
+    if let Some(range) = &cx.version_range {
+        progress.total *= range.len();
+        let mut line = ProcessBuilder::new("cargo".as_ref());
+        if cx.verbose {
+            line.display_manifest_path();
+        }
+        range.iter().try_for_each(|toolchain| {
+            rustup::install_toolchain(&toolchain[1..])?;
+            let mut line = line.clone();
+            line.leading_arg(toolchain);
+            line.with_args(cx);
+            packages.iter().try_for_each(|(id, kind)| {
+                exec_on_package(cx, id, kind, &line, &restore, &mut progress)
+            })
+        })
+    } else {
+        let mut line = cx.cargo();
+        line.with_args(cx);
+        packages.iter().try_for_each(|(id, kind)| {
+            exec_on_package(cx, id, kind, &line, &restore, &mut progress)
+        })
+    }
 }
 
 #[derive(Default)]
@@ -344,7 +363,7 @@ fn exec_cargo(
 }
 
 fn cargo_clean(cx: &Context<'_>, id: &PackageId) -> Result<()> {
-    let mut line = cx.process();
+    let mut line = cx.cargo();
     line.arg("clean");
     line.arg("--package");
     line.arg(&cx.packages(id).name);

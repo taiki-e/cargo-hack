@@ -1,7 +1,7 @@
 use anyhow::{bail, format_err, Error};
 use std::{env, fmt, mem};
 
-use crate::{term, Cargo, Feature, Result};
+use crate::{rustup, term, Cargo, Feature, Result, Rustup};
 
 fn print_version() {
     println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
@@ -81,6 +81,16 @@ const HELP: &[(&str, &str, &str, &[&str])] = &[
         "If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts will be removed before each run.",
         "Note that dependencies artifacts will be preserved.",
     ]),
+    (
+        "",
+        "--version-range <START>..[END]",
+        "Perform commands on a specified (inclusive) range of Rust versions",
+        &[
+            "If the given range is unclosed, the latest stable compiler is treated as the upper bound.",
+            "Note that ranges are always inclusive ranges.",
+        ],
+    ),
+    ("", "--version-step <NUM>", "Specify the version interval of --version-range", &[]),
     ("-v", "--verbose", "Use verbose output", &[]),
     ("", "--color <WHEN>", "Coloring: auto, always, never", &[
         "This flag will be propagated to cargo.",
@@ -208,6 +218,8 @@ pub(crate) struct Args<'a> {
     pub(crate) ignore_unknown_features: bool,
     /// --clean-per-run
     pub(crate) clean_per_run: bool,
+    /// --version-range and --version-step
+    pub(crate) version_range: Option<Vec<String>>,
 
     // options for --each-feature and --feature-powerset
     /// --optional-deps [DEPS]...
@@ -250,7 +262,7 @@ pub(crate) fn raw() -> RawArgs {
 
 pub(crate) struct RawArgs(Vec<String>);
 
-pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>> {
+pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -> Result<Args<'a>> {
     let mut iter = raw.0.iter();
     let mut args = iter.by_ref().map(String::as_str).peekable();
     match args.next() {
@@ -282,6 +294,8 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
     let mut ignore_private = false;
     let mut ignore_unknown_features = false;
     let mut clean_per_run = false;
+    let mut version_range = None;
+    let mut version_step = None;
 
     let mut optional_deps = None;
     let mut include_features = Vec::new();
@@ -397,6 +411,8 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
             parse_opt!(manifest_path, false, "--manifest-path", "--manifest-path <PATH>");
             parse_opt!(depth, false, "--depth", "--depth <NUM>");
             parse_opt!(color, true, "--color", "--color <WHEN>");
+            parse_opt!(version_range, false, "--version-range", "--version-range <START>..[END]");
+            parse_opt!(version_step, false, "--version-step", "--version-step <NUM>");
 
             parse_multi_opt!(package, false, true, "--package", "--package <SPEC>...");
             parse_multi_opt!(package, false, true, "-p", "--package <SPEC>...");
@@ -544,6 +560,10 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
             bail!("--group-features can only be used together with --feature-powerset");
         }
     }
+    if version_range.is_none() && version_step.is_some() {
+        bail!("--version-step can only be used together with --version-range");
+    }
+
     let depth = depth.map(str::parse::<usize>).transpose()?;
     let group_features =
         group_features.iter().try_fold(Vec::with_capacity(group_features.len()), |mut v, g| {
@@ -560,6 +580,8 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
             v.push(Feature::group(g));
             Ok(v)
         })?;
+    let version_range =
+        version_range.map(|range| rustup::version_range(range, version_step)).transpose()?;
 
     if let Some(subcommand) = subcommand {
         if subcommand == "test" || subcommand == "bench" {
@@ -629,6 +651,9 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
     if cargo.version < 41 && include_deps_features {
         bail!("--include-deps-features requires Cargo 1.41 or leter");
     }
+    if rustup.version < 23 && version_range.is_some() {
+        bail!("--version-range requires rustup 1.23 or leter");
+    }
 
     if subcommand.is_none() {
         if leading.contains(&"-h") {
@@ -682,6 +707,7 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo) -> Result<Args<'a>
         clean_per_run,
         include_features: include_features.into_iter().map(Into::into).collect(),
         include_deps_features,
+        version_range,
 
         depth,
         group_features,

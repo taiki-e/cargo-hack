@@ -110,6 +110,16 @@ OPTIONS:
 
             Note that dependencies artifacts will be preserved.
 
+        --version-range <START>..[END]
+            Perform commands on a specified (inclusive) range of Rust versions.
+
+            If the given range is unclosed, the latest stable compiler is treated as the upper bound.
+
+            Note that ranges are always inclusive ranges.
+
+        --version-step <NUM>
+            Specify the version interval of --version-range.
+
     -v, --verbose
             Use verbose output.
 

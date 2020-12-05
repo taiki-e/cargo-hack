@@ -84,6 +84,32 @@ cargo-hack is usually runnable with Cargo versions older than the Rust version r
 
   Remove artifacts for that package before running the command.
 
+  This also works as a workaround for [rust-lang/rust-clippy#4612].
+
+* **`--version-range`**
+
+  Perform commands on a specified (inclusive) range of Rust versions.
+
+  ```console
+  $ cargo hack check --version-range 1.46..1.47
+  info: running `cargo +1.46 check` on cargo-hack (1/2)
+  ...
+  info: running `cargo +1.47 check` on cargo-hack (2/2)
+  ...
+  ```
+
+  If the given range is unclosed, the latest stable compiler is treated as the upper bound.
+
+  This might be useful for catching issues like [BurntSushi/termcolor#35], [rust-lang/regex#685], [rust-lang/rust-clippy#6324].
+
+  [BurntSushi/termcolor#35]: https://github.com/BurntSushi/termcolor/issues/35
+  [rust-lang/regex#685]: https://github.com/rust-lang/regex/issues/685
+  [rust-lang/rust-clippy#6324]: https://github.com/rust-lang/rust-clippy/issues/6324.
+
+* **`--version-step`**
+
+  Specify the version interval of `--version-range`.
+
 The following flags can be used with `--each-feature` and `--feature-powerset`.
 
 * **`--optional-deps`**
@@ -141,6 +167,7 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
 [rust-lang/cargo#5015]: https://github.com/rust-lang/cargo/issues/4463
 [rust-lang/cargo#5364]: https://github.com/rust-lang/cargo/issues/5364
 [rust-lang/cargo#6195]: https://github.com/rust-lang/cargo/issues/6195
+[rust-lang/rust-clippy#4612]: https://github.com/rust-lang/cargo/issues/4612
 [cargo-metadata]: https://doc.rust-lang.org/cargo/commands/cargo-metadata.html
 
 ## License
