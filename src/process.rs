@@ -14,15 +14,19 @@ use crate::{Context, PackageId, Result};
 
 /// A builder object for an external process, similar to `std::process::Command`.
 #[derive(Clone)]
+#[must_use]
 pub(crate) struct ProcessBuilder<'a> {
+    // $program $leading_args $propagated_leading_args $args $propagated_trailing_args
     /// The program to execute.
     program: &'a OsStr,
     /// A list of arguments to pass to the program (until '--').
-    leading_args: &'a [&'a str],
+    propagated_leading_args: &'a [&'a str],
     /// A list of arguments to pass to the program (after '--').
     trailing_args: &'a [String],
 
-    /// A list of arguments to pass to the program (between `leading_args` and '--').
+    /// A list of arguments to pass to the program (between `program` and 'propagated_leading_args').
+    leading_args: Vec<String>,
+    /// A list of arguments to pass to the program (between `propagated_leading_args` and '--').
     args: Vec<OsString>,
     /// A comma-separated list of features.
     /// This list always has a trailing comma if it is not empty.
@@ -40,8 +44,9 @@ impl<'a> ProcessBuilder<'a> {
     pub(crate) fn new(program: &'a OsStr) -> Self {
         Self {
             program,
-            leading_args: &[],
+            propagated_leading_args: &[],
             trailing_args: &[],
+            leading_args: Vec::new(),
             args: Vec::new(),
             features: String::new(),
             display_program_path: false,
@@ -49,8 +54,8 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    pub(crate) fn with_args(mut self, cx: &'a Context<'_>) -> Self {
-        self.leading_args = &cx.leading_args;
+    pub(crate) fn with_args(&mut self, cx: &'a Context<'_>) -> &mut Self {
+        self.propagated_leading_args = &cx.leading_args;
         self.trailing_args = cx.trailing_args;
         self.display_manifest_path = cx.verbose;
         self
@@ -77,6 +82,12 @@ impl<'a> ProcessBuilder<'a> {
         } else if !cx.features.is_empty() {
             self.append_features(&cx.features);
         }
+    }
+
+    /// (chainable) Adds `arg` to the leading args list.
+    pub(crate) fn leading_arg(&mut self, arg: impl Into<String>) -> &mut Self {
+        self.leading_args.push(arg.into());
+        self
     }
 
     /// (chainable) Adds `arg` to the args list.
@@ -126,9 +137,9 @@ impl<'a> ProcessBuilder<'a> {
 
     /// Executes the process, waiting for completion, and mapping non-success exit codes to an error.
     pub(crate) fn exec(&mut self) -> Result<()> {
-        let mut command = self.build_command();
+        let mut cmd = self.build_command();
 
-        let exit = command.status().with_context(|| {
+        let exit = cmd.status().with_context(|| {
             self.display_all();
             ProcessError::new(&format!("could not execute process {}", self), None, None)
         })?;
@@ -148,9 +159,9 @@ impl<'a> ProcessBuilder<'a> {
 
     /// Executes the process, returning the stdio output, or an error if non-zero exit status.
     pub(crate) fn exec_with_output(&mut self) -> Result<Output> {
-        let mut command = self.build_command();
+        let mut cmd = self.build_command();
 
-        let output = command.output().with_context(|| {
+        let output = cmd.output().with_context(|| {
             self.display_all();
             ProcessError::new(&format!("could not execute process {}", self), None, None)
         })?;
@@ -171,20 +182,21 @@ impl<'a> ProcessBuilder<'a> {
     /// Converts `ProcessBuilder` into a `std::process::Command`, and handles the jobserver, if
     /// present.
     fn build_command(&self) -> Command {
-        let mut command = Command::new(&*self.program);
+        let mut cmd = Command::new(&*self.program);
 
-        command.args(&*self.leading_args);
-        command.args(&self.args);
+        cmd.args(&*self.leading_args);
+        cmd.args(&*self.propagated_leading_args);
+        cmd.args(&self.args);
         if !self.features.is_empty() {
-            command.arg("--features");
-            command.arg(self.get_features());
+            cmd.arg("--features");
+            cmd.arg(self.get_features());
         }
         if !self.trailing_args.is_empty() {
-            command.arg("--");
-            command.args(&*self.trailing_args);
+            cmd.arg("--");
+            cmd.args(&*self.trailing_args);
         }
 
-        command
+        cmd
     }
 }
 
@@ -198,7 +210,11 @@ impl fmt::Display for ProcessBuilder<'_> {
             write!(f, "{}", Path::new(&*self.program).file_stem().unwrap().to_string_lossy())?;
         }
 
-        for arg in self.leading_args {
+        for arg in &self.leading_args {
+            write!(f, " {}", arg)?;
+        }
+
+        for arg in self.propagated_leading_args {
             write!(f, " {}", arg)?;
         }
 
