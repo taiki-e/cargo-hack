@@ -36,6 +36,7 @@ impl Command {
         self.current_dir(Path::new(env!("CARGO_MANIFEST_DIR")).join(path))
     }
 
+    #[rustversion::attr(since(1.46), track_caller)]
     pub fn assert_output(&mut self) -> AssertOutput {
         let output = self.output().unwrap_or_else(|e| panic!("could not execute process: {}", e));
         AssertOutput {
@@ -45,6 +46,7 @@ impl Command {
         }
     }
 
+    #[rustversion::attr(since(1.46), track_caller)]
     pub fn assert_success(&mut self) -> AssertOutput {
         let output = self.assert_output();
         if !output.status.success() {
@@ -58,6 +60,7 @@ impl Command {
         output
     }
 
+    #[rustversion::attr(since(1.46), track_caller)]
     pub fn assert_failure(&mut self) -> AssertOutput {
         let output = self.assert_output();
         if output.status.success() {
@@ -84,6 +87,7 @@ fn line_separated(lines: &str, f: impl FnMut(&str)) {
 
 impl AssertOutput {
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stderr contains each pattern.
+    #[rustversion::attr(since(1.46), track_caller)]
     pub fn stderr_contains(&self, pats: &str) -> &Self {
         line_separated(pats, |pat| {
             if !self.stderr.contains(pat) {
@@ -99,6 +103,7 @@ impl AssertOutput {
     }
 
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stdout contains each pattern.
+    #[rustversion::attr(since(1.46), track_caller)]
     pub fn stderr_not_contains(&self, pats: &str) -> &Self {
         line_separated(pats, |pat| {
             if self.stderr.contains(pat) {
@@ -114,6 +119,7 @@ impl AssertOutput {
     }
 
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stdout contains each pattern.
+    #[rustversion::attr(since(1.46), track_caller)]
     pub fn stdout_contains(&self, pats: &str) -> &Self {
         line_separated(pats, |pat| {
             if !self.stdout.contains(pat) {
@@ -129,6 +135,7 @@ impl AssertOutput {
     }
 
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stdout contains each pattern.
+    #[rustversion::attr(since(1.46), track_caller)]
     pub fn stdout_not_contains(&self, pats: &str) -> &Self {
         line_separated(pats, |pat| {
             if self.stdout.contains(pat) {
