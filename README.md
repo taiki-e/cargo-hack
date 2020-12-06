@@ -5,7 +5,7 @@
 [![rustc](https://img.shields.io/badge/rustc-1.36+-blue.svg?style=flat-square)](https://www.rust-lang.org)
 [![build status](https://img.shields.io/github/workflow/status/taiki-e/cargo-hack/CI/master?style=flat-square)](https://github.com/taiki-e/cargo-hack/actions?query=workflow%3ACI+branch%3Amaster)
 
-A cargo subcommand to provide various options useful for testing and continuous integration.
+A cargo subcommand to provide some options useful for testing and continuous integration.
 
 ## Installation
 
