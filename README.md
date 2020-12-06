@@ -9,11 +9,15 @@ A cargo subcommand to provide some options useful for testing and continuous int
 
 ## Installation
 
+Run the following command:
+
 ```sh
 cargo install cargo-hack
 ```
 
-To install cargo-hack requires rustc 1.36+.
+Or download from [GitHub Releases](https://github.com/taiki-e/cargo-hack/releases/latest).
+
+*Compiler support: requires rustc 1.36+*
 
 cargo-hack is usually runnable with Cargo versions older than the Rust version required for installation (e.g., `cargo +1.31 hack check`). Currently, to run cargo-hack requires Cargo 1.26+.
 
@@ -97,11 +101,10 @@ cargo-hack is usually runnable with Cargo versions older than the Rust version r
 
   If the given range is unclosed, the latest stable compiler is treated as the upper bound.
 
-  This might be useful for catching issues like [BurntSushi/termcolor#35], [rust-lang/regex#685], [rust-lang/rust-clippy#6324].
+  This might be useful for catching issues like [rust-lang/regex#685]and [rust-lang/rust-clippy#6324].
 
-  [BurntSushi/termcolor#35]: https://github.com/BurntSushi/termcolor/issues/35
   [rust-lang/regex#685]: https://github.com/rust-lang/regex/issues/685
-  [rust-lang/rust-clippy#6324]: https://github.com/rust-lang/rust-clippy/issues/6324.
+  [rust-lang/rust-clippy#6324]: https://github.com/rust-lang/rust-clippy/issues/6324
 
 * **`--version-step`**
 
