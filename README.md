@@ -9,13 +9,11 @@ A cargo subcommand to provide some options useful for testing and continuous int
 
 ## Installation
 
-Run the following command:
-
 ```sh
 cargo install cargo-hack
 ```
 
-Or download from [GitHub Releases](https://github.com/taiki-e/cargo-hack/releases/latest).
+Alternatively, download compiled binaries from [GitHub Releases](https://github.com/taiki-e/cargo-hack/releases).
 
 *Compiler support: requires rustc 1.36+*
 
