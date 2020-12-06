@@ -68,8 +68,29 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
         if cx.verbose {
             line.display_manifest_path();
         }
+        {
+            // First, generate the lockfile using the oldest cargo specified.
+            // https://github.com/taiki-e/cargo-hack/issues/105
+            let toolchain = &range[0];
+            rustup::install_toolchain(toolchain)?;
+            let mut line = line.clone();
+            line.leading_arg(toolchain);
+            line.args(&["generate-lockfile"]);
+            if let Some(pid) = cx.current_package() {
+                let package = cx.packages(pid);
+                line.arg("--manifest-path");
+                line.arg(
+                    package
+                        .manifest_path
+                        .strip_prefix(&cx.current_dir)
+                        .unwrap_or(&package.manifest_path),
+                );
+            }
+            line.exec_with_output()?;
+        }
+
         range.iter().try_for_each(|toolchain| {
-            rustup::install_toolchain(&toolchain[1..])?;
+            rustup::install_toolchain(toolchain)?;
             let mut line = line.clone();
             line.leading_arg(toolchain);
             line.with_args(cx);
