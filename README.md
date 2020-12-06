@@ -31,7 +31,7 @@ cargo-hack is usually runnable with Cargo versions older than the Rust version r
 
   Perform for each feature which includes default features and `--no-default-features` of the package.
 
-  This is useful to check that each feature is working properly. (When used for this purpose, it is recommended to use with `--no-dev-deps` to avoid [rust-lang/cargo#4866].)
+  This is useful to check that each feature is working properly. (When used for this purpose, it is recommended to use with `--no-dev-deps` to avoid [cargo#4866].)
 
   ```sh
   cargo hack check --each-feature --no-dev-deps
@@ -44,7 +44,7 @@ cargo-hack is usually runnable with Cargo versions older than the Rust version r
 
   This is useful to check that every combination of features is working
   properly. (When used for this purpose, it is recommended to use with
-  `--no-dev-deps` to avoid [rust-lang/cargo#4866].)
+  `--no-dev-deps` to avoid [cargo#4866].)
 
   ```sh
   cargo hack check --feature-powerset --no-dev-deps
@@ -54,15 +54,15 @@ cargo-hack is usually runnable with Cargo versions older than the Rust version r
 
   Perform without dev-dependencies.
 
-  This is a workaround for an issue that dev-dependencies leaking into normal build ([rust-lang/cargo#4866]).
+  This is a workaround for an issue that dev-dependencies leaking into normal build ([cargo#4866]).
 
-  Also, this can be used as a workaround for an issue that `cargo` does not allow publishing a package with cyclic dev-dependencies. ([rust-lang/cargo#4242])
+  Also, this can be used as a workaround for an issue that `cargo` does not allow publishing a package with cyclic dev-dependencies. ([cargo#4242])
 
   ```sh
   cargo hack publish --no-dev-deps --dry-run --allow-dirty
   ```
 
-  Note: Currently, using `--no-dev-deps` flag removes dev-dependencies from real manifest while cargo-hack is running and restores it when finished. See [rust-lang/cargo#4242] for why this is necessary.
+  Note: Currently, using `--no-dev-deps` flag removes dev-dependencies from real manifest while cargo-hack is running and restores it when finished. See [cargo#4242] for why this is necessary.
   Also, this behavior may change in the future on some subcommands. See also [#15].
 
 * **`--remove-dev-deps`**
@@ -85,7 +85,7 @@ cargo-hack is usually runnable with Cargo versions older than the Rust version r
 
   Remove artifacts for that package before running the command.
 
-  This also works as a workaround for [rust-lang/rust-clippy#4612].
+  This also works as a workaround for [rust-clippy#4612].
 
 * **`--version-range`**
 
@@ -101,10 +101,7 @@ cargo-hack is usually runnable with Cargo versions older than the Rust version r
 
   If the given range is unclosed, the latest stable compiler is treated as the upper bound.
 
-  This might be useful for catching issues like [rust-lang/regex#685]and [rust-lang/rust-clippy#6324].
-
-  [rust-lang/regex#685]: https://github.com/rust-lang/regex/issues/685
-  [rust-lang/rust-clippy#6324]: https://github.com/rust-lang/rust-clippy/issues/6324
+  This might be useful for catching issues like [termcolor#35], [regex#685], [rust-clippy#6324].
 
 * **`--version-step`**
 
@@ -136,7 +133,7 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
 
 * **`--features`**, **`--no-default-features`**
 
-  Unlike `cargo` ([rust-lang/cargo#3620], [rust-lang/cargo#4106], [rust-lang/cargo#4463], [rust-lang/cargo#4753], [rust-lang/cargo#5015], [rust-lang/cargo#5364], [rust-lang/cargo#6195]), it can also be applied to sub-crates.
+  Unlike `cargo` ([cargo#3620], [cargo#4106], [cargo#4463], [cargo#4753], [cargo#5015], [cargo#5364], [cargo#6195]), it can also be applied to sub-crates.
 
 * **`--all`**, **`--workspace`**
 
@@ -158,16 +155,19 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
   *Workspace members will be performed according to the order of the 'packages' fields of [`cargo metadata`][cargo-metadata].*
 
 [#15]: https://github.com/taiki-e/cargo-hack/issues/15
-[rust-lang/cargo#3620]: https://github.com/rust-lang/cargo/issues/3620
-[rust-lang/cargo#4106]: https://github.com/rust-lang/cargo/issues/4106
-[rust-lang/cargo#4242]: https://github.com/rust-lang/cargo/issues/4242
-[rust-lang/cargo#4463]: https://github.com/rust-lang/cargo/issues/4463
-[rust-lang/cargo#4753]: https://github.com/rust-lang/cargo/issues/4753
-[rust-lang/cargo#4866]: https://github.com/rust-lang/cargo/issues/4866
-[rust-lang/cargo#5015]: https://github.com/rust-lang/cargo/issues/4463
-[rust-lang/cargo#5364]: https://github.com/rust-lang/cargo/issues/5364
-[rust-lang/cargo#6195]: https://github.com/rust-lang/cargo/issues/6195
-[rust-lang/rust-clippy#4612]: https://github.com/rust-lang/cargo/issues/4612
+[termcolor#35]: https://github.com/BurntSushi/termcolor/issues/35
+[cargo#3620]: https://github.com/rust-lang/cargo/issues/3620
+[cargo#4106]: https://github.com/rust-lang/cargo/issues/4106
+[cargo#4242]: https://github.com/rust-lang/cargo/issues/4242
+[cargo#4463]: https://github.com/rust-lang/cargo/issues/4463
+[cargo#4753]: https://github.com/rust-lang/cargo/issues/4753
+[cargo#4866]: https://github.com/rust-lang/cargo/issues/4866
+[cargo#5015]: https://github.com/rust-lang/cargo/issues/4463
+[cargo#5364]: https://github.com/rust-lang/cargo/issues/5364
+[cargo#6195]: https://github.com/rust-lang/cargo/issues/6195
+[regex#685]: https://github.com/rust-lang/regex/issues/685
+[rust-clippy#4612]: https://github.com/rust-lang/rust-clippy/issues/4612
+[rust-clippy#6324]: https://github.com/rust-lang/rust-clippy/issues/6324
 [cargo-metadata]: https://doc.rust-lang.org/cargo/commands/cargo-metadata.html
 
 ## License
