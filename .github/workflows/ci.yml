@@ -66,8 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      # TODO: replace this with `cargo install cargo-hack` when cargo-hack 0.5.0 released
-      - run: cargo +stable install --path .
+      - run: cargo install cargo-hack
       - run: cargo hack build --all --ignore-private --no-dev-deps --version-range ${{ matrix.range }}
 
   run:
