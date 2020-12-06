@@ -6,7 +6,11 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.5.0] - 2020-12-06
+
 * [Remove deprecated `--skip-no-default-features` flag.](https://github.com/taiki-e/cargo-hack/pull/100) Use `--exclude-no-default-features` flag instead.
+
+* Add `--version-range` option. See [#102](https://github.com/taiki-e/cargo-hack/pull/102) for more.
 
 * [Change some warnings to errors.](https://github.com/taiki-e/cargo-hack/pull/100)
 
@@ -232,7 +236,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.4.8...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/taiki-e/cargo-hack/compare/v0.4.8...v0.5.0
 [0.4.8]: https://github.com/taiki-e/cargo-hack/compare/v0.4.7...v0.4.8
 [0.4.7]: https://github.com/taiki-e/cargo-hack/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/taiki-e/cargo-hack/compare/v0.4.5...v0.4.6
