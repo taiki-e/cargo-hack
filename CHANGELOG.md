@@ -10,9 +10,11 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 * [Change some warnings to errors.](https://github.com/taiki-e/cargo-hack/pull/100)
 
-* Diagnostic improvements.
+* cargo-hack now handles SIGTERM the same as SIGINT (ctrl-c).
 
 * GitHub Releases binaries containing version numbers are no longer distributed. See [#91](https://github.com/taiki-e/cargo-hack/pull/91) for more.
+
+* Diagnostic improvements.
 
 ## [0.4.8] - 2020-12-03
 
