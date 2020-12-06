@@ -9,7 +9,7 @@ keywords = ["cargo", "subcommand"]
 categories = ["command-line-utilities", "development-tools::cargo-plugins", "development-tools::build-utils"]
 readme = "README.md"
 description = """
-A tool to work around some limitations on cargo.
+A cargo subcommand to provide various options useful for testing and continuous integration.
 """
 
 [package.metadata.docs.rs]
