@@ -66,7 +66,10 @@ pub(crate) fn version_range(range: &str, step: Option<&str>) -> Result<Vec<Strin
     Ok(versions)
 }
 
-pub(crate) fn install_toolchain(toolchain: &str) -> Result<()> {
+pub(crate) fn install_toolchain(mut toolchain: &str) -> Result<()> {
+    if toolchain.starts_with('+') {
+        toolchain = &toolchain[1..];
+    }
     // In Github Actions and Azure Pipelines, --no-self-update is necessary
     // because the windows environment cannot self-update rustup.exe.
     rustup()
