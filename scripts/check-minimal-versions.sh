@@ -7,7 +7,7 @@
 #
 # Note:
 # - This script modifies Cargo.toml and Cargo.lock while running
-# - This script exits with 1 if there are any unstaged changes
+# - This script exits with 1 if there are any unstaged changes on Cargo.toml
 # - This script requires nightly toolchain and cargo-hack
 #
 # Refs: https://github.com/rust-lang/cargo/issues/5657
@@ -47,11 +47,12 @@ if [[ "${1:-}" =~ ^(check|test)$ ]]; then
   shift
 fi
 
-# This script modifies Cargo.toml and Cargo.lock, so make sure there are no
-# unstaged changes.
-git diff --exit-code
+# This script modifies Cargo.toml, so make sure there are no unstaged changes
+# on Cargo.toml.
+# shellcheck disable=SC2046
+git diff --exit-code $(git ls-files '*Cargo.toml')
 # Restore original Cargo.toml and Cargo.lock on exit.
-trap 'git checkout .' EXIT
+trap 'git checkout $(git ls-files ''*Cargo.toml'')' EXIT
 
 if [[ "${subcmd}" == "check" ]]; then
   # Remove dev-dependencies from Cargo.toml to prevent the next `cargo update`
