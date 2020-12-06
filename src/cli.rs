@@ -1,194 +1,7 @@
 use anyhow::{bail, format_err, Error};
-use std::{env, fmt, mem};
+use std::{env, fmt, iter::Peekable, mem};
 
 use crate::{rustup, term, Cargo, Feature, Result, Rustup};
-
-fn print_version() {
-    println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
-}
-
-// (short flag, long flag, short descriptions, additional descriptions)
-const HELP: &[(&str, &str, &str, &[&str])] = &[
-    ("-p", "--package <SPEC>...", "Package(s) to check", &[]),
-    ("", "--all", "Alias for --workspace", &[]),
-    ("", "--workspace", "Perform command for all packages in the workspace", &[]),
-    ("", "--exclude <SPEC>...", "Exclude packages from the check", &[
-        "This flag can only be used together with --workspace",
-    ]),
-    ("", "--manifest-path <PATH>", "Path to Cargo.toml", &[]),
-    ("", "--features <FEATURES>...", "Space-separated list of features to activate", &[]),
-    ("", "--each-feature", "Perform for each feature of the package", &[
-        "This also includes runs with just --no-default-features flag, --all-features flag, and default features.",
-    ]),
-    ("", "--feature-powerset", "Perform for the feature powerset of the package", &[
-        "This also includes runs with just --no-default-features flag, --all-features flag, and default features.",
-    ]),
-    ("", "--optional-deps [DEPS]...", "Use optional dependencies as features", &[
-        "If DEPS are not specified, all optional dependencies are considered as features.",
-        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
-    ]),
-    ("", "--skip <FEATURES>...", "Alias for --exclude-features", &[]),
-    ("", "--exclude-features <FEATURES>...", "Space-separated list of features to exclude", &[
-        "To exclude run of default feature, using value `--exclude-features default`.",
-        "To exclude run of just --no-default-features flag, using --exclude-no-default-features flag.",
-        "To exclude run of just --all-features flag, using --exclude-all-features flag.",
-        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
-    ]),
-    ("", "--exclude-no-default-features", "Exclude run of just --no-default-features flag", &[
-        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
-    ]),
-    ("", "--exclude-all-features", "Exclude run of just --all-features flag", &[
-        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
-    ]),
-    (
-        "",
-        "--depth <NUM>",
-        "Specify a max number of simultaneous feature flags of --feature-powerset",
-        &[
-            "If NUM is set to 1, --feature-powerset is equivalent to --each-feature.",
-            "This flag can only be used together with --feature-powerset flag.",
-        ],
-    ),
-    ("", "--group-features <FEATURES>...", "Space-separated list of features to group", &[
-        "To specify multiple groups, use this option multiple times: `--group-features a,b --group-features c,d`",
-        "This flag can only be used together with --feature-powerset flag.",
-    ]),
-    (
-        "",
-        "--include-features <FEATURES>...",
-        "Include only the specified features in the feature combinations instead of package features",
-        &[
-            "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
-        ],
-    ),
-    ("", "--no-dev-deps", "Perform without dev-dependencies", &[
-        "Note that this flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished.",
-    ]),
-    (
-        "",
-        "--remove-dev-deps",
-        "Equivalent to --no-dev-deps flag except for does not restore the original `Cargo.toml` after performed",
-        &[],
-    ),
-    ("", "--ignore-private", "Skip to perform on `publish = false` packages", &[]),
-    (
-        "",
-        "--ignore-unknown-features",
-        "Skip passing --features flag to `cargo` if that feature does not exist in the package",
-        &["This flag can only be used together with either --features or --include-features."],
-    ),
-    ("", "--clean-per-run", "Remove artifacts for that package before running the command", &[
-        "If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts will be removed before each run.",
-        "Note that dependencies artifacts will be preserved.",
-    ]),
-    (
-        "",
-        "--version-range <START>..[END]",
-        "Perform commands on a specified (inclusive) range of Rust versions",
-        &[
-            "If the given range is unclosed, the latest stable compiler is treated as the upper bound.",
-            "Note that ranges are always inclusive ranges.",
-        ],
-    ),
-    ("", "--version-step <NUM>", "Specify the version interval of --version-range", &[]),
-    ("-v", "--verbose", "Use verbose output", &[]),
-    ("", "--color <WHEN>", "Coloring: auto, always, never", &[
-        "This flag will be propagated to cargo.",
-    ]),
-    ("-h", "--help", "Prints help information", &[]),
-    ("-V", "--version", "Prints version information", &[]),
-];
-
-struct Help {
-    long: bool,
-    term_size: usize,
-}
-
-impl Help {
-    fn long() -> Self {
-        Self { long: true, term_size: term_size::dimensions().map_or(120, |(w, _)| w) }
-    }
-
-    fn short() -> Self {
-        Self { long: false, term_size: term_size::dimensions().map_or(120, |(w, _)| w) }
-    }
-}
-
-impl fmt::Display for Help {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fn write(
-            f: &mut fmt::Formatter<'_>,
-            indent: usize,
-            require_first_indent: bool,
-            term_size: usize,
-            desc: &str,
-        ) -> fmt::Result {
-            if require_first_indent {
-                (0..indent).try_for_each(|_| write!(f, " "))?;
-            }
-            let mut written = 0;
-            let size = term_size - indent;
-            for s in desc.split(' ') {
-                if written + s.len() + 1 >= size {
-                    writeln!(f)?;
-                    (0..indent).try_for_each(|_| write!(f, " "))?;
-                    write!(f, "{}", s)?;
-                    written = s.len();
-                } else if written == 0 {
-                    write!(f, "{}", s)?;
-                    written += s.len();
-                } else {
-                    write!(f, " {}", s)?;
-                    written += s.len() + 1;
-                }
-            }
-            Ok(())
-        }
-
-        writeln!(
-            f,
-            "\
-{0} {1}\n{2}
-USAGE:
-    cargo hack [OPTIONS] [SUBCOMMAND]\n
-Use -h for short descriptions and --help for more details.\n
-OPTIONS:",
-            env!("CARGO_PKG_NAME"),
-            env!("CARGO_PKG_VERSION"),
-            env!("CARGO_PKG_DESCRIPTION")
-        )?;
-
-        for &(short, long, desc, additional) in HELP {
-            write!(f, "    {:2}{} ", short, if short.is_empty() { " " } else { "," })?;
-            if self.long {
-                writeln!(f, "{}", long)?;
-                write(f, 12, true, self.term_size, desc)?;
-                writeln!(f, ".\n")?;
-                for desc in additional {
-                    write(f, 12, true, self.term_size, desc)?;
-                    writeln!(f, "\n")?;
-                }
-            } else {
-                write!(f, "{:32} ", long)?;
-                write(f, 41, false, self.term_size, desc)?;
-                writeln!(f)?;
-            }
-        }
-        if !self.long {
-            writeln!(f)?;
-        }
-
-        writeln!(
-            f,
-            "\
-Some common cargo commands are (see all commands with --list):
-        build       Compile the current package
-        check       Analyze the current package and report errors, but don't build object files
-        run         Run a binary or example of the local package
-        test        Run the tests"
-        )
-    }
-}
 
 pub(crate) struct Args<'a> {
     pub(crate) leading_args: Vec<&'a str>,
@@ -264,12 +77,10 @@ pub(crate) struct RawArgs(Vec<String>);
 
 pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -> Result<Args<'a>> {
     let mut iter = raw.0.iter();
-    let mut args = iter.by_ref().map(String::as_str).peekable();
+    let args = &mut iter.by_ref().map(String::as_str).peekable();
     match args.next() {
         Some(a) if a == "hack" => {}
-        Some(a) => {
-            return Err(mini_usage(&format!("expected subcommand 'hack', found argument '{}'", a)));
-        }
+        Some(a) => mini_usage(&format!("expected subcommand 'hack', found argument '{}'", a))?,
         None => {
             println!("{}", Help::short());
             std::process::exit(1);
@@ -332,27 +143,16 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
             }
 
             macro_rules! parse_opt {
-                ($opt:ident, $propagate:expr, $pat:expr, $help:expr $(,)?) => {
-                    if arg == $pat {
+                ($opt:ident, $propagate:expr, $pat:expr $(,)?) => {
+                    if let Some(val) = parse_opt(arg, args, subcommand, $pat, true)? {
+                        let val = val.unwrap();
                         if $opt.is_some() {
-                            return Err(multi_arg($help, subcommand));
+                            multi_arg($pat, subcommand)?;
                         }
-                        let next = args.next().ok_or_else(|| req_arg($help, subcommand))?;
-                        $opt = Some(next);
+                        $opt = Some(val);
                         if $propagate {
-                            leading.push(arg);
-                            leading.push(next);
-                        }
-                        continue;
-                    } else if arg.starts_with(concat!($pat, "=")) {
-                        if $opt.is_some() {
-                            return Err(multi_arg($help, subcommand));
-                        }
-                        let next =
-                            arg.splitn(2, '=').nth(1).ok_or_else(|| req_arg($help, subcommand))?;
-                        $opt = Some(next);
-                        if $propagate {
-                            leading.push(arg);
+                            leading.push($pat);
+                            leading.push(val);
                         }
                         continue;
                     }
@@ -360,38 +160,17 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
             }
 
             macro_rules! parse_multi_opt {
-                ($v:ident, $allow_split:expr, $require_value:expr, $pat:expr, $help:expr $(,)?) => {
-                    if arg == $pat {
-                        if !$require_value && args.peek().map_or(true, |s| s.starts_with('-')) {
-                            continue;
-                        }
-                        let arg = args.next().ok_or_else(|| req_arg($help, subcommand))?;
+                ($v:ident, $allow_split:expr, $pat:expr $(,)?) => {
+                    if let Some(val) = parse_opt(arg, args, subcommand, $pat, true)? {
+                        let val = val.unwrap();
                         if $allow_split {
-                            if arg.contains(',') {
-                                $v.extend(arg.split(','));
+                            if val.contains(',') {
+                                $v.extend(val.split(','));
                             } else {
-                                $v.extend(arg.split(' '));
+                                $v.extend(val.split(' '));
                             }
                         } else {
-                            $v.push(arg);
-                        }
-                        continue;
-                    } else if arg.starts_with(concat!($pat, "=")) {
-                        let mut arg =
-                            arg.splitn(2, '=').nth(1).ok_or_else(|| req_arg($help, subcommand))?;
-                        if $allow_split {
-                            if arg.starts_with('\'') && arg.ends_with('\'')
-                                || arg.starts_with('"') && arg.ends_with('"')
-                            {
-                                arg = &arg[1..arg.len() - 1];
-                            }
-                            if arg.contains(',') {
-                                $v.extend(arg.split(','));
-                            } else {
-                                $v.extend(arg.split(' '));
-                            }
-                        } else {
-                            $v.push(arg);
+                            $v.push(val);
                         }
                         continue;
                     }
@@ -401,77 +180,54 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
             macro_rules! parse_flag {
                 ($flag:ident) => {
                     if mem::replace(&mut $flag, true) {
-                        return Err(multi_arg(&arg, subcommand));
+                        multi_arg(&arg, subcommand)?;
                     } else {
                         continue;
                     }
                 };
             }
 
-            parse_opt!(manifest_path, false, "--manifest-path", "--manifest-path <PATH>");
-            parse_opt!(depth, false, "--depth", "--depth <NUM>");
-            parse_opt!(color, true, "--color", "--color <WHEN>");
-            parse_opt!(version_range, false, "--version-range", "--version-range <START>..[END]");
-            parse_opt!(version_step, false, "--version-step", "--version-step <NUM>");
+            parse_opt!(manifest_path, false, "--manifest-path");
+            parse_opt!(depth, false, "--depth");
+            parse_opt!(color, true, "--color");
+            parse_opt!(version_range, false, "--version-range");
+            parse_opt!(version_step, false, "--version-step");
 
-            parse_multi_opt!(package, false, true, "--package", "--package <SPEC>...");
-            parse_multi_opt!(package, false, true, "-p", "--package <SPEC>...");
-            parse_multi_opt!(exclude, false, true, "--exclude", "--exclude <SPEC>...");
-            parse_multi_opt!(features, true, true, "--features", "--features <FEATURES>...");
-            parse_multi_opt!(exclude_features, true, true, "--skip", "--skip <FEATURES>...");
-            parse_multi_opt!(
-                exclude_features,
-                true,
-                true,
-                "--exclude-features",
-                "--exclude-features <FEATURES>...",
-            );
-            parse_multi_opt!(
-                include_features,
-                true,
-                true,
-                "--include-features",
-                "--include-features <FEATURES>...",
-            );
-            parse_multi_opt!(
-                group_features,
-                false,
-                true,
-                "--group-features",
-                "--group-features <FEATURES>...",
-            );
+            parse_multi_opt!(package, false, "--package");
+            parse_multi_opt!(package, false, "-p");
+            parse_multi_opt!(exclude, false, "--exclude");
+            parse_multi_opt!(features, true, "--features");
+            parse_multi_opt!(exclude_features, true, "--skip");
+            parse_multi_opt!(exclude_features, true, "--exclude-features",);
+            parse_multi_opt!(include_features, true, "--include-features",);
+            parse_multi_opt!(group_features, false, "--group-features",);
 
-            if arg.starts_with("--optional-deps") {
+            if let Some(val) = parse_opt(arg, args, subcommand, "--optional-deps", false)? {
                 if optional_deps.is_some() {
-                    return Err(multi_arg(arg, subcommand));
+                    multi_arg(arg, subcommand)?;
                 }
                 let optional_deps = optional_deps.get_or_insert_with(Vec::new);
-                parse_multi_opt!(
-                    optional_deps,
-                    true,
-                    false,
-                    "--optional-deps",
-                    "--optional-deps [DEPS]..."
-                );
+                if let Some(val) = val {
+                    if val.contains(',') {
+                        optional_deps.extend(val.split(','));
+                    } else {
+                        optional_deps.extend(val.split(' '));
+                    }
+                }
+                continue;
             }
 
             match &*arg {
                 "--workspace" | "--all" => {
                     if let Some(arg) = workspace.replace(arg) {
-                        return Err(multi_arg(arg, subcommand));
+                        multi_arg(arg, subcommand)?;
                     }
                     continue;
                 }
                 "--no-dev-deps" => parse_flag!(no_dev_deps),
                 "--remove-dev-deps" => parse_flag!(remove_dev_deps),
                 "--each-feature" => parse_flag!(each_feature),
-                "--each-features" => {
-                    return Err(similar_arg(arg, subcommand, "--each-feature", None));
-                }
                 "--feature-powerset" => parse_flag!(feature_powerset),
-                "--features-powerset" => {
-                    return Err(similar_arg(arg, subcommand, "--feature-powerset", None));
-                }
                 "--ignore-private" => parse_flag!(ignore_private),
                 "--exclude-no-default-features" => parse_flag!(exclude_no_default_features),
                 "--exclude-all-features" => parse_flag!(exclude_all_features),
@@ -483,6 +239,10 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
                     verbose = true;
                     continue;
                 }
+
+                // detect similar arg
+                "--each-features" => similar_arg(arg, subcommand, "--each-feature", None)?,
+                "--features-powerset" => similar_arg(arg, subcommand, "--feature-powerset", None)?,
 
                 // propagated
                 "--no-default-features" => no_default_features = true,
@@ -505,13 +265,15 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
     if !exclude.is_empty() && workspace.is_none() {
         // TODO: This is the same behavior as cargo, but should we allow it to be used
         // in the root of a virtual workspace as well?
-        bail!("--exclude can only be used together with --workspace");
+        requires("--exclude", &["--workspace"])?;
     }
     if ignore_unknown_features {
         if features.is_empty() && include_features.is_empty() && group_features.is_empty() {
-            bail!(
-                "--ignore-unknown-features can only be used together with --features, --include-features, or --group-features"
-            );
+            requires("--ignore-unknown-features", &[
+                "--features",
+                "--include-features",
+                "--group-features",
+            ])?;
         }
         if !include_features.is_empty() {
             // TODO: implement
@@ -528,40 +290,28 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
     }
     if !each_feature && !feature_powerset {
         if optional_deps.is_some() {
-            bail!(
-                "--optional-deps can only be used together with either --each-feature or --feature-powerset"
-            );
+            requires("--optional-deps", &["--each-feature", "--feature-powerset"])?;
         } else if !exclude_features.is_empty() {
-            bail!(
-                "--exclude-features (--skip) can only be used together with either --each-feature or --feature-powerset"
-            );
+            requires("--exclude-features (--skip)", &["--each-feature", "--feature-powerset"])?;
         } else if exclude_no_default_features {
-            bail!(
-                "--exclude-no-default-features can only be used together with either --each-feature or --feature-powerset"
-            );
+            requires("--exclude-no-default-features", &["--each-feature", "--feature-powerset"])?;
         } else if exclude_all_features {
-            bail!(
-                "--exclude-all-features can only be used together with either --each-feature or --feature-powerset"
-            );
+            requires("--exclude-all-features", &["--each-feature", "--feature-powerset"])?;
         } else if !include_features.is_empty() {
-            bail!(
-                "--include-features can only be used together with either --each-feature or --feature-powerset"
-            );
+            requires("--include-features", &["--each-feature", "--feature-powerset"])?;
         } else if include_deps_features {
-            bail!(
-                "--include-deps-features can only be used together with either --each-feature or --feature-powerset"
-            );
+            requires("--include-deps-features", &["--each-feature", "--feature-powerset"])?;
         }
     }
     if !feature_powerset {
         if depth.is_some() {
-            bail!("--depth can only be used together with --feature-powerset");
+            requires("--depth", &["--feature-powerset"])?;
         } else if !group_features.is_empty() {
-            bail!("--group-features can only be used together with --feature-powerset");
+            requires("--group-features", &["--feature-powerset"])?;
         }
     }
     if version_range.is_none() && version_step.is_some() {
-        bail!("--version-step can only be used together with --version-range");
+        requires("--version-step", &["--version-range"])?;
     }
 
     let depth = depth.map(str::parse::<usize>).transpose()?;
@@ -584,52 +334,63 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
         version_range.map(|range| rustup::version_range(range, version_step)).transpose()?;
 
     if let Some(subcommand) = subcommand {
-        if subcommand == "test" || subcommand == "bench" {
-            if remove_dev_deps {
-                bail!("--remove-dev-deps may not be used together with {} subcommand", subcommand);
-            } else if no_dev_deps {
-                bail!("--no-dev-deps may not be used together with {} subcommand", subcommand);
+        match subcommand {
+            "test" | "bench" => {
+                if remove_dev_deps {
+                    bail!(
+                        "--remove-dev-deps may not be used together with {} subcommand",
+                        subcommand
+                    );
+                } else if no_dev_deps {
+                    bail!("--no-dev-deps may not be used together with {} subcommand", subcommand);
+                }
             }
+            // cargo-hack may not be used together with subcommands that do not have the --manifest-path flag.
+            "install" => {
+                bail!("cargo-hack may not be used together with {} subcommand", subcommand)
+            }
+            _ => {}
         }
     }
+
     if let Some(pos) = leading.iter().position(|a| match &**a {
         "--example" | "--examples" | "--test" | "--tests" | "--bench" | "--benches"
         | "--all-targets" => true,
         _ => a.starts_with("--example=") || a.starts_with("--test=") || a.starts_with("--bench="),
     }) {
         if remove_dev_deps {
-            bail!("--remove-dev-deps may not be used together with {}", leading[pos]);
+            conflicts("--remove-dev-deps", &leading[pos])?;
         } else if no_dev_deps {
-            bail!("--no-dev-deps may not be used together with {}", leading[pos]);
+            conflicts("--no-dev-deps", &leading[pos])?;
         }
     }
 
     if !include_features.is_empty() {
         if optional_deps.is_some() {
-            bail!("--optional-deps may not be used together with --include-features");
+            conflicts("--include-features", "--optional-deps")?;
         } else if include_deps_features {
-            bail!("--include-deps-features may not be used together with --include-features");
+            conflicts("--include-features", "--include-deps-features")?;
         }
     }
 
     if no_dev_deps && remove_dev_deps {
-        bail!("--no-dev-deps may not be used together with --remove-dev-deps");
+        conflicts("--no-dev-deps", "--remove-dev-deps")?;
     }
     if each_feature && feature_powerset {
-        bail!("--each-feature may not be used together with --feature-powerset");
+        conflicts("--each-feature", "--feature-powerset")?;
     }
     if all_features {
         if each_feature {
-            bail!("--all-features may not be used together with --each-feature");
+            conflicts("--all-features", "--each-feature")?;
         } else if feature_powerset {
-            bail!("--all-features may not be used together with --feature-powerset");
+            conflicts("--all-features", "--feature-powerset")?;
         }
     }
     if no_default_features {
         if each_feature {
-            bail!("--no-default-features may not be used together with --each-feature");
+            conflicts("--no-default-features", "--each-feature")?;
         } else if feature_powerset {
-            bail!("--no-default-features may not be used together with --feature-powerset");
+            conflicts("--no-default-features", "--feature-powerset")?;
         }
     }
 
@@ -673,7 +434,7 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
             std::process::exit(0);
         } else if !remove_dev_deps {
             // TODO: improve this
-            return Err(mini_usage("no subcommand or valid flag specified"));
+            mini_usage("no subcommand or valid flag specified")?
         }
     }
 
@@ -723,7 +484,245 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
     })
 }
 
+fn parse_opt<'a>(
+    arg: &'a str,
+    args: &mut Peekable<impl Iterator<Item = &'a str>>,
+    subcommand: Option<&str>,
+    pat: &str,
+    require_value: bool,
+) -> Result<Option<Option<&'a str>>> {
+    if arg.starts_with(pat) {
+        let rem = &arg[pat.len()..];
+        if rem.is_empty() {
+            if require_value {
+                return Ok(Some(Some(args.next().ok_or_else(|| req_arg(pat, subcommand))?)));
+            }
+            if args.peek().map_or(true, |s| s.starts_with('-')) {
+                Ok(Some(None))
+            } else {
+                Ok(Some(args.next()))
+            }
+        } else if rem.starts_with('=') {
+            let mut val = &rem[1..];
+            if val.starts_with('\'') && val.ends_with('\'')
+                || val.starts_with('"') && val.ends_with('"')
+            {
+                val = &val[1..val.len() - 1];
+            }
+            Ok(Some(Some(val)))
+        } else {
+            Ok(None)
+        }
+    } else {
+        Ok(None)
+    }
+}
+
+// (short flag, long flag, value name, short descriptions, additional descriptions)
+type HelpText<'a> = (&'a str, &'a str, &'a str, &'a str, &'a [&'a str]);
+
+const HELP: &[HelpText<'_>] = &[
+    ("-p", "--package", "<SPEC>...", "Package(s) to check", &[]),
+    ("", "--all", "", "Alias for --workspace", &[]),
+    ("", "--workspace", "", "Perform command for all packages in the workspace", &[]),
+    ("", "--exclude", "<SPEC>...", "Exclude packages from the check", &[
+        "This flag can only be used together with --workspace",
+    ]),
+    ("", "--manifest-path", "<PATH>", "Path to Cargo.toml", &[]),
+    ("", "--features", "<FEATURES>...", "Space-separated list of features to activate", &[]),
+    ("", "--each-feature", "", "Perform for each feature of the package", &[
+        "This also includes runs with just --no-default-features flag, --all-features flag, and default features.",
+    ]),
+    ("", "--feature-powerset", "", "Perform for the feature powerset of the package", &[
+        "This also includes runs with just --no-default-features flag, --all-features flag, and default features.",
+    ]),
+    ("", "--optional-deps", "[DEPS]...", "Use optional dependencies as features", &[
+        "If DEPS are not specified, all optional dependencies are considered as features.",
+        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
+    ]),
+    ("", "--skip", "<FEATURES>...", "Alias for --exclude-features", &[]),
+    ("", "--exclude-features", "<FEATURES>...", "Space-separated list of features to exclude", &[
+        "To exclude run of default feature, using value `--exclude-features default`.",
+        "To exclude run of just --no-default-features flag, using --exclude-no-default-features flag.",
+        "To exclude run of just --all-features flag, using --exclude-all-features flag.",
+        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
+    ]),
+    ("", "--exclude-no-default-features", "", "Exclude run of just --no-default-features flag", &[
+        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
+    ]),
+    ("", "--exclude-all-features", "", "Exclude run of just --all-features flag", &[
+        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
+    ]),
+    (
+        "",
+        "--depth",
+        "<NUM>",
+        "Specify a max number of simultaneous feature flags of --feature-powerset",
+        &[
+            "If NUM is set to 1, --feature-powerset is equivalent to --each-feature.",
+            "This flag can only be used together with --feature-powerset flag.",
+        ],
+    ),
+    ("", "--group-features", "<FEATURES>...", "Space-separated list of features to group", &[
+        "To specify multiple groups, use this option multiple times: `--group-features a,b --group-features c,d`",
+        "This flag can only be used together with --feature-powerset flag.",
+    ]),
+    (
+        "",
+        "--include-features",
+        "<FEATURES>...",
+        "Include only the specified features in the feature combinations instead of package features",
+        &[
+            "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
+        ],
+    ),
+    ("", "--no-dev-deps", "", "Perform without dev-dependencies", &[
+        "Note that this flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished.",
+    ]),
+    (
+        "",
+        "--remove-dev-deps",
+        "",
+        "Equivalent to --no-dev-deps flag except for does not restore the original `Cargo.toml` after performed",
+        &[],
+    ),
+    ("", "--ignore-private", "", "Skip to perform on `publish = false` packages", &[]),
+    (
+        "",
+        "--ignore-unknown-features",
+        "",
+        "Skip passing --features flag to `cargo` if that feature does not exist in the package",
+        &["This flag can only be used together with either --features or --include-features."],
+    ),
+    ("", "--clean-per-run", "", "Remove artifacts for that package before running the command", &[
+        "If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts will be removed before each run.",
+        "Note that dependencies artifacts will be preserved.",
+    ]),
+    (
+        "",
+        "--version-range",
+        "<START>..[END]",
+        "Perform commands on a specified (inclusive) range of Rust versions",
+        &[
+            "If the given range is unclosed, the latest stable compiler is treated as the upper bound.",
+            "Note that ranges are always inclusive ranges.",
+        ],
+    ),
+    ("", "--version-step", "<NUM>", "Specify the version interval of --version-range", &[]),
+    ("-v", "--verbose", "", "Use verbose output", &[]),
+    ("", "--color", "<WHEN>", "Coloring: auto, always, never", &[
+        "This flag will be propagated to cargo.",
+    ]),
+    ("-h", "--help", "", "Prints help information", &[]),
+    ("-V", "--version", "", "Prints version information", &[]),
+];
+
+struct Help {
+    long: bool,
+    term_size: usize,
+}
+
+impl Help {
+    fn long() -> Self {
+        Self { long: true, term_size: term_size::dimensions().map_or(120, |(w, _)| w) }
+    }
+
+    fn short() -> Self {
+        Self { long: false, term_size: term_size::dimensions().map_or(120, |(w, _)| w) }
+    }
+}
+
+impl fmt::Display for Help {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fn write(
+            f: &mut fmt::Formatter<'_>,
+            indent: usize,
+            require_first_indent: bool,
+            term_size: usize,
+            desc: &str,
+        ) -> fmt::Result {
+            if require_first_indent {
+                (0..indent).try_for_each(|_| write!(f, " "))?;
+            }
+            let mut written = 0;
+            let size = term_size - indent;
+            for s in desc.split(' ') {
+                if written + s.len() + 1 >= size {
+                    writeln!(f)?;
+                    (0..indent).try_for_each(|_| write!(f, " "))?;
+                    write!(f, "{}", s)?;
+                    written = s.len();
+                } else if written == 0 {
+                    write!(f, "{}", s)?;
+                    written += s.len();
+                } else {
+                    write!(f, " {}", s)?;
+                    written += s.len() + 1;
+                }
+            }
+            Ok(())
+        }
+
+        writeln!(
+            f,
+            "\
+{0} {1}\n{2}
+USAGE:
+    cargo hack [OPTIONS] [SUBCOMMAND]\n
+Use -h for short descriptions and --help for more details.\n
+OPTIONS:",
+            env!("CARGO_PKG_NAME"),
+            env!("CARGO_PKG_VERSION"),
+            env!("CARGO_PKG_DESCRIPTION")
+        )?;
+
+        for &(short, long, value_name, desc, additional) in HELP {
+            write!(f, "    {:2}{} ", short, if short.is_empty() { " " } else { "," })?;
+            if self.long {
+                if value_name.is_empty() {
+                    writeln!(f, "{}", long)?;
+                } else {
+                    writeln!(f, "{} {}", long, value_name)?;
+                }
+                write(f, 12, true, self.term_size, desc)?;
+                writeln!(f, ".\n")?;
+                for desc in additional {
+                    write(f, 12, true, self.term_size, desc)?;
+                    writeln!(f, "\n")?;
+                }
+            } else {
+                if value_name.is_empty() {
+                    write!(f, "{:32} ", long)?;
+                } else {
+                    let long = format!("{} {}", long, value_name);
+                    write!(f, "{:32} ", long)?;
+                }
+                write(f, 41, false, self.term_size, desc)?;
+                writeln!(f)?;
+            }
+        }
+        if !self.long {
+            writeln!(f)?;
+        }
+
+        writeln!(
+            f,
+            "\
+Some common cargo commands are (see all commands with --list):
+    build       Compile the current package
+    check       Analyze the current package and report errors, but don't build object files
+    run         Run a binary or example of the local package
+    test        Run the tests"
+        )
+    }
+}
+
+fn print_version() {
+    println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
+}
+
 // NB: When adding a flag here, update the test with the same name in `tests/test.rs` file.
+
 fn removed_flags(flag: &str) -> Result<()> {
     let alt = match flag {
         "--ignore-non-exist-features" => "--ignore-unknown-features",
@@ -733,8 +732,8 @@ fn removed_flags(flag: &str) -> Result<()> {
     bail!("{} was removed, use {} instead", flag, alt)
 }
 
-fn mini_usage(msg: &str) -> Error {
-    format_err!(
+fn mini_usage(msg: &str) -> Result<()> {
+    bail!(
         "\
 {}
 
@@ -746,38 +745,51 @@ For more information try --help",
     )
 }
 
-fn req_arg(arg: &str, subcommand: Option<&str>) -> Error {
+fn get_help(flag: &str) -> Option<&HelpText<'_>> {
+    HELP.iter().find(|&(s, l, ..)| *s == flag || *l == flag)
+}
+
+fn req_arg(flag: &str, subcommand: Option<&str>) -> Error {
+    let arg = get_help(flag).map_or_else(|| flag.to_string(), |arg| format!("{} {}", arg.1, arg.2));
     format_err!(
         "\
-The argument '{0}' requires a value but none was supplied
+The argument '{}' requires a value but none was supplied
 
 USAGE:
-    cargo hack{1} {0}
+    cargo hack{} {}
 
 For more information try --help
 ",
+        flag,
+        subcommand.map_or_else(String::new, |subcommand| String::from(" ") + subcommand),
         arg,
-        subcommand.map_or_else(String::new, |subcommand| String::from(" ") + subcommand)
     )
 }
 
-fn multi_arg(arg: &str, subcommand: Option<&str>) -> Error {
-    format_err!(
+fn multi_arg(flag: &str, subcommand: Option<&str>) -> Result<()> {
+    let arg = get_help(flag).map_or_else(|| flag.to_string(), |arg| format!("{} {}", arg.1, arg.2));
+    bail!(
         "\
-The argument '{0}' was provided more than once, but cannot be used multiple times
+The argument '{}' was provided more than once, but cannot be used multiple times
 
 USAGE:
-    cargo hack{1} {0}
+    cargo hack{} {}
 
 For more information try --help
 ",
+        flag,
+        subcommand.map_or_else(String::new, |subcommand| String::from(" ") + subcommand),
         arg,
-        subcommand.map_or_else(String::new, |subcommand| String::from(" ") + subcommand)
     )
 }
 
-fn similar_arg(arg: &str, subcommand: Option<&str>, expected: &str, value: Option<&str>) -> Error {
-    format_err!(
+fn similar_arg(
+    arg: &str,
+    subcommand: Option<&str>,
+    expected: &str,
+    value: Option<&str>,
+) -> Result<()> {
+    bail!(
         "\
 Found argument '{0}' which wasn't expected, or isn't valid in this context
         Did you mean {2}?
@@ -792,6 +804,30 @@ For more information try --help
         expected,
         value.unwrap_or_default()
     )
+}
+
+// `a` requires one of `b`.
+fn requires(a: &str, b: &[&str]) -> Result<()> {
+    let with = match b.len() {
+        0 => unreachable!(),
+        1 => b[0].to_string(),
+        2 => format!("either {} or {}", b[0], b[1]),
+        _ => {
+            let mut with = String::new();
+            for f in b.iter().take(b.len() - 1) {
+                with += f;
+                with += ", ";
+            }
+            with += "or ";
+            with += b.last().unwrap();
+            with
+        }
+    };
+    bail!("{} can only be used together with {}", a, with);
+}
+
+fn conflicts(a: &str, b: &str) -> Result<()> {
+    bail!("{} may not be used together with {}", a, b);
 }
 
 #[cfg(test)]

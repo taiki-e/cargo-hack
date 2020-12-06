@@ -135,7 +135,7 @@ OPTIONS:
             Prints version information.
 
 Some common cargo commands are (see all commands with --list):
-        build       Compile the current package
-        check       Analyze the current package and report errors, but don't build object files
-        run         Run a binary or example of the local package
-        test        Run the tests
+    build       Compile the current package
+    check       Analyze the current package and report errors, but don't build object files
+    run         Run a binary or example of the local package
+    test        Run the tests

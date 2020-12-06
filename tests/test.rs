@@ -23,12 +23,15 @@ fn failures() {
         .test_dir("tests/fixtures/real")
         .assert_failure()
         .stderr_contains("no subcommand or valid flag specified");
+
+    cargo_hack(["install"])
+        .test_dir("tests/fixtures/real")
+        .assert_failure()
+        .stderr_contains("cargo-hack may not be used together with install subcommand");
 }
 
 #[test]
 fn multi_arg() {
-    // --package, -p, --exclude, --features, --exclude-features, and --verbose are allowed.
-
     for flag in &[
         "--workspace",
         "--all",
@@ -39,25 +42,15 @@ fn multi_arg() {
         "--ignore-private",
         "--ignore-unknown-features",
         "--optional-deps",
+        "--manifest-path=foo",
+        "--color=auto",
     ] {
         cargo_hack(["check", flag, flag])
             .test_dir("tests/fixtures/real")
             .assert_failure()
             .stderr_contains(&format!(
                 "The argument '{}' was provided more than once, but cannot be used multiple times",
-                flag
-            ));
-    }
-
-    for (flag, msg) in
-        &[("--manifest-path", "--manifest-path <PATH>"), ("--color", "--color <WHEN>")]
-    {
-        cargo_hack(["check", flag, "auto", flag, "auto"])
-            .test_dir("tests/fixtures/real")
-            .assert_failure()
-            .stderr_contains(&format!(
-                "The argument '{}' was provided more than once, but cannot be used multiple times",
-                msg
+                flag.split('=').next().unwrap()
             ));
     }
 }
@@ -1387,7 +1380,7 @@ fn propagate() {
     cargo_hack(["check", "--color=auto"])
         .test_dir("tests/fixtures/real")
         .assert_success()
-        .stderr_contains("`cargo check --color=auto`");
+        .stderr_contains("`cargo check --color auto`");
 
     // --verbose does not be propagated
     cargo_hack(["check", "--verbose"])
