@@ -5,7 +5,8 @@
 [![rustc](https://img.shields.io/badge/rustc-1.36+-blue.svg?style=flat-square)](https://www.rust-lang.org)
 [![build status](https://img.shields.io/github/workflow/status/taiki-e/cargo-hack/CI/master?style=flat-square)](https://github.com/taiki-e/cargo-hack/actions?query=workflow%3ACI+branch%3Amaster)
 
-A cargo subcommand to provide some options useful for testing and continuous integration.
+A cargo subcommand to provide some options useful for testing and continuous
+integration.
 
 ## Installation
 
@@ -17,19 +18,26 @@ Alternatively, download compiled binaries from [GitHub Releases](https://github.
 
 *Compiler support: requires rustc 1.36+*
 
-cargo-hack is usually runnable with Cargo versions older than the Rust version required for installation (e.g., `cargo +1.31 hack check`). Currently, to run cargo-hack requires Cargo 1.26+.
+cargo-hack is usually runnable with Cargo versions older than the Rust version
+required for installation (e.g., `cargo +1.31 hack check`). Currently, to run
+cargo-hack requires Cargo 1.26+.
 
 ## Usage
 
 *See `cargo hack --help` for a complete list of options ([output is here](https://github.com/taiki-e/cargo-hack/blob/master/tests/long-help.txt)).*
 
-`cargo-hack` is basically wrapper of `cargo` that propagates subcommand and most of the passed flags to `cargo`, but provides additional flags and changes the behavior of some existing flags.
+`cargo-hack` is basically wrapper of `cargo` that propagates subcommand and most
+of the passed flags to `cargo`, but provides additional flags and changes the
+behavior of some existing flags.
 
 * **`--each-feature`**
 
-  Perform for each feature which includes default features and `--no-default-features` of the package.
+  Perform for each feature which includes default features and
+  `--no-default-features` of the package.
 
-  This is useful to check that each feature is working properly. (When used for this purpose, it is recommended to use with `--no-dev-deps` to avoid [cargo#4866].)
+  This is useful to check that each feature is working properly. (When used for
+  this purpose, it is recommended to use with `--no-dev-deps` to avoid
+  [cargo#4866].)
 
   ```sh
   cargo hack check --each-feature --no-dev-deps
@@ -52,22 +60,29 @@ cargo-hack is usually runnable with Cargo versions older than the Rust version r
 
   Perform without dev-dependencies.
 
-  This is a workaround for an issue that dev-dependencies leaking into normal build ([cargo#4866]).
+  This is a workaround for an issue that dev-dependencies leaking into normal
+  build ([cargo#4866]).
 
-  Also, this can be used as a workaround for an issue that `cargo` does not allow publishing a package with cyclic dev-dependencies. ([cargo#4242])
+  Also, this can be used as a workaround for an issue that `cargo` does not
+  allow publishing a package with cyclic dev-dependencies. ([cargo#4242])
 
   ```sh
   cargo hack publish --no-dev-deps --dry-run --allow-dirty
   ```
 
-  Note: Currently, using `--no-dev-deps` flag removes dev-dependencies from real manifest while cargo-hack is running and restores it when finished. See [cargo#4242] for why this is necessary.
-  Also, this behavior may change in the future on some subcommands. See also [#15].
+  Note: Currently, using `--no-dev-deps` flag removes dev-dependencies from
+  real manifest while cargo-hack is running and restores it when finished.
+  See [cargo#4242] for why this is necessary.
+  Also, this behavior may change in the future on some subcommands. See also
+  [#15].
 
 * **`--remove-dev-deps`**
 
-  Equivalent to `--no-dev-deps` except for does not restore the original `Cargo.toml` after execution.
+  Equivalent to `--no-dev-deps` except for does not restore the original
+  `Cargo.toml` after execution.
 
-  This is useful to know what Cargo.toml that cargo-hack is actually using with `--no-dev-deps`.
+  This is useful to know what Cargo.toml that cargo-hack is actually using
+  with `--no-dev-deps`.
 
   *This flag also works without subcommands.*
 
@@ -97,9 +112,11 @@ cargo-hack is usually runnable with Cargo versions older than the Rust version r
   ...
   ```
 
-  If the given range is unclosed, the latest stable compiler is treated as the upper bound.
+  If the given range is unclosed, the latest stable compiler is treated as the
+  upper bound.
 
-  This might be useful for catching issues like [termcolor#35], [regex#685], [rust-clippy#6324].
+  This might be useful for catching issues like [termcolor#35], [regex#685],
+  [rust-clippy#6324].
 
 * **`--version-step`**
 
@@ -119,19 +136,23 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
 
   Specify a max number of simultaneous feature flags of `--feature-powerset`.
 
-  If the number is set to 1, `--feature-powerset` is equivalent to `--each-feature`.
+  If the number is set to 1, `--feature-powerset` is equivalent to
+  `--each-feature`.
 
 * **`--group-features`**
 
   Space-separated list of features to group.
 
-  To specify multiple groups, use this option multiple times: `--group-features a,b --group-features c,d`
+  To specify multiple groups, use this option multiple times:
+  `--group-features a,b --group-features c,d`
 
 `cargo-hack` changes the behavior of the following existing flags.
 
 * **`--features`**, **`--no-default-features`**
 
-  Unlike `cargo` ([cargo#3620], [cargo#4106], [cargo#4463], [cargo#4753], [cargo#5015], [cargo#5364], [cargo#6195]), it can also be applied to sub-crates.
+  Unlike `cargo` ([cargo#3620], [cargo#4106], [cargo#4463], [cargo#4753],
+  [cargo#5015], [cargo#5364], [cargo#6195]), it can also be applied to
+  sub-crates.
 
 * **`--all`**, **`--workspace`**
 
@@ -139,7 +160,8 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
 
   Unlike cargo, it does not compile all members at once.
 
-  For example, running `cargo hack check --all` in a workspace with members `foo` and `bar` behaves almost the same as the following script:
+  For example, running `cargo hack check --all` in a workspace with members
+  `foo` and `bar` behaves almost the same as the following script:
 
   ```sh
   # If you use cargo-hack, you don't need to maintain this list manually.
@@ -170,6 +192,9 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
 
 ## License
 
-Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or [MIT license](LICENSE-MIT) at your option.
+Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or
+[MIT license](LICENSE-MIT) at your option.
 
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall
+be dual licensed as above, without any additional terms or conditions.
