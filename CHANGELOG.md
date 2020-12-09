@@ -6,6 +6,10 @@ This project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.5.2] - 2020-12-09
+
+* [Automatically install target if specified when using `--version-range` option](https://github.com/taiki-e/cargo-hack/pull/108).
+
 ## [0.5.1] - 2020-12-06
 
 * [Fix compatibility with old cargo of `--version-range` option.](https://github.com/taiki-e/cargo-hack/pull/106)
@@ -240,7 +244,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/taiki-e/cargo-hack/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/taiki-e/cargo-hack/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/taiki-e/cargo-hack/compare/v0.4.8...v0.5.0
 [0.4.8]: https://github.com/taiki-e/cargo-hack/compare/v0.4.7...v0.4.8
