@@ -5,6 +5,7 @@ use std::{
     fmt,
     path::Path,
     process::{Command, ExitStatus, Output},
+    rc::Rc,
     str,
 };
 
@@ -18,7 +19,7 @@ use crate::{Context, PackageId, Result};
 pub(crate) struct ProcessBuilder<'a> {
     // $program $leading_args $propagated_leading_args $args $propagated_trailing_args
     /// The program to execute.
-    program: &'a OsStr,
+    program: Rc<OsStr>,
     /// A list of arguments to pass to the program (until '--').
     propagated_leading_args: &'a [&'a str],
     /// A list of arguments to pass to the program (after '--').
@@ -41,9 +42,9 @@ pub(crate) struct ProcessBuilder<'a> {
 
 impl<'a> ProcessBuilder<'a> {
     /// Creates a new `ProcessBuilder`.
-    pub(crate) fn new(program: &'a OsStr) -> Self {
+    pub(crate) fn new(program: impl AsRef<OsStr>) -> Self {
         Self {
-            program,
+            program: program.as_ref().into(),
             propagated_leading_args: &[],
             trailing_args: &[],
             leading_args: Vec::new(),

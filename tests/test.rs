@@ -2,7 +2,7 @@
 
 mod auxiliary;
 
-use auxiliary::{cargo_bin_exe, cargo_hack, CommandExt, SEPARATOR};
+use auxiliary::{cargo_bin_exe, cargo_hack, target_triple, CommandExt, SEPARATOR};
 
 #[test]
 fn failures() {
@@ -48,7 +48,7 @@ fn multi_arg() {
         cargo_hack(["check", flag, flag])
             .test_dir("tests/fixtures/real")
             .assert_failure()
-            .stderr_contains(&format!(
+            .stderr_contains(format!(
                 "The argument '{}' was provided more than once, but cannot be used multiple times",
                 flag.split('=').next().unwrap()
             ));
@@ -64,7 +64,7 @@ fn removed_flags() {
         cargo_hack(["check", flag])
             .test_dir("tests/fixtures/real")
             .assert_failure()
-            .stderr_contains(&format!("{} was removed, use {} instead", flag, alt));
+            .stderr_contains(format!("{} was removed, use {} instead", flag, alt));
     }
 }
 
@@ -320,7 +320,7 @@ fn no_dev_deps_failure() {
         cargo_hack(["check", "--no-dev-deps", flag])
             .test_dir("tests/fixtures/real")
             .assert_failure()
-            .stderr_contains(&format!("--no-dev-deps may not be used together with {}", flag));
+            .stderr_contains(format!("--no-dev-deps may not be used together with {}", flag));
     }
 
     // with subcommands requires dev-deps
@@ -328,7 +328,7 @@ fn no_dev_deps_failure() {
         cargo_hack([subcommand, "--no-dev-deps"])
             .test_dir("tests/fixtures/real")
             .assert_failure()
-            .stderr_contains(&format!(
+            .stderr_contains(format!(
                 "--no-dev-deps may not be used together with {} subcommand",
                 subcommand
             ));
@@ -344,7 +344,7 @@ fn remove_dev_deps_failure() {
         cargo_hack(["check", "--remove-dev-deps", flag])
             .test_dir("tests/fixtures/real")
             .assert_failure()
-            .stderr_contains(&format!("--remove-dev-deps may not be used together with {}", flag));
+            .stderr_contains(format!("--remove-dev-deps may not be used together with {}", flag));
     }
 
     // with subcommands requires dev-deps
@@ -352,7 +352,7 @@ fn remove_dev_deps_failure() {
         cargo_hack([subcommand, "--remove-dev-deps"])
             .test_dir("tests/fixtures/real")
             .assert_failure()
-            .stderr_contains(&format!(
+            .stderr_contains(format!(
                 "--remove-dev-deps may not be used together with {} subcommand",
                 subcommand
             ));
@@ -1338,7 +1338,7 @@ fn verbose() {
     cargo_hack(["check", "--verbose"])
         .test_dir("tests/fixtures/virtual")
         .assert_success()
-        .stderr_contains(&format!(
+        .stderr_contains(format!(
             "
             running `cargo check --manifest-path member1{0}Cargo.toml`
             running `cargo check --manifest-path member2{0}Cargo.toml`
@@ -1382,6 +1382,12 @@ fn propagate() {
         .assert_success()
         .stderr_contains("`cargo check --color auto`");
 
+    // --target
+    cargo_hack(["check", "--target", target_triple()])
+        .test_dir("tests/fixtures/real")
+        .assert_success()
+        .stderr_contains(format!("`cargo check --target {}`", target_triple()));
+
     // --verbose does not be propagated
     cargo_hack(["check", "--verbose"])
         .test_dir("tests/fixtures/real")
@@ -1414,6 +1420,50 @@ fn default_feature_behavior() {
         .assert_success()
         .stdout_contains("no default feature!")
         .stdout_not_contains("has default feature!");
+}
+
+// It seems rustup is not installed in the docker image provided by cross.
+#[cfg_attr(any(not(target_arch = "x86_64"), target_env = "musl"), ignore)]
+#[test]
+fn version_range() {
+    cargo_hack(["check", "--version-range", "1.36..1.37"])
+        .test_dir("tests/fixtures/run/real")
+        .assert_success()
+        .stderr_contains(
+            "
+            running `cargo +1.36 check` on real (1/2)
+            running `cargo +1.37 check` on real (2/2)
+            ",
+        );
+
+    cargo_hack(["check", "--version-range", "1.36..1.37", "--target", target_triple()])
+        .test_dir("tests/fixtures/run/real")
+        .assert_success()
+        .stderr_contains(format!(
+            "
+            running `cargo +1.36 check --target {0}` on real (1/2)
+            running `cargo +1.37 check --target {0}` on real (2/2)
+            ",
+            target_triple()
+        ));
+
+    if cfg!(target_os = "linux") {
+        cargo_hack([
+            "check",
+            "--version-range",
+            "1.36..1.37",
+            "--target",
+            "x86_64-unknown-linux-musl",
+        ])
+        .test_dir("tests/fixtures/run/real")
+        .assert_success()
+        .stderr_contains(
+            "
+            running `cargo +1.36 check --target x86_64-unknown-linux-musl` on real (1/2)
+            running `cargo +1.37 check --target x86_64-unknown-linux-musl` on real (2/2)
+            ",
+        );
+    }
 }
 
 // It seems rustup is not installed in the docker image provided by cross.

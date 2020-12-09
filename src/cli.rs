@@ -57,14 +57,19 @@ pub(crate) struct Args<'a> {
     /// --group-features <FEATURES>...
     pub(crate) group_features: Vec<Feature>,
 
+    // options that will be propagated to cargo
+    /// --features <FEATURES>...
+    pub(crate) features: Vec<&'a str>,
+
+    // propagated (as a part of leading_args) to cargo
     /// --no-default-features
     pub(crate) no_default_features: bool,
     /// -v, --verbose, -vv
     pub(crate) verbose: bool,
-
-    // options that will be propagated to cargo
-    /// --features <FEATURES>...
-    pub(crate) features: Vec<&'a str>,
+    // Note: specifying multiple `--target` flags requires unstable `-Zmultitarget`,
+    // so cargo-hack currently only supports a single `--target`.
+    /// --target <TRIPLE>...
+    pub(crate) target: Option<&'a str>,
 }
 
 pub(crate) fn raw() -> RawArgs {
@@ -122,6 +127,7 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
     let mut verbose = false;
     let mut no_default_features = false;
     let mut all_features = false;
+    let mut target = None;
 
     let res = (|| -> Result<()> {
         while let Some(arg) = args.next() {
@@ -192,6 +198,7 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
             parse_opt!(color, true, "--color");
             parse_opt!(version_range, false, "--version-range");
             parse_opt!(version_step, false, "--version-step");
+            parse_opt!(target, true, "--target");
 
             parse_multi_opt!(package, false, "--package");
             parse_multi_opt!(package, false, "-p");
@@ -473,14 +480,15 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
         depth,
         group_features,
 
-        no_default_features,
-        verbose,
-
         exclude_features,
         exclude_no_default_features,
         exclude_all_features,
 
         features,
+
+        no_default_features,
+        verbose,
+        target,
     })
 }
 
