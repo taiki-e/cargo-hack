@@ -34,6 +34,9 @@ function retry() {
 
 cd "$(cd "$(dirname "${0}")" && pwd)"/..
 
+git diff --exit-code
+git diff --exit-code --staged
+
 # parsing & verifying
 version="${1:?}"
 tag="v${version}"
@@ -77,8 +80,8 @@ else
 
     # .github/workflows/release.yml should be able to create a new github release in less than a minute.
     echo "info: waiting for github actions to create a new github release for ${version}"
-    sleep 10
-    retry 3 "gh release view ${tag} &>/dev/null" "unable to create a new github release for ${version}"
+    sleep 15
+    retry 2 "gh release view ${tag} &>/dev/null" "unable to create a new github release for ${version}"
   fi
 fi
 
