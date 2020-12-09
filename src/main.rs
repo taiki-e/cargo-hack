@@ -57,7 +57,7 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
     let restore = Restore::new(cx);
     if let Some(range) = &cx.version_range {
         progress.total *= range.len();
-        let mut line = ProcessBuilder::new("cargo".as_ref());
+        let mut line = ProcessBuilder::new("cargo");
         if cx.verbose {
             line.display_manifest_path();
         }
@@ -65,7 +65,7 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
             // First, generate the lockfile using the oldest cargo specified.
             // https://github.com/taiki-e/cargo-hack/issues/105
             let toolchain = &range[0];
-            rustup::install_toolchain(toolchain)?;
+            rustup::install_toolchain(toolchain, cx.target, true)?;
             let mut line = line.clone();
             line.leading_arg(toolchain);
             line.args(&["generate-lockfile"]);
@@ -82,8 +82,10 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
             line.exec_with_output()?;
         }
 
-        range.iter().try_for_each(|toolchain| {
-            rustup::install_toolchain(toolchain)?;
+        range.iter().enumerate().try_for_each(|(i, toolchain)| {
+            if i != 0 {
+                rustup::install_toolchain(toolchain, cx.target, true)?;
+            }
             let mut line = line.clone();
             line.leading_arg(toolchain);
             line.with_args(cx);

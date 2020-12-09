@@ -32,7 +32,7 @@ pub fn cargo_hack<O: AsRef<OsStr>>(args: impl AsRef<[O]>) -> Command {
 
 #[ext(CommandExt)]
 impl Command {
-    pub fn test_dir(&mut self, path: &str) -> &mut Self {
+    pub fn test_dir(&mut self, path: impl AsRef<Path>) -> &mut Self {
         self.current_dir(Path::new(env!("CARGO_MANIFEST_DIR")).join(path))
     }
 
@@ -88,8 +88,8 @@ fn line_separated(lines: &str, f: impl FnMut(&str)) {
 impl AssertOutput {
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stderr contains each pattern.
     #[rustversion::attr(since(1.46), track_caller)]
-    pub fn stderr_contains(&self, pats: &str) -> &Self {
-        line_separated(pats, |pat| {
+    pub fn stderr_contains(&self, pats: impl AsRef<str>) -> &Self {
+        line_separated(pats.as_ref(), |pat| {
             if !self.stderr.contains(pat) {
                 panic!(
                     "assertion failed: `self.stderr.contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
@@ -104,8 +104,8 @@ impl AssertOutput {
 
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stdout contains each pattern.
     #[rustversion::attr(since(1.46), track_caller)]
-    pub fn stderr_not_contains(&self, pats: &str) -> &Self {
-        line_separated(pats, |pat| {
+    pub fn stderr_not_contains(&self, pats: impl AsRef<str>) -> &Self {
+        line_separated(pats.as_ref(), |pat| {
             if self.stderr.contains(pat) {
                 panic!(
                     "assertion failed: `!self.stderr.contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
@@ -120,8 +120,8 @@ impl AssertOutput {
 
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stdout contains each pattern.
     #[rustversion::attr(since(1.46), track_caller)]
-    pub fn stdout_contains(&self, pats: &str) -> &Self {
-        line_separated(pats, |pat| {
+    pub fn stdout_contains(&self, pats: impl AsRef<str>) -> &Self {
+        line_separated(pats.as_ref(), |pat| {
             if !self.stdout.contains(pat) {
                 panic!(
                     "assertion failed: `self.stdout.contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
@@ -136,8 +136,8 @@ impl AssertOutput {
 
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stdout contains each pattern.
     #[rustversion::attr(since(1.46), track_caller)]
-    pub fn stdout_not_contains(&self, pats: &str) -> &Self {
-        line_separated(pats, |pat| {
+    pub fn stdout_not_contains(&self, pats: impl AsRef<str>) -> &Self {
+        line_separated(pats.as_ref(), |pat| {
             if self.stdout.contains(pat) {
                 panic!(
                     "assertion failed: `!self.stdout.contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
@@ -148,5 +148,32 @@ impl AssertOutput {
             }
         });
         self
+    }
+}
+
+pub fn target_triple() -> &'static str {
+    if cfg!(not(target_arch = "x86_64")) {
+        panic!("non x86_64 arch")
+    }
+    if cfg!(target_os = "linux") {
+        if cfg!(target_env = "gnu") {
+            "x86_64-unknown-linux-gnu"
+        } else if cfg!(target_env = "musl") {
+            "x86_64-unknown-linux-musl"
+        } else {
+            panic!("non gnu/musl linux")
+        }
+    } else if cfg!(target_os = "macos") {
+        "x86_64-apple-darwin"
+    } else if cfg!(target_os = "windows") {
+        if cfg!(target_env = "gnu") {
+            "x86_64-pc-windows-gnu"
+        } else if cfg!(target_env = "msvc") {
+            "x86_64-pc-windows-msvc"
+        } else {
+            unreachable!()
+        }
+    } else {
+        panic!("non linux/macos/windows os")
     }
 }

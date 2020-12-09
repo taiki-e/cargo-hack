@@ -43,8 +43,8 @@ pub(crate) fn version_range(range: &str, step: Option<&str>) -> Result<Vec<Strin
 
     let end = match split.next() {
         Some("") | None => {
-            install_toolchain("stable")?;
-            cargo::minor_version(ProcessBuilder::new("cargo".as_ref()).args(&["+stable"]))?
+            install_toolchain("stable", None, false)?;
+            cargo::minor_version(ProcessBuilder::new("cargo").args(&["+stable"]))?
         }
         Some(end) => {
             let end = parse_version(end)?;
@@ -66,20 +66,34 @@ pub(crate) fn version_range(range: &str, step: Option<&str>) -> Result<Vec<Strin
     Ok(versions)
 }
 
-pub(crate) fn install_toolchain(mut toolchain: &str) -> Result<()> {
+pub(crate) fn install_toolchain(
+    mut toolchain: &str,
+    target: Option<&str>,
+    print_output: bool,
+) -> Result<()> {
     if toolchain.starts_with('+') {
         toolchain = &toolchain[1..];
     }
     // In Github Actions and Azure Pipelines, --no-self-update is necessary
     // because the windows environment cannot self-update rustup.exe.
-    rustup()
-        .args(&["toolchain", "install", toolchain, "--no-self-update"])
-        .exec_with_output()
-        .map(drop)
+    let mut cmd = rustup();
+    cmd.args(&["toolchain", "install", toolchain, "--no-self-update"]);
+    if let Some(target) = target {
+        cmd.args(&["--target", target]);
+    }
+
+    if print_output {
+        // The toolchain installation can take some time, so we'll show users
+        // the progress.
+        cmd.exec()
+    } else {
+        // However, in certain situations, it may be preferable not to display it.
+        cmd.exec_with_output().map(drop)
+    }
 }
 
 fn rustup<'a>() -> ProcessBuilder<'a> {
-    ProcessBuilder::new("rustup".as_ref())
+    ProcessBuilder::new("rustup")
 }
 
 fn minor_version() -> Result<u32> {
