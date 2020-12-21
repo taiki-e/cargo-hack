@@ -1,5 +1,5 @@
 # Rustfmt configuration
-# https://github.com/rust-lang/rustfmt/blob/master/Configurations.md
+# https://github.com/rust-lang/rustfmt/blob/HEAD/Configurations.md
 
 # This is required for bug-fixes, which technically can't be made to the stable
 # first version.
@@ -22,10 +22,8 @@ merge_imports = true
 # This is unstable (tracking issue: https://github.com/rust-lang/rustfmt/issues/3348).
 format_code_in_doc_comments = true
 
-# Fix deprecated style.
-# This is also detected by clippy::redundant_field_names lint.
+# Automatically fix deprecated style.
 use_field_init_shorthand = true
-# This is also detected by deprecated lint.
 use_try_shorthand = true
 
 # Set the default settings again to always apply the proper formatting without
