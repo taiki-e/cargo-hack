@@ -30,7 +30,7 @@ cargo-hack requires Cargo 1.26+.
 of the passed flags to `cargo`, but provides additional flags and changes the
 behavior of some existing flags.
 
-* **`--each-feature`**
+### --each-feature
 
   Perform for each feature which includes default features and
   `--no-default-features` of the package.
@@ -43,7 +43,7 @@ behavior of some existing flags.
   cargo hack check --each-feature --no-dev-deps
   ```
 
-* **`--feature-powerset`**
+### --feature-powerset
 
   Perform for the feature powerset which includes `--no-default-features` and
   default features of the package.
@@ -56,7 +56,7 @@ behavior of some existing flags.
   cargo hack check --feature-powerset --no-dev-deps
   ```
 
-* **`--no-dev-deps`**
+### --no-dev-deps
 
   Perform without dev-dependencies.
 
@@ -76,7 +76,7 @@ behavior of some existing flags.
   Also, this behavior may change in the future on some subcommands. See also
   [#15].
 
-* **`--remove-dev-deps`**
+### --remove-dev-deps
 
   Equivalent to `--no-dev-deps` except for does not restore the original
   `Cargo.toml` after execution.
@@ -86,21 +86,21 @@ behavior of some existing flags.
 
   *This flag also works without subcommands.*
 
-* **`--ignore-private`**
+### --ignore-private
 
   Skip to perform on `publish = false` packages.
 
-* **`--ignore-unknown-features`**
+### --ignore-unknown-features
 
   Skip passing `--features` to `cargo` if that feature does not exist.
 
-* **`--clean-per-run`**
+### --clean-per-run
 
   Remove artifacts for that package before running the command.
 
   This also works as a workaround for [rust-clippy#4612].
 
-* **`--version-range`**
+### --version-range
 
   Perform commands on a specified (inclusive) range of Rust versions.
 
@@ -116,45 +116,49 @@ behavior of some existing flags.
   upper bound.
 
   This might be useful for catching issues like [termcolor#35], [regex#685],
-  [rust-clippy#6324].
+  [rust-clippy#6324].- [cargo-hack](#cargo-hack)
 
-* **`--version-step`**
+### --version-step
 
   Specify the version interval of `--version-range`.
 
+### Options for adjusting the behavior of --each-feature and --feature-powerset
+
 The following flags can be used with `--each-feature` and `--feature-powerset`.
 
-* **`--optional-deps`**
+#### --optional-deps
 
   Use optional dependencies as features.
 
-* **`--exclude-features`**, **`--skip`**
+#### --exclude-features, --skip
 
   Space-separated list of features to exclude.
 
-* **`--depth`**
+#### --depth
 
   Specify a max number of simultaneous feature flags of `--feature-powerset`.
 
   If the number is set to 1, `--feature-powerset` is equivalent to
   `--each-feature`.
 
-* **`--group-features`**
+#### --group-features
 
   Space-separated list of features to group.
 
   To specify multiple groups, use this option multiple times:
   `--group-features a,b --group-features c,d`
 
+### Improvement of the behavior of existing cargo flags
+
 `cargo-hack` changes the behavior of the following existing flags.
 
-* **`--features`**, **`--no-default-features`**
+#### --features, --no-default-features
 
   Unlike `cargo` ([cargo#3620], [cargo#4106], [cargo#4463], [cargo#4753],
   [cargo#5015], [cargo#5364], [cargo#6195]), it can also be applied to
   sub-crates.
 
-* **`--all`**, **`--workspace`**
+#### --all, --workspace
 
   Perform command for all packages in the workspace.
 
