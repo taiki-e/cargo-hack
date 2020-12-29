@@ -18,20 +18,6 @@ function error {
   echo "error: $*" >&2
 }
 
-function retry() {
-  local -i max_retry=${1}
-  local -i count=0
-  while ! eval "${2}"; do
-    ((count++))
-    if ((count > max_retry)); then
-      error "${3}"
-      exit 1
-    fi
-    echo "info: retry after $((10 * count)) seconds"
-    sleep $((10 * count))
-  done
-}
-
 cd "$(cd "$(dirname "${0}")" && pwd)"/..
 
 git diff --exit-code
@@ -60,12 +46,17 @@ for member in "${MEMBERS[@]}"; do
   (
     cd "${member}"
     actual=$(cargo pkgid | sed 's/.*#//')
-    if [[ "${actual}" != "${version}" ]]; then
+    if [[ "${actual}" != "${version}" ]] && [[ "${actual}" != *":${version}" ]]; then
       error "expected to release version ${version}, but ${member}/Cargo.toml contained ${actual}"
       exit 1
     fi
   )
 done
+# Make sure that a valid release note for this version exists.
+# https://github.com/taiki-e/parse-changelog
+echo "========== changes =========="
+parse-changelog CHANGELOG.md "${version}"
+echo "============================="
 
 # tagging
 if gh release view "${tag}" &>/dev/null; then
@@ -77,20 +68,5 @@ else
     echo "info: creating and pushing a new tag '${tag}'"
     git tag "${tag}"
     git push origin --tags
-
-    # .github/workflows/release.yml should be able to create a new github release in less than a minute.
-    echo "info: waiting for github actions to create a new github release for ${version}"
-    sleep 15
-    retry 2 "gh release view ${tag} &>/dev/null" "unable to create a new github release for ${version}"
   fi
 fi
-
-# publishing
-for member in "${MEMBERS[@]}"; do
-  (
-    cd "${member}"
-    pwd
-    echo "info: running 'cargo publish ${dryrun:-}'"
-    retry 2 "cargo publish ${dryrun:-}" "unable to publish ${member}"
-  )
-done
