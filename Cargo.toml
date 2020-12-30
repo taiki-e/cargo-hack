@@ -8,6 +8,7 @@ repository = "https://github.com/taiki-e/cargo-hack"
 keywords = ["cargo", "subcommand"]
 categories = ["command-line-utilities", "development-tools::cargo-plugins", "development-tools::build-utils"]
 readme = "README.md"
+exclude = ["/.github", "/scripts"]
 description = """
 A cargo subcommand to provide some options useful for testing and continuous integration.
 """
