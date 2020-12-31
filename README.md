@@ -32,95 +32,95 @@ behavior of some existing flags.
 
 ### --each-feature
 
-  Perform for each feature which includes default features and
-  `--no-default-features` of the package.
+Perform for each feature which includes default features and
+`--no-default-features` of the package.
 
-  This is useful to check that each feature is working properly. (When used for
-  this purpose, it is recommended to use with `--no-dev-deps` to avoid
-  [cargo#4866].)
+This is useful to check that each feature is working properly. (When used for
+this purpose, it is recommended to use with `--no-dev-deps` to avoid
+[cargo#4866].)
 
-  ```sh
-  cargo hack check --each-feature --no-dev-deps
-  ```
+```sh
+cargo hack check --each-feature --no-dev-deps
+```
 
 ### --feature-powerset
 
-  Perform for the feature powerset which includes `--no-default-features` and
-  default features of the package.
+Perform for the feature powerset which includes `--no-default-features` and
+default features of the package.
 
-  This is useful to check that every combination of features is working
-  properly. (When used for this purpose, it is recommended to use with
-  `--no-dev-deps` to avoid [cargo#4866].)
+This is useful to check that every combination of features is working
+properly. (When used for this purpose, it is recommended to use with
+`--no-dev-deps` to avoid [cargo#4866].)
 
-  ```sh
-  cargo hack check --feature-powerset --no-dev-deps
-  ```
+```sh
+cargo hack check --feature-powerset --no-dev-deps
+```
 
 ### --no-dev-deps
 
-  Perform without dev-dependencies.
+Perform without dev-dependencies.
 
-  This is a workaround for an issue that dev-dependencies leaking into normal
-  build ([cargo#4866]).
+This is a workaround for an issue that dev-dependencies leaking into normal
+build ([cargo#4866]).
 
-  Also, this can be used as a workaround for an issue that `cargo` does not
-  allow publishing a package with cyclic dev-dependencies. ([cargo#4242])
+Also, this can be used as a workaround for an issue that `cargo` does not
+allow publishing a package with cyclic dev-dependencies. ([cargo#4242])
 
-  ```sh
-  cargo hack publish --no-dev-deps --dry-run --allow-dirty
-  ```
+```sh
+cargo hack publish --no-dev-deps --dry-run --allow-dirty
+```
 
-  Note: Currently, using `--no-dev-deps` flag removes dev-dependencies from
-  real manifest while cargo-hack is running and restores it when finished.
-  See [cargo#4242] for why this is necessary.
-  Also, this behavior may change in the future on some subcommands. See also
-  [#15].
+Note: Currently, using `--no-dev-deps` flag removes dev-dependencies from
+real manifest while cargo-hack is running and restores it when finished.
+See [cargo#4242] for why this is necessary.
+Also, this behavior may change in the future on some subcommands. See also
+[#15].
 
 ### --remove-dev-deps
 
-  Equivalent to `--no-dev-deps` except for does not restore the original
-  `Cargo.toml` after execution.
+Equivalent to `--no-dev-deps` except for does not restore the original
+`Cargo.toml` after execution.
 
-  This is useful to know what Cargo.toml that cargo-hack is actually using
-  with `--no-dev-deps`.
+This is useful to know what Cargo.toml that cargo-hack is actually using
+with `--no-dev-deps`.
 
-  *This flag also works without subcommands.*
+*This flag also works without subcommands.*
 
 ### --ignore-private
 
-  Skip to perform on `publish = false` packages.
+Skip to perform on `publish = false` packages.
 
 ### --ignore-unknown-features
 
-  Skip passing `--features` to `cargo` if that feature does not exist.
+Skip passing `--features` to `cargo` if that feature does not exist.
 
 ### --clean-per-run
 
-  Remove artifacts for that package before running the command.
+Remove artifacts for that package before running the command.
 
-  This also works as a workaround for [rust-clippy#4612].
+This also works as a workaround for [rust-clippy#4612].
 
 ### --version-range
 
-  Perform commands on a specified (inclusive) range of Rust versions.
+Perform commands on a specified (inclusive) range of Rust versions.
 
-  ```console
-  $ cargo hack check --version-range 1.46..1.47
-  info: running `cargo +1.46 check` on cargo-hack (1/2)
-  ...
-  info: running `cargo +1.47 check` on cargo-hack (2/2)
-  ...
-  ```
+```console
+$ cargo hack check --version-range 1.46..1.47
+info: running `cargo +1.46 check` on cargo-hack (1/2)
+...
+info: running `cargo +1.47 check` on cargo-hack (2/2)
+...
+```
 
-  If the given range is unclosed, the latest stable compiler is treated as the
-  upper bound.
+If the given range is unclosed, the latest stable compiler is treated as the
+upper bound.
 
-  This might be useful for catching issues like [termcolor#35], [regex#685],
-  [rust-clippy#6324].- [cargo-hack](#cargo-hack)
+This might be useful for catching issues like [termcolor#35], [regex#685],
+[rust-clippy#6324].
 
 ### --version-step
 
-  Specify the version interval of `--version-range`.
+Specify the version interval of `--version-range`.
 
 ### Options for adjusting the behavior of --each-feature and --feature-powerset
 
@@ -128,25 +128,25 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
 
 #### --optional-deps
 
-  Use optional dependencies as features.
+Use optional dependencies as features.
 
 #### --exclude-features, --skip
 
-  Space-separated list of features to exclude.
+Space-separated list of features to exclude.
 
 #### --depth
 
-  Specify a max number of simultaneous feature flags of `--feature-powerset`.
+Specify a max number of simultaneous feature flags of `--feature-powerset`.
 
-  If the number is set to 1, `--feature-powerset` is equivalent to
-  `--each-feature`.
+If the number is set to 1, `--feature-powerset` is equivalent to
+`--each-feature`.
 
 #### --group-features
 
-  Space-separated list of features to group.
+Space-separated list of features to group.
 
-  To specify multiple groups, use this option multiple times:
-  `--group-features a,b --group-features c,d`
+To specify multiple groups, use this option multiple times:
+`--group-features a,b --group-features c,d`
 
 ### Improvement of the behavior of existing cargo flags
 
@@ -154,29 +154,29 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
 
 #### --features, --no-default-features
 
-  Unlike `cargo` ([cargo#3620], [cargo#4106], [cargo#4463], [cargo#4753],
-  [cargo#5015], [cargo#5364], [cargo#6195]), it can also be applied to
-  sub-crates.
+Unlike `cargo` ([cargo#3620], [cargo#4106], [cargo#4463], [cargo#4753],
+[cargo#5015], [cargo#5364], [cargo#6195]), it can also be applied to
+sub-crates.
 
 #### --all, --workspace
 
-  Perform command for all packages in the workspace.
+Perform command for all packages in the workspace.
 
-  Unlike cargo, it does not compile all members at once.
+Unlike cargo, it does not compile all members at once.
 
-  For example, running `cargo hack check --all` in a workspace with members
-  `foo` and `bar` behaves almost the same as the following script:
+For example, running `cargo hack check --all` in a workspace with members
+`foo` and `bar` behaves almost the same as the following script:
 
-  ```sh
-  # If you use cargo-hack, you don't need to maintain this list manually.
-  members=("foo" "bar")
+```sh
+# If you use cargo-hack, you don't need to maintain this list manually.
+members=("foo" "bar")
 
-  for member in "${members[@]}"; do
-      cargo check --manifest-path "${member}/Cargo.toml"
-  done
-  ```
+for member in "${members[@]}"; do
+    cargo check --manifest-path "${member}/Cargo.toml"
+done
+```
 
-  *Workspace members will be performed according to the order of the 'packages' fields of [`cargo metadata`][cargo-metadata].*
+*Workspace members will be performed according to the order of the 'packages' fields of [`cargo metadata`][cargo-metadata].*
 
 [#15]: https://github.com/taiki-e/cargo-hack/issues/15
 [termcolor#35]: https://github.com/BurntSushi/termcolor/issues/35
