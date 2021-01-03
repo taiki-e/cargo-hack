@@ -1,11 +1,11 @@
-use anyhow::Context as _;
+use anyhow::{Context as _, Result};
 use std::{
     fs,
     path::PathBuf,
     sync::{Arc, Mutex},
 };
 
-use crate::{Context, PackageId, Result};
+use crate::{Context, PackageId};
 
 #[derive(Clone)]
 pub(crate) struct Restore {

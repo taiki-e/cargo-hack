@@ -1,5 +1,4 @@
-use crate::Result;
-use anyhow::Context as _;
+use anyhow::{Context as _, Result};
 
 pub(crate) struct Version {
     pub(crate) major: u32,

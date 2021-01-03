@@ -17,15 +17,13 @@ mod restore;
 mod rustup;
 mod version;
 
-use anyhow::{bail, Context as _};
+use anyhow::{bail, Context as _, Result};
 use std::{fmt::Write, fs};
 
 use crate::{
     cargo::Cargo, context::Context, features::Feature, metadata::PackageId,
     process::ProcessBuilder, restore::Restore, rustup::Rustup,
 };
-
-type Result<T, E = anyhow::Error> = std::result::Result<T, E>;
 
 fn main() {
     if let Err(e) = try_main() {

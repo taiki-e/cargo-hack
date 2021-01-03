@@ -1,10 +1,10 @@
-use anyhow::{bail, format_err, Context as _};
+use anyhow::{bail, format_err, Context as _, Result};
 use std::str;
 
 use crate::{
     cargo,
     version::{parse_version, Version},
-    ProcessBuilder, Result,
+    ProcessBuilder,
 };
 
 pub(crate) struct Rustup {

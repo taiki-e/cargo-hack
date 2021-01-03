@@ -1,8 +1,6 @@
-use anyhow::{format_err, Context as _};
+use anyhow::{format_err, Context as _, Result};
 use std::{fs, path::Path};
 use toml::{value::Table, Value};
-
-use crate::Result;
 
 type ParseResult<T> = Result<T, &'static str>;
 

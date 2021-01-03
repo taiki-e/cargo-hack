@@ -1,4 +1,4 @@
-use anyhow::Context as _;
+use anyhow::{Context as _, Result};
 use std::{
     env,
     ffi::{OsStr, OsString},
@@ -9,7 +9,7 @@ use std::{
     str,
 };
 
-use crate::{Context, PackageId, Result};
+use crate::{Context, PackageId};
 
 // Based on https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/util/process_builder.rs
 

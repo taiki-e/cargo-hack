@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::{
     borrow::Cow,
     collections::HashMap,
@@ -11,7 +12,7 @@ use crate::{
     features::Features,
     manifest::Manifest,
     metadata::{Metadata, Package, PackageId},
-    Cargo, ProcessBuilder, Result, Rustup,
+    Cargo, ProcessBuilder, Rustup,
 };
 
 pub(crate) struct Context<'a> {

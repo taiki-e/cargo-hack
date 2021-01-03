@@ -1,4 +1,4 @@
-use anyhow::{format_err, Context as _};
+use anyhow::{format_err, Context as _, Result};
 use serde_json::{Map, Value};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -6,7 +6,7 @@ use std::{
     rc::Rc,
 };
 
-use crate::{cli::Args, Cargo, Result};
+use crate::{cli::Args, Cargo};
 
 type Object = Map<String, Value>;
 type ParseResult<T> = Result<T, &'static str>;

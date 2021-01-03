@@ -1,7 +1,7 @@
-use anyhow::{bail, format_err, Error};
+use anyhow::{bail, format_err, Error, Result};
 use std::{env, fmt, iter::Peekable, mem};
 
-use crate::{rustup, term, Cargo, Feature, Result, Rustup};
+use crate::{rustup, term, Cargo, Feature, Rustup};
 
 pub(crate) struct Args<'a> {
     pub(crate) leading_args: Vec<&'a str>,
