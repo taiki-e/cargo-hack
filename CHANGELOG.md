@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org).
 
+<!--
+Note: In this file, do not use the hard wrap in the middle of a sentence for compatibility with GitHub comment style markdown rendering.
+-->
+
 ## [Unreleased]
+
+## [0.5.3] - 2021-01-05
+
+- Documentation improvements.
+
+- Exclude unneeded files from crates.io.
 
 ## [0.5.2] - 2020-12-09
 
@@ -244,7 +254,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.3...HEAD
+[0.5.3]: https://github.com/taiki-e/cargo-hack/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/taiki-e/cargo-hack/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/taiki-e/cargo-hack/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/taiki-e/cargo-hack/compare/v0.4.8...v0.5.0

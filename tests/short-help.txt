@@ -1,4 +1,4 @@
-cargo-hack 0.5.2
+cargo-hack 0.5.3
 A cargo subcommand to provide some options useful for testing and continuous integration.
 
 USAGE:

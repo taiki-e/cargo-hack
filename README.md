@@ -176,7 +176,8 @@ for member in "${members[@]}"; do
 done
 ```
 
-*Workspace members will be performed according to the order of the 'packages' fields of [`cargo metadata`][cargo-metadata].*
+*Workspace members will be performed according to the order of the 'packages'
+fields of [`cargo metadata`][cargo-metadata].*
 
 [#15]: https://github.com/taiki-e/cargo-hack/issues/15
 [termcolor#35]: https://github.com/BurntSushi/termcolor/issues/35

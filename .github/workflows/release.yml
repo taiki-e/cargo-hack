@@ -20,9 +20,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: taiki-e/github-actions/install-rust@main
+        with:
+          toolchain: stable
+      - run: cargo package
       - uses: taiki-e/github-actions/create-release@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
   upload-assets:
     name: ${{ matrix.target }}
@@ -42,6 +49,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: taiki-e/github-actions/install-rust@main
+        with:
+          toolchain: stable
       - uses: taiki-e/github-actions/upload-rust-binary@main
         with:
           bin: cargo-hack
@@ -50,16 +59,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CARGO_PROFILE_RELEASE_LTO: true
-
-  publish:
-    if: github.repository_owner == 'taiki-e'
-    needs:
-      - create-release
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: taiki-e/github-actions/install-rust@main
-      - run: |
-          cargo publish
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
