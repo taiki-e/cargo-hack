@@ -7,6 +7,7 @@ on:
 
 env:
   CARGO_INCREMENTAL: 0
+  CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
   RUST_BACKTRACE: 1
 
