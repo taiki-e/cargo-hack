@@ -2,14 +2,11 @@ use easy_ext::ext;
 use std::{
     env,
     ffi::OsStr,
-    path::Path,
+    path::{self, Path},
     process::{Command, ExitStatus},
 };
 
-#[cfg(not(windows))]
-pub const SEPARATOR: char = '/';
-#[cfg(windows)]
-pub const SEPARATOR: char = '\\';
+pub use path::MAIN_SEPARATOR as SEPARATOR;
 
 pub fn cargo_bin_exe() -> Command {
     // TODO: update to use `env!("CARGO_BIN_EXE_cargo-hack")`
