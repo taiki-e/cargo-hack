@@ -850,7 +850,7 @@ mod tests {
         let actual = actual.as_ref();
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
         let expected_path = &manifest_dir.join(expected_path);
-        (|| -> Result<(), Box<dyn std::error::Error>> {
+        (|| -> Result<()> {
             let expected = fs::read_to_string(expected_path)?;
             if expected != actual {
                 if env::var_os("CI").is_some() {
@@ -869,7 +869,7 @@ mod tests {
             }
             Ok(())
         })()
-        .unwrap_or_else(|e| panic!("{}", e))
+        .unwrap_or_else(|e| panic!("{:?}", e))
     }
 
     #[test]
