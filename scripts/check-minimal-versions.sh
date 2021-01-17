@@ -50,19 +50,23 @@ fi
 # This script modifies Cargo.toml, so make sure there are no unstaged changes
 # on Cargo.toml.
 # shellcheck disable=SC2046
-git diff --exit-code $(git ls-files '*Cargo.toml')
+git diff --exit-code $(git ls-files "*Cargo.toml")
 # Restore original Cargo.toml and Cargo.lock on exit.
-trap 'git checkout $(git ls-files ''*Cargo.toml'')' EXIT
+trap 'git checkout $(git ls-files "*Cargo.toml")' EXIT
 
 if [[ "${subcmd}" == "check" ]]; then
   # Remove dev-dependencies from Cargo.toml to prevent the next `cargo update`
   # from determining minimal versions based on dev-dependencies.
-  cargo hack --remove-dev-deps --workspace
+  (
+    set -x
+    cargo hack --remove-dev-deps --workspace
+  )
 fi
 
-# Update Cargo.lock to minimal version dependencies.
-cargo ${toolchain:-} update -Z minimal-versions
-# Run check for all public members of the workspace.
-cargo ${toolchain:-} hack "${subcmd}" \
-  --workspace --all-features --ignore-private -Z features=all \
-  "$@"
+(
+  set -x
+  # Update Cargo.lock to minimal version dependencies.
+  cargo ${toolchain:-} update -Z minimal-versions
+  # Run check for all public members of the workspace.
+  cargo ${toolchain:-} hack "${subcmd}" --workspace --all-features --ignore-private "$@"
+)
