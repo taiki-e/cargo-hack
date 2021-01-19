@@ -198,8 +198,6 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
     }
 }
 
-// https://github.com/rust-lang/rust-clippy/issues/6384
-#[allow(clippy::unnecessary_wraps)]
 fn determine_package_list<'a>(
     cx: &'a Context<'_>,
     progress: &mut Progress,

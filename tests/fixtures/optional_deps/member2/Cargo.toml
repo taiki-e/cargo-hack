@@ -4,12 +4,6 @@ version = "0.1.0"
 authors = ["Taiki Endo <te316e89@gmail.com>"]
 publish = false
 
-[features]
-default = []
-a = []
-b = []
-c = []
-
 [dependencies]
 
 [dev-dependencies]

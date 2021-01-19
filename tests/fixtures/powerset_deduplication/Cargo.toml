@@ -19,6 +19,6 @@ e = ["b", "d"]
 
 [dependencies]
 member1 = { path = "member1", optional = true }
-easytime = { version = "0.1", default-features = false }
+easytime = { version = "0.2", default-features = false }
 
 [dev-dependencies]
