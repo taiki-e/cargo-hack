@@ -23,7 +23,7 @@ cd "$(cd "$(dirname "${0}")" && pwd)"/..
 git diff --exit-code
 git diff --exit-code --staged
 
-# parsing & verifying
+# Parse arguments.
 version="${1:?}"
 tag="v${version}"
 if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z_0-9\.-]+)?(\+[a-zA-Z_0-9\.-]+)?$ ]]; then
@@ -38,6 +38,8 @@ if [[ -n "${2:-}" ]]; then
   error "invalid argument: ${2}"
   exit 1
 fi
+
+# Make sure that the version number of the workspace members matches the specified version.
 for member in "${MEMBERS[@]}"; do
   if [[ ! -d "${member}" ]]; then
     error "not found workspace member ${member}"
@@ -52,21 +54,28 @@ for member in "${MEMBERS[@]}"; do
     fi
   )
 done
+
 # Make sure that a valid release note for this version exists.
 # https://github.com/taiki-e/parse-changelog
 echo "========== changes =========="
 parse-changelog CHANGELOG.md "${version}"
 echo "============================="
 
-# tagging
+# Make sure the same release has not been created in the past.
 if gh release view "${tag}" &>/dev/null; then
-  echo "info: tag '${tag}' has already been created and pushed"
+  error "tag '${tag}' has already been created and pushed"
+  exit 1
+fi
+if git --no-pager tag | grep "$tag" &>/dev/null; then
+  error "tag '${tag}' has already been created"
+  exit 1
+fi
+
+# Create and push tag.
+if [[ -n "${dryrun:-}" ]]; then
+  echo "warning: skip creating a new tag '${tag}' due to dry run"
 else
-  if [[ -n "${dryrun:-}" ]]; then
-    echo "warning: skip creating a new tag '${tag}' due to dry run"
-  else
-    echo "info: creating and pushing a new tag '${tag}'"
-    git tag "${tag}"
-    git push origin --tags
-  fi
+  echo "info: creating and pushing a new tag '${tag}'"
+  git tag "${tag}"
+  git push origin --tags
 fi
