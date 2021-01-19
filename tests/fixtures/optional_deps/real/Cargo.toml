@@ -1,15 +1,8 @@
 [package]
-name = "member1"
+name = "real"
 version = "0.1.0"
 authors = ["Taiki Endo <te316e89@gmail.com>"]
 
-[features]
-default = ["a"]
-a = []
-b = []
-c = []
-
 [dependencies]
-# member2 = { path = "../member2" }
 
 [dev-dependencies]

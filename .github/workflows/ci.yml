@@ -24,9 +24,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - rust: 1.36
-          - rust: 1.39
-          - rust: 1.41
           - rust: stable
           - rust: beta
           - rust: nightly
@@ -42,16 +39,36 @@ jobs:
       - uses: taiki-e/github-actions/install-rust@main
         with:
           toolchain: ${{ matrix.rust }}
-      - if: startsWith(matrix.rust, 'nightly') && matrix.target == ''
-        run: cargo install cargo-hack
-      - if: matrix.target != ''
-        run: cargo install cross
-      - if: matrix.target != ''
-        run: cross test --target ${{ matrix.target }}
-      - if: matrix.target == ''
-        run: cargo test --all
-      - if: startsWith(matrix.rust, 'nightly') && matrix.target == ''
-        run: bash scripts/check-minimal-versions.sh
+      - run: cargo install cargo-hack
+        if: startsWith(matrix.rust, 'nightly') && matrix.target == ''
+      - run: cargo install cross
+        if: matrix.target != ''
+      - run: cross test --target ${{ matrix.target }}
+        if: matrix.target != ''
+      - run: cargo test --all
+        if: matrix.target == ''
+      - run: bash scripts/check-minimal-versions.sh
+        if: startsWith(matrix.rust, 'nightly') && matrix.target == ''
+
+  test-compat:
+    name: test (1.${{ matrix.rust }})
+    strategy:
+      matrix:
+        rust:
+          # cargo-hack is usually runnable with Cargo versions older than the Rust version required for installation.
+          # When updating this, the reminder to update the minimum supported Rust version in README.md.
+          - 26
+          - 31
+          - 36
+          - 39
+          - 41
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: taiki-e/github-actions/install-rust@main
+        with:
+          toolchain: stable
+      - run: CARGO_HACK_TEST_TOOLCHAIN=${{ matrix.rust }} cargo test --all
 
   build:
     strategy:
@@ -68,25 +85,6 @@ jobs:
       - uses: actions/checkout@v2
       - run: cargo install cargo-hack
       - run: cargo hack build --all --ignore-private --no-dev-deps --version-range ${{ matrix.range }}
-
-  run:
-    strategy:
-      matrix:
-        rust:
-          # cargo-hack is usually runnable with Cargo versions older than the Rust version required for installation.
-          # When updating this, the reminder to update the minimum supported Rust version in README.md.
-          - 1.26
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: taiki-e/github-actions/install-rust@main
-        with:
-          toolchain: ${{ matrix.rust }}
-      - run: cargo +stable install --path .
-      - run: cargo hack check --manifest-path tests/fixtures/run/real/Cargo.toml
-      - run: cargo hack check --manifest-path tests/fixtures/run/virtual/Cargo.toml
-      - run: git diff --exit-code
-      - run: cargo hack --remove-dev-deps --manifest-path tests/fixtures/run/real/Cargo.toml
 
   clippy:
     runs-on: ubuntu-latest
@@ -123,8 +121,8 @@ jobs:
     if: github.event_name == 'push' && success()
     needs:
       - test
+      - test-compat
       - build
-      - run
       - clippy
       - rustfmt
       - shellcheck

@@ -6,10 +6,16 @@ edition = "2018"
 publish = false
 
 [workspace]
+members = [
+    "real",
+    "member2",
+    "member3",
+    ".",
+]
 
 [features]
 
 [dependencies]
-real = { path = "../real", optional = true }
-member2 = { path = "../real/member2" }
-renemed = { path = "../real/member3", package = "member3", optional = true }
+real = { path = "real", optional = true }
+member2 = { path = "member2" }
+renemed = { path = "member3", package = "member3", optional = true }

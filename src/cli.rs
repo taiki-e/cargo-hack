@@ -842,10 +842,10 @@ fn conflicts(a: &str, b: &str) -> Result<()> {
 mod tests {
     use super::Help;
     use crate::Result;
-    use std::{env, fs, path::Path, process::Command};
+    use std::{env, path::Path, process::Command};
     use tempfile::Builder;
 
-    #[rustversion::attr(since(1.46), track_caller)]
+    #[track_caller]
     fn assert_diff(expected_path: impl AsRef<Path>, actual: impl AsRef<str>) {
         let actual = actual.as_ref();
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
