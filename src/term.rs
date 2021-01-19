@@ -1,29 +1,35 @@
 use anyhow::{bail, Result};
 use std::{
+    env,
     io::{self, Write},
-    sync::atomic::{AtomicU8, Ordering},
+    sync::atomic::{AtomicU8, Ordering::Relaxed},
 };
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
-static COLORING: AtomicU8 = AtomicU8::new(0);
+static COLORING: AtomicU8 = AtomicU8::new(AUTO);
 
 const AUTO: u8 = 0;
 const ALWAYS: u8 = 1;
 const NEVER: u8 = 2;
 
 pub(crate) fn set_coloring(color: Option<&str>) -> Result<()> {
-    let coloring = match color {
+    // https://doc.rust-lang.org/cargo/reference/config.html#termcolor
+    let mut cargo_term_color = None;
+    if color.is_none() {
+        cargo_term_color = env::var("CARGO_TERM_COLOR").ok();
+    }
+    let coloring = match color.or_else(|| cargo_term_color.as_ref().map(|s| &**s)) {
         Some("auto") | None => AUTO,
         Some("always") => ALWAYS,
         Some("never") => NEVER,
         Some(other) => bail!("must be auto, always, or never, but found `{}`", other),
     };
-    COLORING.store(coloring, Ordering::Relaxed);
+    COLORING.store(coloring, Relaxed);
     Ok(())
 }
 
 fn coloring() -> ColorChoice {
-    match COLORING.load(Ordering::Relaxed) {
+    match COLORING.load(Relaxed) {
         AUTO => ColorChoice::Auto,
         ALWAYS => ColorChoice::Always,
         NEVER => ColorChoice::Never,

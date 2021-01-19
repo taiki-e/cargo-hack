@@ -7,7 +7,7 @@ use std::{
     ffi::OsStr,
     path::{self, Path},
     process::{Command, ExitStatus},
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::atomic::{AtomicUsize, Ordering::Relaxed},
 };
 use tempfile::{Builder, TempDir};
 use walkdir::WalkDir;
@@ -236,7 +236,7 @@ fn test_project(model: &str) -> Result<(TempDir, PathBuf)> {
     static COUNTER: AtomicUsize = AtomicUsize::new(0);
 
     let tmpdir = Builder::new()
-        .prefix(&format!("test_project{}", COUNTER.fetch_add(1, Ordering::Relaxed)))
+        .prefix(&format!("test_project{}", COUNTER.fetch_add(1, Relaxed)))
         .tempdir()?;
     let tmpdir_path = tmpdir.path();
 
