@@ -74,6 +74,18 @@ pub(crate) fn install_toolchain(
     if toolchain.starts_with('+') {
         toolchain = &toolchain[1..];
     }
+
+    if target.is_none()
+        && ProcessBuilder::new("cargo")
+            .arg(format!("+{}", toolchain))
+            .arg("--version")
+            .exec_with_output()
+            .is_ok()
+    {
+        // Do not run `rustup toolchain install` if the toolchain already has installed.
+        return Ok(());
+    }
+
     // In Github Actions and Azure Pipelines, --no-self-update is necessary
     // because the windows environment cannot self-update rustup.exe.
     let mut cmd = rustup();
