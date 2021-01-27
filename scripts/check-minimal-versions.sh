@@ -3,7 +3,7 @@
 # Check all public crates with minimal version dependencies.
 #
 # Usage:
-#    bash scripts/check-minimal-versions.sh [+toolchain] [check|test] [options]
+#    ./scripts/check-minimal-versions.sh [+toolchain] [check|test] [options]
 #
 # Note:
 # - This script modifies Cargo.toml and Cargo.lock while running
