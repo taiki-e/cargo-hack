@@ -1,5 +1,6 @@
-use anyhow::{bail, format_err, Context as _, Result};
 use std::str;
+
+use anyhow::{bail, format_err, Context as _, Result};
 
 use crate::{
     cargo,

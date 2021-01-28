@@ -17,8 +17,9 @@ mod restore;
 mod rustup;
 mod version;
 
-use anyhow::{bail, Context as _, Result};
 use std::{fmt::Write, fs};
+
+use anyhow::{bail, Context as _, Result};
 
 use crate::{
     cargo::Cargo, context::Context, features::Feature, metadata::PackageId,
@@ -129,7 +130,7 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
     let package = cx.packages(id);
     let filter = |&f: &&Feature| {
         !cx.exclude_features.iter().any(|s| f == *s)
-            && !cx.group_features.iter().any(|g| g.matches(f.as_ref()))
+            && !cx.group_features.iter().any(|g| g.matches(f.name()))
     };
     let features = if cx.include_features.is_empty() {
         let feature_list = cx.pkg_features(id);

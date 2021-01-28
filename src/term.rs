@@ -1,9 +1,10 @@
-use anyhow::{bail, Result};
 use std::{
     env,
     io::{self, Write},
     sync::atomic::{AtomicU8, Ordering::Relaxed},
 };
+
+use anyhow::{bail, Result};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 static COLORING: AtomicU8 = AtomicU8::new(AUTO);

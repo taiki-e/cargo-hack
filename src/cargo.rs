@@ -1,5 +1,6 @@
-use anyhow::{bail, format_err, Context as _, Result};
 use std::{env, ffi::OsString, str};
+
+use anyhow::{bail, format_err, Context as _, Result};
 
 use crate::{version::parse_version, ProcessBuilder};
 

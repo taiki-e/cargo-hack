@@ -1,4 +1,3 @@
-use anyhow::Result;
 use std::{
     borrow::Cow,
     collections::HashMap,
@@ -6,6 +5,8 @@ use std::{
     ops::Deref,
     path::{Path, PathBuf},
 };
+
+use anyhow::Result;
 
 use crate::{
     cli::{self, Args, RawArgs},

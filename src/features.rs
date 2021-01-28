@@ -196,11 +196,12 @@ fn powerset<T: Copy>(iter: impl IntoIterator<Item = T>, depth: Option<usize>) ->
 
 #[cfg(test)]
 mod tests {
-    use super::{feature_deps, feature_powerset, powerset, Feature};
     use std::{
         collections::{BTreeMap, BTreeSet},
         iter::FromIterator,
     };
+
+    use super::{feature_deps, feature_powerset, powerset, Feature};
 
     macro_rules! svec {
         ($($expr:expr),* $(,)?) => {

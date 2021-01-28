@@ -1,10 +1,11 @@
-use anyhow::{format_err, Context as _, Result};
-use serde_json::{Map, Value};
 use std::{
     collections::{BTreeMap, HashMap},
     path::PathBuf,
     rc::Rc,
 };
+
+use anyhow::{format_err, Context as _, Result};
+use serde_json::{Map, Value};
 
 use crate::{cli::Args, Cargo};
 

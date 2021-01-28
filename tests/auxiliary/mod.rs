@@ -1,18 +1,17 @@
-use anyhow::Result;
-use easy_ext::ext;
-use once_cell::sync::Lazy;
-use path::PathBuf;
+pub use std::path::MAIN_SEPARATOR as SEPARATOR;
 use std::{
     env,
     ffi::OsStr,
-    path::{self, Path},
+    path::{Path, PathBuf},
     process::{Command, ExitStatus},
     sync::atomic::{AtomicUsize, Ordering::Relaxed},
 };
+
+use anyhow::Result;
+use easy_ext::ext;
+use once_cell::sync::Lazy;
 use tempfile::{Builder, TempDir};
 use walkdir::WalkDir;
-
-pub use path::MAIN_SEPARATOR as SEPARATOR;
 
 pub fn cargo_bin_exe() -> Command {
     Command::new(env!("CARGO_BIN_EXE_cargo-hack"))

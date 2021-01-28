@@ -1,4 +1,3 @@
-use anyhow::{Context as _, Result};
 use std::{
     env,
     ffi::{OsStr, OsString},
@@ -8,6 +7,8 @@ use std::{
     rc::Rc,
     str,
 };
+
+use anyhow::{Context as _, Result};
 
 use crate::{Context, PackageId};
 

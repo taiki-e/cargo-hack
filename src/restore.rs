@@ -1,9 +1,10 @@
-use anyhow::{Context as _, Result};
 use std::{
     fs,
     path::PathBuf,
     sync::{Arc, Mutex},
 };
+
+use anyhow::{Context as _, Result};
 
 use crate::{Context, PackageId};
 

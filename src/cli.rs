@@ -1,5 +1,6 @@
-use anyhow::{bail, format_err, Error, Result};
 use std::{env, fmt, iter::Peekable, mem};
+
+use anyhow::{bail, format_err, Error, Result};
 
 use crate::{rustup, term, Cargo, Feature, Rustup};
 
@@ -729,7 +730,7 @@ fn print_version() {
     println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
 }
 
-// NB: When adding a flag here, update the test with the same name in `tests/test.rs` file.
+// Note: When adding a flag here, update the test with the same name in `tests/test.rs` file.
 
 fn removed_flags(flag: &str) -> Result<()> {
     let alt = match flag {
@@ -840,10 +841,12 @@ fn conflicts(a: &str, b: &str) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use std::{env, path::Path, process::Command};
+
+    use tempfile::Builder;
+
     use super::Help;
     use crate::Result;
-    use std::{env, path::Path, process::Command};
-    use tempfile::Builder;
 
     #[track_caller]
     fn assert_diff(expected_path: impl AsRef<Path>, actual: impl AsRef<str>) {
