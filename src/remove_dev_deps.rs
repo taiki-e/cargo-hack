@@ -86,7 +86,7 @@ mod tests {
             #[test]
             fn $name() {
                 let input = remove_dev_deps($input);
-                assert_eq!(&$expected[..], input);
+                assert_eq!($expected, input);
             }
         };
     }
