@@ -10,6 +10,16 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.5.4] - 2021-02-27
+
+- [Stop commit of `Cargo.lock`.](https://github.com/taiki-e/cargo-hack/pull/117)
+  If you want to use cargo-hack with versions of dependencies at the time of release, please download the compiled binary from GitHub Releases.
+  See [#117](https://github.com/taiki-e/cargo-hack/pull/117) for more.
+
+- [Support controls of colored output by `CARGO_TERM_COLOR`.](https://github.com/taiki-e/cargo-hack/pull/110)
+
+- [Do not run `rustup toolchain install` in `--version-range` if the toolchain already has installed.](https://github.com/taiki-e/cargo-hack/pull/109)
+
 ## [0.5.3] - 2021-01-05
 
 - Documentation improvements.
