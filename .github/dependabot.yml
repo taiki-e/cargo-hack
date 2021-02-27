@@ -1,17 +1,12 @@
 version: 2
 updates:
-  # By default, `cargo install` treats binary crate as the same as library
-  # crate (i.e., select the latest version instead of lockfile). However,
-  # dependabot does not support the versioning-strategy of treating apps like
-  # libraries. PRs that dependabot generates for apps are too many and very
-  # noisy, so for now we disable it.
-  # - package-ecosystem: cargo
-  #   directory: /
-  #   schedule:
-  #     interval: daily
-  #   commit-message:
-  #     prefix: ""
-  #   labels: []
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: ""
+    labels: []
   - package-ecosystem: github-actions
     directory: /
     schedule:
