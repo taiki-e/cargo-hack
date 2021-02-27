@@ -629,6 +629,7 @@ const HELP: &[HelpText<'_>] = &[
 struct Help {
     long: bool,
     term_size: usize,
+    print_version: bool,
 }
 
 impl Help {
@@ -636,6 +637,7 @@ impl Help {
         Self {
             long: true,
             term_size: terminal_size::terminal_size().map_or(120, |(width, _)| width.0 as _),
+            print_version: true,
         }
     }
 
@@ -643,6 +645,7 @@ impl Help {
         Self {
             long: false,
             term_size: terminal_size::terminal_size().map_or(120, |(width, _)| width.0 as _),
+            print_version: true,
         }
     }
 }
@@ -681,13 +684,13 @@ impl fmt::Display for Help {
         writeln!(
             f,
             "\
-{0} {1}\n{2}
+{0}{1}\n{2}
 USAGE:
     cargo hack [OPTIONS] [SUBCOMMAND]\n
 Use -h for short descriptions and --help for more details.\n
 OPTIONS:",
             env!("CARGO_PKG_NAME"),
-            env!("CARGO_PKG_VERSION"),
+            if self.print_version { concat!(" ", env!("CARGO_PKG_VERSION")) } else { "" },
             env!("CARGO_PKG_DESCRIPTION")
         )?;
 
@@ -849,10 +852,10 @@ fn conflicts(a: &str, b: &str) -> Result<()> {
 mod tests {
     use std::{env, path::Path, process::Command};
 
+    use anyhow::Result;
     use tempfile::Builder;
 
     use super::Help;
-    use crate::Result;
 
     #[track_caller]
     fn assert_diff(expected_path: impl AsRef<Path>, actual: impl AsRef<str>) {
@@ -883,13 +886,13 @@ mod tests {
 
     #[test]
     fn long_help() {
-        let actual = Help { long: true, term_size: 200 }.to_string();
+        let actual = Help { long: true, term_size: 200, print_version: false }.to_string();
         assert_diff("tests/long-help.txt", actual);
     }
 
     #[test]
     fn short_help() {
-        let actual = Help { long: false, term_size: 200 }.to_string();
+        let actual = Help { long: false, term_size: 200, print_version: false }.to_string();
         assert_diff("tests/short-help.txt", actual);
     }
 }
