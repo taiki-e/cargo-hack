@@ -633,11 +633,17 @@ struct Help {
 
 impl Help {
     fn long() -> Self {
-        Self { long: true, term_size: term_size::dimensions().map_or(120, |(w, _)| w) }
+        Self {
+            long: true,
+            term_size: terminal_size::terminal_size().map_or(120, |(width, _)| width.0 as _),
+        }
     }
 
     fn short() -> Self {
-        Self { long: false, term_size: term_size::dimensions().map_or(120, |(w, _)| w) }
+        Self {
+            long: false,
+            term_size: terminal_size::terminal_size().map_or(120, |(width, _)| width.0 as _),
+        }
     }
 }
 
