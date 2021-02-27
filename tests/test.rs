@@ -1321,7 +1321,9 @@ fn version_range_failure() {
     cargo_hack(["check", "--version-range", "1.45.2.."])
         .assert_success("real") // warn
         .stderr_contains(
-            "--version-range always selects the latest patch release per minor release, \
-             not the specified patch release `2`",
+            "
+            --version-range always selects the latest patch release per minor release, \
+            not the specified patch release `2`
+            ",
         );
 }

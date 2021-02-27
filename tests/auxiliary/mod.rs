@@ -14,7 +14,9 @@ use tempfile::{Builder, TempDir};
 use walkdir::WalkDir;
 
 pub fn cargo_bin_exe() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_cargo-hack"))
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_cargo-hack"));
+    cmd.env_remove("RUSTFLAGS");
+    cmd
 }
 
 fn test_toolchain() -> String {
