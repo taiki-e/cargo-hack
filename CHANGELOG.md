@@ -215,7 +215,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.3...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.4...HEAD
+[0.5.4]: https://github.com/taiki-e/cargo-hack/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/taiki-e/cargo-hack/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/taiki-e/cargo-hack/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/taiki-e/cargo-hack/compare/v0.5.0...v0.5.1
