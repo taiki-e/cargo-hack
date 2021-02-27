@@ -367,9 +367,9 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
         _ => a.starts_with("--example=") || a.starts_with("--test=") || a.starts_with("--bench="),
     }) {
         if remove_dev_deps {
-            conflicts("--remove-dev-deps", &leading[pos])?;
+            conflicts("--remove-dev-deps", leading[pos])?;
         } else if no_dev_deps {
-            conflicts("--no-dev-deps", &leading[pos])?;
+            conflicts("--no-dev-deps", leading[pos])?;
         }
     }
 
