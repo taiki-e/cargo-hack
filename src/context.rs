@@ -1,8 +1,7 @@
 use std::{
     borrow::Cow,
     collections::HashMap,
-    env,
-    ops::Deref,
+    env, ops,
     path::{Path, PathBuf},
 };
 
@@ -124,7 +123,7 @@ impl<'a> Context<'a> {
     }
 }
 
-impl<'a> Deref for Context<'a> {
+impl<'a> ops::Deref for Context<'a> {
     type Target = Args<'a>;
 
     fn deref(&self) -> &Self::Target {
