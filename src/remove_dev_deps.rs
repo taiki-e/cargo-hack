@@ -225,6 +225,19 @@ foo = \"0.1\"
     );
 
     test!(
+        target_deps4,
+        "\
+[package]
+
+[target.'cfg(unix)'.dev-dependencies]
+",
+        "\
+[package]
+
+"
+    );
+
+    test!(
         not_table,
         "\
 [package]
