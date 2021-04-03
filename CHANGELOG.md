@@ -10,7 +10,9 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
-- Add `--clean-per-version` flag.
+## [0.5.5] - 2021-04-04
+
+- [Add `--clean-per-version` flag.](https://github.com/taiki-e/cargo-hack/pull/120)
 
 ## [0.5.4] - 2021-02-27
 
@@ -217,7 +219,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.4...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.5...HEAD
+[0.5.5]: https://github.com/taiki-e/cargo-hack/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/taiki-e/cargo-hack/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/taiki-e/cargo-hack/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/taiki-e/cargo-hack/compare/v0.5.1...v0.5.2
