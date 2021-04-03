@@ -83,6 +83,11 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
             if i != 0 {
                 rustup::install_toolchain(toolchain, cx.target, true)?;
             }
+
+            if cx.clean_per_version {
+                cargo_clean(cx, None)?;
+            }
+
             let mut line = line.clone();
             line.leading_arg(toolchain);
             line.with_args(cx);
@@ -357,7 +362,7 @@ fn exec_cargo(
     progress.count += 1;
 
     if cx.clean_per_run {
-        cargo_clean(cx, id)?;
+        cargo_clean(cx, Some(id))?;
     }
 
     // running `<command>` (on <package>) (<count>/<total>)
@@ -373,14 +378,16 @@ fn exec_cargo(
     line.exec()
 }
 
-fn cargo_clean(cx: &Context<'_>, id: &PackageId) -> Result<()> {
+fn cargo_clean(cx: &Context<'_>, id: Option<&PackageId>) -> Result<()> {
     let mut line = cx.cargo();
     line.arg("clean");
-    line.arg("--package");
-    line.arg(&cx.packages(id).name);
+    if let Some(id) = id {
+        line.arg("--package");
+        line.arg(&cx.packages(id).name);
+    }
 
     if cx.verbose {
-        // running `cargo clean --package <package>`
+        // running `cargo clean [--package <package>]`
         info!("running {}", line);
     }
 

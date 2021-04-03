@@ -2,6 +2,8 @@
 
 mod auxiliary;
 
+use std::env;
+
 use auxiliary::{cargo_bin_exe, cargo_hack, target_triple, CommandExt, SEPARATOR};
 
 #[test]
@@ -1326,4 +1328,16 @@ fn version_range_failure() {
             not the specified patch release `2`
             ",
         );
+}
+
+#[test]
+fn clean_per_version_failure() {
+    if env::var_os("CARGO_HACK_TEST_TOOLCHAIN").is_some() {
+        return;
+    }
+
+    // without --version-range
+    cargo_hack(["check", "--clean-per-version"])
+        .assert_failure("real")
+        .stderr_contains("--clean-per-version can only be used together with --version-range");
 }
