@@ -94,12 +94,6 @@ Skip to perform on `publish = false` packages.
 
 Skip passing `--features` to `cargo` if that feature does not exist.
 
-### --clean-per-run
-
-Remove artifacts for that package before running the command.
-
-This also works as a workaround for [rust-clippy#4612].
-
 ### --version-range
 
 Perform commands on a specified (inclusive) range of Rust versions.
@@ -121,6 +115,12 @@ This might be useful for catching issues like [termcolor#35], [regex#685],
 ### --version-step
 
 Specify the version interval of `--version-range`.
+
+### --clean-per-run
+
+Remove artifacts for that package before running the command.
+
+This also works as a workaround for [rust-clippy#4612].
 
 ### Options for adjusting the behavior of --each-feature and --feature-powerset
 

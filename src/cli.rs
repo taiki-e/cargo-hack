@@ -32,6 +32,8 @@ pub(crate) struct Args<'a> {
     pub(crate) ignore_unknown_features: bool,
     /// --clean-per-run
     pub(crate) clean_per_run: bool,
+    /// --clean-per-version
+    pub(crate) clean_per_version: bool,
     /// --version-range and --version-step
     pub(crate) version_range: Option<Vec<String>>,
 
@@ -111,6 +113,7 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
     let mut ignore_private = false;
     let mut ignore_unknown_features = false;
     let mut clean_per_run = false;
+    let mut clean_per_version = false;
     let mut version_range = None;
     let mut version_step = None;
 
@@ -241,6 +244,7 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
                 "--exclude-all-features" => parse_flag!(exclude_all_features),
                 "--include-deps-features" => parse_flag!(include_deps_features),
                 "--clean-per-run" => parse_flag!(clean_per_run),
+                "--clean-per-version" => parse_flag!(clean_per_version),
                 "--ignore-unknown-features" => parse_flag!(ignore_unknown_features),
                 // allow multiple uses
                 "--verbose" | "-v" | "-vv" => {
@@ -318,8 +322,13 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
             requires("--group-features", &["--feature-powerset"])?;
         }
     }
-    if version_range.is_none() && version_step.is_some() {
-        requires("--version-step", &["--version-range"])?;
+    if version_range.is_none() {
+        if version_step.is_some() {
+            requires("--version-step", &["--version-range"])?;
+        }
+        if clean_per_version {
+            requires("--clean-per-version", &["--version-range"])?;
+        }
     }
 
     let depth = depth.map(str::parse::<usize>).transpose()?;
@@ -474,6 +483,7 @@ pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -
         ignore_unknown_features,
         optional_deps,
         clean_per_run,
+        clean_per_version,
         include_features: include_features.into_iter().map(Into::into).collect(),
         include_deps_features,
         version_range,
@@ -603,10 +613,6 @@ const HELP: &[HelpText<'_>] = &[
         "Skip passing --features flag to `cargo` if that feature does not exist in the package",
         &["This flag can only be used together with either --features or --include-features."],
     ),
-    ("", "--clean-per-run", "", "Remove artifacts for that package before running the command", &[
-        "If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts will be removed before each run.",
-        "Note that dependencies artifacts will be preserved.",
-    ]),
     (
         "",
         "--version-range",
@@ -617,7 +623,17 @@ const HELP: &[HelpText<'_>] = &[
             "Note that ranges are always inclusive ranges.",
         ],
     ),
-    ("", "--version-step", "<NUM>", "Specify the version interval of --version-range", &[]),
+    ("", "--version-step", "<NUM>", "Specify the version interval of --version-range", &[
+        "This flag can only be used together with --version-range flag.",
+    ]),
+    ("", "--clean-per-run", "", "Remove artifacts for that package before running the command", &[
+        "If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts will be removed before each run.",
+        "Note that dependencies artifacts will be preserved.",
+    ]),
+    ("", "--clean-per-version", "", "Remove artifacts per Rust version", &[
+        "Note that dependencies artifacts will also be removed.",
+        "This flag can only be used together with --version-range flag.",
+    ]),
     ("-v", "--verbose", "", "Use verbose output", &[]),
     ("", "--color", "<WHEN>", "Coloring: auto, always, never", &[
         "This flag will be propagated to cargo.",
@@ -824,24 +840,24 @@ For more information try --help
     )
 }
 
-// `a` requires one of `b`.
-fn requires(a: &str, b: &[&str]) -> Result<()> {
-    let with = match b.len() {
+// `flag` requires one of `requires`.
+fn requires(flag: &str, requires: &[&str]) -> Result<()> {
+    let with = match requires.len() {
         0 => unreachable!(),
-        1 => b[0].to_string(),
-        2 => format!("either {} or {}", b[0], b[1]),
+        1 => requires[0].to_string(),
+        2 => format!("either {} or {}", requires[0], requires[1]),
         _ => {
             let mut with = String::new();
-            for f in b.iter().take(b.len() - 1) {
+            for f in requires.iter().take(requires.len() - 1) {
                 with += f;
                 with += ", ";
             }
             with += "or ";
-            with += b.last().unwrap();
+            with += requires.last().unwrap();
             with
         }
     };
-    bail!("{} can only be used together with {}", a, with);
+    bail!("{} can only be used together with {}", flag, with);
 }
 
 fn conflicts(a: &str, b: &str) -> Result<()> {

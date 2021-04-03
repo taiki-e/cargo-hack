@@ -103,13 +103,6 @@ OPTIONS:
 
             This flag can only be used together with either --features or --include-features.
 
-        --clean-per-run
-            Remove artifacts for that package before running the command.
-
-            If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts will be removed before each run.
-
-            Note that dependencies artifacts will be preserved.
-
         --version-range <START>..[END]
             Perform commands on a specified (inclusive) range of Rust versions.
 
@@ -119,6 +112,22 @@ OPTIONS:
 
         --version-step <NUM>
             Specify the version interval of --version-range.
+
+            This flag can only be used together with --version-range flag.
+
+        --clean-per-run
+            Remove artifacts for that package before running the command.
+
+            If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts will be removed before each run.
+
+            Note that dependencies artifacts will be preserved.
+
+        --clean-per-version
+            Remove artifacts per Rust version.
+
+            Note that dependencies artifacts will also be removed.
+
+            This flag can only be used together with --version-range flag.
 
     -v, --verbose
             Use verbose output.

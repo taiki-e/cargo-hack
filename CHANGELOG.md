@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Add `--clean-per-version` flag.
+
 ## [0.5.4] - 2021-02-27
 
 - [Stop commit of `Cargo.lock`.](https://github.com/taiki-e/cargo-hack/pull/117)

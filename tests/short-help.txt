@@ -27,9 +27,10 @@ OPTIONS:
         --remove-dev-deps                Equivalent to --no-dev-deps flag except for does not restore the original `Cargo.toml` after performed
         --ignore-private                 Skip to perform on `publish = false` packages
         --ignore-unknown-features        Skip passing --features flag to `cargo` if that feature does not exist in the package
-        --clean-per-run                  Remove artifacts for that package before running the command
         --version-range <START>..[END]   Perform commands on a specified (inclusive) range of Rust versions
         --version-step <NUM>             Specify the version interval of --version-range
+        --clean-per-run                  Remove artifacts for that package before running the command
+        --clean-per-version              Remove artifacts per Rust version
     -v, --verbose                        Use verbose output
         --color <WHEN>                   Coloring: auto, always, never
     -h, --help                           Prints help information
