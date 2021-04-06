@@ -76,7 +76,7 @@ jobs:
         range:
           # This is the minimum supported Rust version of this crate.
           # When updating this, the reminder to update the minimum supported
-          # Rust version in README.md and clippy.toml.
+          # Rust version in README.md and .clippy.toml.
           - 1.36..1.40
           - 1.41..1.45
           - 1.46..
