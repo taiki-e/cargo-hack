@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 #![warn(future_incompatible, rust_2018_idioms, single_use_lifetimes, unreachable_pub)]
-#![warn(clippy::all, clippy::default_trait_access)]
+#![warn(clippy::default_trait_access)]
 
 #[macro_use]
 mod term;
