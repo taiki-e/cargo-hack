@@ -7,7 +7,7 @@ on:
       - main
       - staging
   schedule:
-    - cron: '0 1 * * *'
+    - cron: '40 1 * * *'
 
 env:
   CARGO_INCREMENTAL: 0
@@ -22,6 +22,7 @@ defaults:
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - rust: stable
@@ -53,6 +54,7 @@ jobs:
   test-compat:
     name: test (1.${{ matrix.rust }})
     strategy:
+      fail-fast: false
       matrix:
         rust:
           # cargo-hack is usually runnable with Cargo versions older than the Rust version required for installation.
@@ -72,6 +74,7 @@ jobs:
 
   build:
     strategy:
+      fail-fast: false
       matrix:
         range:
           # This is the minimum supported Rust version of this crate.
@@ -95,7 +98,7 @@ jobs:
           component: clippy
       - run: cargo clippy --all --all-features --all-targets
 
-  rustfmt:
+  fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
