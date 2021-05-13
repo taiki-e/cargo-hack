@@ -127,7 +127,7 @@ jobs:
       - test-compat
       - build
       - clippy
-      - rustfmt
+      - fmt
       - shellcheck
     runs-on: ubuntu-latest
     steps:
