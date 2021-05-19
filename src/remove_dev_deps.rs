@@ -237,11 +237,14 @@ foo = \"0.1\"
 "
     );
 
+    // NOTE: `a = [dev-dependencies]` is not valid TOML format.
     test!(
         not_table,
         "\
 [package]
-foo = [dev-dependencies]
+a = [dev-dependencies]
+b = ['dev-dependencies']
+c = [\"dev-dependencies\"]
 # [dev-dependencies]
 
     [dev-dependencies]
@@ -257,11 +260,32 @@ foo = [dev-dependencies]
 ",
         "\
 [package]
-foo = [dev-dependencies]
+a = [dev-dependencies]
+b = ['dev-dependencies']
+c = [\"dev-dependencies\"]
 # [dev-dependencies]
 
     [dependencies]
 
+"
+    );
+
+    // NOTE: `foo = [[dev-dependencies]]` is not valid TOML format.
+    test!(
+        not_table_multi_line,
+        "\
+[package]
+foo = [
+    ['dev-dependencies'],
+    [\"dev-dependencies\"]
+]
+",
+        "\
+[package]
+foo = [
+    ['dev-dependencies'],
+    [\"dev-dependencies\"]
+]
 "
     );
 }
