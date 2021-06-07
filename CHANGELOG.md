@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Relax the requirement for glibc on prebuilt binary for x86_64-unknown-linux-gnu.
+
 ## [0.5.5] - 2021-04-04
 
 - [Add `--clean-per-version` flag.](https://github.com/taiki-e/cargo-hack/pull/120)
