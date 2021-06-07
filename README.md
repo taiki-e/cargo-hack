@@ -8,19 +8,36 @@
 A cargo subcommand to provide various options useful for testing and continuous
 integration.
 
+- [Installation](#installation)
+- [Usage](#usage)
+- [License](#license)
+
 ## Installation
+
+### From source
 
 ```sh
 cargo install cargo-hack
 ```
-
-Alternatively, download compiled binaries from [GitHub Releases](https://github.com/taiki-e/cargo-hack/releases).
 
 *Compiler support: requires rustc 1.36+*
 
 cargo-hack is usually runnable with Cargo versions older than the Rust version
 required for installation (e.g., `cargo +1.31 hack check`). Currently, to run
 cargo-hack requires Cargo 1.26+.
+
+### From prebuilt binaries
+
+You can download prebuilt binaries from the [Release page](https://github.com/taiki-e/cargo-hack/releases).
+Prebuilt binaries are available for macOS, Linux (gnu and musl), and Windows.
+
+### Via Homebrew
+
+You can install cargo-hack using Homebrew tap ([both macOS and Linux are supported](https://github.com/taiki-e/homebrew-tap/blob/main/Formula/cargo-hack.rb)):
+
+```sh
+brew install taiki-e/tap/cargo-hack
+```
 
 ## Usage
 
