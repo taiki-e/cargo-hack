@@ -5,13 +5,15 @@
 #[macro_use]
 mod term;
 
+#[macro_use]
+mod process;
+
 mod cargo;
 mod cli;
 mod context;
 mod features;
 mod manifest;
 mod metadata;
-mod process;
 mod remove_dev_deps;
 mod restore;
 mod rustup;
@@ -54,7 +56,7 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
     let restore = Restore::new(cx);
     if let Some(range) = &cx.version_range {
         progress.total *= range.len();
-        let mut line = ProcessBuilder::new("cargo");
+        let mut line = process!("cargo");
         if cx.verbose {
             line.display_manifest_path();
         }

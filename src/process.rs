@@ -14,6 +14,16 @@ use crate::{Context, PackageId};
 
 // Based on https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/util/process_builder.rs
 
+macro_rules! process {
+    ($program:expr $(, $arg:expr)* $(,)?) => {{
+        let mut _cmd = crate::process::ProcessBuilder::new($program);
+        $(
+            _cmd.arg($arg);
+        )*
+        _cmd
+    }};
+}
+
 /// A builder object for an external process, similar to `std::process::Command`.
 #[derive(Clone)]
 #[must_use]
@@ -86,25 +96,25 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    /// (chainable) Adds `arg` to the leading args list.
+    /// Adds `arg` to the leading args list.
     pub(crate) fn leading_arg(&mut self, arg: impl Into<String>) -> &mut Self {
         self.leading_args.push(arg.into());
         self
     }
 
-    /// (chainable) Adds `arg` to the args list.
+    /// Adds `arg` to the args list.
     pub(crate) fn arg(&mut self, arg: impl AsRef<OsStr>) -> &mut Self {
         self.args.push(arg.as_ref().to_os_string());
         self
     }
 
-    /// (chainable) Adds multiple `args` to the args list.
+    /// Adds multiple `args` to the args list.
     pub(crate) fn args(&mut self, args: impl IntoIterator<Item = impl AsRef<OsStr>>) -> &mut Self {
         self.args.extend(args.into_iter().map(|t| t.as_ref().to_os_string()));
         self
     }
 
-    // /// (chainable) Replaces the args list with the given `args`.
+    // /// Replaces the args list with the given `args`.
     // pub(crate) fn args_replace(
     //     &mut self,
     //     args: impl IntoIterator<Item = impl AsRef<OsStr>>,
@@ -113,13 +123,13 @@ impl<'a> ProcessBuilder<'a> {
     //     self
     // }
 
-    /// (chainable) Enables full program path display.
+    /// Enables full program path display.
     pub(crate) fn display_program_path(&mut self) -> &mut Self {
         self.display_program_path = true;
         self
     }
 
-    /// (chainable) Enables manifest path display.
+    /// Enables manifest path display.
     pub(crate) fn display_manifest_path(&mut self) -> &mut Self {
         self.display_manifest_path = true;
         self
@@ -254,11 +264,7 @@ impl fmt::Display for ProcessBuilder<'_> {
     }
 }
 
-// =============================================================================
-// Process errors
-
 // Based on https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/util/errors.rs
-
 #[derive(Debug)]
 pub(crate) struct ProcessError {
     /// A detailed description to show to the user why the process failed.
