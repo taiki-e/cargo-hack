@@ -33,7 +33,7 @@ Prebuilt binaries are available for macOS, Linux (gnu and musl), and Windows.
 
 ### Via Homebrew
 
-You can install cargo-hack using Homebrew tap ([both macOS and Linux are supported](https://github.com/taiki-e/homebrew-tap/blob/main/Formula/cargo-hack.rb)):
+You can install cargo-hack using [Homebrew tap on macOS and Linux](https://github.com/taiki-e/homebrew-tap/blob/main/Formula/cargo-hack.rb):
 
 ```sh
 brew install taiki-e/tap/cargo-hack
