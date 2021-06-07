@@ -9,9 +9,13 @@ use std::{
 
 use anyhow::Result;
 use easy_ext::ext;
+use fs_err as fs;
 use once_cell::sync::Lazy;
 use tempfile::{Builder, TempDir};
 use walkdir::WalkDir;
+
+static FIXTURES_PATH: Lazy<PathBuf> =
+    Lazy::new(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
 
 pub fn cargo_bin_exe() -> Command {
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_cargo-hack"));
@@ -241,17 +245,16 @@ fn test_project(model: &str) -> Result<(TempDir, PathBuf)> {
         .tempdir()?;
     let tmpdir_path = tmpdir.path();
 
-    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     let model_path;
-    let cur_path;
+    let workspace_root;
     if model.contains('/') {
         let mut model = model.splitn(2, '/');
-        model_path = fixtures.join(model.next().unwrap());
-        cur_path = tmpdir_path.join(model.next().unwrap());
+        model_path = FIXTURES_PATH.join(model.next().unwrap());
+        workspace_root = tmpdir_path.join(model.next().unwrap());
         assert!(model.next().is_none())
     } else {
-        model_path = fixtures.join(model);
-        cur_path = tmpdir_path.to_path_buf();
+        model_path = FIXTURES_PATH.join(model);
+        workspace_root = tmpdir_path.to_path_buf();
     }
 
     for entry in WalkDir::new(&model_path).into_iter().filter_map(Result::ok) {
@@ -266,5 +269,5 @@ fn test_project(model: &str) -> Result<(TempDir, PathBuf)> {
         }
     }
 
-    Ok((tmpdir, cur_path))
+    Ok((tmpdir, workspace_root))
 }

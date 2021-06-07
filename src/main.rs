@@ -12,6 +12,7 @@ mod cargo;
 mod cli;
 mod context;
 mod features;
+mod fs;
 mod manifest;
 mod metadata;
 mod remove_dev_deps;
@@ -19,9 +20,9 @@ mod restore;
 mod rustup;
 mod version;
 
-use std::{fmt::Write, fs};
+use std::fmt::Write;
 
-use anyhow::{bail, Context as _, Result};
+use anyhow::{bail, Result};
 
 use crate::{
     cargo::Cargo, context::Context, features::Feature, metadata::PackageId,
@@ -273,9 +274,7 @@ fn exec_on_package(
         let new = cx.manifests(id).remove_dev_deps();
         let mut handle = restore.set_manifest(cx, id);
 
-        fs::write(&package.manifest_path, new).with_context(|| {
-            format!("failed to update manifest file `{}`", package.manifest_path.display())
-        })?;
+        fs::write(&package.manifest_path, new)?;
 
         exec_actual(cx, id, kind, &mut line, progress)?;
 

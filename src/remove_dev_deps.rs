@@ -1,5 +1,7 @@
 use std::cmp;
 
+// TODO: Fix parsing of quoted keys
+
 // Note: The input must be a valid TOML.
 pub(crate) fn remove_dev_deps(text: &str) -> String {
     const DEV_DEPS: &str = "dev-dependencies";
