@@ -1,12 +1,11 @@
 use std::{
-    fs,
     path::PathBuf,
     sync::{Arc, Mutex},
 };
 
-use anyhow::{Context as _, Result};
+use anyhow::Result;
 
-use crate::{Context, PackageId};
+use crate::{fs, Context, PackageId};
 
 #[derive(Clone)]
 pub(crate) struct Restore {
@@ -63,9 +62,7 @@ impl Restore {
     fn restore_dev_deps(&self) -> Result<()> {
         let mut current = self.current.lock().unwrap();
         if let Some(current) = current.take() {
-            fs::write(&current.manifest_path, &current.manifest).with_context(|| {
-                format!("failed to restore manifest file `{}`", current.manifest_path.display())
-            })?;
+            fs::write(&current.manifest_path, &current.manifest)?;
         }
         Ok(())
     }

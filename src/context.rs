@@ -8,7 +8,7 @@ use std::{
 use anyhow::Result;
 
 use crate::{
-    cli::{self, Args, RawArgs},
+    cli::{self, Args},
     features::Features,
     manifest::Manifest,
     metadata::{Metadata, Package, PackageId},
@@ -25,7 +25,7 @@ pub(crate) struct Context<'a> {
 }
 
 impl<'a> Context<'a> {
-    pub(crate) fn new(args: &'a RawArgs) -> Result<Self> {
+    pub(crate) fn new(args: &'a [String]) -> Result<Self> {
         let cargo = Cargo::new();
         let rustup = Rustup::new();
         let current_dir = env::current_dir()?;

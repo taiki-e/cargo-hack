@@ -5,7 +5,6 @@ use anyhow::{bail, format_err, Context as _, Result};
 use crate::{
     cargo,
     version::{parse_version, Version},
-    ProcessBuilder,
 };
 
 pub(crate) struct Rustup {
@@ -45,7 +44,7 @@ pub(crate) fn version_range(range: &str, step: Option<&str>) -> Result<Vec<Strin
     let end = match split.next() {
         Some("") | None => {
             install_toolchain("stable", None, false)?;
-            cargo::minor_version(ProcessBuilder::new("cargo").args(&["+stable"]))?
+            cargo::minor_version(process!("cargo", "+stable"))?
         }
         Some(end) => {
             let end = parse_version(end)?;
@@ -77,11 +76,7 @@ pub(crate) fn install_toolchain(
     }
 
     if target.is_none()
-        && ProcessBuilder::new("cargo")
-            .arg(format!("+{}", toolchain))
-            .arg("--version")
-            .exec_with_output()
-            .is_ok()
+        && process!("cargo", format!("+{}", toolchain), "--version").exec_with_output().is_ok()
     {
         // Do not run `rustup toolchain install` if the toolchain already has installed.
         return Ok(());
@@ -89,8 +84,7 @@ pub(crate) fn install_toolchain(
 
     // In Github Actions and Azure Pipelines, --no-self-update is necessary
     // because the windows environment cannot self-update rustup.exe.
-    let mut cmd = rustup();
-    cmd.args(&["toolchain", "install", toolchain, "--no-self-update"]);
+    let mut cmd = process!("rustup", "toolchain", "install", toolchain, "--no-self-update");
     if let Some(target) = target {
         cmd.args(&["--target", target]);
     }
@@ -105,13 +99,8 @@ pub(crate) fn install_toolchain(
     }
 }
 
-fn rustup<'a>() -> ProcessBuilder<'a> {
-    ProcessBuilder::new("rustup")
-}
-
 fn minor_version() -> Result<u32> {
-    let mut cmd = rustup();
-    cmd.args(&["--version"]);
+    let mut cmd = process!("rustup", "--version");
     let output = cmd.exec_with_output()?;
 
     let output = str::from_utf8(&output.stdout)

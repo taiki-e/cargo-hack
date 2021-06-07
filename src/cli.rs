@@ -75,16 +75,18 @@ pub(crate) struct Args<'a> {
     pub(crate) target: Option<&'a str>,
 }
 
-pub(crate) fn raw() -> RawArgs {
+pub(crate) fn raw() -> Vec<String> {
     let mut args = env::args();
     let _ = args.next(); // executable name
-    RawArgs(args.collect())
+    args.collect()
 }
 
-pub(crate) struct RawArgs(Vec<String>);
-
-pub(crate) fn parse_args<'a>(raw: &'a RawArgs, cargo: &Cargo, rustup: &Rustup) -> Result<Args<'a>> {
-    let mut iter = raw.0.iter();
+pub(crate) fn parse_args<'a>(
+    raw: &'a [String],
+    cargo: &Cargo,
+    rustup: &Rustup,
+) -> Result<Args<'a>> {
+    let mut iter = raw.iter();
     let args = &mut iter.by_ref().map(String::as_str).peekable();
     match args.next() {
         Some(a) if a == "hack" => {}
@@ -868,9 +870,11 @@ fn conflicts(a: &str, b: &str) -> Result<()> {
 mod tests {
     use std::{env, path::Path, process::Command};
 
+    use anyhow::Result;
     use tempfile::Builder;
 
     use super::Help;
+    use crate::fs;
 
     #[track_caller]
     fn assert_diff(expected_path: impl AsRef<Path>, actual: impl AsRef<str>) {
@@ -906,5 +910,45 @@ mod tests {
     fn short_help() {
         let actual = Help { long: false, term_size: 200, print_version: false }.to_string();
         assert_diff("tests/short-help.txt", actual);
+    }
+
+    #[test]
+    fn update_readme() -> Result<()> {
+        let new = Help { long: true, term_size: 80, print_version: false }.to_string();
+        let path = &Path::new(env!("CARGO_MANIFEST_DIR")).join("README.md");
+        let base = fs::read_to_string(path)?;
+        let mut out = String::with_capacity(base.capacity());
+        let mut lines = base.lines();
+        let mut start = false;
+        let mut end = false;
+        while let Some(line) = lines.next() {
+            dbg!(&line);
+            out.push_str(line);
+            out.push('\n');
+            if line == "<!-- readme-long-help:start -->" {
+                start = true;
+                out.push_str("```console\n");
+                out.push_str("$ cargo hack --help\n");
+                out.push_str(&new);
+                out.push('\n');
+                for line in &mut lines {
+                    if line == "<!-- readme-long-help:end -->" {
+                        out.push_str("```\n");
+                        out.push_str(line);
+                        out.push('\n');
+                        end = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if start && end {
+            fs::write(path, out)?;
+        } else if start {
+            panic!("do not modify `<!-- readme-long-help:end -->` comment in README.md")
+        } else {
+            panic!("do not modify `<!-- readme-long-help:start -->` comment in README.md")
+        }
+        Ok(())
     }
 }

@@ -14,7 +14,7 @@ impl Cargo {
         let path = cargo_binary();
 
         // If failed to determine cargo version, assign 0 to skip all version-dependent decisions.
-        let version = minor_version(&mut ProcessBuilder::new(&path))
+        let version = minor_version(process!(&path))
             .map_err(|e| warn!("unable to determine cargo version: {:#}", e))
             .unwrap_or(0);
 
@@ -22,12 +22,12 @@ impl Cargo {
     }
 
     pub(crate) fn process(&self) -> ProcessBuilder<'_> {
-        ProcessBuilder::new(&self.path)
+        process!(&self.path)
     }
 }
 
 // Based on https://github.com/cuviper/autocfg/blob/1.0.1/src/version.rs#L25-L59
-pub(crate) fn minor_version(cmd: &mut ProcessBuilder<'_>) -> Result<u32> {
+pub(crate) fn minor_version(mut cmd: ProcessBuilder<'_>) -> Result<u32> {
     cmd.args(&["--version", "--verbose"]);
     let output = cmd.exec_with_output()?;
 

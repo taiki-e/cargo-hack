@@ -6,10 +6,14 @@ edition = "2018"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/taiki-e/cargo-hack"
 keywords = ["cargo", "subcommand", "testing"]
-categories = ["command-line-utilities", "development-tools::cargo-plugins", "development-tools::testing"]
+categories = [
+    "command-line-utilities",
+    "development-tools::cargo-plugins",
+    "development-tools::testing",
+]
 exclude = ["/.*", "/tools"]
 description = """
-A cargo subcommand to provide some options useful for testing and continuous integration.
+A cargo subcommand to provide various options useful for testing and continuous integration.
 """
 
 [package.metadata.docs.rs]
@@ -27,7 +31,7 @@ toml = "0.5.2"
 
 [dev-dependencies]
 easy-ext = "0.2"
-fs = { package = "fs-err", version = "2" }
+fs-err = "2"
 once_cell = "1"
 tempfile = "3"
 walkdir = "2"

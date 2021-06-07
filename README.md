@@ -5,16 +5,20 @@
 [![rustc](https://img.shields.io/badge/rustc-1.36+-blue?style=flat-square&logo=rust)](https://www.rust-lang.org)
 [![build status](https://img.shields.io/github/workflow/status/taiki-e/cargo-hack/CI/main?style=flat-square&logo=github)](https://github.com/taiki-e/cargo-hack/actions)
 
-A cargo subcommand to provide some options useful for testing and continuous
+A cargo subcommand to provide various options useful for testing and continuous
 integration.
 
+- [Installation](#installation)
+- [Usage](#usage)
+- [License](#license)
+
 ## Installation
+
+### From source
 
 ```sh
 cargo install cargo-hack
 ```
-
-Alternatively, download compiled binaries from [GitHub Releases](https://github.com/taiki-e/cargo-hack/releases).
 
 *Compiler support: requires rustc 1.36+*
 
@@ -22,9 +26,203 @@ cargo-hack is usually runnable with Cargo versions older than the Rust version
 required for installation (e.g., `cargo +1.31 hack check`). Currently, to run
 cargo-hack requires Cargo 1.26+.
 
+### From prebuilt binaries
+
+You can download prebuilt binaries from the [Release page](https://github.com/taiki-e/cargo-hack/releases).
+Prebuilt binaries are available for macOS, Linux (gnu and musl), and Windows.
+
+### Via Homebrew
+
+You can install cargo-hack using [Homebrew tap on macOS and Linux](https://github.com/taiki-e/homebrew-tap/blob/main/Formula/cargo-hack.rb):
+
+```sh
+brew install taiki-e/tap/cargo-hack
+```
+
 ## Usage
 
-*See `cargo hack --help` for a complete list of options ([output is here](https://github.com/taiki-e/cargo-hack/blob/HEAD/tests/long-help.txt)).*
+<details>
+<summary>Click to show a complete list of options</summary>
+
+<!-- readme-long-help:start -->
+```console
+$ cargo hack --help
+cargo-hack
+A cargo subcommand to provide various options useful for testing and continuous integration.
+
+USAGE:
+    cargo hack [OPTIONS] [SUBCOMMAND]
+
+Use -h for short descriptions and --help for more details.
+
+OPTIONS:
+    -p, --package <SPEC>...
+            Package(s) to check.
+
+        --all
+            Alias for --workspace.
+
+        --workspace
+            Perform command for all packages in the workspace.
+
+        --exclude <SPEC>...
+            Exclude packages from the check.
+
+            This flag can only be used together with --workspace
+
+        --manifest-path <PATH>
+            Path to Cargo.toml.
+
+        --features <FEATURES>...
+            Space-separated list of features to activate.
+
+        --each-feature
+            Perform for each feature of the package.
+
+            This also includes runs with just --no-default-features flag,
+            --all-features flag, and default features.
+
+        --feature-powerset
+            Perform for the feature powerset of the package.
+
+            This also includes runs with just --no-default-features flag,
+            --all-features flag, and default features.
+
+        --optional-deps [DEPS]...
+            Use optional dependencies as features.
+
+            If DEPS are not specified, all optional dependencies are considered
+            as features.
+
+            This flag can only be used together with either --each-feature flag
+            or --feature-powerset flag.
+
+        --skip <FEATURES>...
+            Alias for --exclude-features.
+
+        --exclude-features <FEATURES>...
+            Space-separated list of features to exclude.
+
+            To exclude run of default feature, using value `--exclude-features
+            default`.
+
+            To exclude run of just --no-default-features flag, using
+            --exclude-no-default-features flag.
+
+            To exclude run of just --all-features flag, using
+            --exclude-all-features flag.
+
+            This flag can only be used together with either --each-feature flag
+            or --feature-powerset flag.
+
+        --exclude-no-default-features
+            Exclude run of just --no-default-features flag.
+
+            This flag can only be used together with either --each-feature flag
+            or --feature-powerset flag.
+
+        --exclude-all-features
+            Exclude run of just --all-features flag.
+
+            This flag can only be used together with either --each-feature flag
+            or --feature-powerset flag.
+
+        --depth <NUM>
+            Specify a max number of simultaneous feature flags of
+            --feature-powerset.
+
+            If NUM is set to 1, --feature-powerset is equivalent to
+            --each-feature.
+
+            This flag can only be used together with --feature-powerset flag.
+
+        --group-features <FEATURES>...
+            Space-separated list of features to group.
+
+            To specify multiple groups, use this option multiple times:
+            `--group-features a,b --group-features c,d`
+
+            This flag can only be used together with --feature-powerset flag.
+
+        --include-features <FEATURES>...
+            Include only the specified features in the feature combinations
+            instead of package features.
+
+            This flag can only be used together with either --each-feature flag
+            or --feature-powerset flag.
+
+        --no-dev-deps
+            Perform without dev-dependencies.
+
+            Note that this flag removes dev-dependencies from real `Cargo.toml`
+            while cargo-hack is running and restores it when finished.
+
+        --remove-dev-deps
+            Equivalent to --no-dev-deps flag except for does not restore the
+            original `Cargo.toml` after performed.
+
+        --ignore-private
+            Skip to perform on `publish = false` packages.
+
+        --ignore-unknown-features
+            Skip passing --features flag to `cargo` if that feature does not
+            exist in the package.
+
+            This flag can only be used together with either --features or
+            --include-features.
+
+        --version-range <START>..[END]
+            Perform commands on a specified (inclusive) range of Rust versions.
+
+            If the given range is unclosed, the latest stable compiler is
+            treated as the upper bound.
+
+            Note that ranges are always inclusive ranges.
+
+        --version-step <NUM>
+            Specify the version interval of --version-range.
+
+            This flag can only be used together with --version-range flag.
+
+        --clean-per-run
+            Remove artifacts for that package before running the command.
+
+            If used this flag with --workspace, --each-feature, or
+            --feature-powerset, artifacts will be removed before each run.
+
+            Note that dependencies artifacts will be preserved.
+
+        --clean-per-version
+            Remove artifacts per Rust version.
+
+            Note that dependencies artifacts will also be removed.
+
+            This flag can only be used together with --version-range flag.
+
+    -v, --verbose
+            Use verbose output.
+
+        --color <WHEN>
+            Coloring: auto, always, never.
+
+            This flag will be propagated to cargo.
+
+    -h, --help
+            Prints help information.
+
+    -V, --version
+            Prints version information.
+
+Some common cargo commands are (see all commands with --list):
+    build       Compile the current package
+    check       Analyze the current package and report errors, but don't build object files
+    run         Run a binary or example of the local package
+    test        Run the tests
+
+```
+<!-- readme-long-help:end -->
+
+</details>
 
 `cargo-hack` is basically wrapper of `cargo` that propagates subcommand and most
 of the passed flags to `cargo`, but provides additional flags and changes the
