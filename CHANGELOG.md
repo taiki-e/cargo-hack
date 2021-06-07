@@ -10,7 +10,9 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
-- Relax the requirement for glibc on prebuilt binary for x86_64-unknown-linux-gnu.
+## [0.5.6] - 2021-06-07
+
+- [Relax the requirement for glibc on prebuilt binary for x86_64-unknown-linux-gnu.](https://github.com/taiki-e/cargo-hack/pull/122)
 
 - You can now install cargo-hack using Homebrew tap on macOS and Linux: `brew install taiki-e/tap/cargo-hack`
 
@@ -225,7 +227,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.5...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.6...HEAD
+[0.5.6]: https://github.com/taiki-e/cargo-hack/compare/v0.5.5...v0.5.6
 [0.5.5]: https://github.com/taiki-e/cargo-hack/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/taiki-e/cargo-hack/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/taiki-e/cargo-hack/compare/v0.5.2...v0.5.3
