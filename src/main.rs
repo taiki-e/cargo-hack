@@ -117,7 +117,7 @@ enum Kind<'a> {
     // If there is no subcommand, then kind need not be determined.
     NoSubcommand,
     SkipAsPrivate,
-    Nomal,
+    Normal,
     Each { features: Vec<&'a Feature> },
     Powerset { features: Vec<Vec<&'a Feature>> },
 }
@@ -132,7 +132,7 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
     }
     if !cx.each_feature && !cx.feature_powerset {
         progress.total += 1;
-        return Kind::Nomal;
+        return Kind::Normal;
     }
 
     let package = cx.packages(id);
@@ -182,7 +182,7 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
     if cx.each_feature {
         if (package.features.is_empty() || !cx.include_features.is_empty()) && features.is_empty() {
             progress.total += 1;
-            Kind::Nomal
+            Kind::Normal
         } else {
             progress.total += features.len()
                 + !cx.exclude_no_default_features as usize
@@ -194,7 +194,7 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
 
         if (package.features.is_empty() || !cx.include_features.is_empty()) && features.is_empty() {
             progress.total += 1;
-            Kind::Nomal
+            Kind::Normal
         } else {
             // -1: the first element of a powerset is `[]`
             progress.total += features.len() - 1
@@ -294,7 +294,7 @@ fn exec_actual(
     match kind {
         Kind::NoSubcommand => return Ok(()),
         Kind::SkipAsPrivate => unreachable!(),
-        Kind::Nomal => {
+        Kind::Normal => {
             // only run with default features
             return exec_cargo(cx, id, line, progress);
         }

@@ -429,10 +429,10 @@ pub(crate) fn parse_args<'a>(
     }
 
     if cargo.version < 41 && include_deps_features {
-        bail!("--include-deps-features requires Cargo 1.41 or leter");
+        bail!("--include-deps-features requires Cargo 1.41 or later");
     }
     if rustup.version < 23 && version_range.is_some() {
-        bail!("--version-range requires rustup 1.23 or leter");
+        bail!("--version-range requires rustup 1.23 or later");
     }
 
     if subcommand.is_none() {
