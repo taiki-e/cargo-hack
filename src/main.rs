@@ -152,14 +152,14 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
         let mut features: Vec<_> = feature_list.normal().iter().filter(filter).collect();
 
         if let Some(opt_deps) = &cx.optional_deps {
-            opt_deps.iter().for_each(|&d| {
+            for &d in opt_deps {
                 if !feature_list.optional_deps().iter().any(|f| f == d) {
                     warn!(
                         "specified optional dependency `{}` not found in package `{}`",
                         d, package.name
                     );
                 }
-            });
+            }
 
             features.extend(feature_list.optional_deps().iter().filter(|f| {
                 filter(f) && (opt_deps.is_empty() || opt_deps.iter().any(|x| *f == *x))
@@ -212,7 +212,7 @@ fn determine_package_list<'a>(
     progress: &mut Progress,
 ) -> Result<Vec<(&'a PackageId, Kind<'a>)>> {
     Ok(if cx.workspace {
-        cx.exclude.iter().for_each(|spec| {
+        for spec in &cx.exclude {
             if !cx.workspace_members().any(|id| cx.packages(id).name == *spec) {
                 warn!(
                     "excluded package(s) `{}` not found in workspace `{}`",
@@ -220,7 +220,7 @@ fn determine_package_list<'a>(
                     cx.workspace_root().display()
                 );
             }
-        });
+        }
 
         cx.workspace_members()
             .filter(|id| !cx.exclude.contains(&&*cx.packages(id).name))

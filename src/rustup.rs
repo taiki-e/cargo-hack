@@ -32,7 +32,7 @@ pub(crate) fn version_range(range: &str, step: Option<&str>) -> Result<Vec<Strin
                 "--version-range always selects the latest patch release per minor release, \
                      not the specified patch release `{}`",
                 patch
-            )
+            );
         }
         Ok(())
     };

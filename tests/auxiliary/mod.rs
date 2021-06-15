@@ -90,7 +90,7 @@ impl Command {
                     "-".repeat(60),
                     output.stdout,
                     output.stderr,
-                )
+                );
             }
         }
         output
@@ -111,7 +111,7 @@ impl Command {
                     "-".repeat(60),
                     output.stdout,
                     output.stderr,
-                )
+                );
             }
         }
         output
@@ -148,7 +148,7 @@ impl AssertOutput {
                         "-".repeat(60),
                         pat,
                         output.stderr
-                    )
+                    );
                 }
             });
         }
@@ -166,7 +166,7 @@ impl AssertOutput {
                         "-".repeat(60),
                         pat,
                         output.stderr
-                    )
+                    );
                 }
             });
         }
@@ -184,7 +184,7 @@ impl AssertOutput {
                         "-".repeat(60),
                         pat,
                         output.stdout
-                    )
+                    );
                 }
             });
         }
@@ -202,7 +202,7 @@ impl AssertOutput {
                         "-".repeat(60),
                         pat,
                         output.stdout
-                    )
+                    );
                 }
             });
         }
@@ -210,30 +210,24 @@ impl AssertOutput {
     }
 }
 
-pub fn target_triple() -> &'static str {
-    if cfg!(not(target_arch = "x86_64")) {
-        panic!("non x86_64 arch")
-    }
-    if cfg!(target_os = "linux") {
-        if cfg!(target_env = "gnu") {
-            "x86_64-unknown-linux-gnu"
-        } else if cfg!(target_env = "musl") {
-            "x86_64-unknown-linux-musl"
-        } else {
-            panic!("non gnu/musl linux")
-        }
-    } else if cfg!(target_os = "macos") {
-        "x86_64-apple-darwin"
+pub fn target_triple() -> String {
+    let triple = env::consts::ARCH.to_string();
+    if cfg!(target_os = "macos") {
+        triple + "-apple-darwin"
     } else if cfg!(target_os = "windows") {
         if cfg!(target_env = "gnu") {
-            "x86_64-pc-windows-gnu"
+            triple + "-pc-windows-gnu"
         } else if cfg!(target_env = "msvc") {
-            "x86_64-pc-windows-msvc"
+            triple + "-pc-windows-msvc"
         } else {
             unreachable!()
         }
+    } else if cfg!(target_env = "gnu") {
+        triple + "-unknown-" + env::consts::OS + "-gnu"
+    } else if cfg!(target_env = "musl") {
+        triple + "-unknown-" + env::consts::OS + "-musl"
     } else {
-        panic!("non linux/macos/windows os")
+        unreachable!()
     }
 }
 
@@ -251,7 +245,7 @@ fn test_project(model: &str) -> Result<(TempDir, PathBuf)> {
         let mut model = model.splitn(2, '/');
         model_path = FIXTURES_PATH.join(model.next().unwrap());
         workspace_root = tmpdir_path.join(model.next().unwrap());
-        assert!(model.next().is_none())
+        assert!(model.next().is_none());
     } else {
         model_path = FIXTURES_PATH.join(model);
         workspace_root = tmpdir_path.to_path_buf();

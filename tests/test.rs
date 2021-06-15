@@ -1230,7 +1230,7 @@ fn propagate() {
         .stderr_contains("`cargo check --color auto`");
 
     // --target
-    cargo_hack(["check", "--target", target_triple()])
+    cargo_hack(["check", "--target", &target_triple()])
         .assert_success("real")
         .stderr_contains(format!("`cargo check --target {}`", target_triple()));
 
@@ -1272,7 +1272,7 @@ fn version_range() {
         ",
     );
 
-    cargo_hack(["check", "--version-range", "1.36..1.37", "--target", target_triple()])
+    cargo_hack(["check", "--version-range", "1.36..1.37", "--target", &target_triple()])
         .assert_success("real")
         .stderr_contains(format!(
             "

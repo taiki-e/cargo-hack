@@ -90,7 +90,7 @@ impl<'a> ProcessBuilder<'a> {
                     info!("skipped applying unknown `{}` feature to {}", f, cx.packages(id).name);
                     false
                 }
-            }))
+            }));
         } else if !cx.features.is_empty() {
             self.append_features(&cx.features);
         }
@@ -191,8 +191,7 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    /// Converts `ProcessBuilder` into a `std::process::Command`, and handles the jobserver, if
-    /// present.
+    /// Converts `ProcessBuilder` into a `std::process::Command`.
     fn build_command(&self) -> Command {
         let mut cmd = Command::new(&*self.program);
 

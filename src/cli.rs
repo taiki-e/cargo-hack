@@ -293,13 +293,13 @@ pub(crate) fn parse_args<'a>(
             // TODO: implement
             warn!(
                 "--ignore-unknown-features for --include-features is not fully implemented and may not work as intended"
-            )
+            );
         }
         if !group_features.is_empty() {
             // TODO: implement
             warn!(
                 "--ignore-unknown-features for --group-features is not fully implemented and may not work as intended"
-            )
+            );
         }
     }
     if !each_feature && !feature_powerset {
@@ -453,7 +453,7 @@ pub(crate) fn parse_args<'a>(
             std::process::exit(0);
         } else if !remove_dev_deps {
             // TODO: improve this
-            mini_usage("no subcommand or valid flag specified")?
+            mini_usage("no subcommand or valid flag specified")?;
         }
     }
 
@@ -754,7 +754,7 @@ Some common cargo commands are (see all commands with --list):
 }
 
 fn print_version() {
-    println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
+    println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 }
 
 // Note: When adding a flag here, update the test with the same name in `tests/test.rs` file.
@@ -945,9 +945,9 @@ mod tests {
         if start && end {
             fs::write(path, out)?;
         } else if start {
-            panic!("do not modify `<!-- readme-long-help:end -->` comment in README.md")
+            panic!("do not modify `<!-- readme-long-help:end -->` comment in README.md");
         } else {
-            panic!("do not modify `<!-- readme-long-help:start -->` comment in README.md")
+            panic!("do not modify `<!-- readme-long-help:start -->` comment in README.md");
         }
         Ok(())
     }

@@ -15,10 +15,7 @@ const NEVER: u8 = 2;
 
 pub(crate) fn set_coloring(color: Option<&str>) -> Result<()> {
     // https://doc.rust-lang.org/cargo/reference/config.html#termcolor
-    let mut cargo_term_color = None;
-    if color.is_none() {
-        cargo_term_color = env::var("CARGO_TERM_COLOR").ok();
-    }
+    let cargo_term_color = if color.is_none() { env::var("CARGO_TERM_COLOR").ok() } else { None };
     let coloring = match color.or_else(|| cargo_term_color.as_ref().map(|s| &**s)) {
         Some("auto") | None => AUTO,
         Some("always") => ALWAYS,
