@@ -39,6 +39,14 @@ You can install cargo-hack using [Homebrew tap on macOS and Linux](https://githu
 brew install taiki-e/tap/cargo-hack
 ```
 
+### Via AUR (ArchLinux)
+
+You can install [cargo-hack from AUR](https://aur.archlinux.org/packages/cargo-hack/):
+
+```sh
+paru -S cargo-hack
+```
+
 ## Usage
 
 <details>
