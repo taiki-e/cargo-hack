@@ -922,7 +922,6 @@ mod tests {
         let mut start = false;
         let mut end = false;
         while let Some(line) = lines.next() {
-            dbg!(&line);
             out.push_str(line);
             out.push('\n');
             if line == "<!-- readme-long-help:start -->" {
@@ -945,9 +944,9 @@ mod tests {
         if start && end {
             fs::write(path, out)?;
         } else if start {
-            panic!("do not modify `<!-- readme-long-help:end -->` comment in README.md");
+            panic!("missing `<!-- readme-long-help:end -->` comment in README.md");
         } else {
-            panic!("do not modify `<!-- readme-long-help:start -->` comment in README.md");
+            panic!("missing `<!-- readme-long-help:start -->` comment in README.md");
         }
         Ok(())
     }
