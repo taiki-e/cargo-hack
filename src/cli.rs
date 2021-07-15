@@ -881,6 +881,9 @@ mod tests {
         let actual = actual.as_ref();
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
         let expected_path = &manifest_dir.join(expected_path);
+        if !expected_path.is_file() {
+            fs::write(expected_path, "").unwrap();
+        }
         let expected = fs::read_to_string(expected_path).unwrap();
         if expected != actual {
             if env::var_os("CI").is_some() {

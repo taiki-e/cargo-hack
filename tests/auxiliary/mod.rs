@@ -256,7 +256,7 @@ fn test_project(model: &str) -> Result<(TempDir, PathBuf)> {
         let tmppath = &tmpdir_path.join(path.strip_prefix(&model_path)?);
         if !tmppath.exists() {
             if path.is_dir() {
-                fs::create_dir(tmppath)?;
+                fs::create_dir_all(tmppath)?;
             } else {
                 fs::copy(path, tmppath)?;
             }
