@@ -1,0 +1,6 @@
+[dev-dependencies]
+a = ["b"]
+
+# [dev-dependencies]
+
+[target.'cfg(unix)'.dev-dependencies]

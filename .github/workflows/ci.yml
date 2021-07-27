@@ -98,6 +98,29 @@ jobs:
       - run: cargo install cargo-hack
       - run: cargo hack build --all --ignore-private --no-dev-deps --version-range ${{ matrix.range }}
 
+  fuzz:
+    strategy:
+      fail-fast: false
+      matrix:
+        fuzzer:
+          - libfuzzer
+          - afl
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - uses: taiki-e/github-actions/install-rust@main
+      - run: cargo install cargo-fuzz --debug
+        if: matrix.fuzzer == 'libfuzzer'
+      - run: cargo install afl --debug
+        if: matrix.fuzzer == 'afl'
+      - run: cargo fuzz build
+        if: matrix.fuzzer == 'libfuzzer'
+      - run: cargo afl build
+        if: matrix.fuzzer == 'afl'
+        working-directory: fuzz/afl
+
   clippy:
     runs-on: ubuntu-18.04
     steps:
@@ -141,6 +164,7 @@ jobs:
       - test
       - test-compat
       - build
+      - fuzz
       - clippy
       - fmt
       - shellcheck

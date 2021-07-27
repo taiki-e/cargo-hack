@@ -20,35 +20,16 @@ pub(crate) fn remove_dev_deps(text: &str) -> String {
             let slice = text[pos + 1..].trim_start();
             if slice.starts_with(DEV_DEPS) {
                 let maybe_close = pos + DEV_DEPS.len();
-                for (i, _) in text[maybe_close..].match_indices('[') {
-                    let back = text[maybe_close..maybe_close + i]
-                        .rfind(LN)
-                        .map_or(0, |n| cmp::min(n + 1, i));
-
-                    // skip '# [...' and 'foo = [...'
-                    if text[maybe_close + back..maybe_close + i].trim().is_empty() {
-                        text.drain(prev..maybe_close + back);
-                        next = Some(prev + i - back);
-                        continue 'outer;
-                    }
-                }
-
-                text.drain(prev..);
-                break;
-            } else if slice.starts_with(TARGET) {
-                let close = text[pos + TARGET.len()..].find(']').unwrap() + pos + TARGET.len();
-                let mut split = text[pos..close].split('.');
-                let _ = split.next(); // `target`
-                let _ = split.next(); // `'cfg(...)'`
-                if let Some(deps) = split.next() {
-                    if deps.trim() == DEV_DEPS {
-                        for (i, _) in text[close..].match_indices('[') {
-                            let back =
-                                text[close..close + i].rfind(LN).map_or(0, |n| cmp::min(n + 1, i));
+                match slice[DEV_DEPS.len()..].trim_start().as_bytes()[0] {
+                    b'.' | b']' => {
+                        for (i, _) in text[maybe_close..].match_indices('[') {
+                            let back = text[maybe_close..maybe_close + i]
+                                .rfind(LN)
+                                .map_or(0, |n| cmp::min(n + 1, i));
 
                             // skip '# [...' and 'foo = [...'
-                            if text[close + back..close + i].trim().is_empty() {
-                                text.drain(prev..close + back);
+                            if text[maybe_close + back..maybe_close + i].trim().is_empty() {
+                                text.drain(prev..maybe_close + back);
                                 next = Some(prev + i - back);
                                 continue 'outer;
                             }
@@ -57,11 +38,39 @@ pub(crate) fn remove_dev_deps(text: &str) -> String {
                         text.drain(prev..);
                         break;
                     }
+                    _ => {}
                 }
+            } else if slice.starts_with(TARGET) {
+                if let Some(close) =
+                    text[pos + TARGET.len()..].find(']').map(|c| c + pos + TARGET.len())
+                {
+                    let mut split = text[pos..close].split('.');
+                    let _ = split.next(); // `target`
+                    let _ = split.next(); // `'cfg(...)'`
+                    if let Some(deps) = split.next() {
+                        if deps.trim() == DEV_DEPS {
+                            for (i, _) in text[close..].match_indices('[') {
+                                let back = text[close..close + i]
+                                    .rfind(LN)
+                                    .map_or(0, |n| cmp::min(n + 1, i));
 
-                prev = pos;
-                next = text[close..].find('[').map(|n| close + n);
-                continue;
+                                // skip '# [...' and 'foo = [...'
+                                if text[close + back..close + i].trim().is_empty() {
+                                    text.drain(prev..close + back);
+                                    next = Some(prev + i - back);
+                                    continue 'outer;
+                                }
+                            }
+
+                            text.drain(prev..);
+                            break;
+                        }
+                    }
+
+                    prev = pos;
+                    next = text[close..].find('[').map(|n| close + n);
+                    continue;
+                }
             }
         }
 
@@ -290,4 +299,23 @@ foo = [
 ]
 "
     );
+
+    // Regression tests for bugs caught by fuzzing.
+    #[test]
+    fn fuzz() {
+        let tests = &["'.'='''Mmm]\n\n[  dev-dependenciesh\t'''", "'.'='''M]\n[target.M'''"];
+        for &test in tests {
+            assert!(toml::from_str::<toml::Value>(test).is_ok());
+            let result = remove_dev_deps(test);
+            toml::from_str::<toml::Value>(&result).unwrap();
+        }
+
+        // TODO
+        let fail_tests = &["'.'='''m\n[ dev-dependencies   ] '''"];
+        for &test in fail_tests {
+            assert!(toml::from_str::<toml::Value>(test).is_ok());
+            let result = remove_dev_deps(test);
+            toml::from_str::<toml::Value>(&result).unwrap_err();
+        }
+    }
 }

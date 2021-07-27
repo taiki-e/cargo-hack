@@ -1,0 +1,23 @@
+[package]
+name = "fuzz-afl"
+version = "0.0.0"
+edition = "2018"
+publish = false
+
+[workspace]
+resolver = "2"
+
+[dependencies]
+afl = "0.10"
+toml = "0.5"
+
+[[bin]]
+name = "remove_dev_deps"
+path = "remove_dev_deps.rs"
+test = false
+doc = false
+
+[profile.release]
+debug = true
+debug-assertions = true
+overflow-checks = true
