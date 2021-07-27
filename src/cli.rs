@@ -1,4 +1,4 @@
-use std::{env, fmt, iter::Peekable, mem};
+use std::{env, ffi::OsString, fmt, iter::Peekable, mem};
 
 use anyhow::{bail, format_err, Error, Result};
 
@@ -75,10 +75,22 @@ pub(crate) struct Args<'a> {
     pub(crate) target: Option<&'a str>,
 }
 
-pub(crate) fn raw() -> Vec<String> {
-    let mut args = env::args();
+pub(crate) fn raw() -> Result<Vec<String>> {
+    let mut args = env::args_os();
     let _ = args.next(); // executable name
-    args.collect()
+    handle_args(args)
+}
+
+fn handle_args(args: impl IntoIterator<Item = impl Into<OsString>>) -> Result<Vec<String>> {
+    // Adapted from https://github.com/rust-lang/rust/blob/3bc9dd0dd293ab82945e35888ed6d7ab802761ef/compiler/rustc_driver/src/lib.rs#L1365-L1375.
+    args.into_iter()
+        .enumerate()
+        .map(|(i, arg)| {
+            arg.into()
+                .into_string()
+                .map_err(|arg| format_err!("argument {} is not valid Unicode: {:?}", i + 1, arg))
+        })
+        .collect()
 }
 
 pub(crate) fn parse_args<'a>(
@@ -868,13 +880,27 @@ fn conflicts(a: &str, b: &str) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use std::{env, path::Path, process::Command};
+    use std::{env, panic, path::Path, process::Command};
 
     use anyhow::Result;
     use tempfile::Builder;
 
     use super::Help;
     use crate::fs;
+
+    // See handle_args function for more.
+    #[cfg(unix)]
+    #[test]
+    fn non_utf8_arg() {
+        use std::{ffi::OsStr, os::unix::prelude::OsStrExt};
+        // `cargo hack -- $'fo\x80o'`
+        super::handle_args(&[
+            "hack".as_ref(),
+            "--".as_ref(),
+            OsStr::from_bytes(&[b'f', b'o', 0x80, b'o']),
+        ])
+        .unwrap_err();
+    }
 
     #[track_caller]
     fn assert_diff(expected_path: impl AsRef<Path>, actual: impl AsRef<str>) {

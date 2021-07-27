@@ -37,7 +37,7 @@ fn main() {
 }
 
 fn try_main() -> Result<()> {
-    let args = &cli::raw();
+    let args = &cli::raw()?;
     let cx = &Context::new(args)?;
 
     exec_on_workspace(cx)
