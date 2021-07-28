@@ -69,7 +69,7 @@ pub(crate) struct Args<'a> {
     pub(crate) no_default_features: bool,
     /// -v, --verbose, -vv
     pub(crate) verbose: bool,
-    // Note: specifying multiple `--target` flags requires unstable `-Zmultitarget`,
+    // Note: specifying multiple `--target` flags requires unstable `-Z multitarget`,
     // so cargo-hack currently only supports a single `--target`.
     /// --target <TRIPLE>...
     pub(crate) target: Option<&'a str>,
@@ -662,21 +662,15 @@ struct Help {
     print_version: bool,
 }
 
+const DEFAULT_TERM_SIZE: usize = 80;
+
 impl Help {
     fn long() -> Self {
-        Self {
-            long: true,
-            term_size: terminal_size::terminal_size().map_or(120, |(width, _)| width.0 as _),
-            print_version: true,
-        }
+        Self { long: true, term_size: DEFAULT_TERM_SIZE, print_version: true }
     }
 
     fn short() -> Self {
-        Self {
-            long: false,
-            term_size: terminal_size::terminal_size().map_or(120, |(width, _)| width.0 as _),
-            print_version: true,
-        }
+        Self { long: false, term_size: DEFAULT_TERM_SIZE, print_version: true }
     }
 }
 
