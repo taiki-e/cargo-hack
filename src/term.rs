@@ -47,10 +47,7 @@ pub(crate) fn print_inner(color: Option<Color>, kind: &str) -> StandardStream {
 macro_rules! error {
     ($($msg:expr),* $(,)?) => {{
         use std::io::Write;
-        let mut stream = crate::term::print_inner(
-            Some(termcolor::Color::Red),
-            "error",
-        );
+        let mut stream = crate::term::print_inner(Some(termcolor::Color::Red), "error");
         let _ = writeln!(stream, $($msg),*);
     }};
 }
@@ -58,10 +55,7 @@ macro_rules! error {
 macro_rules! warn {
     ($($msg:expr),* $(,)?) => {{
         use std::io::Write;
-        let mut stream = crate::term::print_inner(
-            Some(termcolor::Color::Yellow),
-            "warning",
-        );
+        let mut stream = crate::term::print_inner(Some(termcolor::Color::Yellow), "warning");
         let _ = writeln!(stream, $($msg),*);
     }};
 }
@@ -69,10 +63,7 @@ macro_rules! warn {
 macro_rules! info {
     ($($msg:expr),* $(,)?) => {{
         use std::io::Write;
-        let mut stream = crate::term::print_inner(
-            None,
-            "info",
-        );
+        let mut stream = crate::term::print_inner(None, "info");
         let _ = writeln!(stream, $($msg),*);
     }};
 }
