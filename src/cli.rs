@@ -637,9 +637,13 @@ const HELP: &[HelpText<'_>] = &[
             "Note that ranges are always inclusive ranges.",
         ],
     ),
-    ("", "--version-step", "<NUM>", "Specify the version interval of --version-range", &[
-        "This flag can only be used together with --version-range flag.",
-    ]),
+    (
+        "",
+        "--version-step",
+        "<NUM>",
+        "Specify the version interval of --version-range (default to `1`)",
+        &["This flag can only be used together with --version-range flag."],
+    ),
     ("", "--clean-per-run", "", "Remove artifacts for that package before running the command", &[
         "If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts will be removed before each run.",
         "Note that dependencies artifacts will be preserved.",

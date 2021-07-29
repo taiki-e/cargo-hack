@@ -111,7 +111,7 @@ OPTIONS:
             Note that ranges are always inclusive ranges.
 
         --version-step <NUM>
-            Specify the version interval of --version-range.
+            Specify the version interval of --version-range (default to `1`).
 
             This flag can only be used together with --version-range flag.
 
