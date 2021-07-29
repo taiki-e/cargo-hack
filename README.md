@@ -41,11 +41,13 @@ brew install taiki-e/tap/cargo-hack
 
 ### Via AUR (ArchLinux)
 
-You can install [cargo-hack from AUR](https://aur.archlinux.org/packages/cargo-hack/):
+You can install [cargo-hack from AUR](https://aur.archlinux.org/packages/cargo-hack):
 
 ```sh
 paru -S cargo-hack
 ```
+
+NOTE: AUR package is maintained by community, not maintainer of cargo-hack.
 
 ## Usage
 
@@ -276,7 +278,7 @@ allow publishing a package with cyclic dev-dependencies. ([cargo#4242])
 cargo hack publish --no-dev-deps --dry-run --allow-dirty
 ```
 
-Note: Currently, using `--no-dev-deps` flag removes dev-dependencies from
+NOTE: Currently, using `--no-dev-deps` flag removes dev-dependencies from
 real manifest while cargo-hack is running and restores it when finished.
 See [cargo#4242] for why this is necessary.
 Also, this behavior may change in the future on some subcommands. See also
