@@ -1,7 +1,6 @@
 [package]
 name = "optional_deps"
 version = "0.1.0"
-edition = "2018"
 publish = false
 
 [workspace]
