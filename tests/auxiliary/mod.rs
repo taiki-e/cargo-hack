@@ -24,7 +24,11 @@ pub fn cargo_bin_exe() -> Command {
 }
 
 fn test_toolchain() -> String {
-    if let Some(toolchain) = test_version() { format!(" +1.{}", toolchain) } else { String::new() }
+    if let Some(toolchain) = test_version() {
+        format!(" +1.{}", toolchain)
+    } else {
+        String::new()
+    }
 }
 
 fn test_version() -> Option<u32> {
