@@ -1,8 +1,8 @@
-use std::{env, ffi::OsString, str};
+use std::{env, ffi::OsString};
 
-use anyhow::{bail, format_err, Context as _, Result};
+use anyhow::{bail, format_err, Result};
 
-use crate::{version::parse_version, ProcessBuilder};
+use crate::{version::Version, ProcessBuilder};
 
 pub(crate) struct Cargo {
     path: OsString,
@@ -21,18 +21,15 @@ impl Cargo {
         Self { path, version }
     }
 
-    pub(crate) fn process(&self) -> ProcessBuilder<'_> {
+    pub(crate) fn process<'a>(&self) -> ProcessBuilder<'a> {
         process!(&self.path)
     }
 }
 
-// Based on https://github.com/cuviper/autocfg/blob/1.0.1/src/version.rs#L25-L59
+// The version detection logic is based on https://github.com/cuviper/autocfg/blob/1.0.1/src/version.rs#L25-L59
 pub(crate) fn minor_version(mut cmd: ProcessBuilder<'_>) -> Result<u32> {
     cmd.args(&["--version", "--verbose"]);
-    let output = cmd.exec_with_output()?;
-
-    let output = str::from_utf8(&output.stdout)
-        .with_context(|| format!("failed to parse output of {}", cmd))?;
+    let output = cmd.read()?;
 
     // Find the release line in the verbose version output.
     let release = output
@@ -48,7 +45,7 @@ pub(crate) fn minor_version(mut cmd: ProcessBuilder<'_>) -> Result<u32> {
     let version = version_channel.next().unwrap();
     let _channel = version_channel.next();
 
-    let version = parse_version(version)?;
+    let version: Version = version.parse()?;
     if version.major != 1 || version.patch.is_none() {
         bail!("unexpected output from {}: {}", cmd, output);
     }

@@ -1,11 +1,8 @@
 use std::str;
 
-use anyhow::{bail, format_err, Context as _, Result};
+use anyhow::{bail, format_err, Result};
 
-use crate::{
-    cargo,
-    version::{parse_version, Version},
-};
+use crate::{cargo, version::Version};
 
 pub(crate) struct Rustup {
     pub(crate) version: u32,
@@ -38,7 +35,7 @@ pub(crate) fn version_range(range: &str, step: Option<&str>) -> Result<Vec<Strin
     };
 
     let mut split = range.splitn(2, "..");
-    let start = split.next().map(parse_version).unwrap()?;
+    let start = split.next().map(str::parse).unwrap()?;
     check(&start)?;
 
     let end = match split.next() {
@@ -47,7 +44,7 @@ pub(crate) fn version_range(range: &str, step: Option<&str>) -> Result<Vec<Strin
             cargo::minor_version(process!("cargo", "+stable"))?
         }
         Some(end) => {
-            let end = parse_version(end)?;
+            let end = end.parse()?;
             check(&end)?;
             end.minor
         }
@@ -76,7 +73,7 @@ pub(crate) fn install_toolchain(
     }
 
     if target.is_none()
-        && process!("cargo", format!("+{}", toolchain), "--version").exec_with_output().is_ok()
+        && process!("cargo", format!("+{}", toolchain), "--version").run_with_output().is_ok()
     {
         // Do not run `rustup toolchain install` if the toolchain already has installed.
         return Ok(());
@@ -92,19 +89,16 @@ pub(crate) fn install_toolchain(
     if print_output {
         // The toolchain installation can take some time, so we'll show users
         // the progress.
-        cmd.exec()
+        cmd.run()
     } else {
         // However, in certain situations, it may be preferable not to display it.
-        cmd.exec_with_output().map(drop)
+        cmd.run_with_output().map(drop)
     }
 }
 
 fn minor_version() -> Result<u32> {
     let mut cmd = process!("rustup", "--version");
-    let output = cmd.exec_with_output()?;
-
-    let output = str::from_utf8(&output.stdout)
-        .with_context(|| format!("failed to parse output of {}", cmd))?;
+    let output = cmd.read()?;
 
     let version = (|| {
         let mut output = output.split(' ');
@@ -114,7 +108,7 @@ fn minor_version() -> Result<u32> {
         output.next()
     })()
     .ok_or_else(|| format_err!("unexpected output from {}: {}", cmd, output))?;
-    let version = parse_version(version)?;
+    let version: Version = version.parse()?;
     if version.major != 1 || version.patch.is_none() {
         bail!("unexpected output from {}: {}", cmd, output);
     }

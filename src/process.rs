@@ -12,8 +12,6 @@ use anyhow::{Context as _, Result};
 
 use crate::{Context, PackageId};
 
-// Based on https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/util/process_builder.rs
-
 macro_rules! process {
     ($program:expr $(, $arg:expr)* $(,)?) => {{
         let mut _cmd = crate::process::ProcessBuilder::new($program);
@@ -24,11 +22,13 @@ macro_rules! process {
     }};
 }
 
-/// A builder object for an external process, similar to `std::process::Command`.
+// A builder for an external process, inspired by https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/util/process_builder.rs
+//
+// The fields will be expanded in the following order:
+//   <program> <leading_args> <propagated_leading_args> <arg> [--features <features>] [ -- <propagated_trailing_args> ]
 #[derive(Clone)]
 #[must_use]
 pub(crate) struct ProcessBuilder<'a> {
-    // $program $leading_args $propagated_leading_args $args $propagated_trailing_args
     /// The program to execute.
     program: Rc<OsStr>,
     /// A list of arguments to pass to the program (until '--').
@@ -53,9 +53,9 @@ pub(crate) struct ProcessBuilder<'a> {
 
 impl<'a> ProcessBuilder<'a> {
     /// Creates a new `ProcessBuilder`.
-    pub(crate) fn new(program: impl AsRef<OsStr>) -> Self {
+    pub(crate) fn new(program: impl Into<OsString>) -> Self {
         Self {
-            program: program.as_ref().into(),
+            program: program.into().into(),
             propagated_leading_args: &[],
             trailing_args: &[],
             leading_args: Vec::new(),
@@ -66,7 +66,28 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    pub(crate) fn with_args(&mut self, cx: &'a Context<'_>) -> &mut Self {
+    /// Adds an argument to pass to the program.
+    pub(crate) fn arg(&mut self, arg: impl Into<OsString>) -> &mut Self {
+        self.args.push(arg.into());
+        self
+    }
+
+    /// Adds multiple arguments to pass to the program.
+    pub(crate) fn args(
+        &mut self,
+        args: impl IntoIterator<Item = impl Into<OsString>>,
+    ) -> &mut Self {
+        self.args.extend(args.into_iter().map(Into::into));
+        self
+    }
+
+    /// Adds an argument to the leading arguments list.
+    pub(crate) fn leading_arg(&mut self, arg: impl Into<String>) -> &mut Self {
+        self.leading_args.push(arg.into());
+        self
+    }
+
+    pub(crate) fn apply_context(&mut self, cx: &'a Context<'_>) -> &mut Self {
         self.propagated_leading_args = &cx.leading_args;
         self.trailing_args = cx.trailing_args;
         self.display_manifest_path = cx.verbose;
@@ -96,33 +117,6 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    /// Adds `arg` to the leading args list.
-    pub(crate) fn leading_arg(&mut self, arg: impl Into<String>) -> &mut Self {
-        self.leading_args.push(arg.into());
-        self
-    }
-
-    /// Adds `arg` to the args list.
-    pub(crate) fn arg(&mut self, arg: impl AsRef<OsStr>) -> &mut Self {
-        self.args.push(arg.as_ref().to_os_string());
-        self
-    }
-
-    /// Adds multiple `args` to the args list.
-    pub(crate) fn args(&mut self, args: impl IntoIterator<Item = impl AsRef<OsStr>>) -> &mut Self {
-        self.args.extend(args.into_iter().map(|t| t.as_ref().to_os_string()));
-        self
-    }
-
-    // /// Replaces the args list with the given `args`.
-    // pub(crate) fn args_replace(
-    //     &mut self,
-    //     args: impl IntoIterator<Item = impl AsRef<OsStr>>,
-    // ) -> &mut Self {
-    //     self.args = args.into_iter().map(|t| t.as_ref().to_os_string()).collect();
-    //     self
-    // }
-
     /// Enables full program path display.
     pub(crate) fn display_program_path(&mut self) -> &mut Self {
         self.display_program_path = true;
@@ -135,7 +129,7 @@ impl<'a> ProcessBuilder<'a> {
         self
     }
 
-    /// Enables all display* flags.
+    /// Enables all display-related flags.
     fn display_all(&mut self) {
         self.display_program_path();
         self.display_manifest_path();
@@ -147,33 +141,31 @@ impl<'a> ProcessBuilder<'a> {
         &self.features[..self.features.len().saturating_sub(1)]
     }
 
-    /// Executes the process, waiting for completion, and mapping non-success exit codes to an error.
-    pub(crate) fn exec(&mut self) -> Result<()> {
-        let mut cmd = self.build_command();
-
-        let exit = cmd.status().with_context(|| {
+    /// Executes a process, waiting for completion, and mapping non-zero exit
+    /// status to an error.
+    pub(crate) fn run(&mut self) -> Result<()> {
+        let status = self.build().status().with_context(|| {
             self.display_all();
             ProcessError::new(&format!("could not execute process {}", self), None, None)
         })?;
 
-        if exit.success() {
+        if status.success() {
             Ok(())
         } else {
             self.display_all();
             Err(ProcessError::new(
                 &format!("process didn't exit successfully: {}", self),
-                Some(exit),
+                Some(status),
                 None,
             )
             .into())
         }
     }
 
-    /// Executes the process, returning the stdio output, or an error if non-zero exit status.
-    pub(crate) fn exec_with_output(&mut self) -> Result<Output> {
-        let mut cmd = self.build_command();
-
-        let output = cmd.output().with_context(|| {
+    /// Executes a process, captures its stdio output, returning the captured
+    /// output, or an error if non-zero exit status.
+    pub(crate) fn run_with_output(&mut self) -> Result<Output> {
+        let output = self.build().output().with_context(|| {
             self.display_all();
             ProcessError::new(&format!("could not execute process {}", self), None, None)
         })?;
@@ -191,8 +183,14 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    /// Converts `ProcessBuilder` into a `std::process::Command`.
-    fn build_command(&self) -> Command {
+    /// Executes a process, captures its stdio output, returning the captured
+    /// standard output as a `String`.
+    pub(crate) fn read(&mut self) -> Result<String> {
+        String::from_utf8(self.run_with_output()?.stdout)
+            .with_context(|| format!("failed to parse output of {}", self))
+    }
+
+    fn build(&self) -> Command {
         let mut cmd = Command::new(&*self.program);
 
         cmd.args(&*self.leading_args);
@@ -265,13 +263,13 @@ impl fmt::Display for ProcessBuilder<'_> {
 
 // Based on https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/util/errors.rs
 #[derive(Debug)]
-pub(crate) struct ProcessError {
+struct ProcessError {
     /// A detailed description to show to the user why the process failed.
     desc: String,
     /// The exit status of the process.
     ///
     /// This can be `None` if the process failed to launch (like process not found).
-    exit: Option<ExitStatus>,
+    status: Option<ExitStatus>,
     /// The output from the process.
     ///
     /// This can be `None` if the process failed to launch, or the output was not captured.
@@ -307,7 +305,7 @@ impl ProcessError {
             }
         }
 
-        Self { desc, exit: status, output: output.cloned() }
+        Self { desc, status, output: output.cloned() }
     }
 }
 

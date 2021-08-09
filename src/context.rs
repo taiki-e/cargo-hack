@@ -12,7 +12,7 @@ use crate::{
     features::Features,
     manifest::Manifest,
     metadata::{Metadata, Package, PackageId},
-    Cargo, ProcessBuilder, Rustup,
+    Cargo, ProcessBuilder,
 };
 
 pub(crate) struct Context<'a> {
@@ -26,11 +26,7 @@ pub(crate) struct Context<'a> {
 
 impl<'a> Context<'a> {
     pub(crate) fn new(args: &'a [String]) -> Result<Self> {
-        let cargo = Cargo::new();
-        let rustup = Rustup::new();
-        let current_dir = env::current_dir()?;
-
-        let args = cli::parse_args(args, &cargo, &rustup)?;
+        let (args, cargo) = cli::parse_args(args)?;
         assert!(
             args.subcommand.is_some() || args.remove_dev_deps,
             "no subcommand or valid flag specified"
@@ -44,8 +40,14 @@ impl<'a> Context<'a> {
             pkg_features.insert(id.clone(), features);
         }
 
-        let mut this =
-            Self { args, metadata, manifests: HashMap::new(), pkg_features, cargo, current_dir };
+        let mut this = Self {
+            args,
+            metadata,
+            manifests: HashMap::new(),
+            pkg_features,
+            cargo,
+            current_dir: env::current_dir()?,
+        };
 
         // Only a few options require information from cargo manifest.
         // If manifest information is not required, do not read and parse them.

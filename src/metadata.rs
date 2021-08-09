@@ -1,3 +1,9 @@
+// Refs:
+// - https://doc.rust-lang.org/nightly/cargo/commands/cargo-metadata.html#output-format
+// - https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/ops/cargo_output_metadata.rs#L56-L63
+// - https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/core/package.rs#L57-L80
+// - https://github.com/oli-obk/cargo_metadata
+
 use std::{
     collections::{BTreeMap, HashMap},
     path::PathBuf,
@@ -12,17 +18,11 @@ use crate::{cli::Args, Cargo};
 type Object = Map<String, Value>;
 type ParseResult<T> = Result<T, &'static str>;
 
-// Refs:
-// * https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/ops/cargo_output_metadata.rs#L56-L63
-// * https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/core/package.rs#L57-L80
-// * https://github.com/oli-obk/cargo_metadata
-
-/// An "opaque" identifier for a package.
-/// It is possible to inspect the `repr` field, if the need arises, but its
-/// precise format is an implementation detail and is subject to change.
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+/// An opaque unique identifier for referring to the package.
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct PackageId {
     /// The underlying string representation of id.
+    /// The precise format is an implementation detail and is subject to change.
     repr: Rc<str>,
 }
 
@@ -33,13 +33,13 @@ impl From<String> for PackageId {
 }
 
 pub(crate) struct Metadata {
-    /// A list of all crates referenced by this crate (and the crate itself)
+    /// List of all packages in the workspace and all feature-enabled dependencies.
     pub(crate) packages: HashMap<PackageId, Package>,
-    /// A list of all workspace members
+    /// List of members of the workspace.
     pub(crate) workspace_members: Vec<PackageId>,
-    /// Dependencies graph
+    /// The resolved dependency graph for the entire workspace.
     pub(crate) resolve: Resolve,
-    /// Workspace root
+    /// The absolute path to the root of the workspace.
     pub(crate) workspace_root: PathBuf,
 }
 
@@ -51,7 +51,7 @@ impl Metadata {
             cmd.arg("--manifest-path");
             cmd.arg(manifest_path);
         }
-        let output = cmd.exec_with_output()?;
+        let output = cmd.run_with_output()?;
 
         let map =
             serde_json::from_slice(&output.stdout).context("failed to parse metadata as json")?;
@@ -78,12 +78,12 @@ impl Metadata {
     }
 }
 
-/// A dependency graph
+/// The resolved dependency graph for the entire workspace.
 pub(crate) struct Resolve {
-    /// Nodes in a dependencies graph
+    /// Nodes in a dependency graph.
     pub(crate) nodes: HashMap<PackageId, Node>,
-    // if `None`, cargo-hack called in the root of a virtual workspace
     /// The crate for which the metadata was read.
+    /// This is `None` if the metadata was read in a virtual workspace.
     pub(crate) root: Option<PackageId>,
 }
 
@@ -100,9 +100,9 @@ impl Resolve {
     }
 }
 
-/// A node in a dependencies graph
+/// A node in a dependency graph.
 pub(crate) struct Node {
-    /// Dependencies in a structured format.
+    /// The dependencies of this package.
     ///
     /// This is always empty if running with a version of Cargo older than 1.30.
     pub(crate) deps: Vec<NodeDep>,
@@ -127,9 +127,9 @@ impl Node {
     }
 }
 
-/// A dependency in a node
+/// A dependency in a node.
 pub(crate) struct NodeDep {
-    /// Package ID (opaque unique identifier)
+    /// The Package ID of the dependency.
     pub(crate) pkg: PackageId,
     /// The kinds of dependencies.
     ///
@@ -161,13 +161,8 @@ pub(crate) struct DepKindInfo {
     /// The kind of dependency.
     pub(crate) kind: Option<String>,
     /// The target platform for the dependency.
-    ///
     /// This is `None` if it is not a target dependency.
-    ///
-    /// By default all platform dependencies are included in the resolve
-    /// graph. Use Cargo's `--filter-platform` flag if you only want to
-    /// include dependencies for a specific platform.
-    pub(crate) target: Option<Platform>,
+    pub(crate) target: Option<String>,
 }
 
 impl DepKindInfo {
@@ -181,18 +176,16 @@ impl DepKindInfo {
     }
 }
 
-type Platform = String;
-
 pub(crate) struct Package {
-    /// Name as given in the `Cargo.toml`
+    /// The name of the package.
     pub(crate) name: String,
-    // /// Version given in the `Cargo.toml`
+    // /// The version of the package.
     // pub(crate) version: String,
-    /// List of dependencies of this particular package
+    /// List of dependencies of this particular package.
     pub(crate) dependencies: Vec<Dependency>,
     /// Features provided by the crate, mapped to the features required by that feature.
     pub(crate) features: BTreeMap<String, Vec<String>>,
-    /// Path containing the `Cargo.toml`
+    /// Absolute path to this package's manifest.
     pub(crate) manifest_path: PathBuf,
     /// List of registries to which this package may be published.
     ///
@@ -226,7 +219,7 @@ impl Package {
             manifest_path: map.remove_string("manifest_path")?,
             // This field was added in Rust 1.39.
             publish: if cargo.version >= 39 {
-                // Publishing is unrestricted if `None`, and forbidden if the `Vec` is empty.
+                // Publishing is unrestricted if null, and forbidden if an empty array.
                 map.remove_nullable("publish", into_array)?.map_or(true, |a| !a.is_empty())
             } else {
                 true
@@ -235,21 +228,23 @@ impl Package {
     }
 }
 
-/// A dependency of the main crate
+/// A dependency of the main crate.
 pub(crate) struct Dependency {
-    /// Name as given in the `Cargo.toml`
+    /// The name of the dependency.
     pub(crate) name: String,
-    // /// The required version
+    // /// The version requirement for the dependency.
     // pub(crate) req: String,
-    /// Whether this dependency is required or optional
+    /// Whether or not this is an optional dependency.
     pub(crate) optional: bool,
     // TODO: support this
-    // /// The target this dependency is specific to.
+    // /// The target platform for the dependency.
+    // /// This is `None` if it is not a target dependency.
     // pub(crate) target: Option<String>,
     /// If the dependency is renamed, this is the new name for the dependency
-    /// as a string.  None if it is not renamed.
+    /// as a string.
+    /// This is `None` if it is not renamed.
     ///
-    /// This field was added in Rust 1.26.
+    /// This is always `None` if running with a version of Cargo older than 1.26.
     pub(crate) rename: Option<String>,
 }
 
@@ -261,6 +256,7 @@ impl Dependency {
             name: map.remove_string("name")?,
             // req: map.remove_string("req")?,
             optional: map.get("optional").and_then(Value::as_bool).ok_or("optional")?,
+            // This field was added in Rust 1.26.
             rename: map.remove_nullable("rename", into_string)?,
         })
     }
@@ -307,31 +303,31 @@ fn into_object(value: Value) -> Option<Object> {
 }
 
 trait ObjectExt {
-    fn remove_string<'a, S: From<String>>(&mut self, key: &'a str) -> Result<S, &'a str>;
-    fn remove_array<'a>(&mut self, key: &'a str) -> Result<Vec<Value>, &'a str>;
-    fn remove_object<'a>(&mut self, key: &'a str) -> Result<Object, &'a str>;
-    fn remove_nullable<'a, T>(
+    fn remove_string<S: From<String>>(&mut self, key: &'static str) -> ParseResult<S>;
+    fn remove_array(&mut self, key: &'static str) -> ParseResult<Vec<Value>>;
+    fn remove_object(&mut self, key: &'static str) -> ParseResult<Object>;
+    fn remove_nullable<T>(
         &mut self,
-        key: &'a str,
+        key: &'static str,
         f: impl FnOnce(Value) -> Option<T>,
-    ) -> Result<Option<T>, &'a str>;
+    ) -> ParseResult<Option<T>>;
 }
 
 impl ObjectExt for Object {
-    fn remove_string<'a, S: From<String>>(&mut self, key: &'a str) -> Result<S, &'a str> {
+    fn remove_string<S: From<String>>(&mut self, key: &'static str) -> ParseResult<S> {
         self.remove(key).and_then(into_string).ok_or(key)
     }
-    fn remove_array<'a>(&mut self, key: &'a str) -> Result<Vec<Value>, &'a str> {
+    fn remove_array(&mut self, key: &'static str) -> ParseResult<Vec<Value>> {
         self.remove(key).and_then(into_array).ok_or(key)
     }
-    fn remove_object<'a>(&mut self, key: &'a str) -> Result<Object, &'a str> {
+    fn remove_object(&mut self, key: &'static str) -> ParseResult<Object> {
         self.remove(key).and_then(into_object).ok_or(key)
     }
-    fn remove_nullable<'a, T>(
+    fn remove_nullable<T>(
         &mut self,
-        key: &'a str,
+        key: &'static str,
         f: impl FnOnce(Value) -> Option<T>,
-    ) -> Result<Option<T>, &'a str> {
+    ) -> ParseResult<Option<T>> {
         self.remove(key).and_then(|v| allow_null(v, f)).ok_or(key)
     }
 }

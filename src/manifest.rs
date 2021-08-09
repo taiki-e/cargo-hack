@@ -7,10 +7,8 @@ use crate::fs;
 
 type ParseResult<T> = Result<T, &'static str>;
 
-// Refs:
-// * https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/util/toml/mod.rs
-// * https://gitlab.com/crates.rs/cargo_toml
-
+// Cargo manifest
+// https://doc.rust-lang.org/nightly/cargo/reference/manifest.html
 pub(crate) struct Manifest {
     pub(crate) raw: String,
     // `metadata.package.publish` requires Rust 1.39
@@ -40,10 +38,10 @@ struct Package {
 impl Package {
     fn from_table(table: &Table) -> ParseResult<Self> {
         let package = table.get("package").and_then(Value::as_table).ok_or("package")?;
-        let _name = package.get("name").and_then(Value::as_str).ok_or("name")?;
 
         Ok(Self {
-            // Publishing is unrestricted if `true`, and forbidden if `false` or the `Array` is empty.
+            // Publishing is unrestricted if `true` or the field is not
+            // specified, and forbidden if `false` or the array is empty.
             publish: match package.get("publish") {
                 None => true,
                 Some(Value::Boolean(b)) => *b,

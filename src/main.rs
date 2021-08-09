@@ -79,7 +79,7 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
                         .unwrap_or(&package.manifest_path),
                 );
             }
-            line.exec_with_output()?;
+            line.run_with_output()?;
         }
 
         range.iter().enumerate().try_for_each(|(i, toolchain)| {
@@ -93,14 +93,14 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
 
             let mut line = line.clone();
             line.leading_arg(toolchain);
-            line.with_args(cx);
+            line.apply_context(cx);
             packages.iter().try_for_each(|(id, kind)| {
                 exec_on_package(cx, id, kind, &line, &restore, &mut progress)
             })
         })
     } else {
         let mut line = cx.cargo();
-        line.with_args(cx);
+        line.apply_context(cx);
         packages.iter().try_for_each(|(id, kind)| {
             exec_on_package(cx, id, kind, &line, &restore, &mut progress)
         })
@@ -376,7 +376,7 @@ fn exec_cargo(
     write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
     info!("{}", msg);
 
-    line.exec()
+    line.run()
 }
 
 fn cargo_clean(cx: &Context<'_>, id: Option<&PackageId>) -> Result<()> {
@@ -392,5 +392,5 @@ fn cargo_clean(cx: &Context<'_>, id: Option<&PackageId>) -> Result<()> {
         info!("running {}", line);
     }
 
-    line.exec()
+    line.run()
 }

@@ -93,11 +93,7 @@ fn handle_args(args: impl IntoIterator<Item = impl Into<OsString>>) -> Result<Ve
         .collect()
 }
 
-pub(crate) fn parse_args<'a>(
-    raw: &'a [String],
-    cargo: &Cargo,
-    rustup: &Rustup,
-) -> Result<Args<'a>> {
+pub(crate) fn parse_args<'a>(raw: &'a [String]) -> Result<(Args<'a>, Cargo)> {
     let mut iter = raw.iter();
     let args = &mut iter.by_ref().map(String::as_str).peekable();
     match args.next() {
@@ -440,13 +436,6 @@ pub(crate) fn parse_args<'a>(
         }
     }
 
-    if cargo.version < 41 && include_deps_features {
-        bail!("--include-deps-features requires Cargo 1.41 or later");
-    }
-    if rustup.version < 23 && version_range.is_some() {
-        bail!("--version-range requires rustup 1.23 or later");
-    }
-
     if subcommand.is_none() {
         if leading.contains(&"-h") {
             println!("{}", Help::short());
@@ -459,14 +448,24 @@ pub(crate) fn parse_args<'a>(
             print_version();
             std::process::exit(0);
         } else if leading.contains(&"--list") {
-            let mut line = cargo.process();
+            let mut line = Cargo::new().process();
             line.arg("--list");
-            line.exec()?;
+            line.run()?;
             std::process::exit(0);
         } else if !remove_dev_deps {
             // TODO: improve this
             mini_usage("no subcommand or valid flag specified")?;
         }
+    }
+
+    let cargo = Cargo::new();
+    let rustup = Rustup::new();
+
+    if cargo.version < 41 && include_deps_features {
+        bail!("--include-deps-features requires Cargo 1.41 or later");
+    }
+    if rustup.version < 23 && version_range.is_some() {
+        bail!("--version-range requires rustup 1.23 or later");
     }
 
     if no_dev_deps {
@@ -479,42 +478,45 @@ pub(crate) fn parse_args<'a>(
     exclude_all_features |= !include_features.is_empty() || !exclude_features.is_empty();
     exclude_features.extend_from_slice(&features);
 
-    Ok(Args {
-        leading_args: leading,
-        trailing_args: iter.as_slice(),
+    Ok((
+        Args {
+            leading_args: leading,
+            trailing_args: iter.as_slice(),
 
-        subcommand,
+            subcommand,
 
-        manifest_path,
-        package,
-        exclude,
-        workspace: workspace.is_some(),
-        each_feature,
-        feature_powerset,
-        no_dev_deps,
-        remove_dev_deps,
-        ignore_private,
-        ignore_unknown_features,
-        optional_deps,
-        clean_per_run,
-        clean_per_version,
-        include_features: include_features.into_iter().map(Into::into).collect(),
-        include_deps_features,
-        version_range,
+            manifest_path,
+            package,
+            exclude,
+            workspace: workspace.is_some(),
+            each_feature,
+            feature_powerset,
+            no_dev_deps,
+            remove_dev_deps,
+            ignore_private,
+            ignore_unknown_features,
+            optional_deps,
+            clean_per_run,
+            clean_per_version,
+            include_features: include_features.into_iter().map(Into::into).collect(),
+            include_deps_features,
+            version_range,
 
-        depth,
-        group_features,
+            depth,
+            group_features,
 
-        exclude_features,
-        exclude_no_default_features,
-        exclude_all_features,
+            exclude_features,
+            exclude_no_default_features,
+            exclude_all_features,
 
-        features,
+            features,
 
-        no_default_features,
-        verbose,
-        target,
-    })
+            no_default_features,
+            verbose,
+            target,
+        },
+        cargo,
+    ))
 }
 
 fn parse_opt<'a>(
