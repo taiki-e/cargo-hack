@@ -956,7 +956,6 @@ mod tests {
                 out.push_str("```console\n");
                 out.push_str("$ cargo hack --help\n");
                 out.push_str(&new);
-                out.push('\n');
                 for line in &mut lines {
                     if line == "<!-- readme-long-help:end -->" {
                         out.push_str("```\n");

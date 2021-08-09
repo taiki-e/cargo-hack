@@ -228,7 +228,6 @@ Some common cargo commands are (see all commands with --list):
     check       Analyze the current package and report errors, but don't build object files
     run         Run a binary or example of the local package
     test        Run the tests
-
 ```
 <!-- readme-long-help:end -->
 
