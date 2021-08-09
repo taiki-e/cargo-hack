@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- [Fix a bug in auto-detection of whether color support is available on the terminal.](https://github.com/taiki-e/cargo-hack/pull/125)
+
 ## [0.5.6] - 2021-06-07
 
 - You can now install cargo-hack using Homebrew tap on macOS and Linux: `brew install taiki-e/tap/cargo-hack`

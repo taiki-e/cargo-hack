@@ -1,28 +1,56 @@
 use std::{
     env,
     io::Write,
+    str::FromStr,
     sync::atomic::{AtomicU8, Ordering::Relaxed},
 };
 
-use anyhow::{bail, Result};
+use anyhow::{format_err, Result};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 static COLORING: AtomicU8 = AtomicU8::new(AUTO);
 
-const AUTO: u8 = 0;
-const ALWAYS: u8 = 1;
-const NEVER: u8 = 2;
+const AUTO: u8 = Coloring::Auto as _;
+const ALWAYS: u8 = Coloring::Always as _;
+const NEVER: u8 = Coloring::Never as _;
+
+#[derive(PartialEq, Eq)]
+#[repr(u8)]
+enum Coloring {
+    Auto = 0,
+    Always,
+    Never,
+}
+
+impl FromStr for Coloring {
+    type Err = String;
+
+    fn from_str(color: &str) -> Result<Self, Self::Err> {
+        match color {
+            "auto" => Ok(Coloring::Auto),
+            "always" => Ok(Coloring::Always),
+            "never" => Ok(Coloring::Never),
+            other => Err(format!("must be auto, always, or never, but found `{}`", other)),
+        }
+    }
+}
 
 pub(crate) fn set_coloring(color: Option<&str>) -> Result<()> {
-    // https://doc.rust-lang.org/cargo/reference/config.html#termcolor
-    let cargo_term_color = if color.is_none() { env::var("CARGO_TERM_COLOR").ok() } else { None };
-    let coloring = match color.or_else(|| cargo_term_color.as_ref().map(|s| &**s)) {
-        Some("auto") | None => AUTO,
-        Some("always") => ALWAYS,
-        Some("never") => NEVER,
-        Some(other) => bail!("must be auto, always, or never, but found `{}`", other),
+    let mut coloring = match color {
+        Some(color) => color.parse().map_err(|e| format_err!("argument for --color {}", e))?,
+        // https://doc.rust-lang.org/nightly/cargo/reference/config.html#termcolor
+        None => match env::var_os("CARGO_TERM_COLOR") {
+            Some(color) => color
+                .to_string_lossy()
+                .parse()
+                .map_err(|e| format_err!("CARGO_TERM_COLOR {}", e))?,
+            None => Coloring::Auto,
+        },
     };
-    COLORING.store(coloring, Relaxed);
+    if coloring == Coloring::Auto && !atty::is(atty::Stream::Stderr) {
+        coloring = Coloring::Never;
+    }
+    COLORING.store(coloring as _, Relaxed);
     Ok(())
 }
 
