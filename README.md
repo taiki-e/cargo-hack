@@ -5,7 +5,7 @@
 [![rustc](https://img.shields.io/badge/rustc-1.36+-blue?style=flat-square&logo=rust)](https://www.rust-lang.org)
 [![build status](https://img.shields.io/github/workflow/status/taiki-e/cargo-hack/CI/main?style=flat-square&logo=github)](https://github.com/taiki-e/cargo-hack/actions)
 
-A cargo subcommand to provide various options useful for testing and continuous
+Cargo subcommand to provide various options useful for testing and continuous
 integration.
 
 - [Installation](#installation)
@@ -58,7 +58,7 @@ NOTE: AUR package is maintained by community, not maintainer of cargo-hack.
 ```console
 $ cargo hack --help
 cargo-hack
-A cargo subcommand to provide various options useful for testing and continuous integration.
+Cargo subcommand to provide various options useful for testing and continuous integration.
 
 USAGE:
     cargo hack [OPTIONS] [SUBCOMMAND]

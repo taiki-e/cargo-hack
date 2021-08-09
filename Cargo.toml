@@ -9,7 +9,7 @@ keywords = ["cargo", "subcommand", "testing"]
 categories = ["command-line-utilities", "development-tools::cargo-plugins", "development-tools::testing"]
 exclude = ["/.*", "/tools"]
 description = """
-A cargo subcommand to provide various options useful for testing and continuous integration.
+Cargo subcommand to provide various options useful for testing and continuous integration.
 """
 
 [package.metadata.docs.rs]
