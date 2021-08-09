@@ -89,23 +89,22 @@ OPTIONS:
         --each-feature
             Perform for each feature of the package.
 
-            This also includes runs with just --no-default-features flag,
-            --all-features flag, and default features.
+            This also includes runs with just --no-default-features flag, --all-features flag, and
+            default features.
 
         --feature-powerset
             Perform for the feature powerset of the package.
 
-            This also includes runs with just --no-default-features flag,
-            --all-features flag, and default features.
+            This also includes runs with just --no-default-features flag, --all-features flag, and
+            default features.
 
         --optional-deps [DEPS]...
             Use optional dependencies as features.
 
-            If DEPS are not specified, all optional dependencies are considered
-            as features.
+            If DEPS are not specified, all optional dependencies are considered as features.
 
-            This flag can only be used together with either --each-feature flag
-            or --feature-powerset flag.
+            This flag can only be used together with either --each-feature flag or
+            --feature-powerset flag.
 
         --skip <FEATURES>...
             Alias for --exclude-features.
@@ -113,79 +112,73 @@ OPTIONS:
         --exclude-features <FEATURES>...
             Space-separated list of features to exclude.
 
-            To exclude run of default feature, using value `--exclude-features
-            default`.
+            To exclude run of default feature, using value `--exclude-features default`.
 
-            To exclude run of just --no-default-features flag, using
-            --exclude-no-default-features flag.
+            To exclude run of just --no-default-features flag, using --exclude-no-default-features
+            flag.
 
-            To exclude run of just --all-features flag, using
-            --exclude-all-features flag.
+            To exclude run of just --all-features flag, using --exclude-all-features flag.
 
-            This flag can only be used together with either --each-feature flag
-            or --feature-powerset flag.
+            This flag can only be used together with either --each-feature flag or
+            --feature-powerset flag.
 
         --exclude-no-default-features
             Exclude run of just --no-default-features flag.
 
-            This flag can only be used together with either --each-feature flag
-            or --feature-powerset flag.
+            This flag can only be used together with either --each-feature flag or
+            --feature-powerset flag.
 
         --exclude-all-features
             Exclude run of just --all-features flag.
 
-            This flag can only be used together with either --each-feature flag
-            or --feature-powerset flag.
+            This flag can only be used together with either --each-feature flag or
+            --feature-powerset flag.
 
         --depth <NUM>
-            Specify a max number of simultaneous feature flags of
-            --feature-powerset.
+            Specify a max number of simultaneous feature flags of --feature-powerset.
 
-            If NUM is set to 1, --feature-powerset is equivalent to
-            --each-feature.
+            If NUM is set to 1, --feature-powerset is equivalent to --each-feature.
 
             This flag can only be used together with --feature-powerset flag.
 
         --group-features <FEATURES>...
             Space-separated list of features to group.
 
-            To specify multiple groups, use this option multiple times:
-            `--group-features a,b --group-features c,d`
+            To specify multiple groups, use this option multiple times: `--group-features a,b
+            --group-features c,d`
 
             This flag can only be used together with --feature-powerset flag.
 
         --include-features <FEATURES>...
-            Include only the specified features in the feature combinations
-            instead of package features.
+            Include only the specified features in the feature combinations instead of package
+            features.
 
-            This flag can only be used together with either --each-feature flag
-            or --feature-powerset flag.
+            This flag can only be used together with either --each-feature flag or
+            --feature-powerset flag.
 
         --no-dev-deps
             Perform without dev-dependencies.
 
-            Note that this flag removes dev-dependencies from real `Cargo.toml`
-            while cargo-hack is running and restores it when finished.
+            Note that this flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is
+            running and restores it when finished.
 
         --remove-dev-deps
-            Equivalent to --no-dev-deps flag except for does not restore the
-            original `Cargo.toml` after performed.
+            Equivalent to --no-dev-deps flag except for does not restore the original `Cargo.toml`
+            after performed.
 
         --ignore-private
             Skip to perform on `publish = false` packages.
 
         --ignore-unknown-features
-            Skip passing --features flag to `cargo` if that feature does not
-            exist in the package.
+            Skip passing --features flag to `cargo` if that feature does not exist in the package.
 
-            This flag can only be used together with either --features or
-            --include-features.
+            This flag can only be used together with either --features or --include-features.
 
         --version-range <START>..[END]
             Perform commands on a specified (inclusive) range of Rust versions.
 
-            If the given range is unclosed, the latest stable compiler is
-            treated as the upper bound.
+            If the given range is unclosed, the latest stable compiler is treated as the upper
+            bound.
 
             Note that ranges are always inclusive ranges.
 
@@ -197,8 +190,8 @@ OPTIONS:
         --clean-per-run
             Remove artifacts for that package before running the command.
 
-            If used this flag with --workspace, --each-feature, or
-            --feature-powerset, artifacts will be removed before each run.
+            If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts
+            will be removed before each run.
 
             Note that dependencies artifacts will be preserved.
 

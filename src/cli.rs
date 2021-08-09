@@ -668,15 +668,15 @@ struct Help {
     print_version: bool,
 }
 
-const DEFAULT_TERM_SIZE: usize = 80;
+const MAX_TERM_WIDTH: usize = 100;
 
 impl Help {
     fn long() -> Self {
-        Self { long: true, term_size: DEFAULT_TERM_SIZE, print_version: true }
+        Self { long: true, term_size: MAX_TERM_WIDTH, print_version: true }
     }
 
     fn short() -> Self {
-        Self { long: false, term_size: DEFAULT_TERM_SIZE, print_version: true }
+        Self { long: false, term_size: MAX_TERM_WIDTH, print_version: true }
     }
 }
 
@@ -931,19 +931,19 @@ mod tests {
 
     #[test]
     fn long_help() {
-        let actual = Help { long: true, term_size: 200, print_version: false }.to_string();
+        let actual = Help { print_version: false, ..Help::long() }.to_string();
         assert_diff("tests/long-help.txt", actual);
     }
 
     #[test]
     fn short_help() {
-        let actual = Help { long: false, term_size: 200, print_version: false }.to_string();
+        let actual = Help { print_version: false, ..Help::short() }.to_string();
         assert_diff("tests/short-help.txt", actual);
     }
 
     #[test]
     fn update_readme() -> Result<()> {
-        let new = Help { long: true, term_size: 80, print_version: false }.to_string();
+        let new = Help { print_version: false, ..Help::long() }.to_string();
         let path = &Path::new(env!("CARGO_MANIFEST_DIR")).join("README.md");
         let base = fs::read_to_string(path)?;
         let mut out = String::with_capacity(base.capacity());

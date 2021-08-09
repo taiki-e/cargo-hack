@@ -20,16 +20,23 @@ OPTIONS:
         --exclude-features <FEATURES>... Space-separated list of features to exclude
         --exclude-no-default-features    Exclude run of just --no-default-features flag
         --exclude-all-features           Exclude run of just --all-features flag
-        --depth <NUM>                    Specify a max number of simultaneous feature flags of --feature-powerset
+        --depth <NUM>                    Specify a max number of simultaneous feature flags of
+                                         --feature-powerset
         --group-features <FEATURES>...   Space-separated list of features to group
-        --include-features <FEATURES>... Include only the specified features in the feature combinations instead of package features
+        --include-features <FEATURES>... Include only the specified features in the feature
+                                         combinations instead of package features
         --no-dev-deps                    Perform without dev-dependencies
-        --remove-dev-deps                Equivalent to --no-dev-deps flag except for does not restore the original `Cargo.toml` after performed
+        --remove-dev-deps                Equivalent to --no-dev-deps flag except for does not
+                                         restore the original `Cargo.toml` after performed
         --ignore-private                 Skip to perform on `publish = false` packages
-        --ignore-unknown-features        Skip passing --features flag to `cargo` if that feature does not exist in the package
-        --version-range <START>..[END]   Perform commands on a specified (inclusive) range of Rust versions
-        --version-step <NUM>             Specify the version interval of --version-range (default to `1`)
-        --clean-per-run                  Remove artifacts for that package before running the command
+        --ignore-unknown-features        Skip passing --features flag to `cargo` if that feature
+                                         does not exist in the package
+        --version-range <START>..[END]   Perform commands on a specified (inclusive) range of Rust
+                                         versions
+        --version-step <NUM>             Specify the version interval of --version-range (default
+                                         to `1`)
+        --clean-per-run                  Remove artifacts for that package before running the
+                                         command
         --clean-per-version              Remove artifacts per Rust version
     -v, --verbose                        Use verbose output
         --color <WHEN>                   Coloring: auto, always, never
