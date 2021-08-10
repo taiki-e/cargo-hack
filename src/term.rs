@@ -27,9 +27,9 @@ impl FromStr for Coloring {
 
     fn from_str(color: &str) -> Result<Self, Self::Err> {
         match color {
-            "auto" => Ok(Coloring::Auto),
-            "always" => Ok(Coloring::Always),
-            "never" => Ok(Coloring::Never),
+            "auto" => Ok(Self::Auto),
+            "always" => Ok(Self::Always),
+            "never" => Ok(Self::Never),
             other => Err(format!("must be auto, always, or never, but found `{}`", other)),
         }
     }
