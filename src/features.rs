@@ -69,11 +69,13 @@ impl Features {
 #[derive(Debug)]
 pub(crate) enum Feature {
     /// A feature of the current crate.
+    #[allow(dead_code)] // false positive that fixed in Rust 1.44
     Normal {
         /// Feature name. It is considered indivisible.
         name: String,
     },
     /// Grouped features.
+    #[allow(dead_code)] // false positive that fixed in Rust 1.44
     Group {
         /// Feature name concatenated with `,`.
         name: String,
@@ -81,6 +83,7 @@ pub(crate) enum Feature {
         list: Vec<String>,
     },
     /// A feature of a dependency.
+    #[allow(dead_code)] // false positive that fixed in Rust 1.44
     Path {
         /// Feature path separated with `/`.
         name: String,
@@ -92,25 +95,23 @@ pub(crate) enum Feature {
 impl Feature {
     pub(crate) fn group(group: impl IntoIterator<Item = impl Into<String>>) -> Self {
         let list: Vec<_> = group.into_iter().map(Into::into).collect();
-        Feature::Group { name: list.join(","), list }
+        Self::Group { name: list.join(","), list }
     }
 
     pub(crate) fn path(parent: &str, name: &str) -> Self {
-        Feature::Path { name: format!("{}/{}", parent, name), slash: parent.len() }
+        Self::Path { name: format!("{}/{}", parent, name), slash: parent.len() }
     }
 
     pub(crate) fn name(&self) -> &str {
         match self {
-            Feature::Normal { name } | Feature::Group { name, .. } | Feature::Path { name, .. } => {
-                name
-            }
+            Self::Normal { name } | Self::Group { name, .. } | Self::Path { name, .. } => name,
         }
     }
 
     pub(crate) fn as_group(&self) -> &[String] {
         match self {
-            Feature::Group { list, .. } => list,
-            Feature::Normal { name } | Feature::Path { name, .. } => slice::from_ref(name),
+            Self::Group { list, .. } => list,
+            Self::Normal { name } | Self::Path { name, .. } => slice::from_ref(name),
         }
     }
 
@@ -127,7 +128,7 @@ impl PartialEq<str> for Feature {
 
 impl<S: Into<String>> From<S> for Feature {
     fn from(name: S) -> Self {
-        Feature::Normal { name: name.into() }
+        Self::Normal { name: name.into() }
     }
 }
 
