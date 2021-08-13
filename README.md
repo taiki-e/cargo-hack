@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/cargo-hack?style=flat-square&logo=rust)](https://crates.io/crates/cargo-hack)
 [![license](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue?style=flat-square)](#license)
-[![rustc](https://img.shields.io/badge/rustc-1.41+-blue?style=flat-square&logo=rust)](https://www.rust-lang.org)
+[![rustc](https://img.shields.io/badge/rustc-1.46+-blue?style=flat-square&logo=rust)](https://www.rust-lang.org)
 [![build status](https://img.shields.io/github/workflow/status/taiki-e/cargo-hack/CI/main?style=flat-square&logo=github)](https://github.com/taiki-e/cargo-hack/actions)
 
 Cargo subcommand to provide various options useful for testing and continuous
@@ -20,7 +20,7 @@ integration.
 cargo install cargo-hack
 ```
 
-*Compiler support: requires rustc 1.41+*
+*Compiler support: requires rustc 1.46+*
 
 cargo-hack is usually runnable with Cargo versions older than the Rust version
 required for installation (e.g., `cargo +1.31 hack check`). Currently, to run
