@@ -18,10 +18,10 @@ pub(crate) fn remove_dev_deps(text: &str) -> String {
         // skip '# [...' and 'foo = [...'
         if text[prev..pos].trim().is_empty() {
             let slice = text[pos + 1..].trim_start();
-            if slice.starts_with(DEV_DEPS) {
-                let maybe_close = pos + DEV_DEPS.len();
-                match slice[DEV_DEPS.len()..].trim_start().as_bytes()[0] {
+            if let Some(slice) = slice.strip_prefix(DEV_DEPS) {
+                match slice.trim_start().as_bytes()[0] {
                     b'.' | b']' => {
+                        let maybe_close = pos + DEV_DEPS.len();
                         for (i, _) in text[maybe_close..].match_indices('[') {
                             let back = text[maybe_close..maybe_close + i]
                                 .rfind(LN)

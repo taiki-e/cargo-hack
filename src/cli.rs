@@ -526,8 +526,7 @@ fn parse_opt<'a>(
     pat: &str,
     require_value: bool,
 ) -> Result<Option<Option<&'a str>>> {
-    if arg.starts_with(pat) {
-        let rem = &arg[pat.len()..];
+    if let Some(rem) = arg.strip_prefix(pat) {
         if rem.is_empty() {
             if require_value {
                 return Ok(Some(Some(args.next().ok_or_else(|| req_arg(pat, subcommand))?)));
@@ -537,8 +536,7 @@ fn parse_opt<'a>(
             } else {
                 Ok(Some(args.next()))
             }
-        } else if rem.starts_with('=') {
-            let mut val = &rem[1..];
+        } else if let Some(mut val) = rem.strip_prefix('=') {
             if val.starts_with('\'') && val.ends_with('\'')
                 || val.starts_with('"') && val.ends_with('"')
             {
