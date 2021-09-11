@@ -1,7 +1,6 @@
 [package]
 name = "member3"
-version = "0.1.0"
-authors = ["Taiki Endo <te316e89@gmail.com>"]
+version = "0.0.0"
 publish = true
 
 [features]
