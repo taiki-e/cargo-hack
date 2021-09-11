@@ -186,8 +186,12 @@ impl<'a> ProcessBuilder<'a> {
     /// Executes a process, captures its stdio output, returning the captured
     /// standard output as a `String`.
     pub(crate) fn read(&mut self) -> Result<String> {
-        String::from_utf8(self.run_with_output()?.stdout)
-            .with_context(|| format!("failed to parse output of {}", self))
+        let mut output = String::from_utf8(self.run_with_output()?.stdout)
+            .with_context(|| format!("failed to parse output from {}", self))?;
+        while output.ends_with('\n') || output.ends_with('\r') {
+            output.pop();
+        }
+        Ok(output)
     }
 
     fn build(&self) -> Command {
