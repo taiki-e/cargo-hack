@@ -109,8 +109,6 @@ jobs:
       - run: cargo fuzz build
       - run: cargo afl build
         working-directory: fuzz/afl
-        # Currently broken: https://github.com/rust-fuzz/afl.rs/issues/192
-        continue-on-error: true
 
   tidy:
     runs-on: ubuntu-18.04

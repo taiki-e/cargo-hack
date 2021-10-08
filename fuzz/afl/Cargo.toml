@@ -8,7 +8,7 @@ publish = false
 resolver = "2"
 
 [dependencies]
-afl = "0.10"
+afl = "0.11"
 toml = "0.5"
 
 [[bin]]
