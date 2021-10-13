@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.5.8] - 2021-10-13
+
 - Distribute statically linked binary on Windows MSVC. ([#131](https://github.com/taiki-e/cargo-hack/pull/131))
 
 ## [0.5.7] - 2021-08-09
@@ -240,7 +242,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.7...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.8...HEAD
+[0.5.8]: https://github.com/taiki-e/cargo-hack/compare/v0.5.7...v0.5.8
 [0.5.7]: https://github.com/taiki-e/cargo-hack/compare/v0.5.6...v0.5.7
 [0.5.6]: https://github.com/taiki-e/cargo-hack/compare/v0.5.5...v0.5.6
 [0.5.5]: https://github.com/taiki-e/cargo-hack/compare/v0.5.4...v0.5.5

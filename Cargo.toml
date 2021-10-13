@@ -1,6 +1,6 @@
 [package]
 name = "cargo-hack"
-version = "0.5.7"
+version = "0.5.8"
 authors = ["Taiki Endo <te316e89@gmail.com>"]
 edition = "2018"
 rust-version = "1.46"
@@ -27,7 +27,7 @@ termcolor = "1.1"
 toml = "0.5.2"
 
 [dev-dependencies]
-easy-ext = "1.0"
+easy-ext = "1"
 fs-err = "2"
 once_cell = "1"
 tempfile = "3"
