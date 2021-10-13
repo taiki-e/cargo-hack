@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Distribute statically linked binary on Windows MSVC.
+
 ## [0.5.7] - 2021-08-09
 
 - [Fix an issue where cargo-hack cannot auto-detect whether color support is available on the terminal.](https://github.com/taiki-e/cargo-hack/pull/125)
