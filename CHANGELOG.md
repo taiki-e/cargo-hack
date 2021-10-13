@@ -10,11 +10,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
-- Distribute statically linked binary on Windows MSVC.
+- Distribute statically linked binary on Windows MSVC. ([#131](https://github.com/taiki-e/cargo-hack/pull/131))
 
 ## [0.5.7] - 2021-08-09
 
-- [Fix an issue where cargo-hack cannot auto-detect whether color support is available on the terminal.](https://github.com/taiki-e/cargo-hack/pull/125)
+- Fix an issue where cargo-hack cannot auto-detect whether color support is available on the terminal. ([#125](https://github.com/taiki-e/cargo-hack/pull/125))
 
 ## [0.5.6] - 2021-06-07
 
@@ -24,17 +24,18 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.5.5] - 2021-04-04
 
-- [Add `--clean-per-version` flag.](https://github.com/taiki-e/cargo-hack/pull/120)
+- Add `--clean-per-version` flag. ([#120](https://github.com/taiki-e/cargo-hack/pull/120))
 
 ## [0.5.4] - 2021-02-27
 
-- [Stop commit of `Cargo.lock`.](https://github.com/taiki-e/cargo-hack/pull/117)
+- Stop commit of `Cargo.lock`. ([#127](https://github.com/taiki-e/cargo-hack/pull/117))
+
   If you want to use cargo-hack with versions of dependencies at the time of release, please download the compiled binary from GitHub Releases.
   See [#117](https://github.com/taiki-e/cargo-hack/pull/117) for more.
 
-- [Support controls of colored output by `CARGO_TERM_COLOR`.](https://github.com/taiki-e/cargo-hack/pull/110)
+- Support controls of colored output by `CARGO_TERM_COLOR`. ([#110](https://github.com/taiki-e/cargo-hack/pull/110))
 
-- [Do not run `rustup toolchain install` in `--version-range` if the toolchain already has installed.](https://github.com/taiki-e/cargo-hack/pull/109)
+- Do not run `rustup toolchain install` in `--version-range` if the toolchain already has installed. ([#109](https://github.com/taiki-e/cargo-hack/pull/109))
 
 ## [0.5.3] - 2021-01-05
 
@@ -44,19 +45,21 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.5.2] - 2020-12-09
 
-- [Automatically install target if specified when using `--version-range` option](https://github.com/taiki-e/cargo-hack/pull/108).
+- Automatically install target if specified when using `--version-range` option. ([#108](https://github.com/taiki-e/cargo-hack/pull/108))
 
 ## [0.5.1] - 2020-12-06
 
-- [Fix compatibility with old cargo of `--version-range` option.](https://github.com/taiki-e/cargo-hack/pull/106)
+- Fix compatibility with old cargo of `--version-range` option. ([#106](https://github.com/taiki-e/cargo-hack/pull/106))
 
 ## [0.5.0] - 2020-12-06
 
-- [Remove deprecated `--skip-no-default-features` flag.](https://github.com/taiki-e/cargo-hack/pull/100) Use `--exclude-no-default-features` flag instead.
+- Remove deprecated `--skip-no-default-features` flag. ([#100](https://github.com/taiki-e/cargo-hack/pull/100))
+
+  Use `--exclude-no-default-features` flag instead.
 
 - Add `--version-range` option. See [#102](https://github.com/taiki-e/cargo-hack/pull/102) for more.
 
-- [Change some warnings to errors.](https://github.com/taiki-e/cargo-hack/pull/100)
+- Change some warnings to errors. ([#100](https://github.com/taiki-e/cargo-hack/pull/100))
 
 - cargo-hack now handles SIGTERM the same as SIGINT (ctrl-c).
 
@@ -66,7 +69,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.4.8] - 2020-12-03
 
-- [Fix an issue that feature combinations exclusion does not work properly when used with `--group-features`.](https://github.com/taiki-e/cargo-hack/pull/99)
+- Fix an issue that feature combinations exclusion does not work properly when used with `--group-features`. ([#99](https://github.com/taiki-e/cargo-hack/pull/99))
 
 ## [0.4.7] - 2020-12-03
 
@@ -78,9 +81,11 @@ No public API changes from 0.4.6.
 
 ## [0.4.6] - 2020-11-30
 
-- [Exclude feature combinations by detecting dependencies of features.](https://github.com/taiki-e/cargo-hack/pull/85) This may significantly reduce the runtime of `--feature-powerset` on projects that have many features. See [#81](https://github.com/taiki-e/cargo-hack/pull/81) for more.
+- Exclude feature combinations by detecting dependencies of features. ([#85](https://github.com/taiki-e/cargo-hack/pull/85))
 
-- [Fix an issue where `CARGO_HACK_CARGO_SRC=cross` did not work.](https://github.com/taiki-e/cargo-hack/pull/94)
+  This may significantly reduce the runtime of `--feature-powerset` on projects that have many features. See [#81](https://github.com/taiki-e/cargo-hack/pull/81) for more.
+
+- Fix an issue where `CARGO_HACK_CARGO_SRC=cross` did not work. ([#94](https://github.com/taiki-e/cargo-hack/pull/94))
 
 ## [0.4.5] - 2020-11-14
 
@@ -105,110 +110,113 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 ## [0.4.2] - 2020-11-03
 
-- [`cargo-hack` no longer include `--all-features` in feature combination if one or more features already excluded.](https://github.com/taiki-e/cargo-hack/pull/86)
+- `cargo-hack` no longer include `--all-features` in feature combination if one or more features already excluded. ([#86](https://github.com/taiki-e/cargo-hack/pull/86))
 
 - Diagnostic improvements.
 
 ## [0.4.1] - 2020-10-24
 
-- [Add `--group-features` option.](https://github.com/taiki-e/cargo-hack/pull/82)
+- Add `--group-features` option. ([#82](https://github.com/taiki-e/cargo-hack/pull/82))
 
 ## [0.4.0] - 2020-10-21
 
-- [Remove deprecated `--ignore-non-exist-features` flag.](https://github.com/taiki-e/cargo-hack/pull/62) Use `--ignore-unknown-features` flag instead.
+- Remove deprecated `--ignore-non-exist-features` flag. ([#62](https://github.com/taiki-e/cargo-hack/pull/62))
 
-- [Treat `--all-features` flag as one of feature combinations.](https://github.com/taiki-e/cargo-hack/pull/61) See [#42](https://github.com/taiki-e/cargo-hack/pull/42) for details.
+  Use `--ignore-unknown-features` flag instead.
+
+- Treat `--all-features` flag as one of feature combinations. ([#61](https://github.com/taiki-e/cargo-hack/pull/61)) See [#42](https://github.com/taiki-e/cargo-hack/pull/42) for details.
 
 - Add `--exclude-all-features` flag. ([#61](https://github.com/taiki-e/cargo-hack/pull/61), [#65](https://github.com/taiki-e/cargo-hack/pull/65)) See [#42](https://github.com/taiki-e/cargo-hack/pull/42) for details.
 
-- [Add `--exclude-features` option. This is an alias of `--skip` option.](https://github.com/taiki-e/cargo-hack/pull/65)
+- Add `--exclude-features` option. This is an alias of `--skip` option. ([#65](https://github.com/taiki-e/cargo-hack/pull/65))
 
-- [Rename `--skip-no-default-features` flag to `--exclude-no-default-features`.](https://github.com/taiki-e/cargo-hack/pull/65)
+- Rename `--skip-no-default-features` flag to `--exclude-no-default-features`. ([#65](https://github.com/taiki-e/cargo-hack/pull/65))
+
   The old name can be used as an alias, but is deprecated.
 
-- [Add `--include-features` option.](https://github.com/taiki-e/cargo-hack/pull/66) See [#66](https://github.com/taiki-e/cargo-hack/pull/66) for details.
+- Add `--include-features` option. ([#66](https://github.com/taiki-e/cargo-hack/pull/66)) See [#66](https://github.com/taiki-e/cargo-hack/pull/66) for details.
 
-- [Add `--include-deps-features` option.](https://github.com/taiki-e/cargo-hack/pull/70) See [#29](https://github.com/taiki-e/cargo-hack/pull/29) for details.
+- Add `--include-deps-features` option. ([#70](https://github.com/taiki-e/cargo-hack/pull/70)) See [#29](https://github.com/taiki-e/cargo-hack/pull/29) for details.
 
-- [Fix an issue where using `--features` with `--each-feature` or `--feature-powerset` together would result in the same feature combination being performed multiple times.](https://github.com/taiki-e/cargo-hack/pull/64)
+- Fix an issue where using `--features` with `--each-feature` or `--feature-powerset` together would result in the same feature combination being performed multiple times. ([#64](https://github.com/taiki-e/cargo-hack/pull/64))
 
-- [Fix handling of default features.](https://github.com/taiki-e/cargo-hack/pull/77)
+- Fix handling of default features. ([#77](https://github.com/taiki-e/cargo-hack/pull/77))
 
-- [Improve performance by avoiding reading and parsing Cargo manifest.](https://github.com/taiki-e/cargo-hack/pull/73)
+- Improve performance by avoiding reading and parsing Cargo manifest. ([#73](https://github.com/taiki-e/cargo-hack/pull/73))
 
 - Diagnostic improvements.
 
 ## [0.3.14] - 2020-10-10
 
-- [Add `--depth` option.](https://github.com/taiki-e/cargo-hack/pull/59) See [#59](https://github.com/taiki-e/cargo-hack/pull/59) for details.
+- Add `--depth` option. ([#59](https://github.com/taiki-e/cargo-hack/pull/59)) See [#59](https://github.com/taiki-e/cargo-hack/pull/59) for details.
 
 ## [0.3.13] - 2020-09-22
 
-- [Print the command actually executed when error occurred.](https://github.com/taiki-e/cargo-hack/pull/55)
+- Print the command actually executed when error occurred. ([#55](https://github.com/taiki-e/cargo-hack/pull/55))
 
-- [`--verbose` flag is no longer propagated to cargo.](https://github.com/taiki-e/cargo-hack/pull/55)
+- `--verbose` flag is no longer propagated to cargo. ([#55](https://github.com/taiki-e/cargo-hack/pull/55))
 
-- [Improve compile time by removing some dependencies.](https://github.com/taiki-e/cargo-hack/pull/54)
+- Improve compile time by removing some dependencies. ([#54](https://github.com/taiki-e/cargo-hack/pull/54))
 
 ## [0.3.12] - 2020-09-18
 
-- [Allow only specified optional dependencies to be considered as features.](https://github.com/taiki-e/cargo-hack/pull/51)
+- Allow only specified optional dependencies to be considered as features. ([#51](https://github.com/taiki-e/cargo-hack/pull/51))
 
 ## [0.3.11] - 2020-07-11
 
-- [Added `--clean-per-run` flag.](https://github.com/taiki-e/cargo-hack/pull/49) See [#49](https://github.com/taiki-e/cargo-hack/pull/49) for details.
+- Added `--clean-per-run` flag. ([#49](https://github.com/taiki-e/cargo-hack/pull/49)) See [#49](https://github.com/taiki-e/cargo-hack/pull/49) for details.
 
 ## [0.3.10] - 2020-06-20
 
-- [Fixed an issue where some flags could not handle space-separated list correctly.](https://github.com/taiki-e/cargo-hack/pull/46)
+- Fixed an issue where some flags could not handle space-separated list correctly. ([#46](https://github.com/taiki-e/cargo-hack/pull/46))
 
 ## [0.3.9] - 2020-05-25
 
-- [Fix an issue that `--skip` does not work for optional dependencies.](https://github.com/taiki-e/cargo-hack/pull/43)
+- Fix an issue that `--skip` does not work for optional dependencies. ([#43](https://github.com/taiki-e/cargo-hack/pull/43))
 
 ## [0.3.8] - 2020-05-21
 
-- [Added `--skip-no-default-features` flag.](https://github.com/taiki-e/cargo-hack/pull/41) See [#38](https://github.com/taiki-e/cargo-hack/pull/38) for details.
+- Added `--skip-no-default-features` flag. ([#41](https://github.com/taiki-e/cargo-hack/pull/41)) See [#38](https://github.com/taiki-e/cargo-hack/pull/38) for details.
 
 ## [0.3.7] - 2020-05-20
 
-- [Fixed an issue that runs with default features even if `--skip default` flag passed.](https://github.com/taiki-e/cargo-hack/pull/37)
+- Fixed an issue that runs with default features even if `--skip default` flag passed. ([#37](https://github.com/taiki-e/cargo-hack/pull/37))
 
 ## [0.3.6] - 2020-05-17
 
-- [Fixed an issue that `--remove-dev-deps` flag does not work properly without subcommand.](https://github.com/taiki-e/cargo-hack/pull/36)
+- Fixed an issue that `--remove-dev-deps` flag does not work properly without subcommand. ([#36](https://github.com/taiki-e/cargo-hack/pull/36))
 
 ## [0.3.5] - 2020-04-24
 
-- [Added `--optional-deps` flag.](https://github.com/taiki-e/cargo-hack/pull/34) See [#28](https://github.com/taiki-e/cargo-hack/pull/28) for details.
+- Added `--optional-deps` flag. ([#34](https://github.com/taiki-e/cargo-hack/pull/34)) See [#28](https://github.com/taiki-e/cargo-hack/pull/28) for details.
 
 ## [0.3.4] - 2020-04-23
 
-- [cargo-hack now prints the total number of feature flag combinations and progress.](https://github.com/taiki-e/cargo-hack/pull/32)
+- cargo-hack now prints the total number of feature flag combinations and progress. ([#32](https://github.com/taiki-e/cargo-hack/pull/32))
 
 ## [0.3.3] - 2020-01-06
 
-- [Added `--skip` option.](https://github.com/taiki-e/cargo-hack/pull/25) See [#24](https://github.com/taiki-e/cargo-hack/pull/24) for details.
+- Added `--skip` option. ([#25](https://github.com/taiki-e/cargo-hack/pull/25), thanks @kleimkuhler) See [#24](https://github.com/taiki-e/cargo-hack/pull/24) for details.
 
 ## [0.3.2] - 2019-12-09
 
-- [Added `--feature-powerset` flag to perform for the feature powerset.](https://github.com/taiki-e/cargo-hack/pull/23)
+- Added `--feature-powerset` flag to perform for the feature powerset. ([#23](https://github.com/taiki-e/cargo-hack/pull/23), thanks @kleimkuhler)
 
-- [Reduced compile time of `cargo-hack` to less than half.](https://github.com/taiki-e/cargo-hack/pull/22)
+- Reduced compile time of `cargo-hack` to less than half. ([#22](https://github.com/taiki-e/cargo-hack/pull/22))
 
 ## [0.3.1] - 2019-11-20
 
-- [cargo-hack can now handle ctrl-c signal properly.](https://github.com/taiki-e/cargo-hack/pull/20) Previously there was an issue with interoperability with `--no-dev-deps` flag.
+- cargo-hack can now handle ctrl-c signal properly. ([#20](https://github.com/taiki-e/cargo-hack/pull/20)) Previously there was an issue with interoperability with `--no-dev-deps` flag.
 
 ## [0.3.0] - 2019-11-13
 
-- [cargo-hack now works on windows.](https://github.com/taiki-e/cargo-hack/pull/17)
+- cargo-hack now works on windows. ([#17](https://github.com/taiki-e/cargo-hack/pull/17))
 
-- [Fixed an issue that when `--all`(`--workspace`) and `--package` flags are run in subcrate, the command does not apply to other crates in the workspace.](https://github.com/taiki-e/cargo-hack/pull/17)
+- Fixed an issue that when `--all`(`--workspace`) and `--package` flags are run in subcrate, the command does not apply to other crates in the workspace. ([#17](https://github.com/taiki-e/cargo-hack/pull/17))
 
-- [Banned `--no-dev-deps` flag with builds that require dev-dependencies.](https://github.com/taiki-e/cargo-hack/pull/16)
+- Banned `--no-dev-deps` flag with builds that require dev-dependencies. ([#16](https://github.com/taiki-e/cargo-hack/pull/16))
 
-- [cargo-hack is no longer does not generate temporary backup files.](https://github.com/taiki-e/cargo-hack/pull/14)
+- cargo-hack is no longer does not generate temporary backup files. ([#14](https://github.com/taiki-e/cargo-hack/pull/14))
 
 ## [0.2.1] - 2019-11-03
 
@@ -216,11 +224,12 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 ## [0.2.0] - 2019-11-02
 
-- [Implemented `--package` flag.](https://github.com/taiki-e/cargo-hack/pull/12)
+- Implemented `--package` flag. ([#12](https://github.com/taiki-e/cargo-hack/pull/12))
 
-- [Implemented `--exclude` flag.](https://github.com/taiki-e/cargo-hack/pull/12)
+- Implemented `--exclude` flag. ([#12](https://github.com/taiki-e/cargo-hack/pull/12))
 
-- [Renamed `--ignore-non-exist-features` flag to `--ignore-unknown-features`.](https://github.com/taiki-e/cargo-hack/pull/10)
+- Renamed `--ignore-non-exist-features` flag to `--ignore-unknown-features`. ([#10](https://github.com/taiki-e/cargo-hack/pull/10))
+
   The old name can be used as an alias, but is deprecated.
 
 ## [0.1.1] - 2019-11-01
