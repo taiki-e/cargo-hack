@@ -8,46 +8,9 @@
 Cargo subcommand to provide various options useful for testing and continuous
 integration.
 
-- [Installation](#installation)
 - [Usage](#usage)
+- [Installation](#installation)
 - [License](#license)
-
-## Installation
-
-### From source
-
-```sh
-cargo install cargo-hack
-```
-
-*Compiler support: requires rustc 1.46+*
-
-cargo-hack is usually runnable with Cargo versions older than the Rust version
-required for installation (e.g., `cargo +1.31 hack check`). Currently, to run
-cargo-hack requires Cargo 1.26+.
-
-### From prebuilt binaries
-
-You can download prebuilt binaries from the [Release page](https://github.com/taiki-e/cargo-hack/releases).
-Prebuilt binaries are available for macOS, Linux (gnu and musl), and Windows (static executable).
-
-### Via Homebrew
-
-You can install cargo-hack using [Homebrew tap on macOS and Linux](https://github.com/taiki-e/homebrew-tap/blob/main/Formula/cargo-hack.rb):
-
-```sh
-brew install taiki-e/tap/cargo-hack
-```
-
-### Via AUR (ArchLinux)
-
-You can install [cargo-hack from AUR](https://aur.archlinux.org/packages/cargo-hack):
-
-```sh
-paru -S cargo-hack
-```
-
-NOTE: AUR package is maintained by community, not maintainer of cargo-hack.
 
 ## Usage
 
@@ -378,6 +341,43 @@ done
 
 *Workspace members will be performed according to the order of the 'packages'
 fields of [`cargo metadata`][cargo-metadata].*
+
+## Installation
+
+### From source
+
+```sh
+cargo install cargo-hack
+```
+
+*Compiler support: requires rustc 1.46+*
+
+cargo-hack is usually runnable with Cargo versions older than the Rust version
+required for installation (e.g., `cargo +1.31 hack check`). Currently, to run
+cargo-hack requires Cargo 1.26+.
+
+### From prebuilt binaries
+
+You can download prebuilt binaries from the [Release page](https://github.com/taiki-e/cargo-hack/releases).
+Prebuilt binaries are available for macOS, Linux (gnu and musl), and Windows (static executable).
+
+### Via Homebrew
+
+You can install cargo-hack using [Homebrew tap on macOS and Linux](https://github.com/taiki-e/homebrew-tap/blob/main/Formula/cargo-hack.rb):
+
+```sh
+brew install taiki-e/tap/cargo-hack
+```
+
+### Via AUR (ArchLinux)
+
+You can install [cargo-hack from AUR](https://aur.archlinux.org/packages/cargo-hack):
+
+```sh
+paru -S cargo-hack
+```
+
+NOTE: AUR package is maintained by community, not maintainer of cargo-hack.
 
 [#15]: https://github.com/taiki-e/cargo-hack/issues/15
 [termcolor#35]: https://github.com/BurntSushi/termcolor/issues/35
