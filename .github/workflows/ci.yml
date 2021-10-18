@@ -46,8 +46,6 @@ jobs:
       - uses: taiki-e/github-actions/install-rust@main
         with:
           toolchain: ${{ matrix.rust }}
-      - run: cargo install cargo-hack --debug
-        if: startsWith(matrix.rust, 'nightly') && matrix.target == ''
       - run: cargo install cross --debug
         if: matrix.target != ''
       - run: echo "RUSTFLAGS=${RUSTFLAGS} -C target-feature=+crt-static" >> "${GITHUB_ENV}"
@@ -56,8 +54,6 @@ jobs:
         if: matrix.target != ''
       - run: cargo test --all
         if: matrix.target == ''
-      - run: tools/check-minimal-versions.sh
-        if: startsWith(matrix.rust, 'nightly') && matrix.target == ''
 
   test-compat:
     name: test (1.${{ matrix.rust }})
@@ -121,8 +117,12 @@ jobs:
       - uses: taiki-e/github-actions/install-rust@main
         with:
           component: clippy,rustfmt
-      - run: cargo clippy --all --all-features --all-targets
+      - run: cargo install cargo-hack --debug
       - run: cargo fmt --all -- --check
+        if: always()
+      - run: cargo clippy --all --all-features --all-targets
+        if: always()
+      - run: tools/check-minimal-versions.sh
         if: always()
       - run: shellcheck **/*.sh
         if: always()
