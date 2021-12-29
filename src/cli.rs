@@ -40,6 +40,8 @@ pub(crate) struct Args<'a> {
     pub(crate) clean_per_run: bool,
     /// --clean-per-version
     pub(crate) clean_per_version: bool,
+    /// --keep-going
+    pub(crate) keep_going: bool,
     /// --version-range
     pub(crate) version_range: Option<&'a str>,
     /// --version-step
@@ -130,6 +132,7 @@ pub(crate) fn parse_args<'a>(raw: &'a [String], cargo: &OsStr) -> Result<Args<'a
     let mut ignore_unknown_features = false;
     let mut clean_per_run = false;
     let mut clean_per_version = false;
+    let mut keep_going = false;
     let mut version_range = None;
     let mut version_step = None;
 
@@ -261,6 +264,7 @@ pub(crate) fn parse_args<'a>(raw: &'a [String], cargo: &OsStr) -> Result<Args<'a
                 "--include-deps-features" => parse_flag!(include_deps_features),
                 "--clean-per-run" => parse_flag!(clean_per_run),
                 "--clean-per-version" => parse_flag!(clean_per_version),
+                "--keep-going" => parse_flag!(keep_going),
                 "--ignore-unknown-features" => parse_flag!(ignore_unknown_features),
                 // allow multiple uses
                 "--verbose" | "-v" | "-vv" => {
@@ -496,6 +500,7 @@ pub(crate) fn parse_args<'a>(raw: &'a [String], cargo: &OsStr) -> Result<Args<'a
         optional_deps,
         clean_per_run,
         clean_per_version,
+        keep_going,
         include_features: include_features.into_iter().map(Into::into).collect(),
         include_deps_features,
         version_range,
@@ -648,6 +653,7 @@ const HELP: &[HelpText<'_>] = &[
         "Note that dependencies artifacts will also be removed.",
         "This flag can only be used together with --version-range flag.",
     ]),
+    ("", "--keep-going", "", "Keep going on failure", &[]),
     ("-v", "--verbose", "", "Use verbose output", &[]),
     ("", "--color", "<WHEN>", "Coloring: auto, always, never", &[
         "This flag will be propagated to cargo.",

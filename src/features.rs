@@ -3,10 +3,7 @@ use std::{
     slice,
 };
 
-use crate::{
-    metadata::{Dependency, Metadata},
-    PackageId,
-};
+use crate::{metadata::Metadata, PackageId};
 
 pub(crate) struct Features {
     features: Vec<Feature>,
@@ -24,7 +21,7 @@ impl Features {
         for name in package.features.keys() {
             features.push(name.into());
         }
-        for name in package.dependencies.iter().filter_map(Dependency::as_feature) {
+        for name in package.optional_deps() {
             features.push(name.into());
         }
         let len = [package.features.len(), features.len()];

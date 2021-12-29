@@ -295,6 +295,10 @@ impl Package {
             },
         }))
     }
+
+    pub(crate) fn optional_deps(&self) -> impl Iterator<Item = &str> + '_ {
+        self.dependencies.iter().filter_map(Dependency::as_feature)
+    }
 }
 
 /// A dependency of the main crate.

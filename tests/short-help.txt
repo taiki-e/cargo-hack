@@ -38,6 +38,7 @@ OPTIONS:
         --clean-per-run                  Remove artifacts for that package before running the
                                          command
         --clean-per-version              Remove artifacts per Rust version
+        --keep-going                     Keep going on failure
     -v, --verbose                        Use verbose output
         --color <WHEN>                   Coloring: auto, always, never
     -h, --help                           Prints help information

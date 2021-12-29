@@ -44,11 +44,6 @@ pub(crate) struct ProcessBuilder<'a> {
     /// This list always has a trailing comma if it is not empty.
     // cargo less than Rust 1.38 cannot handle multiple '--features' flags, so it creates another String.
     features: String,
-
-    /// `true` to include full program path in display.
-    display_program_path: bool,
-    /// `true` to include manifest path in display.
-    display_manifest_path: bool,
 }
 
 impl<'a> ProcessBuilder<'a> {
@@ -61,8 +56,6 @@ impl<'a> ProcessBuilder<'a> {
             leading_args: Vec::new(),
             args: Vec::new(),
             features: String::new(),
-            display_program_path: term::verbose(),
-            display_manifest_path: term::verbose(),
         }
     }
 
@@ -116,12 +109,6 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    /// Enables all display-related flags.
-    fn display_all(&mut self) {
-        self.display_program_path = true;
-        self.display_manifest_path = true;
-    }
-
     /// Gets the comma-separated features list
     fn get_features(&self) -> &str {
         // drop a trailing comma if it is not empty.
@@ -132,15 +119,13 @@ impl<'a> ProcessBuilder<'a> {
     /// status to an error.
     pub(crate) fn run(&mut self) -> Result<()> {
         let status = self.build().status().with_context(|| {
-            self.display_all();
-            ProcessError::new(&format!("could not execute process {}", self), None, None)
+            ProcessError::new(&format!("could not execute process {:#}", self), None, None)
         })?;
         if status.success() {
             Ok(())
         } else {
-            self.display_all();
             Err(ProcessError::new(
-                &format!("process didn't exit successfully: {}", self),
+                &format!("process didn't exit successfully: {:#}", self),
                 Some(status),
                 None,
             )
@@ -152,15 +137,13 @@ impl<'a> ProcessBuilder<'a> {
     /// output, or an error if non-zero exit status.
     pub(crate) fn run_with_output(&mut self) -> Result<Output> {
         let output = self.build().output().with_context(|| {
-            self.display_all();
-            ProcessError::new(&format!("could not execute process {}", self), None, None)
+            ProcessError::new(&format!("could not execute process {:#}", self), None, None)
         })?;
         if output.status.success() {
             Ok(output)
         } else {
-            self.display_all();
             Err(ProcessError::new(
-                &format!("process didn't exit successfully: {}", self),
+                &format!("process didn't exit successfully: {:#}", self),
                 Some(output.status),
                 Some(&output),
             )
@@ -171,10 +154,8 @@ impl<'a> ProcessBuilder<'a> {
     /// Executes a process, captures its stdio output, returning the captured
     /// standard output as a `String`.
     pub(crate) fn read(&mut self) -> Result<String> {
-        let mut output = String::from_utf8(self.run_with_output()?.stdout).with_context(|| {
-            self.display_all();
-            format!("failed to parse output from {}", self)
-        })?;
+        let mut output = String::from_utf8(self.run_with_output()?.stdout)
+            .with_context(|| format!("failed to parse output from {:#}", self))?;
         while output.ends_with('\n') || output.ends_with('\r') {
             output.pop();
         }
@@ -204,7 +185,7 @@ impl fmt::Display for ProcessBuilder<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "`")?;
 
-        if self.display_program_path {
+        if f.alternate() || term::verbose() {
             write!(f, "{}", self.program.to_string_lossy())?;
         } else {
             write!(f, "{}", Path::new(&*self.program).file_stem().unwrap().to_string_lossy())?;
@@ -223,7 +204,7 @@ impl fmt::Display for ProcessBuilder<'_> {
             if arg == "--manifest-path" {
                 let path = Path::new(args.next().unwrap());
                 // Displaying `--manifest-path` is redundant.
-                if self.display_manifest_path {
+                if f.alternate() || term::verbose() {
                     let path = env::current_dir()
                         .ok()
                         .and_then(|cwd| path.strip_prefix(&cwd).ok())
