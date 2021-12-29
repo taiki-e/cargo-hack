@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::{bail, format_err, Error, Result};
 
-use crate::{rustup, term, Feature, Rustup};
+use crate::{term, Feature, Rustup};
 
 pub(crate) struct Args<'a> {
     pub(crate) leading_args: Vec<&'a str>,
@@ -40,8 +40,10 @@ pub(crate) struct Args<'a> {
     pub(crate) clean_per_run: bool,
     /// --clean-per-version
     pub(crate) clean_per_version: bool,
-    /// --version-range and --version-step
-    pub(crate) version_range: Option<Vec<String>>,
+    /// --version-range
+    pub(crate) version_range: Option<&'a str>,
+    /// --version-step
+    pub(crate) version_step: Option<&'a str>,
 
     // options for --each-feature and --feature-powerset
     /// --optional-deps [DEPS]...
@@ -361,8 +363,6 @@ pub(crate) fn parse_args<'a>(raw: &'a [String], cargo: &OsStr) -> Result<Args<'a
             v.push(Feature::group(g));
             Ok(v)
         })?;
-    let version_range =
-        version_range.map(|range| rustup::version_range(range, version_step)).transpose()?;
 
     if let Some(subcommand) = subcommand {
         match subcommand {
@@ -499,6 +499,7 @@ pub(crate) fn parse_args<'a>(raw: &'a [String], cargo: &OsStr) -> Result<Args<'a
         include_features: include_features.into_iter().map(Into::into).collect(),
         include_deps_features,
         version_range,
+        version_step,
 
         depth,
         group_features,

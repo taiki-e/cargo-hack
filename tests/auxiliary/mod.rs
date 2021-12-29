@@ -45,6 +45,14 @@ fn test_version() -> Option<u32> {
     *TEST_VERSION
 }
 
+pub fn has_stable_toolchain() -> bool {
+    static HAS_STABLE_TOOLCHAIN: Lazy<Option<bool>> = Lazy::new(|| {
+        let output = Command::new("rustup").args(&["toolchain", "list"]).output().ok()?;
+        Some(String::from_utf8(output.stdout).ok()?.contains("stable"))
+    });
+    HAS_STABLE_TOOLCHAIN.unwrap_or_default()
+}
+
 pub fn cargo_hack<O: AsRef<OsStr>>(args: impl AsRef<[O]>) -> Command {
     let args = args.as_ref();
     let mut cmd = cargo_bin_exe();

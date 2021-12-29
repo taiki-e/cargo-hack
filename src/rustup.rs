@@ -2,7 +2,7 @@ use std::str;
 
 use anyhow::{bail, format_err, Result};
 
-use crate::{cargo, version::Version};
+use crate::{cargo, metadata::Metadata, version::Version};
 
 pub(crate) struct Rustup {
     pub(crate) version: u32,
@@ -19,7 +19,11 @@ impl Rustup {
     }
 }
 
-pub(crate) fn version_range(range: &str, step: Option<&str>) -> Result<Vec<String>> {
+pub(crate) fn version_range(
+    range: &str,
+    step: Option<&str>,
+    metadata: &Metadata,
+) -> Result<Vec<String>> {
     let check = |version: &Version| {
         if version.major != 1 {
             bail!("major version must be 1");
@@ -35,7 +39,26 @@ pub(crate) fn version_range(range: &str, step: Option<&str>) -> Result<Vec<Strin
     };
 
     let mut split = range.splitn(2, "..");
-    let start = split.next().map(str::parse).unwrap()?;
+    let start = match split.next().unwrap() {
+        "" => {
+            let mut rust_version = None;
+            for id in &metadata.workspace_members {
+                let v = metadata.packages[id].rust_version.as_deref();
+                if v.is_none() || v == rust_version {
+                    // no-op
+                } else if rust_version.is_none() {
+                    rust_version = v;
+                } else {
+                    bail!("automatic detection of the lower bound of the version range is not yet supported when the minimum supported Rust version of the crates in the workspace do not match")
+                }
+            }
+            match rust_version {
+                Some(v) => v.parse()?,
+                None => bail!("no rust-version field in Cargo.toml is specified"),
+            }
+        }
+        s => s.parse()?,
+    };
     check(&start)?;
 
     let end = match split.next() {

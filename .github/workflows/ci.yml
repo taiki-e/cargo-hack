@@ -77,8 +77,9 @@ jobs:
         with:
           persist-credentials: false
       - uses: taiki-e/github-actions/install-rust@main
-        with:
-          toolchain: stable
+      - run: CARGO_HACK_TEST_TOOLCHAIN=${{ matrix.rust }} cargo test --all
+      # Remove stable toolchain to disable https://github.com/taiki-e/cargo-hack/pull/138's behavior.
+      - run: rustup toolchain remove stable
       - run: CARGO_HACK_TEST_TOOLCHAIN=${{ matrix.rust }} cargo test --all
 
   build:
