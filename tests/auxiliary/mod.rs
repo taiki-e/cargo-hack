@@ -26,7 +26,7 @@ pub fn cargo_bin_exe() -> Command {
 
 fn test_toolchain() -> String {
     if let Some(toolchain) = test_version() {
-        format!(" +1.{}", toolchain)
+        format!("+1.{} ", toolchain)
     } else {
         String::new()
     }
@@ -133,10 +133,12 @@ struct AssertOutputInner {
 
 #[track_caller]
 fn line_separated(lines: &str, f: impl FnMut(&str)) {
-    let lines = if lines.contains("`cargo +") {
+    let lines = if lines.contains("cargo +")
+        || lines.contains(&format!("cargo{} +", env::consts::EXE_SUFFIX))
+    {
         lines.to_string()
     } else {
-        lines.replace("`cargo", &format!("`cargo{}", test_toolchain()))
+        lines.replace("cargo ", &format!("cargo {}", test_toolchain()))
     };
     lines.split('\n').map(str::trim).filter(|line| !line.is_empty()).for_each(f);
 }

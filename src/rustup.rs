@@ -41,7 +41,7 @@ pub(crate) fn version_range(range: &str, step: Option<&str>) -> Result<Vec<Strin
     let end = match split.next() {
         Some("") | None => {
             install_toolchain("stable", None, false)?;
-            cargo::minor_version(process!("cargo", "+stable"))?
+            cargo::minor_version(cmd!("cargo", "+stable"))?
         }
         Some(end) => {
             let end = end.parse()?;
@@ -73,7 +73,7 @@ pub(crate) fn install_toolchain(
     }
 
     if target.is_none()
-        && process!("cargo", format!("+{}", toolchain), "--version").run_with_output().is_ok()
+        && cmd!("cargo", format!("+{}", toolchain), "--version").run_with_output().is_ok()
     {
         // Do not run `rustup toolchain install` if the toolchain already has installed.
         return Ok(());
@@ -81,7 +81,7 @@ pub(crate) fn install_toolchain(
 
     // In Github Actions and Azure Pipelines, --no-self-update is necessary
     // because the windows environment cannot self-update rustup.exe.
-    let mut cmd = process!("rustup", "toolchain", "install", toolchain, "--no-self-update");
+    let mut cmd = cmd!("rustup", "toolchain", "add", toolchain, "--no-self-update");
     if let Some(target) = target {
         cmd.args(&["--target", target]);
     }
@@ -97,7 +97,7 @@ pub(crate) fn install_toolchain(
 }
 
 fn minor_version() -> Result<u32> {
-    let mut cmd = process!("rustup", "--version");
+    let mut cmd = cmd!("rustup", "--version");
     let output = cmd.read()?;
 
     let version = (|| {

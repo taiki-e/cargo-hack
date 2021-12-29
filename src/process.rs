@@ -10,9 +10,9 @@ use std::{
 
 use anyhow::{Context as _, Result};
 
-use crate::{Context, PackageId};
+use crate::{term, Context, PackageId};
 
-macro_rules! process {
+macro_rules! cmd {
     ($program:expr $(, $arg:expr)* $(,)?) => {{
         let mut _cmd = crate::process::ProcessBuilder::new($program);
         $(
@@ -61,8 +61,8 @@ impl<'a> ProcessBuilder<'a> {
             leading_args: Vec::new(),
             args: Vec::new(),
             features: String::new(),
-            display_program_path: false,
-            display_manifest_path: false,
+            display_program_path: term::verbose(),
+            display_manifest_path: term::verbose(),
         }
     }
 
@@ -90,7 +90,6 @@ impl<'a> ProcessBuilder<'a> {
     pub(crate) fn apply_context(&mut self, cx: &'a Context<'_>) -> &mut Self {
         self.propagated_leading_args = &cx.leading_args;
         self.trailing_args = cx.trailing_args;
-        self.display_manifest_path = cx.verbose;
         self
     }
 
@@ -117,22 +116,10 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    /// Enables full program path display.
-    pub(crate) fn display_program_path(&mut self) -> &mut Self {
-        self.display_program_path = true;
-        self
-    }
-
-    /// Enables manifest path display.
-    pub(crate) fn display_manifest_path(&mut self) -> &mut Self {
-        self.display_manifest_path = true;
-        self
-    }
-
     /// Enables all display-related flags.
     fn display_all(&mut self) {
-        self.display_program_path();
-        self.display_manifest_path();
+        self.display_program_path = true;
+        self.display_manifest_path = true;
     }
 
     /// Gets the comma-separated features list
@@ -148,7 +135,6 @@ impl<'a> ProcessBuilder<'a> {
             self.display_all();
             ProcessError::new(&format!("could not execute process {}", self), None, None)
         })?;
-
         if status.success() {
             Ok(())
         } else {
@@ -169,7 +155,6 @@ impl<'a> ProcessBuilder<'a> {
             self.display_all();
             ProcessError::new(&format!("could not execute process {}", self), None, None)
         })?;
-
         if output.status.success() {
             Ok(output)
         } else {
@@ -186,8 +171,10 @@ impl<'a> ProcessBuilder<'a> {
     /// Executes a process, captures its stdio output, returning the captured
     /// standard output as a `String`.
     pub(crate) fn read(&mut self) -> Result<String> {
-        let mut output = String::from_utf8(self.run_with_output()?.stdout)
-            .with_context(|| format!("failed to parse output from {}", self))?;
+        let mut output = String::from_utf8(self.run_with_output()?.stdout).with_context(|| {
+            self.display_all();
+            format!("failed to parse output from {}", self)
+        })?;
         while output.ends_with('\n') || output.ends_with('\r') {
             output.pop();
         }
