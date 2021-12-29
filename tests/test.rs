@@ -1197,11 +1197,12 @@ fn list_separator() {
 fn verbose() {
     cargo_hack(["check", "--verbose"]).assert_success("virtual").stderr_contains(format!(
         "
-        running `cargo check --manifest-path member1{0}Cargo.toml`
-        running `cargo check --manifest-path member2{0}Cargo.toml`
-        running `cargo check --manifest-path dir{0}not_find_manifest{0}Cargo.toml`
+        cargo{1} check --manifest-path member1{0}Cargo.toml`
+        cargo{1} check --manifest-path member2{0}Cargo.toml`
+        cargo{1} check --manifest-path dir{0}not_find_manifest{0}Cargo.toml`
         ",
-        SEPARATOR
+        SEPARATOR,
+        env::consts::EXE_SUFFIX
     ));
 }
 

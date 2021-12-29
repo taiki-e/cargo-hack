@@ -6,14 +6,15 @@
 
 use std::{
     collections::{BTreeMap, HashMap},
-    path::PathBuf,
+    ffi::OsStr,
+    path::{Path, PathBuf},
     rc::Rc,
 };
 
 use anyhow::{format_err, Context as _, Result};
 use serde_json::{Map, Value};
 
-use crate::{cli::Args, Cargo};
+use crate::{cargo, cli::Args, fs, restore, term};
 
 type Object = Map<String, Value>;
 type ParseResult<T> = Result<T, &'static str>;
@@ -33,6 +34,7 @@ impl From<String> for PackageId {
 }
 
 pub(crate) struct Metadata {
+    pub(crate) cargo_version: u32,
     /// List of all packages in the workspace and all feature-enabled dependencies.
     pub(crate) packages: HashMap<PackageId, Package>,
     /// List of members of the workspace.
@@ -44,35 +46,91 @@ pub(crate) struct Metadata {
 }
 
 impl Metadata {
-    pub(crate) fn new(args: &Args<'_>, cargo: &Cargo) -> Result<Self> {
-        let mut cmd = cargo.process();
-        cmd.args(&["metadata", "--format-version=1"]);
-        if let Some(manifest_path) = &args.manifest_path {
-            cmd.arg("--manifest-path");
-            cmd.arg(manifest_path);
-        }
-        let output = cmd.run_with_output()?;
+    pub(crate) fn new(args: &Args<'_>, cargo: &OsStr, restore: &restore::Manager) -> Result<Self> {
+        // If failed to determine cargo version, assign 0 to skip all version-dependent decisions.
+        let mut cargo_version = cargo::minor_version(cmd!(cargo))
+            .map_err(|e| warn!("unable to determine cargo version: {:#}", e))
+            .unwrap_or(0);
+        let stable_cargo_version = cargo::minor_version(cmd!("cargo", "+stable")).unwrap_or(0);
 
-        let map =
-            serde_json::from_slice(&output.stdout).context("failed to parse metadata as json")?;
-        Self::from_obj(map, cargo)
+        let mut cmd;
+        let json = if stable_cargo_version > cargo_version {
+            cmd = cmd!(cargo, "metadata", "--format-version=1", "--no-deps");
+            if let Some(manifest_path) = &args.manifest_path {
+                cmd.arg("--manifest-path");
+                cmd.arg(manifest_path);
+            }
+            let no_deps: Object = serde_json::from_str(&cmd.read()?)
+                .with_context(|| format!("failed to parse output from {}", cmd))?;
+            let lockfile =
+                Path::new(no_deps["workspace_root"].as_str().unwrap()).join("Cargo.lock");
+            if !lockfile.exists() {
+                let mut cmd = cmd!(cargo, "generate-lockfile");
+                if let Some(manifest_path) = &args.manifest_path {
+                    cmd.arg("--manifest-path");
+                    cmd.arg(manifest_path);
+                }
+                cmd.run_with_output()?;
+            }
+            let guard = term::scoped_verbose(false);
+            let mut handle = restore.set(&fs::read_to_string(&lockfile)?, lockfile);
+
+            // Try with stable cargo because if workspace member has
+            // a dependency that requires newer cargo features, `cargo metadata`
+            // with older cargo may fail.
+            cmd = cmd!("cargo", "+stable", "metadata", "--format-version=1");
+            if let Some(manifest_path) = &args.manifest_path {
+                cmd.arg("--manifest-path");
+                cmd.arg(manifest_path);
+            }
+            let json = cmd.read();
+            handle.close()?;
+            drop(guard);
+            match json {
+                Ok(json) => {
+                    cargo_version = stable_cargo_version;
+                    json
+                }
+                Err(_e) => {
+                    // If failed, try again with the version of cargo we will actually use.
+                    cmd = cmd!(cargo, "metadata", "--format-version=1");
+                    if let Some(manifest_path) = &args.manifest_path {
+                        cmd.arg("--manifest-path");
+                        cmd.arg(manifest_path);
+                    }
+                    cmd.read()?
+                }
+            }
+        } else {
+            cmd = cmd!(cargo, "metadata", "--format-version=1");
+            if let Some(manifest_path) = &args.manifest_path {
+                cmd.arg("--manifest-path");
+                cmd.arg(manifest_path);
+            }
+            cmd.read()?
+        };
+
+        let map = serde_json::from_str(&json)
+            .with_context(|| format!("failed to parse output from {}", cmd))?;
+        Self::from_obj(map, cargo_version)
             .map_err(|s| format_err!("failed to parse `{}` field from metadata", s))
     }
 
-    fn from_obj(mut map: Object, cargo: &Cargo) -> ParseResult<Self> {
+    fn from_obj(mut map: Object, cargo_version: u32) -> ParseResult<Self> {
         let workspace_members: Vec<_> = map
             .remove_array("workspace_members")?
             .into_iter()
             .map(|v| into_string(v).ok_or("workspace_members"))
             .collect::<Result<_, _>>()?;
         Ok(Self {
+            cargo_version,
             packages: map
                 .remove_array("packages")?
                 .into_iter()
-                .map(|v| Package::from_value(v, cargo))
+                .map(|v| Package::from_value(v, cargo_version))
                 .collect::<Result<_, _>>()?,
             workspace_members,
-            resolve: Resolve::from_obj(map.remove_object("resolve")?, cargo)?,
+            resolve: Resolve::from_obj(map.remove_object("resolve")?, cargo_version)?,
             workspace_root: map.remove_string("workspace_root")?,
         })
     }
@@ -88,12 +146,12 @@ pub(crate) struct Resolve {
 }
 
 impl Resolve {
-    fn from_obj(mut map: Object, cargo: &Cargo) -> ParseResult<Self> {
+    fn from_obj(mut map: Object, cargo_version: u32) -> ParseResult<Self> {
         Ok(Self {
             nodes: map
                 .remove_array("nodes")?
                 .into_iter()
-                .map(|v| Node::from_value(v, cargo))
+                .map(|v| Node::from_value(v, cargo_version))
                 .collect::<Result<_, _>>()?,
             root: map.remove_nullable("root", into_string)?,
         })
@@ -109,16 +167,16 @@ pub(crate) struct Node {
 }
 
 impl Node {
-    fn from_value(mut value: Value, cargo: &Cargo) -> ParseResult<(PackageId, Self)> {
+    fn from_value(mut value: Value, cargo_version: u32) -> ParseResult<(PackageId, Self)> {
         let map = value.as_object_mut().ok_or("nodes")?;
 
         let id = map.remove_string("id")?;
         Ok((id, Self {
             // This field was added in Rust 1.30.
-            deps: if cargo.version >= 30 {
+            deps: if cargo_version >= 30 {
                 map.remove_array("deps")?
                     .into_iter()
-                    .map(|v| NodeDep::from_value(v, cargo))
+                    .map(|v| NodeDep::from_value(v, cargo_version))
                     .collect::<Result<_, _>>()?
             } else {
                 Vec::new()
@@ -138,13 +196,13 @@ pub(crate) struct NodeDep {
 }
 
 impl NodeDep {
-    fn from_value(mut value: Value, cargo: &Cargo) -> ParseResult<Self> {
+    fn from_value(mut value: Value, cargo_version: u32) -> ParseResult<Self> {
         let map = value.as_object_mut().ok_or("deps")?;
 
         Ok(Self {
             pkg: map.remove_string("pkg")?,
             // This field was added in Rust 1.41.
-            dep_kinds: if cargo.version >= 41 {
+            dep_kinds: if cargo_version >= 41 {
                 map.remove_array("dep_kinds")?
                     .into_iter()
                     .map(DepKindInfo::from_value)
@@ -191,10 +249,15 @@ pub(crate) struct Package {
     ///
     /// This is always `true` if running with a version of Cargo older than 1.39.
     pub(crate) publish: bool,
+    /// The minimum supported Rust version of this package.
+    ///
+    /// This is always `None` if running with a version of Cargo older than 1.58.
+    #[allow(dead_code)]
+    pub(crate) rust_version: Option<String>,
 }
 
 impl Package {
-    fn from_value(mut value: Value, cargo: &Cargo) -> ParseResult<(PackageId, Self)> {
+    fn from_value(mut value: Value, cargo_version: u32) -> ParseResult<(PackageId, Self)> {
         let map = value.as_object_mut().ok_or("packages")?;
 
         let id = map.remove_string("id")?;
@@ -218,11 +281,17 @@ impl Package {
                 .ok_or("features")?,
             manifest_path: map.remove_string("manifest_path")?,
             // This field was added in Rust 1.39.
-            publish: if cargo.version >= 39 {
+            publish: if cargo_version >= 39 {
                 // Publishing is unrestricted if null, and forbidden if an empty array.
                 map.remove_nullable("publish", into_array)?.map_or(true, |a| !a.is_empty())
             } else {
                 true
+            },
+            // This field was added in Rust 1.58.
+            rust_version: if cargo_version >= 58 {
+                map.remove_nullable("rust_version", into_string)?
+            } else {
+                None
             },
         }))
     }

@@ -1,18 +1,20 @@
 use std::{
     borrow::Cow,
     collections::HashMap,
-    env, ops,
+    env,
+    ffi::OsString,
+    ops,
     path::{Path, PathBuf},
 };
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 
 use crate::{
     cli::{self, Args},
     features::Features,
     manifest::Manifest,
     metadata::{Metadata, Package, PackageId},
-    Cargo, ProcessBuilder,
+    restore, term, ProcessBuilder,
 };
 
 pub(crate) struct Context<'a> {
@@ -20,19 +22,28 @@ pub(crate) struct Context<'a> {
     metadata: Metadata,
     manifests: HashMap<PackageId, Manifest>,
     pkg_features: HashMap<PackageId, Features>,
-    cargo: Cargo,
+    cargo: PathBuf,
+    pub(crate) restore: restore::Manager,
     pub(crate) current_dir: PathBuf,
 }
 
 impl<'a> Context<'a> {
     pub(crate) fn new(args: &'a [String]) -> Result<Self> {
-        let (args, cargo) = cli::parse_args(args)?;
+        let cargo = env::var_os("CARGO_HACK_CARGO_SRC")
+            .unwrap_or_else(|| env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo")));
+        let args = cli::parse_args(args, &cargo)?;
         assert!(
             args.subcommand.is_some() || args.remove_dev_deps,
             "no subcommand or valid flag specified"
         );
 
-        let metadata = Metadata::new(&args, &cargo)?;
+        let mut restore = restore::Manager::new(true);
+        let metadata = Metadata::new(&args, &cargo, &restore)?;
+        // if `--remove-dev-deps` flag is off, restore manifest file.
+        restore.needs_restore = args.no_dev_deps && !args.remove_dev_deps;
+        if metadata.cargo_version < 41 && args.include_deps_features {
+            bail!("--include-deps-features requires Cargo 1.41 or later");
+        }
 
         let mut pkg_features = HashMap::with_capacity(metadata.workspace_members.len());
         for id in &metadata.workspace_members {
@@ -45,7 +56,8 @@ impl<'a> Context<'a> {
             metadata,
             manifests: HashMap::new(),
             pkg_features,
-            cargo,
+            cargo: cargo.into(),
+            restore,
             current_dir: env::current_dir()?,
         };
 
@@ -91,7 +103,7 @@ impl<'a> Context<'a> {
     }
 
     pub(crate) fn is_private(&self, id: &PackageId) -> bool {
-        if self.cargo.version >= 39 {
+        if self.metadata.cargo_version >= 39 {
             !self.packages(id).publish
         } else {
             !self.manifests(id).publish
@@ -100,7 +112,7 @@ impl<'a> Context<'a> {
 
     pub(crate) fn name_verbose(&self, id: &PackageId) -> Cow<'_, str> {
         let package = self.packages(id);
-        if self.verbose {
+        if term::verbose() {
             Cow::Owned(format!(
                 "{} ({})",
                 package.name,
@@ -113,15 +125,13 @@ impl<'a> Context<'a> {
 
     /// Return `true` if options that require information from cargo manifest is specified.
     pub(crate) fn require_manifest_info(&self) -> bool {
-        (self.cargo.version < 39 && self.ignore_private) || self.no_dev_deps || self.remove_dev_deps
+        (self.metadata.cargo_version < 39 && self.ignore_private)
+            || self.no_dev_deps
+            || self.remove_dev_deps
     }
 
     pub(crate) fn cargo(&self) -> ProcessBuilder<'_> {
-        let mut cmd = self.cargo.process();
-        if self.verbose {
-            cmd.display_manifest_path();
-        }
-        cmd
+        cmd!(&self.cargo)
     }
 }
 

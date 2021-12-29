@@ -1,6 +1,11 @@
 #![forbid(unsafe_code)]
 #![warn(rust_2018_idioms, single_use_lifetimes, unreachable_pub)]
-#![warn(clippy::default_trait_access, clippy::wildcard_imports)]
+#![warn(
+    clippy::default_trait_access,
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    clippy::wildcard_imports
+)]
 
 #[macro_use]
 mod term;
@@ -25,13 +30,15 @@ use std::fmt::Write;
 use anyhow::{bail, Result};
 
 use crate::{
-    cargo::Cargo, context::Context, features::Feature, metadata::PackageId,
-    process::ProcessBuilder, restore::Restore, rustup::Rustup,
+    context::Context, features::Feature, metadata::PackageId, process::ProcessBuilder,
+    rustup::Rustup,
 };
 
 fn main() {
     if let Err(e) = try_main() {
         error!("{:#}", e);
+    }
+    if term::has_error() {
         std::process::exit(1)
     }
 }
@@ -54,13 +61,9 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
 
     let mut progress = Progress::default();
     let packages = determine_package_list(cx, &mut progress)?;
-    let restore = Restore::new(cx);
     if let Some(range) = &cx.version_range {
         progress.total *= range.len();
-        let mut line = process!("cargo");
-        if cx.verbose {
-            line.display_manifest_path();
-        }
+        let line = cmd!("cargo");
         {
             // First, generate the lockfile using the oldest cargo specified.
             // https://github.com/taiki-e/cargo-hack/issues/105
@@ -68,7 +71,7 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
             rustup::install_toolchain(toolchain, cx.target, true)?;
             let mut line = line.clone();
             line.leading_arg(toolchain);
-            line.args(&["generate-lockfile"]);
+            line.arg("generate-lockfile");
             if let Some(pid) = cx.current_package() {
                 let package = cx.packages(pid);
                 line.arg("--manifest-path");
@@ -94,16 +97,16 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
             let mut line = line.clone();
             line.leading_arg(toolchain);
             line.apply_context(cx);
-            packages.iter().try_for_each(|(id, kind)| {
-                exec_on_package(cx, id, kind, &line, &restore, &mut progress)
-            })
+            packages
+                .iter()
+                .try_for_each(|(id, kind)| exec_on_package(cx, id, kind, &line, &mut progress))
         })
     } else {
         let mut line = cx.cargo();
         line.apply_context(cx);
-        packages.iter().try_for_each(|(id, kind)| {
-            exec_on_package(cx, id, kind, &line, &restore, &mut progress)
-        })
+        packages
+            .iter()
+            .try_for_each(|(id, kind)| exec_on_package(cx, id, kind, &line, &mut progress))
     }
 }
 
@@ -255,7 +258,6 @@ fn exec_on_package(
     id: &PackageId,
     kind: &Kind<'_>,
     line: &ProcessBuilder<'_>,
-    restore: &Restore,
     progress: &mut Progress,
 ) -> Result<()> {
     if let Kind::SkipAsPrivate = kind {
@@ -272,7 +274,7 @@ fn exec_on_package(
 
     if cx.no_dev_deps || cx.remove_dev_deps {
         let new = cx.manifests(id).remove_dev_deps();
-        let mut handle = restore.set_manifest(cx, id);
+        let mut handle = cx.restore.set(&cx.manifests(id).raw, &cx.packages(id).manifest_path);
 
         fs::write(&package.manifest_path, new)?;
 
@@ -368,7 +370,7 @@ fn exec_cargo(
 
     // running `<command>` (on <package>) (<count>/<total>)
     let mut msg = String::new();
-    if cx.verbose {
+    if term::verbose() {
         write!(msg, "running {}", line).unwrap();
     } else {
         write!(msg, "running {} on {}", line, cx.packages(id).name).unwrap();
@@ -387,7 +389,7 @@ fn cargo_clean(cx: &Context<'_>, id: Option<&PackageId>) -> Result<()> {
         line.arg(&cx.packages(id).name);
     }
 
-    if cx.verbose {
+    if term::verbose() {
         // running `cargo clean [--package <package>]`
         info!("running {}", line);
     }

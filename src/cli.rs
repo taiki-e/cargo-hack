@@ -1,8 +1,14 @@
-use std::{env, ffi::OsString, fmt, iter::Peekable, mem};
+use std::{
+    env,
+    ffi::{OsStr, OsString},
+    fmt,
+    iter::Peekable,
+    mem,
+};
 
 use anyhow::{bail, format_err, Error, Result};
 
-use crate::{rustup, term, Cargo, Feature, Rustup};
+use crate::{rustup, term, Feature, Rustup};
 
 pub(crate) struct Args<'a> {
     pub(crate) leading_args: Vec<&'a str>,
@@ -64,11 +70,9 @@ pub(crate) struct Args<'a> {
     /// --features <FEATURES>...
     pub(crate) features: Vec<&'a str>,
 
-    // propagated (as a part of leading_args) to cargo
+    // propagated to cargo (as a part of leading_args)
     /// --no-default-features
     pub(crate) no_default_features: bool,
-    /// -v, --verbose, -vv
-    pub(crate) verbose: bool,
     // Note: specifying multiple `--target` flags requires unstable `-Z multitarget`,
     // so cargo-hack currently only supports a single `--target`.
     /// --target <TRIPLE>...
@@ -93,7 +97,7 @@ fn handle_args(args: impl IntoIterator<Item = impl Into<OsString>>) -> Result<Ve
         .collect()
 }
 
-pub(crate) fn parse_args<'a>(raw: &'a [String]) -> Result<(Args<'a>, Cargo)> {
+pub(crate) fn parse_args<'a>(raw: &'a [String], cargo: &OsStr) -> Result<Args<'a>> {
     let mut iter = raw.iter();
     let args = &mut iter.by_ref().map(String::as_str).peekable();
     match args.next() {
@@ -448,9 +452,7 @@ pub(crate) fn parse_args<'a>(raw: &'a [String]) -> Result<(Args<'a>, Cargo)> {
             print_version();
             std::process::exit(0);
         } else if leading.contains(&"--list") {
-            let mut line = Cargo::new().process();
-            line.arg("--list");
-            line.run()?;
+            cmd!(cargo, "--list").run()?;
             std::process::exit(0);
         } else if !remove_dev_deps {
             // TODO: improve this
@@ -458,12 +460,8 @@ pub(crate) fn parse_args<'a>(raw: &'a [String]) -> Result<(Args<'a>, Cargo)> {
         }
     }
 
-    let cargo = Cargo::new();
     let rustup = Rustup::new();
 
-    if cargo.version < 41 && include_deps_features {
-        bail!("--include-deps-features requires Cargo 1.41 or later");
-    }
     if rustup.version < 23 && version_range.is_some() {
         bail!("--version-range requires rustup 1.23 or later");
     }
@@ -478,45 +476,42 @@ pub(crate) fn parse_args<'a>(raw: &'a [String]) -> Result<(Args<'a>, Cargo)> {
     exclude_all_features |= !include_features.is_empty() || !exclude_features.is_empty();
     exclude_features.extend_from_slice(&features);
 
-    Ok((
-        Args {
-            leading_args: leading,
-            trailing_args: iter.as_slice(),
+    term::set_verbose(verbose);
+    Ok(Args {
+        leading_args: leading,
+        trailing_args: iter.as_slice(),
 
-            subcommand,
+        subcommand,
 
-            manifest_path,
-            package,
-            exclude,
-            workspace: workspace.is_some(),
-            each_feature,
-            feature_powerset,
-            no_dev_deps,
-            remove_dev_deps,
-            ignore_private,
-            ignore_unknown_features,
-            optional_deps,
-            clean_per_run,
-            clean_per_version,
-            include_features: include_features.into_iter().map(Into::into).collect(),
-            include_deps_features,
-            version_range,
+        manifest_path,
+        package,
+        exclude,
+        workspace: workspace.is_some(),
+        each_feature,
+        feature_powerset,
+        no_dev_deps,
+        remove_dev_deps,
+        ignore_private,
+        ignore_unknown_features,
+        optional_deps,
+        clean_per_run,
+        clean_per_version,
+        include_features: include_features.into_iter().map(Into::into).collect(),
+        include_deps_features,
+        version_range,
 
-            depth,
-            group_features,
+        depth,
+        group_features,
 
-            exclude_features,
-            exclude_no_default_features,
-            exclude_all_features,
+        exclude_features,
+        exclude_no_default_features,
+        exclude_all_features,
 
-            features,
+        features,
 
-            no_default_features,
-            verbose,
-            target,
-        },
-        cargo,
-    ))
+        no_default_features,
+        target,
+    })
 }
 
 fn parse_opt<'a>(
@@ -881,7 +876,6 @@ mod tests {
     use std::{env, panic, path::Path, process::Command};
 
     use anyhow::Result;
-    use tempfile::Builder;
 
     use super::Help;
     use crate::fs;
@@ -911,16 +905,18 @@ mod tests {
         let expected = fs::read_to_string(expected_path).unwrap();
         if expected != actual {
             if env::var_os("CI").is_some() {
-                let outdir = Builder::new().prefix("assert_diff").tempdir().unwrap();
+                let outdir = tempfile::tempdir().unwrap();
                 let actual_path = &outdir.path().join(expected_path.file_name().unwrap());
                 fs::write(actual_path, actual).unwrap();
                 let status = Command::new("git")
                     .args(&["--no-pager", "diff", "--no-index", "--"])
-                    .args(&[expected_path, actual_path])
+                    .args(&[expected_path.strip_prefix(manifest_dir).unwrap(), actual_path])
+                    .current_dir(manifest_dir)
                     .status()
                     .unwrap();
                 assert!(!status.success());
-                panic!("assertion failed");
+                // patch -p1 <<'EOF' ... EOF
+                panic!("assertion failed; please run test locally and commit resulting changes, or apply above diff as patch");
             } else {
                 fs::write(expected_path, actual).unwrap();
             }
