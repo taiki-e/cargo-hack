@@ -52,14 +52,21 @@ OPTIONS:
         --each-feature
             Perform for each feature of the package.
 
-            This also includes runs with just --no-default-features flag, --all-features flag, and
-            default features.
+            This also includes runs with just --no-default-features flag, and default features.
+
+            When this flag is not used together with --exclude-features (--skip) and
+            --include-features and there are multiple features, this also includes runs with just
+            --all-features flag.
 
         --feature-powerset
             Perform for the feature powerset of the package.
 
-            This also includes runs with just --no-default-features flag, --all-features flag, and
-            default features.
+            This also includes runs with just --no-default-features flag, and default features.
+
+            When this flag is used together with --depth or namespaced features (-Z
+            namespaced-features) and not used together with --exclude-features (--skip) and
+            --include-features and there are multiple features, this also includes runs with just
+            --all-features flag.
 
         --optional-deps [DEPS]...
             Use optional dependencies as features.
@@ -209,6 +216,8 @@ this purpose, it is recommended to use with `--no-dev-deps` to avoid
 cargo hack check --each-feature --no-dev-deps
 ```
 
+See also [Options for adjusting the behavior of --each-feature and --feature-powerset](#options-for-adjusting-the-behavior-of---each-feature-and---feature-powerset) section.
+
 ### --feature-powerset
 
 Perform for the feature powerset which includes `--no-default-features` and
@@ -221,6 +230,12 @@ properly. (When used for this purpose, it is recommended to use with
 ```sh
 cargo hack check --feature-powerset --no-dev-deps
 ```
+
+cargo-hack deduplicate any fully equivalent feature combinations based on how the cargo features work. Therefore, it may be more efficient than checking all feature combinations in other ways.
+
+When using this flag results in a very large number of feature combinations, consider using [`--depth`](#--depth) option.
+
+See also [Options for adjusting the behavior of --each-feature and --feature-powerset](#options-for-adjusting-the-behavior-of---each-feature-and---feature-powerset) section.
 
 ### --no-dev-deps
 
@@ -295,6 +310,13 @@ The following flags can be used with `--each-feature` and `--feature-powerset`.
 #### --optional-deps
 
 Use optional dependencies as features.
+
+This flag treats all option dependencies as features by default.
+To treat only specific dependencies as features, pass a space or comma separated list.
+
+```sh
+cargo hack check --feature-powerset --optional-deps deps1,deps2
+```
 
 #### --exclude-features, --skip
 

@@ -476,8 +476,13 @@ pub(crate) fn parse_args<'a>(raw: &'a [String], cargo: &OsStr) -> Result<Args<'a
         );
     }
 
+    // https://github.com/taiki-e/cargo-hack/issues/42
+    // https://github.com/rust-lang/cargo/pull/8799
+    let namespaced_features = has_z_flag(&leading, "namespaced-features");
     exclude_no_default_features |= !include_features.is_empty();
-    exclude_all_features |= !include_features.is_empty() || !exclude_features.is_empty();
+    exclude_all_features |= !include_features.is_empty()
+        || !exclude_features.is_empty()
+        || (feature_powerset && !namespaced_features && depth.is_none());
     exclude_features.extend_from_slice(&features);
 
     term::set_verbose(verbose);
@@ -518,6 +523,25 @@ pub(crate) fn parse_args<'a>(raw: &'a [String], cargo: &OsStr) -> Result<Args<'a
         no_default_features,
         target,
     })
+}
+
+fn has_z_flag(args: &[&str], name: &str) -> bool {
+    let mut iter = args.iter().copied();
+    while let Some(mut arg) = iter.next() {
+        if arg == "-Z" {
+            arg = iter.next().unwrap();
+        } else if let Some(a) = arg.strip_prefix("-Z") {
+            arg = a
+        } else {
+            continue;
+        }
+        if let Some(rest) = arg.strip_prefix(name) {
+            if rest.is_empty() || rest.starts_with('=') {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 fn parse_opt<'a>(
@@ -565,27 +589,40 @@ const HELP: &[HelpText<'_>] = &[
     ("", "--manifest-path", "<PATH>", "Path to Cargo.toml", &[]),
     ("", "--features", "<FEATURES>...", "Space-separated list of features to activate", &[]),
     ("", "--each-feature", "", "Perform for each feature of the package", &[
-        "This also includes runs with just --no-default-features flag, --all-features flag, and default features.",
+        "This also includes runs with just --no-default-features flag, and default features.",
+        "When this flag is not used together with --exclude-features (--skip) and \
+         --include-features and there are multiple features, this also includes runs with \
+         just --all-features flag."
     ]),
     ("", "--feature-powerset", "", "Perform for the feature powerset of the package", &[
-        "This also includes runs with just --no-default-features flag, --all-features flag, and default features.",
+        "This also includes runs with just --no-default-features flag, and default features.",
+        // https://github.com/rust-lang/cargo/pull/8799
+        "When this flag is used together with --depth or namespaced features \
+         (-Z namespaced-features) and not used together with --exclude-features (--skip) and \
+         --include-features and there are multiple features, this also includes runs with just \
+         --all-features flag."
     ]),
     ("", "--optional-deps", "[DEPS]...", "Use optional dependencies as features", &[
         "If DEPS are not specified, all optional dependencies are considered as features.",
-        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
+        "This flag can only be used together with either --each-feature flag or --feature-powerset \
+         flag.",
     ]),
     ("", "--skip", "<FEATURES>...", "Alias for --exclude-features", &[]),
     ("", "--exclude-features", "<FEATURES>...", "Space-separated list of features to exclude", &[
         "To exclude run of default feature, using value `--exclude-features default`.",
-        "To exclude run of just --no-default-features flag, using --exclude-no-default-features flag.",
+        "To exclude run of just --no-default-features flag, using --exclude-no-default-features \
+         flag.",
         "To exclude run of just --all-features flag, using --exclude-all-features flag.",
-        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
+        "This flag can only be used together with either --each-feature flag or --feature-powerset \
+         flag.",
     ]),
     ("", "--exclude-no-default-features", "", "Exclude run of just --no-default-features flag", &[
-        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
+        "This flag can only be used together with either --each-feature flag or --feature-powerset \
+         flag.",
     ]),
     ("", "--exclude-all-features", "", "Exclude run of just --all-features flag", &[
-        "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
+        "This flag can only be used together with either --each-feature flag or --feature-powerset \
+         flag.",
     ]),
     (
         "",
@@ -598,26 +635,31 @@ const HELP: &[HelpText<'_>] = &[
         ],
     ),
     ("", "--group-features", "<FEATURES>...", "Space-separated list of features to group", &[
-        "To specify multiple groups, use this option multiple times: `--group-features a,b --group-features c,d`",
+        "To specify multiple groups, use this option multiple times: `--group-features a,b \
+         --group-features c,d`",
         "This flag can only be used together with --feature-powerset flag.",
     ]),
     (
         "",
         "--include-features",
         "<FEATURES>...",
-        "Include only the specified features in the feature combinations instead of package features",
+        "Include only the specified features in the feature combinations instead of package \
+         features",
         &[
-            "This flag can only be used together with either --each-feature flag or --feature-powerset flag.",
+            "This flag can only be used together with either --each-feature flag or \
+             --feature-powerset flag.",
         ],
     ),
     ("", "--no-dev-deps", "", "Perform without dev-dependencies", &[
-        "Note that this flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished.",
+        "Note that this flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is \
+         running and restores it when finished.",
     ]),
     (
         "",
         "--remove-dev-deps",
         "",
-        "Equivalent to --no-dev-deps flag except for does not restore the original `Cargo.toml` after performed",
+        "Equivalent to --no-dev-deps flag except for does not restore the original `Cargo.toml` \
+         after performed",
         &[],
     ),
     ("", "--ignore-private", "", "Skip to perform on `publish = false` packages", &[]),
@@ -634,7 +676,8 @@ const HELP: &[HelpText<'_>] = &[
         "<START>..[END]",
         "Perform commands on a specified (inclusive) range of Rust versions",
         &[
-            "If the given range is unclosed, the latest stable compiler is treated as the upper bound.",
+            "If the given range is unclosed, the latest stable compiler is treated as the upper \
+             bound.",
             "Note that ranges are always inclusive ranges.",
         ],
     ),
@@ -646,7 +689,8 @@ const HELP: &[HelpText<'_>] = &[
         &["This flag can only be used together with --version-range flag."],
     ),
     ("", "--clean-per-run", "", "Remove artifacts for that package before running the command", &[
-        "If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts will be removed before each run.",
+        "If used this flag with --workspace, --each-feature, or --feature-powerset, artifacts will \
+         be removed before each run.",
         "Note that dependencies artifacts will be preserved.",
     ]),
     ("", "--clean-per-version", "", "Remove artifacts per Rust version", &[

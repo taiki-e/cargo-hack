@@ -16,6 +16,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Add `--keep-going` flag. ([#140](https://github.com/taiki-e/cargo-hack/pull/140))
 
+- Fix an issue where `--feature-powerset` and `--each-feature` add `--all-features` as one of the combinations, even if it is already covered by another combination. ([#141](https://github.com/taiki-e/cargo-hack/pull/141))
+
 ## [0.5.8] - 2021-10-13
 
 - Distribute statically linked binary on Windows MSVC. ([#131](https://github.com/taiki-e/cargo-hack/pull/131))
