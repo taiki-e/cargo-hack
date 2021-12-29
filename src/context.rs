@@ -14,7 +14,7 @@ use crate::{
     features::Features,
     manifest::Manifest,
     metadata::{Metadata, Package, PackageId},
-    restore, term, ProcessBuilder,
+    restore, rustup, term, ProcessBuilder,
 };
 
 pub(crate) struct Context<'a> {
@@ -25,6 +25,7 @@ pub(crate) struct Context<'a> {
     cargo: PathBuf,
     pub(crate) restore: restore::Manager,
     pub(crate) current_dir: PathBuf,
+    pub(crate) version_range: Option<Vec<String>>,
 }
 
 impl<'a> Context<'a> {
@@ -45,6 +46,11 @@ impl<'a> Context<'a> {
             bail!("--include-deps-features requires Cargo 1.41 or later");
         }
 
+        let version_range = args
+            .version_range
+            .map(|range| rustup::version_range(range, args.version_step, &metadata))
+            .transpose()?;
+
         let mut pkg_features = HashMap::with_capacity(metadata.workspace_members.len());
         for id in &metadata.workspace_members {
             let features = Features::new(&metadata, id);
@@ -59,6 +65,7 @@ impl<'a> Context<'a> {
             cargo: cargo.into(),
             restore,
             current_dir: env::current_dir()?,
+            version_range,
         };
 
         // Only a few options require information from cargo manifest.

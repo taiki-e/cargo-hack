@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Fix an error when using old cargo with a dependency graph containing 2021 edition crates. ([#138](https://github.com/taiki-e/cargo-hack/pull/138))
 
+- Support omitting lower bound of --version-range. ([#139](https://github.com/taiki-e/cargo-hack/pull/139))
+
 ## [0.5.8] - 2021-10-13
 
 - Distribute statically linked binary on Windows MSVC. ([#131](https://github.com/taiki-e/cargo-hack/pull/131))
