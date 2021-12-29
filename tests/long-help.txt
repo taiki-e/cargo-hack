@@ -143,6 +143,9 @@ OPTIONS:
 
             This flag can only be used together with --version-range flag.
 
+        --keep-going
+            Keep going on failure.
+
     -v, --verbose
             Use verbose output.
 

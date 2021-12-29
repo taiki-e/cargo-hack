@@ -1344,3 +1344,23 @@ fn clean_per_version_failure() {
         .assert_failure("real")
         .stderr_contains("--clean-per-version can only be used together with --version-range");
 }
+
+#[test]
+fn keep_going() {
+    cargo_hack(["check", "--each-feature", "--keep-going"])
+        .assert_failure("keep_going")
+        .stderr_contains(format!(
+            "
+            running `cargo check --no-default-features` on keep_going (1/2)
+            `a` feature not specified
+            running `cargo check --no-default-features --features a` on keep_going (2/2)
+            `a` feature specified
+            failed to run 2 commands
+            failed commands:
+            keep_going:
+            cargo{0} check --manifest-path Cargo.toml --no-default-features`
+            cargo{0} check --manifest-path Cargo.toml --no-default-features --features a`
+            ",
+            env::consts::EXE_SUFFIX
+        ));
+}

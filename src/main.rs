@@ -25,7 +25,10 @@ mod restore;
 mod rustup;
 mod version;
 
-use std::fmt::Write;
+use std::{
+    collections::BTreeMap,
+    fmt::{self, Write},
+};
 
 use anyhow::{bail, Result};
 
@@ -61,6 +64,7 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
 
     let mut progress = Progress::default();
     let packages = determine_package_list(cx, &mut progress)?;
+    let mut keep_going = KeepGoing::default();
     if let Some(range) = &cx.version_range {
         progress.total *= range.len();
         let line = cmd!("cargo");
@@ -97,17 +101,22 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
             let mut line = line.clone();
             line.leading_arg(toolchain);
             line.apply_context(cx);
-            packages
-                .iter()
-                .try_for_each(|(id, kind)| exec_on_package(cx, id, kind, &line, &mut progress))
-        })
+            packages.iter().try_for_each(|(id, kind)| {
+                exec_on_package(cx, id, kind, &line, &mut progress, &mut keep_going)
+            })
+        })?;
     } else {
         let mut line = cx.cargo();
         line.apply_context(cx);
-        packages
-            .iter()
-            .try_for_each(|(id, kind)| exec_on_package(cx, id, kind, &line, &mut progress))
+        packages.iter().try_for_each(|(id, kind)| {
+            exec_on_package(cx, id, kind, &line, &mut progress, &mut keep_going)
+        })?;
     }
+    if keep_going.count > 0 {
+        eprintln!();
+        error!("{}", keep_going);
+    }
+    Ok(())
 }
 
 #[derive(Default)]
@@ -189,7 +198,9 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
         } else {
             progress.total += features.len()
                 + !cx.exclude_no_default_features as usize
-                + !cx.exclude_all_features as usize;
+                + (!cx.exclude_all_features
+                    && package.features.len() + package.optional_deps().count() > 1)
+                    as usize;
             Kind::Each { features }
         }
     } else if cx.feature_powerset {
@@ -202,7 +213,9 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
             // -1: the first element of a powerset is `[]`
             progress.total += features.len() - 1
                 + !cx.exclude_no_default_features as usize
-                + !cx.exclude_all_features as usize;
+                + (!cx.exclude_all_features
+                    && package.features.len() + package.optional_deps().count() > 1)
+                    as usize;
             Kind::Powerset { features }
         }
     } else {
@@ -259,6 +272,7 @@ fn exec_on_package(
     kind: &Kind<'_>,
     line: &ProcessBuilder<'_>,
     progress: &mut Progress,
+    keep_going: &mut KeepGoing,
 ) -> Result<()> {
     if let Kind::SkipAsPrivate = kind {
         return Ok(());
@@ -278,11 +292,11 @@ fn exec_on_package(
 
         fs::write(&package.manifest_path, new)?;
 
-        exec_actual(cx, id, kind, &mut line, progress)?;
+        exec_actual(cx, id, kind, &mut line, progress, keep_going)?;
 
         handle.close()
     } else {
-        exec_actual(cx, id, kind, &mut line, progress)
+        exec_actual(cx, id, kind, &mut line, progress, keep_going)
     }
 }
 
@@ -292,13 +306,14 @@ fn exec_actual(
     kind: &Kind<'_>,
     line: &mut ProcessBuilder<'_>,
     progress: &mut Progress,
+    keep_going: &mut KeepGoing,
 ) -> Result<()> {
     match kind {
         Kind::NoSubcommand => return Ok(()),
         Kind::SkipAsPrivate => unreachable!(),
         Kind::Normal => {
             // only run with default features
-            return exec_cargo(cx, id, line, progress);
+            return exec_cargo(cx, id, line, progress, keep_going);
         }
         Kind::Each { .. } | Kind::Powerset { .. } => {}
     }
@@ -316,29 +331,30 @@ fn exec_actual(
 
     if !cx.exclude_no_default_features {
         // run with no default features if the package has other features
-        exec_cargo(cx, id, &mut line, progress)?;
+        exec_cargo(cx, id, &mut line, progress, keep_going)?;
     }
 
     match kind {
         Kind::Each { features } => {
-            features
-                .iter()
-                .try_for_each(|f| exec_cargo_with_features(cx, id, &line, progress, Some(f)))?;
+            features.iter().try_for_each(|f| {
+                exec_cargo_with_features(cx, id, &line, progress, keep_going, Some(f))
+            })?;
         }
         Kind::Powerset { features } => {
             // The first element of a powerset is `[]` so it should be skipped.
-            features
-                .iter()
-                .skip(1)
-                .try_for_each(|f| exec_cargo_with_features(cx, id, &line, progress, f))?;
+            features.iter().skip(1).try_for_each(|f| {
+                exec_cargo_with_features(cx, id, &line, progress, keep_going, f)
+            })?;
         }
         _ => unreachable!(),
     }
 
-    if !cx.exclude_all_features {
+    let pkg = cx.packages(id);
+    if !cx.exclude_all_features && pkg.features.len() + pkg.optional_deps().count() > 1 {
         // run with all features
+        // https://github.com/taiki-e/cargo-hack/issues/42
         line.arg("--all-features");
-        exec_cargo(cx, id, &mut line, progress)?;
+        exec_cargo(cx, id, &mut line, progress, keep_going)?;
     }
 
     Ok(())
@@ -349,11 +365,33 @@ fn exec_cargo_with_features(
     id: &PackageId,
     line: &ProcessBuilder<'_>,
     progress: &mut Progress,
+    keep_going: &mut KeepGoing,
     features: impl IntoIterator<Item = impl AsRef<str>>,
 ) -> Result<()> {
     let mut line = line.clone();
     line.append_features(features);
-    exec_cargo(cx, id, &mut line, progress)
+    exec_cargo(cx, id, &mut line, progress, keep_going)
+}
+
+#[derive(Default)]
+struct KeepGoing {
+    count: u64,
+    failed_commands: BTreeMap<String, Vec<String>>,
+}
+
+impl fmt::Display for KeepGoing {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "failed to run {} commands", self.count)?;
+        writeln!(f)?;
+        writeln!(f, "failed commands:")?;
+        for (pkg, commands) in &self.failed_commands {
+            writeln!(f, "    {}:", pkg)?;
+            for cmd in commands {
+                writeln!(f, "        {}", cmd)?;
+            }
+        }
+        Ok(())
+    }
 }
 
 fn exec_cargo(
@@ -361,7 +399,34 @@ fn exec_cargo(
     id: &PackageId,
     line: &mut ProcessBuilder<'_>,
     progress: &mut Progress,
+    keep_going: &mut KeepGoing,
 ) -> Result<()> {
+    let res = exec_cargo_inner(cx, id, line, progress);
+    if cx.keep_going {
+        if let Err(e) = res {
+            error!("{:#}", e);
+            keep_going.count = keep_going.count.saturating_add(1);
+            let name = cx.packages(id).name.clone();
+            if !keep_going.failed_commands.contains_key(&name) {
+                keep_going.failed_commands.insert(name.clone(), vec![]);
+            }
+            keep_going.failed_commands.get_mut(&name).unwrap().push(format!("{:#}", line));
+        }
+        Ok(())
+    } else {
+        res
+    }
+}
+
+fn exec_cargo_inner(
+    cx: &Context<'_>,
+    id: &PackageId,
+    line: &mut ProcessBuilder<'_>,
+    progress: &mut Progress,
+) -> Result<()> {
+    if progress.count != 0 {
+        eprintln!();
+    }
     progress.count += 1;
 
     if cx.clean_per_run {
