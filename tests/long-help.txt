@@ -30,14 +30,21 @@ OPTIONS:
         --each-feature
             Perform for each feature of the package.
 
-            This also includes runs with just --no-default-features flag, --all-features flag, and
-            default features.
+            This also includes runs with just --no-default-features flag, and default features.
+
+            When this flag is not used together with --exclude-features (--skip) and
+            --include-features and there are multiple features, this also includes runs with just
+            --all-features flag.
 
         --feature-powerset
             Perform for the feature powerset of the package.
 
-            This also includes runs with just --no-default-features flag, --all-features flag, and
-            default features.
+            This also includes runs with just --no-default-features flag, and default features.
+
+            When this flag is used together with --depth or namespaced features (-Z
+            namespaced-features) and not used together with --exclude-features (--skip) and
+            --include-features and there are multiple features, this also includes runs with just
+            --all-features flag.
 
         --optional-deps [DEPS]...
             Use optional dependencies as features.
