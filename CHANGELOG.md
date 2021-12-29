@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.5.9] - 2021-12-29
+
 - Fix an error when using old cargo with a dependency graph containing 2021 edition crates. ([#138](https://github.com/taiki-e/cargo-hack/pull/138))
 
 - Support omitting lower bound of `--version-range`. ([#139](https://github.com/taiki-e/cargo-hack/pull/139))
@@ -250,7 +252,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.8...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.9...HEAD
+[0.5.9]: https://github.com/taiki-e/cargo-hack/compare/v0.5.8...v0.5.9
 [0.5.8]: https://github.com/taiki-e/cargo-hack/compare/v0.5.7...v0.5.8
 [0.5.7]: https://github.com/taiki-e/cargo-hack/compare/v0.5.6...v0.5.7
 [0.5.6]: https://github.com/taiki-e/cargo-hack/compare/v0.5.5...v0.5.6
