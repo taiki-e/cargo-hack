@@ -9,7 +9,13 @@ Cargo subcommand to provide various options useful for testing and continuous
 integration.
 
 - [Usage](#usage)
+  - [--each-feature](#--each-feature)
+  - [--feature-powerset](#--feature-powerset)
+  - [--version-range](#--version-range)
+  - [Options for adjusting the behavior of --each-feature and --feature-powerset](#options-for-adjusting-the-behavior-of---each-feature-and---feature-powerset)
+  - [Improvement of the behavior of existing cargo flags](#improvement-of-the-behavior-of-existing-cargo-flags)
 - [Installation](#installation)
+- [Related Projects](#related-projects)
 - [License](#license)
 
 ## Usage
@@ -237,6 +243,7 @@ When using this flag results in a very large number of feature combinations, con
 
 See also [Options for adjusting the behavior of --each-feature and --feature-powerset](#options-for-adjusting-the-behavior-of---each-feature-and---feature-powerset) section.
 
+<!-- omit in toc -->
 ### --no-dev-deps
 
 Perform without dev-dependencies.
@@ -257,6 +264,7 @@ See [cargo#4242] for why this is necessary.
 Also, this behavior may change in the future on some subcommands. See also
 [#15].
 
+<!-- omit in toc -->
 ### --remove-dev-deps
 
 Equivalent to `--no-dev-deps` except for does not restore the original
@@ -267,10 +275,12 @@ with `--no-dev-deps`.
 
 *This flag also works without subcommands.*
 
+<!-- omit in toc -->
 ### --ignore-private
 
 Skip to perform on `publish = false` packages.
 
+<!-- omit in toc -->
 ### --ignore-unknown-features
 
 Skip passing `--features` to `cargo` if that feature does not exist.
@@ -293,10 +303,12 @@ upper bound.
 This might be useful for catching issues like [termcolor#35], [regex#685],
 [rust-clippy#6324].
 
+<!-- omit in toc -->
 ### --version-step
 
 Specify the version interval of `--version-range`.
 
+<!-- omit in toc -->
 ### --clean-per-run
 
 Remove artifacts for that package before running the command.
@@ -369,6 +381,7 @@ fields of [`cargo metadata`][cargo-metadata].*
 
 ## Installation
 
+<!-- omit in toc -->
 ### From source
 
 ```sh
@@ -381,11 +394,13 @@ cargo-hack is usually runnable with Cargo versions older than the Rust version
 required for installation (e.g., `cargo +1.31 hack check`). Currently, to run
 cargo-hack requires Cargo 1.26+.
 
+<!-- omit in toc -->
 ### From prebuilt binaries
 
 You can download prebuilt binaries from the [Release page](https://github.com/taiki-e/cargo-hack/releases).
 Prebuilt binaries are available for macOS, Linux (gnu and musl), and Windows (static executable).
 
+<!-- omit in toc -->
 ### Via Homebrew
 
 You can install cargo-hack using [Homebrew tap on macOS and Linux](https://github.com/taiki-e/homebrew-tap/blob/main/Formula/cargo-hack.rb):
@@ -394,6 +409,7 @@ You can install cargo-hack using [Homebrew tap on macOS and Linux](https://githu
 brew install taiki-e/tap/cargo-hack
 ```
 
+<!-- omit in toc -->
 ### Via AUR (ArchLinux)
 
 You can install [cargo-hack from AUR](https://aur.archlinux.org/packages/cargo-hack):
@@ -403,6 +419,16 @@ paru -S cargo-hack
 ```
 
 NOTE: AUR package is maintained by community, not maintainer of cargo-hack.
+
+<!-- omit in toc -->
+### On GitHub Actions
+
+You can use [taiki-e/install-action](https://github.com/taiki-e/install-action) to install prebuilt binaries of cargo-hack on Linux, macOS, and Windows.
+This makes the installation faster and may avoid the impact of [problems caused by upstream changes](https://github.com/tokio-rs/bytes/issues/506).
+
+```yaml
+- uses: taiki-e/install-action@cargo-hack
+```
 
 [#15]: https://github.com/taiki-e/cargo-hack/issues/15
 [termcolor#35]: https://github.com/BurntSushi/termcolor/issues/35
@@ -419,6 +445,14 @@ NOTE: AUR package is maintained by community, not maintainer of cargo-hack.
 [rust-clippy#4612]: https://github.com/rust-lang/rust-clippy/issues/4612
 [rust-clippy#6324]: https://github.com/rust-lang/rust-clippy/issues/6324
 [cargo-metadata]: https://doc.rust-lang.org/cargo/commands/cargo-metadata.html
+
+## Related Projects
+
+- [cargo-llvm-cov]: Cargo subcommand to easily use LLVM source-based code coverage.
+- [cargo-minimal-versions]: Cargo subcommand for proper use of `-Z minimal-versions`.
+
+[cargo-llvm-cov]: https://github.com/taiki-e/cargo-llvm-cov
+[cargo-minimal-versions]: https://github.com/taiki-e/cargo-minimal-versions
 
 ## License
 
