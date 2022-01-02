@@ -11,8 +11,8 @@ integration.
 - [Usage](#usage)
   - [--each-feature](#--each-feature)
   - [--feature-powerset](#--feature-powerset)
-  - [--version-range](#--version-range)
   - [Options for adjusting the behavior of --each-feature and --feature-powerset](#options-for-adjusting-the-behavior-of---each-feature-and---feature-powerset)
+  - [--version-range](#--version-range)
   - [Improvement of the behavior of existing cargo flags](#improvement-of-the-behavior-of-existing-cargo-flags)
 - [Installation](#installation)
 - [Related Projects](#related-projects)
@@ -243,6 +243,60 @@ When using this flag results in a very large number of feature combinations, con
 
 See also [Options for adjusting the behavior of --each-feature and --feature-powerset](#options-for-adjusting-the-behavior-of---each-feature-and---feature-powerset) section.
 
+### Options for adjusting the behavior of --each-feature and --feature-powerset
+
+The following flags can be used with `--each-feature` and `--feature-powerset`.
+
+#### --optional-deps
+
+Use optional dependencies as features.
+
+This flag treats all option dependencies as features by default.
+To treat only specific dependencies as features, pass a space or comma separated list.
+
+```sh
+cargo hack check --feature-powerset --optional-deps deps1,deps2
+```
+
+#### --exclude-features, --skip
+
+Space-separated list of features to exclude.
+
+#### --depth
+
+Specify a max number of simultaneous feature flags of `--feature-powerset`.
+
+If the number is set to 1, `--feature-powerset` is equivalent to
+`--each-feature`.
+
+#### --group-features
+
+Space-separated list of features to group.
+
+To specify multiple groups, use this option multiple times:
+`--group-features a,b --group-features c,d`
+
+### --version-range
+
+Perform commands on a specified (inclusive) range of Rust versions.
+
+```console
+$ cargo hack check --version-range 1.46..1.47
+info: running `cargo +1.46 check` on cargo-hack (1/2)
+...
+info: running `cargo +1.47 check` on cargo-hack (2/2)
+...
+```
+
+This might be useful for catching issues like [termcolor#35], [regex#685],
+[rust-clippy#6324].
+
+If the upper bound of the range is omitted, the latest stable compiler is used as the upper bound.
+
+If the lower bound of the range is omitted, the value of the `rust-version` field in `Cargo.toml` is used as the lower bound.
+
+You can specify the version interval by using `--version-step`.
+
 <!-- omit in toc -->
 ### --no-dev-deps
 
@@ -285,68 +339,12 @@ Skip to perform on `publish = false` packages.
 
 Skip passing `--features` to `cargo` if that feature does not exist.
 
-### --version-range
-
-Perform commands on a specified (inclusive) range of Rust versions.
-
-```console
-$ cargo hack check --version-range 1.46..1.47
-info: running `cargo +1.46 check` on cargo-hack (1/2)
-...
-info: running `cargo +1.47 check` on cargo-hack (2/2)
-...
-```
-
-If the given range is unclosed, the latest stable compiler is treated as the
-upper bound.
-
-This might be useful for catching issues like [termcolor#35], [regex#685],
-[rust-clippy#6324].
-
-<!-- omit in toc -->
-### --version-step
-
-Specify the version interval of `--version-range`.
-
 <!-- omit in toc -->
 ### --clean-per-run
 
 Remove artifacts for that package before running the command.
 
 This also works as a workaround for [rust-clippy#4612].
-
-### Options for adjusting the behavior of --each-feature and --feature-powerset
-
-The following flags can be used with `--each-feature` and `--feature-powerset`.
-
-#### --optional-deps
-
-Use optional dependencies as features.
-
-This flag treats all option dependencies as features by default.
-To treat only specific dependencies as features, pass a space or comma separated list.
-
-```sh
-cargo hack check --feature-powerset --optional-deps deps1,deps2
-```
-
-#### --exclude-features, --skip
-
-Space-separated list of features to exclude.
-
-#### --depth
-
-Specify a max number of simultaneous feature flags of `--feature-powerset`.
-
-If the number is set to 1, `--feature-powerset` is equivalent to
-`--each-feature`.
-
-#### --group-features
-
-Space-separated list of features to group.
-
-To specify multiple groups, use this option multiple times:
-`--group-features a,b --group-features c,d`
 
 ### Improvement of the behavior of existing cargo flags
 
@@ -423,15 +421,22 @@ NOTE: AUR package is maintained by community, not maintainer of cargo-hack.
 <!-- omit in toc -->
 ### On GitHub Actions
 
-You can use [taiki-e/install-action](https://github.com/taiki-e/install-action) to install prebuilt binaries of cargo-hack on Linux, macOS, and Windows.
+You can use [taiki-e/install-action](https://github.com/taiki-e/install-action) to install prebuilt binaries on Linux, macOS, and Windows.
 This makes the installation faster and may avoid the impact of [problems caused by upstream changes](https://github.com/tokio-rs/bytes/issues/506).
 
 ```yaml
 - uses: taiki-e/install-action@cargo-hack
 ```
 
+## Related Projects
+
+- [cargo-llvm-cov]: Cargo subcommand to easily use LLVM source-based code coverage.
+- [cargo-minimal-versions]: Cargo subcommand for proper use of `-Z minimal-versions`.
+
 [#15]: https://github.com/taiki-e/cargo-hack/issues/15
-[termcolor#35]: https://github.com/BurntSushi/termcolor/issues/35
+[cargo-llvm-cov]: https://github.com/taiki-e/cargo-llvm-cov
+[cargo-metadata]: https://doc.rust-lang.org/cargo/commands/cargo-metadata.html
+[cargo-minimal-versions]: https://github.com/taiki-e/cargo-minimal-versions
 [cargo#3620]: https://github.com/rust-lang/cargo/issues/3620
 [cargo#4106]: https://github.com/rust-lang/cargo/issues/4106
 [cargo#4242]: https://github.com/rust-lang/cargo/issues/4242
@@ -444,15 +449,7 @@ This makes the installation faster and may avoid the impact of [problems caused 
 [regex#685]: https://github.com/rust-lang/regex/issues/685
 [rust-clippy#4612]: https://github.com/rust-lang/rust-clippy/issues/4612
 [rust-clippy#6324]: https://github.com/rust-lang/rust-clippy/issues/6324
-[cargo-metadata]: https://doc.rust-lang.org/cargo/commands/cargo-metadata.html
-
-## Related Projects
-
-- [cargo-llvm-cov]: Cargo subcommand to easily use LLVM source-based code coverage.
-- [cargo-minimal-versions]: Cargo subcommand for proper use of `-Z minimal-versions`.
-
-[cargo-llvm-cov]: https://github.com/taiki-e/cargo-llvm-cov
-[cargo-minimal-versions]: https://github.com/taiki-e/cargo-minimal-versions
+[termcolor#35]: https://github.com/BurntSushi/termcolor/issues/35
 
 ## License
 
