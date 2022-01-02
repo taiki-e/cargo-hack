@@ -4,14 +4,13 @@ use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
     process::{Command, ExitStatus},
-    sync::atomic::{AtomicUsize, Ordering::Relaxed},
 };
 
 use anyhow::Result;
 use easy_ext::ext;
 use fs_err as fs;
 use once_cell::sync::Lazy;
-use tempfile::{Builder, TempDir};
+use tempfile::TempDir;
 use walkdir::WalkDir;
 
 static FIXTURES_PATH: Lazy<PathBuf> =
@@ -247,11 +246,7 @@ pub fn target_triple() -> String {
 }
 
 fn test_project(model: &str) -> Result<(TempDir, PathBuf)> {
-    static COUNTER: AtomicUsize = AtomicUsize::new(0);
-
-    let tmpdir = Builder::new()
-        .prefix(&format!("test_project{}", COUNTER.fetch_add(1, Relaxed)))
-        .tempdir()?;
+    let tmpdir = tempfile::tempdir()?;
     let tmpdir_path = tmpdir.path();
 
     let model_path;

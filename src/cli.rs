@@ -924,7 +924,13 @@ fn conflicts(a: &str, b: &str) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use std::{env, panic, path::Path, process::Command};
+    use std::{
+        env,
+        io::Write,
+        panic,
+        path::Path,
+        process::{Command, Stdio},
+    };
 
     use anyhow::Result;
 
@@ -949,6 +955,8 @@ mod tests {
     fn assert_diff(expected_path: impl AsRef<Path>, actual: impl AsRef<str>) {
         let actual = actual.as_ref();
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let manifest_dir =
+            manifest_dir.strip_prefix(env::current_dir().unwrap()).unwrap_or(manifest_dir);
         let expected_path = &manifest_dir.join(expected_path);
         if !expected_path.is_file() {
             fs::write(expected_path, "").unwrap();
@@ -956,16 +964,15 @@ mod tests {
         let expected = fs::read_to_string(expected_path).unwrap();
         if expected != actual {
             if env::var_os("CI").is_some() {
-                let outdir = tempfile::tempdir().unwrap();
-                let actual_path = &outdir.path().join(expected_path.file_name().unwrap());
-                fs::write(actual_path, actual).unwrap();
-                let status = Command::new("git")
-                    .args(&["--no-pager", "diff", "--no-index", "--"])
-                    .args(&[expected_path.strip_prefix(manifest_dir).unwrap(), actual_path])
-                    .current_dir(manifest_dir)
-                    .status()
+                let mut child = Command::new("git")
+                    .args(["--no-pager", "diff", "--no-index", "--"])
+                    .arg(expected_path)
+                    .arg("-")
+                    .stdin(Stdio::piped())
+                    .spawn()
                     .unwrap();
-                assert!(!status.success());
+                child.stdin.as_mut().unwrap().write_all(actual.as_bytes()).unwrap();
+                assert!(!child.wait().unwrap().success());
                 // patch -p1 <<'EOF' ... EOF
                 panic!("assertion failed; please run test locally and commit resulting changes, or apply above diff as patch");
             } else {
