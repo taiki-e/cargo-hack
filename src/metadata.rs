@@ -72,7 +72,7 @@ impl Metadata {
                 }
                 cmd.run_with_output()?;
             }
-            let guard = term::scoped_verbose(false);
+            let guard = term::verbose::scoped(false);
             let mut handle = restore.set(&fs::read_to_string(&lockfile)?, lockfile);
 
             // Try with stable cargo because if workspace member has

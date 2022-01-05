@@ -27,6 +27,7 @@ mod version;
 
 use std::{
     collections::BTreeMap,
+    env,
     fmt::{self, Write},
 };
 
@@ -41,7 +42,9 @@ fn main() {
     if let Err(e) = try_main() {
         error!("{:#}", e);
     }
-    if term::has_error() {
+    if term::error()
+        || term::warn() && env::var_os("CARGO_HACK_DENY_WARNINGS").filter(|v| v == "true").is_some()
+    {
         std::process::exit(1)
     }
 }
@@ -164,12 +167,16 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
         let mut features: Vec<_> = feature_list.normal().iter().filter(filter).collect();
 
         if let Some(opt_deps) = &cx.optional_deps {
-            for &d in opt_deps {
-                if !feature_list.optional_deps().iter().any(|f| f == d) {
-                    warn!(
-                        "specified optional dependency `{}` not found in package `{}`",
-                        d, package.name
-                    );
+            if opt_deps.len() == 1 && opt_deps[0].is_empty() {
+                // --optional-deps=
+            } else {
+                for &d in opt_deps {
+                    if !feature_list.optional_deps().iter().any(|f| f == d) {
+                        warn!(
+                            "specified optional dependency `{}` not found in package `{}`",
+                            d, package.name
+                        );
+                    }
                 }
             }
 

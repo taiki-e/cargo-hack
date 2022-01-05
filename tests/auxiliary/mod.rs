@@ -18,6 +18,7 @@ static FIXTURES_PATH: Lazy<PathBuf> =
 
 pub fn cargo_bin_exe() -> Command {
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_cargo-hack"));
+    cmd.env("CARGO_HACK_DENY_WARNINGS", "true");
     cmd.env_remove("RUSTFLAGS");
     cmd.env_remove("CARGO_TERM_COLOR");
     cmd

@@ -308,12 +308,14 @@ pub(crate) fn parse_args<'a>(raw: &'a [String], cargo: &OsStr) -> Result<Args<'a
             ])?;
         }
         if !include_features.is_empty() {
+            let _guard = term::warn::scoped(false);
             // TODO: implement
             warn!(
                 "--ignore-unknown-features for --include-features is not fully implemented and may not work as intended"
             );
         }
         if !group_features.is_empty() {
+            let _guard = term::warn::scoped(false);
             // TODO: implement
             warn!(
                 "--ignore-unknown-features for --group-features is not fully implemented and may not work as intended"
@@ -485,7 +487,7 @@ pub(crate) fn parse_args<'a>(raw: &'a [String], cargo: &OsStr) -> Result<Args<'a
         || (feature_powerset && !namespaced_features && depth.is_none());
     exclude_features.extend_from_slice(&features);
 
-    term::set_verbose(verbose);
+    term::verbose::set(verbose);
     Ok(Args {
         leading_args: leading,
         trailing_args: iter.as_slice(),
@@ -1022,7 +1024,7 @@ mod tests {
             }
         }
         if start && end {
-            fs::write(path, out)?;
+            assert_diff(path, out);
         } else if start {
             panic!("missing `<!-- readme-long-help:end -->` comment in README.md");
         } else {

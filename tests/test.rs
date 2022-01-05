@@ -233,7 +233,7 @@ fn exclude() {
         .stderr_contains("running `cargo check` on member2");
 
     // not_found is warning
-    cargo_hack(["check", "--all", "--exclude", "foo"]).assert_success("virtual").stderr_contains(
+    cargo_hack(["check", "--all", "--exclude", "foo"]).assert_failure("virtual").stderr_contains(
         "
         excluded package(s) `foo` not found in workspace
         running `cargo check` on member1
@@ -802,7 +802,7 @@ fn exclude_features_failure() {
         .stderr_contains("feature `a` specified by both --exclude-features and --include-features");
 
     cargo_hack(["check", "--each-feature", "--exclude-features=z"])
-        .assert_success("real") // warn
+        .assert_failure("real") // warn
         .stderr_contains("specified feature `z` not found in package `real`");
 }
 
@@ -1314,7 +1314,7 @@ fn version_range_failure() {
 
     // patch version
     cargo_hack(["check", "--version-range", "1.45.2.."])
-        .assert_success("real") // warn
+        .assert_failure("real") // warn
         .stderr_contains(
             "
             --version-range always selects the latest patch release per minor release, \

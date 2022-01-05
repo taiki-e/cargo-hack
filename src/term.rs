@@ -51,7 +51,6 @@ pub(crate) fn set_coloring(color: Option<&str>) -> Result<()> {
     if coloring == Coloring::Auto && !atty::is(atty::Stream::Stderr) {
         coloring = Coloring::Never;
     }
-    // Relaxed is fine because only the argument parsing step updates this value.
     COLORING.store(coloring as _, Ordering::Relaxed);
     Ok(())
 }
@@ -64,36 +63,35 @@ fn coloring() -> ColorChoice {
     }
 }
 
-static HAS_ERROR: AtomicBool = AtomicBool::new(false);
-pub(crate) fn set_error() {
-    HAS_ERROR.store(true, Ordering::SeqCst)
+macro_rules! global_flag {
+    ($name:ident: $value:ty = $ty:ident::new($($default:expr)?)) => {
+        pub(crate) mod $name {
+            use super::*;
+            pub(super) static VALUE: $ty = $ty::new($($default)?);
+            pub(crate) fn set(value: $value) {
+                VALUE.store(value, Ordering::Relaxed);
+            }
+            pub(crate) struct Guard {
+                prev: $value,
+            }
+            impl Drop for Guard {
+                fn drop(&mut self) {
+                    set(self.prev);
+                }
+            }
+            #[allow(dead_code)]
+            pub(crate) fn scoped(value: $value) -> Guard {
+                Guard { prev: VALUE.swap(value, Ordering::Relaxed) }
+            }
+        }
+        pub(crate) fn $name() -> $value {
+            $name::VALUE.load(Ordering::Relaxed)
+        }
+    };
 }
-pub(crate) fn has_error() -> bool {
-    HAS_ERROR.load(Ordering::SeqCst)
-}
-
-static VERBOSE: AtomicBool = AtomicBool::new(false);
-pub(crate) struct VerboseGuard {
-    prev: bool,
-}
-impl Drop for VerboseGuard {
-    fn drop(&mut self) {
-        set_verbose(self.prev);
-    }
-}
-pub(crate) fn set_verbose(verbose: bool) {
-    // TODO: CARGO_TERM_VERBOSE
-    // https://doc.rust-lang.org/nightly/cargo/reference/config.html#termverbose
-    VERBOSE.store(verbose, Ordering::Relaxed)
-}
-pub(crate) fn scoped_verbose(verbose: bool) -> VerboseGuard {
-    // TODO: CARGO_TERM_VERBOSE
-    // https://doc.rust-lang.org/nightly/cargo/reference/config.html#termverbose
-    VerboseGuard { prev: VERBOSE.swap(verbose, Ordering::Relaxed) }
-}
-pub(crate) fn verbose() -> bool {
-    VERBOSE.load(Ordering::Relaxed)
-}
+global_flag!(verbose: bool = AtomicBool::new(false));
+global_flag!(error: bool = AtomicBool::new(false));
+global_flag!(warn: bool = AtomicBool::new(false));
 
 pub(crate) fn print_status(status: &str, color: Option<Color>) -> StandardStream {
     let mut stream = StandardStream::stderr(coloring());
@@ -109,7 +107,7 @@ pub(crate) fn print_status(status: &str, color: Option<Color>) -> StandardStream
 macro_rules! error {
     ($($msg:expr),* $(,)?) => {{
         use std::io::Write;
-        crate::term::set_error();
+        crate::term::error::set(true);
         let mut stream = crate::term::print_status("error", Some(termcolor::Color::Red));
         let _ = writeln!(stream, $($msg),*);
     }};
@@ -118,6 +116,7 @@ macro_rules! error {
 macro_rules! warn {
     ($($msg:expr),* $(,)?) => {{
         use std::io::Write;
+        crate::term::warn::set(true);
         let mut stream = crate::term::print_status("warning", Some(termcolor::Color::Yellow));
         let _ = writeln!(stream, $($msg),*);
     }};
