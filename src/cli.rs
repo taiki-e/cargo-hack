@@ -1,27 +1,29 @@
 use std::{
     env,
     ffi::{OsStr, OsString},
-    fmt,
-    iter::Peekable,
-    mem,
+    fmt, mem,
 };
 
-use anyhow::{bail, format_err, Error, Result};
+use anyhow::{bail, format_err, Result};
+use lexopt::{
+    Arg::{Long, Short, Value},
+    ValueExt,
+};
 
 use crate::{term, Feature, Rustup};
 
-pub(crate) struct Args<'a> {
-    pub(crate) leading_args: Vec<&'a str>,
-    pub(crate) trailing_args: &'a [String],
+pub(crate) struct Args {
+    pub(crate) leading_args: Vec<String>,
+    pub(crate) trailing_args: Vec<String>,
 
-    pub(crate) subcommand: Option<&'a str>,
+    pub(crate) subcommand: Option<String>,
 
     /// --manifest-path <PATH>
-    pub(crate) manifest_path: Option<&'a str>,
+    pub(crate) manifest_path: Option<String>,
     /// -p, --package <SPEC>...
-    pub(crate) package: Vec<&'a str>,
+    pub(crate) package: Vec<String>,
     /// --exclude <SPEC>...
-    pub(crate) exclude: Vec<&'a str>,
+    pub(crate) exclude: Vec<String>,
     /// --workspace, (--all)
     pub(crate) workspace: bool,
     /// --each-feature
@@ -43,13 +45,13 @@ pub(crate) struct Args<'a> {
     /// --keep-going
     pub(crate) keep_going: bool,
     /// --version-range
-    pub(crate) version_range: Option<&'a str>,
+    pub(crate) version_range: Option<String>,
     /// --version-step
-    pub(crate) version_step: Option<&'a str>,
+    pub(crate) version_step: Option<String>,
 
     // options for --each-feature and --feature-powerset
     /// --optional-deps [DEPS]...
-    pub(crate) optional_deps: Option<Vec<&'a str>>,
+    pub(crate) optional_deps: Option<Vec<String>>,
     /// --include-features
     pub(crate) include_features: Vec<Feature>,
     /// --include-deps-features
@@ -58,7 +60,7 @@ pub(crate) struct Args<'a> {
     // Note: These values are not always exactly the same as the input.
     // Error messages should not assume that these options have been specified.
     /// --exclude-features <FEATURES>..., --skip <FEATURES>...
-    pub(crate) exclude_features: Vec<&'a str>,
+    pub(crate) exclude_features: Vec<String>,
     /// --exclude-no-default-features
     pub(crate) exclude_no_default_features: bool,
     /// --exclude-all-features
@@ -72,7 +74,7 @@ pub(crate) struct Args<'a> {
 
     // options that will be propagated to cargo
     /// --features <FEATURES>...
-    pub(crate) features: Vec<&'a str>,
+    pub(crate) features: Vec<String>,
 
     // propagated to cargo (as a part of leading_args)
     /// --no-default-features
@@ -80,453 +82,501 @@ pub(crate) struct Args<'a> {
     // Note: specifying multiple `--target` flags requires unstable `-Z multitarget`,
     // so cargo-hack currently only supports a single `--target`.
     /// --target <TRIPLE>...
-    pub(crate) target: Option<&'a str>,
+    pub(crate) target: Option<String>,
 }
 
-pub(crate) fn raw() -> Result<Vec<String>> {
-    let mut args = env::args_os();
-    let _ = args.next(); // executable name
-    handle_args(args)
-}
+impl Args {
+    pub(crate) fn parse(cargo: &OsStr) -> Result<Self> {
+        const SUBCMD: &str = "hack";
 
-fn handle_args(args: impl IntoIterator<Item = impl Into<OsString>>) -> Result<Vec<String>> {
-    // Adapted from https://github.com/rust-lang/rust/blob/3bc9dd0dd293ab82945e35888ed6d7ab802761ef/compiler/rustc_driver/src/lib.rs#L1365-L1375.
-    args.into_iter()
-        .enumerate()
-        .map(|(i, arg)| {
-            arg.into()
-                .into_string()
-                .map_err(|arg| format_err!("argument {} is not valid Unicode: {:?}", i + 1, arg))
-        })
-        .collect()
-}
-
-pub(crate) fn parse_args<'a>(raw: &'a [String], cargo: &OsStr) -> Result<Args<'a>> {
-    let mut iter = raw.iter();
-    let args = &mut iter.by_ref().map(String::as_str).peekable();
-    match args.next() {
-        Some(a) if a == "hack" => {}
-        Some(a) => mini_usage(&format!("expected subcommand 'hack', found argument '{}'", a))?,
-        None => {
-            println!("{}", Help::short());
-            std::process::exit(1);
+        // rustc/cargo args must be valid Unicode
+        // https://github.com/rust-lang/rust/blob/3bc9dd0dd293ab82945e35888ed6d7ab802761ef/compiler/rustc_driver/src/lib.rs#L1365-L1375
+        fn handle_args(
+            args: impl IntoIterator<Item = impl Into<OsString>>,
+        ) -> impl Iterator<Item = Result<String>> {
+            args.into_iter().enumerate().map(|(i, arg)| {
+                arg.into().into_string().map_err(|arg| {
+                    format_err!("argument {} is not valid Unicode: {:?}", i + 1, arg)
+                })
+            })
         }
-    }
 
-    let mut leading = Vec::new();
-    let mut subcommand: Option<&'a str> = None;
-
-    let mut manifest_path = None;
-    let mut color = None;
-
-    let mut package = Vec::new();
-    let mut exclude = Vec::new();
-    let mut features = Vec::new();
-
-    let mut workspace = None;
-    let mut no_dev_deps = false;
-    let mut remove_dev_deps = false;
-    let mut each_feature = false;
-    let mut feature_powerset = false;
-    let mut ignore_private = false;
-    let mut ignore_unknown_features = false;
-    let mut clean_per_run = false;
-    let mut clean_per_version = false;
-    let mut keep_going = false;
-    let mut version_range = None;
-    let mut version_step = None;
-
-    let mut optional_deps = None;
-    let mut include_features = Vec::new();
-    let mut include_deps_features = false;
-
-    let mut exclude_features = Vec::new();
-    let mut exclude_no_default_features = false;
-    let mut exclude_all_features = false;
-
-    let mut group_features = Vec::new();
-    let mut depth = None;
-
-    let mut verbose = false;
-    let mut no_default_features = false;
-    let mut all_features = false;
-    let mut target = None;
-
-    let res = (|| -> Result<()> {
-        while let Some(arg) = args.next() {
-            // stop at `--`
-            // 1. `cargo hack check --no-dev-deps`
-            //   first:  `cargo hack check --no-dev-deps` (filtered and passed to `cargo`)
-            //   second: (empty)
-            // 2. `cargo hack test --each-feature -- --ignored`
-            //   first:  `cargo hack test --each-feature` (filtered and passed to `cargo`)
-            //   second: `--ignored` (passed directly to `cargo` with `--`)
+        let mut raw_args = handle_args(env::args_os());
+        raw_args.next(); // cargo
+        match raw_args.next().transpose()? {
+            Some(a) if a == SUBCMD => {}
+            Some(a) => bail!("expected subcommand '{}', found argument '{}'", SUBCMD, a),
+            None => bail!("expected subcommand '{}'", SUBCMD),
+        }
+        let mut args = vec![];
+        for arg in &mut raw_args {
+            let arg = arg?;
             if arg == "--" {
                 break;
             }
+            args.push(arg);
+        }
+        let rest = raw_args.collect::<Result<Vec<_>>>()?;
 
-            if !arg.starts_with('-') {
-                subcommand.get_or_insert(arg);
-                leading.push(arg);
-                continue;
-            }
+        let mut cargo_args = Vec::new();
+        let mut subcommand: Option<String> = None;
+
+        let mut manifest_path = None;
+        let mut color = None;
+
+        let mut package = Vec::new();
+        let mut exclude = Vec::new();
+        let mut features = Vec::new();
+
+        let mut workspace = false;
+        let mut no_dev_deps = false;
+        let mut remove_dev_deps = false;
+        let mut each_feature = false;
+        let mut feature_powerset = false;
+        let mut ignore_private = false;
+        let mut ignore_unknown_features = false;
+        let mut clean_per_run = false;
+        let mut clean_per_version = false;
+        let mut keep_going = false;
+        let mut version_range = None;
+        let mut version_step = None;
+
+        let mut optional_deps = None;
+        let mut include_features = Vec::new();
+        let mut include_deps_features = false;
+
+        let mut exclude_features = Vec::new();
+        let mut exclude_no_default_features = false;
+        let mut exclude_all_features = false;
+
+        let mut group_features: Vec<String> = Vec::new();
+        let mut depth = None;
+
+        let mut verbose = 0;
+        let mut no_default_features = false;
+        let mut all_features = false;
+        let mut target = None;
+
+        let mut parser = lexopt::Parser::from_args(args);
+        let mut next_flag: Option<OwnedFlag> = None;
+        loop {
+            let arg = next_flag.take();
+            let arg = match &arg {
+                Some(flag) => flag.as_arg(),
+                None => match parser.next()? {
+                    Some(arg) => arg,
+                    None => break,
+                },
+            };
 
             macro_rules! parse_opt {
-                ($opt:ident, $propagate:expr, $pat:expr $(,)?) => {
-                    if let Some(val) = parse_opt(arg, args, subcommand, $pat, true)? {
-                        let val = val.unwrap();
-                        if $opt.is_some() {
-                            multi_arg($pat, subcommand)?;
-                        }
-                        $opt = Some(val);
-                        if $propagate {
-                            leading.push($pat);
-                            leading.push(val);
-                        }
-                        continue;
+                ($opt:ident, $propagate:expr $(,)?) => {{
+                    if $opt.is_some() {
+                        multi_arg(&arg, subcommand.as_deref())?;
                     }
-                };
+                    if $propagate {
+                        cargo_args.push(format_flag(&arg));
+                    }
+                    let val = parser.value()?.parse::<String>()?;
+                    if $propagate {
+                        cargo_args.push(val.clone());
+                    }
+                    $opt = Some(val);
+                }};
             }
 
             macro_rules! parse_multi_opt {
-                ($v:ident, $allow_split:expr, $pat:expr $(,)?) => {
-                    if let Some(val) = parse_opt(arg, args, subcommand, $pat, true)? {
-                        let val = val.unwrap();
-                        if $allow_split {
-                            if val.contains(',') {
-                                $v.extend(val.split(','));
-                            } else {
-                                $v.extend(val.split(' '));
-                            }
-                        } else {
-                            $v.push(val);
-                        }
-                        continue;
+                ($v:ident $(,)?) => {{
+                    let val = parser.value()?;
+                    let mut val = val.to_str().unwrap();
+                    if val.starts_with('\'') && val.ends_with('\'')
+                        || val.starts_with('"') && val.ends_with('"')
+                    {
+                        val = &val[1..val.len() - 1];
                     }
-                };
+                    if val.contains(',') {
+                        $v.extend(val.split(',').map(str::to_owned));
+                    } else {
+                        $v.extend(val.split(' ').map(str::to_owned));
+                    }
+                }};
             }
 
             macro_rules! parse_flag {
-                ($flag:ident) => {
+                ($flag:ident $(,)?) => {
                     if mem::replace(&mut $flag, true) {
-                        multi_arg(&arg, subcommand)?;
-                    } else {
-                        continue;
+                        multi_arg(&arg, subcommand.as_deref())?;
                     }
                 };
             }
 
-            parse_opt!(manifest_path, false, "--manifest-path");
-            parse_opt!(depth, false, "--depth");
-            parse_opt!(color, true, "--color");
-            parse_opt!(version_range, false, "--version-range");
-            parse_opt!(version_step, false, "--version-step");
-            parse_opt!(target, true, "--target");
+            match arg {
+                Long("manifest-path") => parse_opt!(manifest_path, false),
+                Long("depth") => parse_opt!(depth, false),
+                Long("color") => parse_opt!(color, true),
+                Long("version-range") => parse_opt!(version_range, false),
+                Long("version-step") => parse_opt!(version_step, false),
+                Long("target") => parse_opt!(target, true),
 
-            parse_multi_opt!(package, false, "--package");
-            parse_multi_opt!(package, false, "-p");
-            parse_multi_opt!(exclude, false, "--exclude");
-            parse_multi_opt!(features, true, "--features");
-            parse_multi_opt!(exclude_features, true, "--skip");
-            parse_multi_opt!(exclude_features, true, "--exclude-features",);
-            parse_multi_opt!(include_features, true, "--include-features",);
-            parse_multi_opt!(group_features, false, "--group-features",);
+                Short('p') | Long("package") => package.push(parser.value()?.parse()?),
+                Long("exclude") => exclude.push(parser.value()?.parse()?),
+                Long("group-features") => group_features.push(parser.value()?.parse()?),
 
-            if let Some(val) = parse_opt(arg, args, subcommand, "--optional-deps", false)? {
-                if optional_deps.is_some() {
-                    multi_arg(arg, subcommand)?;
-                }
-                let optional_deps = optional_deps.get_or_insert_with(Vec::new);
-                if let Some(val) = val {
+                Long("features") => parse_multi_opt!(features),
+                Long("skip") | Long("exclude-features") => parse_multi_opt!(exclude_features),
+                Long("include-features") => parse_multi_opt!(include_features),
+
+                Long("optional-deps") => {
+                    if optional_deps.is_some() {
+                        multi_arg(&arg, subcommand.as_deref())?;
+                    }
+                    let optional_deps = optional_deps.get_or_insert_with(Vec::new);
+                    let val = match parser.optional_value() {
+                        Some(val) => val,
+                        None => match parser.next()? {
+                            Some(Value(val)) => val,
+                            Some(arg) => {
+                                next_flag = Some(arg.into());
+                                continue;
+                            }
+                            None => break,
+                        },
+                    };
+                    let mut val = val.to_str().unwrap();
+                    if val.starts_with('\'') && val.ends_with('\'')
+                        || val.starts_with('"') && val.ends_with('"')
+                    {
+                        val = &val[1..val.len() - 1];
+                    }
                     if val.contains(',') {
-                        optional_deps.extend(val.split(','));
+                        optional_deps.extend(val.split(',').map(str::to_owned));
                     } else {
-                        optional_deps.extend(val.split(' '));
+                        optional_deps.extend(val.split(' ').map(str::to_owned));
                     }
                 }
-                continue;
-            }
 
-            match &*arg {
-                "--workspace" | "--all" => {
-                    if let Some(arg) = workspace.replace(arg) {
-                        multi_arg(arg, subcommand)?;
-                    }
-                    continue;
-                }
-                "--no-dev-deps" => parse_flag!(no_dev_deps),
-                "--remove-dev-deps" => parse_flag!(remove_dev_deps),
-                "--each-feature" => parse_flag!(each_feature),
-                "--feature-powerset" => parse_flag!(feature_powerset),
-                "--ignore-private" => parse_flag!(ignore_private),
-                "--exclude-no-default-features" => parse_flag!(exclude_no_default_features),
-                "--exclude-all-features" => parse_flag!(exclude_all_features),
-                "--include-deps-features" => parse_flag!(include_deps_features),
-                "--clean-per-run" => parse_flag!(clean_per_run),
-                "--clean-per-version" => parse_flag!(clean_per_version),
-                "--keep-going" => parse_flag!(keep_going),
-                "--ignore-unknown-features" => parse_flag!(ignore_unknown_features),
-                // allow multiple uses
-                "--verbose" | "-v" | "-vv" => {
-                    verbose = true;
-                    continue;
-                }
+                Long("workspace") | Long("all") => parse_flag!(workspace),
+                Long("no-dev-deps") => parse_flag!(no_dev_deps),
+                Long("remove-dev-deps") => parse_flag!(remove_dev_deps),
+                Long("each-feature") => parse_flag!(each_feature),
+                Long("feature-powerset") => parse_flag!(feature_powerset),
+                Long("ignore-private") => parse_flag!(ignore_private),
+                Long("exclude-no-default-features") => parse_flag!(exclude_no_default_features),
+                Long("exclude-all-features") => parse_flag!(exclude_all_features),
+                Long("include-deps-features") => parse_flag!(include_deps_features),
+                Long("clean-per-run") => parse_flag!(clean_per_run),
+                Long("clean-per-version") => parse_flag!(clean_per_version),
+                Long("keep-going") => parse_flag!(keep_going),
+                Long("ignore-unknown-features") => parse_flag!(ignore_unknown_features),
+                Short('v') | Long("verbose") => verbose += 1,
 
                 // detect similar arg
-                "--each-features" => similar_arg(arg, subcommand, "--each-feature", None)?,
-                "--features-powerset" => similar_arg(arg, subcommand, "--feature-powerset", None)?,
+                Long("each-features") => {
+                    similar_arg(&arg, subcommand.as_deref(), "--each-feature", None)?
+                }
+                Long("features-powerset") => {
+                    similar_arg(&arg, subcommand.as_deref(), "--feature-powerset", None)?
+                }
 
                 // propagated
-                "--no-default-features" => no_default_features = true,
-                "--all-features" => all_features = true,
-                _ => {}
-            }
+                Long("no-default-features") => {
+                    no_default_features = true;
+                    cargo_args.push("--no-default-features".to_owned());
+                }
+                Long("all-features") => {
+                    all_features = true;
+                    cargo_args.push("--all-features".to_owned());
+                }
 
-            removed_flags(arg)?;
+                Short('h') if subcommand.is_none() => {
+                    println!("{}", Help::short());
+                    std::process::exit(0);
+                }
+                Long("help") if subcommand.is_none() => {
+                    println!("{}", Help::long());
+                    std::process::exit(0);
+                }
+                Short('V') | Long("version") if subcommand.is_none() => {
+                    println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+                    std::process::exit(0);
+                }
 
-            leading.push(arg);
-        }
-
-        Ok(())
-    })();
-
-    term::set_coloring(color)?;
-
-    res?;
-
-    if !exclude.is_empty() && workspace.is_none() {
-        // TODO: This is the same behavior as cargo, but should we allow it to be used
-        // in the root of a virtual workspace as well?
-        requires("--exclude", &["--workspace"])?;
-    }
-    if ignore_unknown_features {
-        if features.is_empty() && include_features.is_empty() && group_features.is_empty() {
-            requires("--ignore-unknown-features", &[
-                "--features",
-                "--include-features",
-                "--group-features",
-            ])?;
-        }
-        if !include_features.is_empty() {
-            // TODO: implement
-            warn!(
-                "--ignore-unknown-features for --include-features is not fully implemented and may not work as intended"
-            );
-        }
-        if !group_features.is_empty() {
-            // TODO: implement
-            warn!(
-                "--ignore-unknown-features for --group-features is not fully implemented and may not work as intended"
-            );
-        }
-    }
-    if !each_feature && !feature_powerset {
-        if optional_deps.is_some() {
-            requires("--optional-deps", &["--each-feature", "--feature-powerset"])?;
-        } else if !exclude_features.is_empty() {
-            requires("--exclude-features (--skip)", &["--each-feature", "--feature-powerset"])?;
-        } else if exclude_no_default_features {
-            requires("--exclude-no-default-features", &["--each-feature", "--feature-powerset"])?;
-        } else if exclude_all_features {
-            requires("--exclude-all-features", &["--each-feature", "--feature-powerset"])?;
-        } else if !include_features.is_empty() {
-            requires("--include-features", &["--each-feature", "--feature-powerset"])?;
-        } else if include_deps_features {
-            requires("--include-deps-features", &["--each-feature", "--feature-powerset"])?;
-        }
-    }
-    if !feature_powerset {
-        if depth.is_some() {
-            requires("--depth", &["--feature-powerset"])?;
-        } else if !group_features.is_empty() {
-            requires("--group-features", &["--feature-powerset"])?;
-        }
-    }
-    if version_range.is_none() {
-        if version_step.is_some() {
-            requires("--version-step", &["--version-range"])?;
-        }
-        if clean_per_version {
-            requires("--clean-per-version", &["--version-range"])?;
-        }
-    }
-
-    let depth = depth.map(str::parse::<usize>).transpose()?;
-    let group_features =
-        group_features.iter().try_fold(Vec::with_capacity(group_features.len()), |mut v, g| {
-            let g = if g.contains(',') {
-                g.split(',')
-            } else if g.contains(' ') {
-                g.split(' ')
-            } else {
-                bail!(
-                    "--group-features requires a list of two or more features separated by space \
-                     or comma"
-                );
-            };
-            v.push(Feature::group(g));
-            Ok(v)
-        })?;
-
-    if let Some(subcommand) = subcommand {
-        match subcommand {
-            "test" | "bench" => {
-                if remove_dev_deps {
-                    bail!(
-                        "--remove-dev-deps may not be used together with {} subcommand",
-                        subcommand
-                    );
-                } else if no_dev_deps {
-                    bail!("--no-dev-deps may not be used together with {} subcommand", subcommand);
+                // passthrough
+                Long(flag) => {
+                    removed_flags(flag)?;
+                    let flag = format!("--{}", flag);
+                    if let Some(val) = parser.optional_value() {
+                        cargo_args.push(format!("{}={}", flag, val.parse::<String>()?));
+                    } else {
+                        cargo_args.push(flag);
+                    }
+                }
+                Short(flag) => {
+                    if matches!(flag, 'q' | 'r') {
+                        // To handle combined short flags properly, handle known
+                        // short flags without value as special cases.
+                        cargo_args.push(format!("-{}", flag));
+                    } else if let Some(val) = parser.optional_value() {
+                        cargo_args.push(format!("-{}{}", flag, val.parse::<String>()?));
+                    } else {
+                        cargo_args.push(format!("-{}", flag));
+                    }
+                }
+                Value(val) => {
+                    let val = val.parse::<String>()?;
+                    if subcommand.is_none() {
+                        subcommand = Some(val.clone());
+                    }
+                    cargo_args.push(val);
                 }
             }
-            // cargo-hack may not be used together with subcommands that do not have the --manifest-path flag.
-            "install" => {
-                bail!("cargo-hack may not be used together with {} subcommand", subcommand)
+        }
+
+        term::set_coloring(color.as_deref())?;
+
+        if !exclude.is_empty() && !workspace {
+            // TODO: This is the same behavior as cargo, but should we allow it to be used
+            // in the root of a virtual workspace as well?
+            requires("--exclude", &["--workspace"])?;
+        }
+        if ignore_unknown_features {
+            if features.is_empty() && include_features.is_empty() && group_features.is_empty() {
+                requires("--ignore-unknown-features", &[
+                    "--features",
+                    "--include-features",
+                    "--group-features",
+                ])?;
             }
-            _ => {}
+            if !include_features.is_empty() {
+                let _guard = term::warn::scoped(false);
+                // TODO: implement
+                warn!(
+                    "--ignore-unknown-features for --include-features is not fully implemented and may not work as intended"
+                );
+            }
+            if !group_features.is_empty() {
+                let _guard = term::warn::scoped(false);
+                // TODO: implement
+                warn!(
+                    "--ignore-unknown-features for --group-features is not fully implemented and may not work as intended"
+                );
+            }
         }
-    }
-
-    if let Some(pos) = leading.iter().position(|a| match &**a {
-        "--example" | "--examples" | "--test" | "--tests" | "--bench" | "--benches"
-        | "--all-targets" => true,
-        _ => a.starts_with("--example=") || a.starts_with("--test=") || a.starts_with("--bench="),
-    }) {
-        if remove_dev_deps {
-            conflicts("--remove-dev-deps", leading[pos])?;
-        } else if no_dev_deps {
-            conflicts("--no-dev-deps", leading[pos])?;
+        if !each_feature && !feature_powerset {
+            if optional_deps.is_some() {
+                requires("--optional-deps", &["--each-feature", "--feature-powerset"])?;
+            } else if !exclude_features.is_empty() {
+                requires("--exclude-features (--skip)", &["--each-feature", "--feature-powerset"])?;
+            } else if exclude_no_default_features {
+                requires("--exclude-no-default-features", &[
+                    "--each-feature",
+                    "--feature-powerset",
+                ])?;
+            } else if exclude_all_features {
+                requires("--exclude-all-features", &["--each-feature", "--feature-powerset"])?;
+            } else if !include_features.is_empty() {
+                requires("--include-features", &["--each-feature", "--feature-powerset"])?;
+            } else if include_deps_features {
+                requires("--include-deps-features", &["--each-feature", "--feature-powerset"])?;
+            }
         }
-    }
-
-    if !include_features.is_empty() {
-        if optional_deps.is_some() {
-            conflicts("--include-features", "--optional-deps")?;
-        } else if include_deps_features {
-            conflicts("--include-features", "--include-deps-features")?;
+        if !feature_powerset {
+            if depth.is_some() {
+                requires("--depth", &["--feature-powerset"])?;
+            } else if !group_features.is_empty() {
+                requires("--group-features", &["--feature-powerset"])?;
+            }
         }
-    }
-
-    if no_dev_deps && remove_dev_deps {
-        conflicts("--no-dev-deps", "--remove-dev-deps")?;
-    }
-    if each_feature && feature_powerset {
-        conflicts("--each-feature", "--feature-powerset")?;
-    }
-    if all_features {
-        if each_feature {
-            conflicts("--all-features", "--each-feature")?;
-        } else if feature_powerset {
-            conflicts("--all-features", "--feature-powerset")?;
+        if version_range.is_none() {
+            if version_step.is_some() {
+                requires("--version-step", &["--version-range"])?;
+            }
+            if clean_per_version {
+                requires("--clean-per-version", &["--version-range"])?;
+            }
         }
-    }
-    if no_default_features {
-        if each_feature {
-            conflicts("--no-default-features", "--each-feature")?;
-        } else if feature_powerset {
-            conflicts("--no-default-features", "--feature-powerset")?;
+
+        let depth = depth.as_deref().map(str::parse::<usize>).transpose()?;
+        let group_features =
+            group_features.iter().try_fold(Vec::with_capacity(group_features.len()), |mut v, g| {
+                let g = if g.contains(',') {
+                    g.split(',')
+                } else if g.contains(' ') {
+                    g.split(' ')
+                } else {
+                    bail!(
+                        "--group-features requires a list of two or more features separated by space \
+                         or comma"
+                    );
+                };
+                v.push(Feature::group(g));
+                Ok(v)
+            })?;
+
+        if let Some(subcommand) = subcommand.as_deref() {
+            match subcommand {
+                "test" | "bench" => {
+                    if remove_dev_deps {
+                        bail!(
+                            "--remove-dev-deps may not be used together with {} subcommand",
+                            subcommand
+                        );
+                    } else if no_dev_deps {
+                        bail!(
+                            "--no-dev-deps may not be used together with {} subcommand",
+                            subcommand
+                        );
+                    }
+                }
+                // cargo-hack may not be used together with subcommands that do not have the --manifest-path flag.
+                "install" => {
+                    bail!("cargo-hack may not be used together with {} subcommand", subcommand)
+                }
+                _ => {}
+            }
         }
-    }
 
-    for f in &exclude_features {
-        if features.contains(f) {
-            bail!("feature `{}` specified by both --exclude-features and --features", f);
+        if let Some(pos) = cargo_args.iter().position(|a| match &**a {
+            "--example" | "--examples" | "--test" | "--tests" | "--bench" | "--benches"
+            | "--all-targets" => true,
+            _ => {
+                a.starts_with("--example=") || a.starts_with("--test=") || a.starts_with("--bench=")
+            }
+        }) {
+            if remove_dev_deps {
+                conflicts("--remove-dev-deps", &cargo_args[pos])?;
+            } else if no_dev_deps {
+                conflicts("--no-dev-deps", &cargo_args[pos])?;
+            }
         }
-        if optional_deps.as_ref().map_or(false, |d| d.contains(f)) {
-            bail!("feature `{}` specified by both --exclude-features and --optional-deps", f);
+
+        if !include_features.is_empty() {
+            if optional_deps.is_some() {
+                conflicts("--include-features", "--optional-deps")?;
+            } else if include_deps_features {
+                conflicts("--include-features", "--include-deps-features")?;
+            }
         }
-        if group_features.iter().any(|v| v.matches(f)) {
-            bail!("feature `{}` specified by both --exclude-features and --group-features", f);
+
+        if no_dev_deps && remove_dev_deps {
+            conflicts("--no-dev-deps", "--remove-dev-deps")?;
         }
-        if include_features.contains(f) {
-            bail!("feature `{}` specified by both --exclude-features and --include-features", f);
+        if each_feature && feature_powerset {
+            conflicts("--each-feature", "--feature-powerset")?;
         }
-    }
-
-    if subcommand.is_none() {
-        if leading.contains(&"-h") {
-            println!("{}", Help::short());
-            std::process::exit(0);
-        } else if leading.contains(&"--help") {
-            println!("{}", Help::long());
-            std::process::exit(0);
-        } else if leading.iter().any(|&a| a == "--version" || a == "-V" || a == "-vV" || a == "-Vv")
-        {
-            print_version();
-            std::process::exit(0);
-        } else if leading.contains(&"--list") {
-            cmd!(cargo, "--list").run()?;
-            std::process::exit(0);
-        } else if !remove_dev_deps {
-            // TODO: improve this
-            mini_usage("no subcommand or valid flag specified")?;
+        if all_features {
+            if each_feature {
+                conflicts("--all-features", "--each-feature")?;
+            } else if feature_powerset {
+                conflicts("--all-features", "--feature-powerset")?;
+            }
         }
+        if no_default_features {
+            if each_feature {
+                conflicts("--no-default-features", "--each-feature")?;
+            } else if feature_powerset {
+                conflicts("--no-default-features", "--feature-powerset")?;
+            }
+        }
+
+        for f in &exclude_features {
+            if features.contains(f) {
+                bail!("feature `{}` specified by both --exclude-features and --features", f);
+            }
+            if optional_deps.as_ref().map_or(false, |d| d.contains(f)) {
+                bail!("feature `{}` specified by both --exclude-features and --optional-deps", f);
+            }
+            if group_features.iter().any(|v| v.matches(f)) {
+                bail!("feature `{}` specified by both --exclude-features and --group-features", f);
+            }
+            if include_features.contains(f) {
+                bail!(
+                    "feature `{}` specified by both --exclude-features and --include-features",
+                    f
+                );
+            }
+        }
+
+        if subcommand.is_none() {
+            if cargo_args.iter().any(|a| a == "--list") {
+                cmd!(cargo, "--list").run()?;
+                std::process::exit(0);
+            } else if !remove_dev_deps {
+                // TODO: improve this
+                mini_usage("no subcommand or valid flag specified")?;
+            }
+        }
+
+        if version_range.is_some() {
+            let rustup = Rustup::new();
+            if rustup.version < 23 {
+                bail!("--version-range requires rustup 1.23 or later");
+            }
+        }
+
+        if no_dev_deps {
+            info!(
+                "--no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished"
+            );
+        }
+
+        // https://github.com/taiki-e/cargo-hack/issues/42
+        // https://github.com/rust-lang/cargo/pull/8799
+        let namespaced_features = has_z_flag(&cargo_args, "namespaced-features");
+        exclude_no_default_features |= !include_features.is_empty();
+        exclude_all_features |= !include_features.is_empty()
+            || !exclude_features.is_empty()
+            || (feature_powerset && !namespaced_features && depth.is_none());
+        exclude_features.extend_from_slice(&features);
+
+        term::verbose::set(verbose != 0);
+        // If `-vv` is passed, propagate `-v` to cargo.
+        if verbose > 1 {
+            cargo_args.push(format!("-{}", "v".repeat(verbose - 1)))
+        }
+
+        Ok(Args {
+            leading_args: cargo_args,
+            trailing_args: rest,
+
+            subcommand,
+
+            manifest_path,
+            package,
+            exclude,
+            workspace,
+            each_feature,
+            feature_powerset,
+            no_dev_deps,
+            remove_dev_deps,
+            ignore_private,
+            ignore_unknown_features,
+            optional_deps,
+            clean_per_run,
+            clean_per_version,
+            keep_going,
+            include_features: include_features.into_iter().map(Into::into).collect(),
+            include_deps_features,
+            version_range,
+            version_step,
+
+            depth,
+            group_features,
+
+            exclude_features,
+            exclude_no_default_features,
+            exclude_all_features,
+
+            features,
+
+            no_default_features,
+            target,
+        })
     }
-
-    let rustup = Rustup::new();
-
-    if rustup.version < 23 && version_range.is_some() {
-        bail!("--version-range requires rustup 1.23 or later");
-    }
-
-    if no_dev_deps {
-        info!(
-            "--no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished"
-        );
-    }
-
-    // https://github.com/taiki-e/cargo-hack/issues/42
-    // https://github.com/rust-lang/cargo/pull/8799
-    let namespaced_features = has_z_flag(&leading, "namespaced-features");
-    exclude_no_default_features |= !include_features.is_empty();
-    exclude_all_features |= !include_features.is_empty()
-        || !exclude_features.is_empty()
-        || (feature_powerset && !namespaced_features && depth.is_none());
-    exclude_features.extend_from_slice(&features);
-
-    term::set_verbose(verbose);
-    Ok(Args {
-        leading_args: leading,
-        trailing_args: iter.as_slice(),
-
-        subcommand,
-
-        manifest_path,
-        package,
-        exclude,
-        workspace: workspace.is_some(),
-        each_feature,
-        feature_powerset,
-        no_dev_deps,
-        remove_dev_deps,
-        ignore_private,
-        ignore_unknown_features,
-        optional_deps,
-        clean_per_run,
-        clean_per_version,
-        keep_going,
-        include_features: include_features.into_iter().map(Into::into).collect(),
-        include_deps_features,
-        version_range,
-        version_step,
-
-        depth,
-        group_features,
-
-        exclude_features,
-        exclude_no_default_features,
-        exclude_all_features,
-
-        features,
-
-        no_default_features,
-        target,
-    })
 }
 
-fn has_z_flag(args: &[&str], name: &str) -> bool {
-    let mut iter = args.iter().copied();
+fn has_z_flag(args: &[String], name: &str) -> bool {
+    let mut iter = args.iter().map(String::as_str);
     while let Some(mut arg) = iter.next() {
         if arg == "-Z" {
             arg = iter.next().unwrap();
@@ -542,38 +592,6 @@ fn has_z_flag(args: &[&str], name: &str) -> bool {
         }
     }
     false
-}
-
-fn parse_opt<'a>(
-    arg: &'a str,
-    args: &mut Peekable<impl Iterator<Item = &'a str>>,
-    subcommand: Option<&str>,
-    pat: &str,
-    require_value: bool,
-) -> Result<Option<Option<&'a str>>> {
-    if let Some(rem) = arg.strip_prefix(pat) {
-        if rem.is_empty() {
-            if require_value {
-                return Ok(Some(Some(args.next().ok_or_else(|| req_arg(pat, subcommand))?)));
-            }
-            if args.peek().map_or(true, |s| s.starts_with('-')) {
-                Ok(Some(None))
-            } else {
-                Ok(Some(args.next()))
-            }
-        } else if let Some(mut val) = rem.strip_prefix('=') {
-            if val.starts_with('\'') && val.ends_with('\'')
-                || val.starts_with('"') && val.ends_with('"')
-            {
-                val = &val[1..val.len() - 1];
-            }
-            Ok(Some(Some(val)))
-        } else {
-            Ok(None)
-        }
-    } else {
-        Ok(None)
-    }
 }
 
 // (short flag, long flag, value name, short descriptions, additional descriptions)
@@ -809,19 +827,15 @@ Some common cargo commands are (see all commands with --list):
     }
 }
 
-fn print_version() {
-    println!("{0} {1}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
-}
-
 // Note: When adding a flag here, update the test with the same name in `tests/test.rs` file.
 
 fn removed_flags(flag: &str) -> Result<()> {
     let alt = match flag {
-        "--ignore-non-exist-features" => "--ignore-unknown-features",
-        "--skip-no-default-features" => "--exclude-no-default-features",
+        "ignore-non-exist-features" => "--ignore-unknown-features",
+        "skip-no-default-features" => "--exclude-no-default-features",
         _ => return Ok(()),
     };
-    bail!("{} was removed, use {} instead", flag, alt)
+    bail!("--{} was removed, use {} instead", flag, alt)
 }
 
 fn mini_usage(msg: &str) -> Result<()> {
@@ -841,24 +855,40 @@ fn get_help(flag: &str) -> Option<&HelpText<'_>> {
     HELP.iter().find(|&(s, l, ..)| *s == flag || *l == flag)
 }
 
-fn req_arg(flag: &str, subcommand: Option<&str>) -> Error {
-    let arg = get_help(flag).map_or_else(|| flag.to_string(), |arg| format!("{} {}", arg.1, arg.2));
-    format_err!(
-        "\
-The argument '{}' requires a value but none was supplied
-
-USAGE:
-    cargo hack{} {}
-
-For more information try --help
-",
-        flag,
-        subcommand.map_or_else(String::new, |subcommand| String::from(" ") + subcommand),
-        arg,
-    )
+enum OwnedFlag {
+    Long(String),
+    Short(char),
 }
 
-fn multi_arg(flag: &str, subcommand: Option<&str>) -> Result<()> {
+impl OwnedFlag {
+    fn as_arg(&self) -> lexopt::Arg<'_> {
+        match self {
+            Self::Long(flag) => Long(flag),
+            &Self::Short(flag) => Short(flag),
+        }
+    }
+}
+
+impl From<lexopt::Arg<'_>> for OwnedFlag {
+    fn from(arg: lexopt::Arg<'_>) -> Self {
+        match arg {
+            Long(flag) => Self::Long(flag.to_owned()),
+            Short(flag) => Self::Short(flag),
+            Value(_) => unreachable!(),
+        }
+    }
+}
+
+fn format_flag(flag: &lexopt::Arg<'_>) -> String {
+    match flag {
+        Long(flag) => format!("--{}", flag),
+        Short(flag) => format!("-{}", flag),
+        Value(_) => unreachable!(),
+    }
+}
+
+fn multi_arg(flag: &lexopt::Arg<'_>, subcommand: Option<&str>) -> Result<()> {
+    let flag = &format_flag(flag);
     let arg = get_help(flag).map_or_else(|| flag.to_string(), |arg| format!("{} {}", arg.1, arg.2));
     bail!(
         "\
@@ -876,11 +906,12 @@ For more information try --help
 }
 
 fn similar_arg(
-    arg: &str,
+    flag: &lexopt::Arg<'_>,
     subcommand: Option<&str>,
     expected: &str,
     value: Option<&str>,
 ) -> Result<()> {
+    let flag = &format_flag(flag);
     bail!(
         "\
 Found argument '{0}' which wasn't expected, or isn't valid in this context
@@ -891,7 +922,7 @@ USAGE:
 
 For more information try --help
 ",
-        arg,
+        flag,
         subcommand.map_or_else(String::new, |subcommand| String::from(" ") + subcommand),
         expected,
         value.unwrap_or_default()
@@ -936,20 +967,6 @@ mod tests {
 
     use super::Help;
     use crate::fs;
-
-    // See handle_args function for more.
-    #[cfg(unix)]
-    #[test]
-    fn non_utf8_arg() {
-        use std::{ffi::OsStr, os::unix::prelude::OsStrExt};
-        // `cargo hack -- $'fo\x80o'`
-        super::handle_args(&[
-            "hack".as_ref(),
-            "--".as_ref(),
-            OsStr::from_bytes(&[b'f', b'o', 0x80, b'o']),
-        ])
-        .unwrap_err();
-    }
 
     #[track_caller]
     fn assert_diff(expected_path: impl AsRef<Path>, actual: impl AsRef<str>) {
@@ -1022,7 +1039,7 @@ mod tests {
             }
         }
         if start && end {
-            fs::write(path, out)?;
+            assert_diff(path, out);
         } else if start {
             panic!("missing `<!-- readme-long-help:end -->` comment in README.md");
         } else {

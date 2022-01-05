@@ -27,6 +27,7 @@ mod version;
 
 use std::{
     collections::BTreeMap,
+    env,
     fmt::{self, Write},
 };
 
@@ -41,19 +42,20 @@ fn main() {
     if let Err(e) = try_main() {
         error!("{:#}", e);
     }
-    if term::has_error() {
+    if term::error()
+        || term::warn() && env::var_os("CARGO_HACK_DENY_WARNINGS").filter(|v| v == "true").is_some()
+    {
         std::process::exit(1)
     }
 }
 
 fn try_main() -> Result<()> {
-    let args = &cli::raw()?;
-    let cx = &Context::new(args)?;
+    let cx = &Context::new()?;
 
     exec_on_workspace(cx)
 }
 
-fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
+fn exec_on_workspace(cx: &Context) -> Result<()> {
     // TODO: Ideally, we should do this, but for now, we allow it as cargo-hack
     // may mistakenly interpret the specified valid feature flag as unknown.
     // if cx.ignore_unknown_features && !cx.workspace && !cx.current_manifest().is_virtual() {
@@ -72,7 +74,7 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
             // First, generate the lockfile using the oldest cargo specified.
             // https://github.com/taiki-e/cargo-hack/issues/105
             let toolchain = &range[0];
-            rustup::install_toolchain(toolchain, cx.target, true)?;
+            rustup::install_toolchain(toolchain, cx.target.as_deref(), true)?;
             let mut line = line.clone();
             line.leading_arg(toolchain);
             line.arg("generate-lockfile");
@@ -91,7 +93,7 @@ fn exec_on_workspace(cx: &Context<'_>) -> Result<()> {
 
         range.iter().enumerate().try_for_each(|(i, toolchain)| {
             if i != 0 {
-                rustup::install_toolchain(toolchain, cx.target, true)?;
+                rustup::install_toolchain(toolchain, cx.target.as_deref(), true)?;
             }
 
             if cx.clean_per_version {
@@ -134,7 +136,7 @@ enum Kind<'a> {
     Powerset { features: Vec<Vec<&'a Feature>> },
 }
 
-fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progress) -> Kind<'a> {
+fn determine_kind<'a>(cx: &'a Context, id: &PackageId, progress: &mut Progress) -> Kind<'a> {
     if cx.ignore_private && cx.is_private(id) {
         info!("skipped running on private package `{}`", cx.name_verbose(id));
         return Kind::SkipAsPrivate;
@@ -149,7 +151,7 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
 
     let package = cx.packages(id);
     let filter = |&f: &&Feature| {
-        !cx.exclude_features.iter().any(|s| f == *s)
+        !cx.exclude_features.iter().any(|s| f == s)
             && !cx.group_features.iter().any(|g| g.matches(f.name()))
     };
     let features = if cx.include_features.is_empty() {
@@ -164,17 +166,21 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
         let mut features: Vec<_> = feature_list.normal().iter().filter(filter).collect();
 
         if let Some(opt_deps) = &cx.optional_deps {
-            for &d in opt_deps {
-                if !feature_list.optional_deps().iter().any(|f| f == d) {
-                    warn!(
-                        "specified optional dependency `{}` not found in package `{}`",
-                        d, package.name
-                    );
+            if opt_deps.len() == 1 && opt_deps[0].is_empty() {
+                // --optional-deps=
+            } else {
+                for d in opt_deps {
+                    if !feature_list.optional_deps().iter().any(|f| f == d) {
+                        warn!(
+                            "specified optional dependency `{}` not found in package `{}`",
+                            d, package.name
+                        );
+                    }
                 }
             }
 
             features.extend(feature_list.optional_deps().iter().filter(|f| {
-                filter(f) && (opt_deps.is_empty() || opt_deps.iter().any(|x| *f == *x))
+                filter(f) && (opt_deps.is_empty() || opt_deps.iter().any(|x| *f == x))
             }));
         }
 
@@ -224,7 +230,7 @@ fn determine_kind<'a>(cx: &'a Context<'_>, id: &PackageId, progress: &mut Progre
 }
 
 fn determine_package_list<'a>(
-    cx: &'a Context<'_>,
+    cx: &'a Context,
     progress: &mut Progress,
 ) -> Result<Vec<(&'a PackageId, Kind<'a>)>> {
     Ok(if cx.workspace {
@@ -239,20 +245,20 @@ fn determine_package_list<'a>(
         }
 
         cx.workspace_members()
-            .filter(|id| !cx.exclude.contains(&&*cx.packages(id).name))
+            .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
             .map(|id| (id, determine_kind(cx, id, progress)))
             .collect()
     } else if !cx.package.is_empty() {
         if let Some(spec) = cx
             .package
             .iter()
-            .find(|&&spec| !cx.workspace_members().any(|id| cx.packages(id).name == spec))
+            .find(|&spec| !cx.workspace_members().any(|id| cx.packages(id).name == *spec))
         {
             bail!("package ID specification `{}` matched no packages", spec)
         }
 
         cx.workspace_members()
-            .filter(|id| cx.package.contains(&&*cx.packages(id).name))
+            .filter(|id| cx.package.contains(&cx.packages(id).name))
             .map(|id| (id, determine_kind(cx, id, progress)))
             .collect()
     } else if cx.current_package().is_none() {
@@ -267,7 +273,7 @@ fn determine_package_list<'a>(
 }
 
 fn exec_on_package(
-    cx: &Context<'_>,
+    cx: &Context,
     id: &PackageId,
     kind: &Kind<'_>,
     line: &ProcessBuilder<'_>,
@@ -301,7 +307,7 @@ fn exec_on_package(
 }
 
 fn exec_actual(
-    cx: &Context<'_>,
+    cx: &Context,
     id: &PackageId,
     kind: &Kind<'_>,
     line: &mut ProcessBuilder<'_>,
@@ -361,7 +367,7 @@ fn exec_actual(
 }
 
 fn exec_cargo_with_features(
-    cx: &Context<'_>,
+    cx: &Context,
     id: &PackageId,
     line: &ProcessBuilder<'_>,
     progress: &mut Progress,
@@ -395,7 +401,7 @@ impl fmt::Display for KeepGoing {
 }
 
 fn exec_cargo(
-    cx: &Context<'_>,
+    cx: &Context,
     id: &PackageId,
     line: &mut ProcessBuilder<'_>,
     progress: &mut Progress,
@@ -419,7 +425,7 @@ fn exec_cargo(
 }
 
 fn exec_cargo_inner(
-    cx: &Context<'_>,
+    cx: &Context,
     id: &PackageId,
     line: &mut ProcessBuilder<'_>,
     progress: &mut Progress,
@@ -446,7 +452,7 @@ fn exec_cargo_inner(
     line.run()
 }
 
-fn cargo_clean(cx: &Context<'_>, id: Option<&PackageId>) -> Result<()> {
+fn cargo_clean(cx: &Context, id: Option<&PackageId>) -> Result<()> {
     let mut line = cx.cargo();
     line.arg("clean");
     if let Some(id) = id {

@@ -123,6 +123,12 @@ impl PartialEq<str> for Feature {
     }
 }
 
+impl PartialEq<String> for Feature {
+    fn eq(&self, other: &String) -> bool {
+        self.name() == other
+    }
+}
+
 impl<S: Into<String>> From<S> for Feature {
     fn from(name: S) -> Self {
         Self::Normal { name: name.into() }

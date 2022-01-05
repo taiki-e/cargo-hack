@@ -2,11 +2,12 @@
 
 mod auxiliary;
 
-use std::env;
-
-use auxiliary::{
-    cargo_bin_exe, cargo_hack, has_stable_toolchain, target_triple, CommandExt, SEPARATOR,
+use std::{
+    env::{self, consts::EXE_SUFFIX},
+    path::MAIN_SEPARATOR,
 };
+
+use auxiliary::{cargo_bin_exe, cargo_hack, has_stable_toolchain, target_triple, CommandExt};
 
 #[test]
 fn failures() {
@@ -233,7 +234,7 @@ fn exclude() {
         .stderr_contains("running `cargo check` on member2");
 
     // not_found is warning
-    cargo_hack(["check", "--all", "--exclude", "foo"]).assert_success("virtual").stderr_contains(
+    cargo_hack(["check", "--all", "--exclude", "foo"]).assert_failure("virtual").stderr_contains(
         "
         excluded package(s) `foo` not found in workspace
         running `cargo check` on member1
@@ -802,7 +803,7 @@ fn exclude_features_failure() {
         .stderr_contains("feature `a` specified by both --exclude-features and --include-features");
 
     cargo_hack(["check", "--each-feature", "--exclude-features=z"])
-        .assert_success("real") // warn
+        .assert_failure("real") // warn
         .stderr_contains("specified feature `z` not found in package `real`");
 }
 
@@ -1186,16 +1187,51 @@ fn list_separator() {
 }
 
 #[test]
+fn short_flag() {
+    cargo_hack(["check", "-vvpmember1"]) // same as -v -v -p member1
+        .assert_success("virtual")
+        .stderr_contains(format!(
+            "
+            cargo{1} check -v --manifest-path member1{0}Cargo.toml` (1/1)
+            ",
+            MAIN_SEPARATOR, EXE_SUFFIX
+        ))
+        .stderr_not_contains("member2");
+
+    cargo_hack(["check", "-qpmember1"]) // same as -q -p member1
+        .assert_success("virtual")
+        .stderr_contains("`cargo check -q` on member1 (1/1)")
+        .stderr_not_contains("member2");
+}
+
+#[test]
 fn verbose() {
     cargo_hack(["check", "--verbose"]).assert_success("virtual").stderr_contains(format!(
         "
-        cargo{1} check --manifest-path member1{0}Cargo.toml`
-        cargo{1} check --manifest-path member2{0}Cargo.toml`
-        cargo{1} check --manifest-path dir{0}not_find_manifest{0}Cargo.toml`
+        cargo{1} check --manifest-path member1{0}Cargo.toml` (1/3)
+        cargo{1} check --manifest-path member2{0}Cargo.toml` (2/3)
+        cargo{1} check --manifest-path dir{0}not_find_manifest{0}Cargo.toml` (3/3)
         ",
-        SEPARATOR,
-        env::consts::EXE_SUFFIX
+        MAIN_SEPARATOR, EXE_SUFFIX
     ));
+
+    // If `-vv` is passed, propagate `-v` to cargo.
+    cargo_hack(["check", "-vv", "-p", "member1"]).assert_success("virtual").stderr_contains(
+        format!(
+            "
+            cargo{1} check -v --manifest-path member1{0}Cargo.toml` (1/1)
+            ",
+            MAIN_SEPARATOR, EXE_SUFFIX
+        ),
+    );
+    cargo_hack(["check", "-vvv", "-p", "member1"]).assert_success("virtual").stderr_contains(
+        format!(
+            "
+            cargo{1} check -vv --manifest-path member1{0}Cargo.toml` (1/1)
+            ",
+            MAIN_SEPARATOR, EXE_SUFFIX
+        ),
+    );
 }
 
 #[test]
@@ -1314,7 +1350,7 @@ fn version_range_failure() {
 
     // patch version
     cargo_hack(["check", "--version-range", "1.45.2.."])
-        .assert_success("real") // warn
+        .assert_failure("real") // warn
         .stderr_contains(
             "
             --version-range always selects the latest patch release per minor release, \
@@ -1351,6 +1387,6 @@ fn keep_going() {
             cargo{0} check --manifest-path Cargo.toml --no-default-features`
             cargo{0} check --manifest-path Cargo.toml --no-default-features --features a`
             ",
-            env::consts::EXE_SUFFIX
+            EXE_SUFFIX
         ));
 }

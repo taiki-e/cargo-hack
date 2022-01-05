@@ -46,7 +46,7 @@ pub(crate) struct Metadata {
 }
 
 impl Metadata {
-    pub(crate) fn new(args: &Args<'_>, cargo: &OsStr, restore: &restore::Manager) -> Result<Self> {
+    pub(crate) fn new(args: &Args, cargo: &OsStr, restore: &restore::Manager) -> Result<Self> {
         // If failed to determine cargo version, assign 0 to skip all version-dependent decisions.
         let mut cargo_version = cargo::minor_version(cmd!(cargo))
             .map_err(|e| warn!("unable to determine cargo version: {:#}", e))
@@ -72,7 +72,7 @@ impl Metadata {
                 }
                 cmd.run_with_output()?;
             }
-            let guard = term::scoped_verbose(false);
+            let guard = term::verbose::scoped(false);
             let mut handle = restore.set(&fs::read_to_string(&lockfile)?, lockfile);
 
             // Try with stable cargo because if workspace member has
