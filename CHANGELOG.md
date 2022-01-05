@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Fix handling of combined short flags. ([#143](https://github.com/taiki-e/cargo-hack/pull/143))
 
+- Support omitting lower bound of `--version-range` in all cargo versions. ([#144](https://github.com/taiki-e/cargo-hack/pull/144))
+
 ## [0.5.9] - 2021-12-29
 
 - Fix an error when using old cargo with a dependency graph containing 2021 edition crates. ([#138](https://github.com/taiki-e/cargo-hack/pull/138))

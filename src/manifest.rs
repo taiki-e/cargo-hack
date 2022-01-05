@@ -11,8 +11,7 @@ type ParseResult<T> = Result<T, &'static str>;
 // https://doc.rust-lang.org/nightly/cargo/reference/manifest.html
 pub(crate) struct Manifest {
     pub(crate) raw: String,
-    // `metadata.package.publish` requires Rust 1.39
-    pub(crate) publish: bool,
+    pub(crate) package: Package,
 }
 
 impl Manifest {
@@ -23,7 +22,7 @@ impl Manifest {
         let package = Package::from_table(&toml).map_err(|s| {
             format_err!("failed to parse `{}` field from manifest `{}`", s, path.display())
         })?;
-        Ok(Self { raw, publish: package.publish })
+        Ok(Self { raw, package })
     }
 
     pub(crate) fn remove_dev_deps(&self) -> String {
@@ -31,8 +30,11 @@ impl Manifest {
     }
 }
 
-struct Package {
-    publish: bool,
+pub(crate) struct Package {
+    // `metadata.package.publish` requires Rust 1.39
+    pub(crate) publish: bool,
+    // `metadata.package.rust_version` requires Rust 1.58
+    pub(crate) rust_version: Option<String>,
 }
 
 impl Package {
@@ -47,6 +49,11 @@ impl Package {
                 Some(Value::Boolean(b)) => *b,
                 Some(Value::Array(a)) => !a.is_empty(),
                 Some(_) => return Err("publish"),
+            },
+            rust_version: match package.get("rust-version").map(Value::as_str) {
+                None => None,
+                Some(Some(v)) => Some(v.to_owned()),
+                Some(None) => return Err("rust-version"),
             },
         })
     }
