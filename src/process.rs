@@ -32,7 +32,7 @@ pub(crate) struct ProcessBuilder<'a> {
     /// The program to execute.
     program: Rc<OsStr>,
     /// A list of arguments to pass to the program (until '--').
-    propagated_leading_args: &'a [&'a str],
+    propagated_leading_args: &'a [String],
     /// A list of arguments to pass to the program (after '--').
     trailing_args: &'a [String],
 
@@ -80,9 +80,9 @@ impl<'a> ProcessBuilder<'a> {
         self
     }
 
-    pub(crate) fn apply_context(&mut self, cx: &'a Context<'_>) -> &mut Self {
+    pub(crate) fn apply_context(&mut self, cx: &'a Context) -> &mut Self {
         self.propagated_leading_args = &cx.leading_args;
-        self.trailing_args = cx.trailing_args;
+        self.trailing_args = &cx.trailing_args;
         self
     }
 
@@ -93,9 +93,9 @@ impl<'a> ProcessBuilder<'a> {
         }
     }
 
-    pub(crate) fn append_features_from_args(&mut self, cx: &Context<'_>, id: &PackageId) {
+    pub(crate) fn append_features_from_args(&mut self, cx: &Context, id: &PackageId) {
         if cx.ignore_unknown_features {
-            self.append_features(cx.features.iter().filter(|&&f| {
+            self.append_features(cx.features.iter().filter(|&f| {
                 if cx.pkg_features(id).contains(f) {
                     true
                 } else {

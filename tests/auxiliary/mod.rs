@@ -1,4 +1,3 @@
-pub use std::path::MAIN_SEPARATOR as SEPARATOR;
 use std::{
     env,
     ffi::OsStr,

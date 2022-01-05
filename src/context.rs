@@ -10,15 +10,15 @@ use std::{
 use anyhow::{bail, Result};
 
 use crate::{
-    cli::{self, Args},
+    cli::Args,
     features::Features,
     manifest::Manifest,
     metadata::{Metadata, Package, PackageId},
     restore, rustup, term, ProcessBuilder,
 };
 
-pub(crate) struct Context<'a> {
-    args: Args<'a>,
+pub(crate) struct Context {
+    args: Args,
     metadata: Metadata,
     manifests: HashMap<PackageId, Manifest>,
     pkg_features: HashMap<PackageId, Features>,
@@ -28,11 +28,11 @@ pub(crate) struct Context<'a> {
     pub(crate) version_range: Option<Vec<String>>,
 }
 
-impl<'a> Context<'a> {
-    pub(crate) fn new(args: &'a [String]) -> Result<Self> {
+impl Context {
+    pub(crate) fn new() -> Result<Self> {
         let cargo = env::var_os("CARGO_HACK_CARGO_SRC")
             .unwrap_or_else(|| env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo")));
-        let args = cli::parse_args(args, &cargo)?;
+        let args = Args::parse(&cargo)?;
         assert!(
             args.subcommand.is_some() || args.remove_dev_deps,
             "no subcommand or valid flag specified"
@@ -48,7 +48,8 @@ impl<'a> Context<'a> {
 
         let version_range = args
             .version_range
-            .map(|range| rustup::version_range(range, args.version_step, &metadata))
+            .as_ref()
+            .map(|range| rustup::version_range(range, args.version_step.as_deref(), &metadata))
             .transpose()?;
 
         let mut pkg_features = HashMap::with_capacity(metadata.workspace_members.len());
@@ -142,8 +143,8 @@ impl<'a> Context<'a> {
     }
 }
 
-impl<'a> ops::Deref for Context<'a> {
-    type Target = Args<'a>;
+impl ops::Deref for Context {
+    type Target = Args;
 
     fn deref(&self) -> &Self::Target {
         &self.args
