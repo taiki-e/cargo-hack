@@ -46,12 +46,6 @@ impl Context {
             bail!("--include-deps-features requires Cargo 1.41 or later");
         }
 
-        let version_range = args
-            .version_range
-            .as_ref()
-            .map(|range| rustup::version_range(range, args.version_step.as_deref(), &metadata))
-            .transpose()?;
-
         let mut pkg_features = HashMap::with_capacity(metadata.workspace_members.len());
         for id in &metadata.workspace_members {
             let features = Features::new(&metadata, id);
@@ -66,7 +60,7 @@ impl Context {
             cargo: cargo.into(),
             restore,
             current_dir: env::current_dir()?,
-            version_range,
+            version_range: None,
         };
 
         // Only a few options require information from cargo manifest.
@@ -79,6 +73,13 @@ impl Context {
                 this.manifests.insert(id.clone(), manifest);
             }
         }
+
+        this.version_range = this
+            .args
+            .version_range
+            .as_ref()
+            .map(|range| rustup::version_range(range, this.args.version_step.as_deref(), &this))
+            .transpose()?;
 
         Ok(this)
     }
@@ -114,7 +115,15 @@ impl Context {
         if self.metadata.cargo_version >= 39 {
             !self.packages(id).publish
         } else {
-            !self.manifests(id).publish
+            !self.manifests(id).package.publish
+        }
+    }
+
+    pub(crate) fn rust_version(&self, id: &PackageId) -> Option<&str> {
+        if self.metadata.cargo_version >= 58 {
+            self.packages(id).rust_version.as_deref()
+        } else {
+            self.manifests(id).package.rust_version.as_deref()
         }
     }
 
@@ -134,6 +143,7 @@ impl Context {
     /// Return `true` if options that require information from cargo manifest is specified.
     pub(crate) fn require_manifest_info(&self) -> bool {
         (self.metadata.cargo_version < 39 && self.ignore_private)
+            || (self.metadata.cargo_version < 58 && self.args.version_range.is_some())
             || self.no_dev_deps
             || self.remove_dev_deps
     }

@@ -2,7 +2,7 @@ use std::str;
 
 use anyhow::{bail, format_err, Result};
 
-use crate::{cargo, metadata::Metadata, version::Version};
+use crate::{cargo, context::Context, version::Version};
 
 pub(crate) struct Rustup {
     pub(crate) version: u32,
@@ -19,11 +19,7 @@ impl Rustup {
     }
 }
 
-pub(crate) fn version_range(
-    range: &str,
-    step: Option<&str>,
-    metadata: &Metadata,
-) -> Result<Vec<String>> {
+pub(crate) fn version_range(range: &str, step: Option<&str>, cx: &Context) -> Result<Vec<String>> {
     let check = |version: &Version| {
         if version.major != 1 {
             bail!("major version must be 1");
@@ -42,8 +38,8 @@ pub(crate) fn version_range(
     let start = match split.next().unwrap() {
         "" => {
             let mut rust_version = None;
-            for id in &metadata.workspace_members {
-                let v = metadata.packages[id].rust_version.as_deref();
+            for id in cx.workspace_members() {
+                let v = cx.rust_version(id);
                 if v.is_none() || v == rust_version {
                     // no-op
                 } else if rust_version.is_none() {
