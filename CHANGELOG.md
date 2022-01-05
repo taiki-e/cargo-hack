@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.5.10] - 2022-01-05
+
 - Fix handling of combined short flags. ([#143](https://github.com/taiki-e/cargo-hack/pull/143))
 
 - Support omitting lower bound of `--version-range` in all cargo versions. ([#144](https://github.com/taiki-e/cargo-hack/pull/144))
@@ -256,7 +258,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.9...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.10...HEAD
+[0.5.10]: https://github.com/taiki-e/cargo-hack/compare/v0.5.9...v0.5.10
 [0.5.9]: https://github.com/taiki-e/cargo-hack/compare/v0.5.8...v0.5.9
 [0.5.8]: https://github.com/taiki-e/cargo-hack/compare/v0.5.7...v0.5.8
 [0.5.7]: https://github.com/taiki-e/cargo-hack/compare/v0.5.6...v0.5.7
