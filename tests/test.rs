@@ -1083,10 +1083,14 @@ fn optional_deps() {
 
     cargo_hack(["check", "--each-feature"])
         .assert_success2("optional_deps", Some(31))
-        .stderr_contains("running `cargo check` on optional_deps (1/1)")
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on optional_deps (1/2)
+            running `cargo check --no-default-features --all-features` on optional_deps (2/2)
+            ",
+        )
         .stderr_not_contains(
             "
-            --no-default-features
             --features real
             --features renemed
             ",
@@ -1127,7 +1131,12 @@ fn optional_deps() {
 
     cargo_hack(["check", "--each-feature", "--optional-deps="])
         .assert_success2("optional_deps", Some(31))
-        .stderr_contains("running `cargo check` on optional_deps (1/1)");
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on optional_deps (1/2)
+            running `cargo check --no-default-features --all-features` on optional_deps (2/2)
+            ",
+        );
 }
 
 #[test]

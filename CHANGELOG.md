@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix breakage on nightly-2022-01-20 or later. ([#146](https://github.com/taiki-e/cargo-hack/pull/146))
+
 ## [0.5.10] - 2022-01-05
 
 - Fix handling of combined short flags. ([#143](https://github.com/taiki-e/cargo-hack/pull/143))
