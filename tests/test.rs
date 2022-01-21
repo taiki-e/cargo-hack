@@ -1298,8 +1298,6 @@ fn default_feature_behavior() {
         .stdout_not_contains("has default feature!");
 }
 
-// It seems rustup is not installed in the docker image provided by cross.
-#[cfg_attr(any(not(target_arch = "x86_64"), target_env = "musl"), ignore)]
 #[test]
 fn version_range() {
     cargo_hack(["check", "--version-range", "1.36..1.37"]).assert_success("real").stderr_contains(
@@ -1337,8 +1335,6 @@ fn version_range() {
     }
 }
 
-// It seems rustup is not installed in the docker image provided by cross.
-#[cfg_attr(any(not(target_arch = "x86_64"), target_env = "musl"), ignore)]
 #[test]
 fn version_range_failure() {
     // zero step

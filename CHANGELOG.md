@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Distribute prebuilt binaries for aarch64 Linux (gnu and musl).
+
 ## [0.5.11] - 2022-01-21
 
 - Fix breakage on nightly-2022-01-20 or later. ([#146](https://github.com/taiki-e/cargo-hack/pull/146))
