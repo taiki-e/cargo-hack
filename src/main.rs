@@ -1,11 +1,6 @@
 #![forbid(unsafe_code)]
 #![warn(rust_2018_idioms, single_use_lifetimes, unreachable_pub)]
-#![warn(
-    clippy::default_trait_access,
-    clippy::disallowed_methods,
-    clippy::disallowed_types,
-    clippy::wildcard_imports
-)]
+#![warn(clippy::default_trait_access, clippy::wildcard_imports)]
 
 #[macro_use]
 mod term;
@@ -150,27 +145,26 @@ fn determine_kind<'a>(cx: &'a Context, id: &PackageId, progress: &mut Progress) 
     }
 
     let package = cx.packages(id);
+    let pkg_features = cx.pkg_features(id);
     let filter = |&f: &&Feature| {
         !cx.exclude_features.iter().any(|s| f == s)
             && !cx.group_features.iter().any(|g| g.matches(f.name()))
     };
     let features = if cx.include_features.is_empty() {
-        let feature_list = cx.pkg_features(id);
-
         cx.exclude_features.iter().for_each(|d| {
-            if !feature_list.contains(d) {
+            if !pkg_features.contains(d) {
                 warn!("specified feature `{}` not found in package `{}`", d, package.name);
             }
         });
 
-        let mut features: Vec<_> = feature_list.normal().iter().filter(filter).collect();
+        let mut features: Vec<_> = pkg_features.normal().iter().filter(filter).collect();
 
         if let Some(opt_deps) = &cx.optional_deps {
             if opt_deps.len() == 1 && opt_deps[0].is_empty() {
                 // --optional-deps=
             } else {
                 for d in opt_deps {
-                    if !feature_list.optional_deps().iter().any(|f| f == d) {
+                    if !pkg_features.optional_deps().iter().any(|f| f == d) {
                         warn!(
                             "specified optional dependency `{}` not found in package `{}`",
                             d, package.name
@@ -179,13 +173,13 @@ fn determine_kind<'a>(cx: &'a Context, id: &PackageId, progress: &mut Progress) 
                 }
             }
 
-            features.extend(feature_list.optional_deps().iter().filter(|f| {
+            features.extend(pkg_features.optional_deps().iter().filter(|f| {
                 filter(f) && (opt_deps.is_empty() || opt_deps.iter().any(|x| *f == x))
             }));
         }
 
         if cx.include_deps_features {
-            features.extend(feature_list.deps_features().iter().filter(filter));
+            features.extend(pkg_features.deps_features().iter().filter(filter));
         }
 
         if !cx.group_features.is_empty() {
@@ -198,21 +192,27 @@ fn determine_kind<'a>(cx: &'a Context, id: &PackageId, progress: &mut Progress) 
     };
 
     if cx.each_feature {
-        if (package.features.is_empty() || !cx.include_features.is_empty()) && features.is_empty() {
+        if (pkg_features.normal().is_empty() && pkg_features.optional_deps().is_empty()
+            || !cx.include_features.is_empty())
+            && features.is_empty()
+        {
             progress.total += 1;
             Kind::Normal
         } else {
             progress.total += features.len()
                 + !cx.exclude_no_default_features as usize
                 + (!cx.exclude_all_features
-                    && package.features.len() + package.optional_deps().count() > 1)
+                    && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1)
                     as usize;
             Kind::Each { features }
         }
     } else if cx.feature_powerset {
         let features = features::feature_powerset(features, cx.depth, &package.features);
 
-        if (package.features.is_empty() || !cx.include_features.is_empty()) && features.is_empty() {
+        if (pkg_features.normal().is_empty() && pkg_features.optional_deps().is_empty()
+            || !cx.include_features.is_empty())
+            && features.is_empty()
+        {
             progress.total += 1;
             Kind::Normal
         } else {
@@ -220,7 +220,7 @@ fn determine_kind<'a>(cx: &'a Context, id: &PackageId, progress: &mut Progress) 
             progress.total += features.len() - 1
                 + !cx.exclude_no_default_features as usize
                 + (!cx.exclude_all_features
-                    && package.features.len() + package.optional_deps().count() > 1)
+                    && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1)
                     as usize;
             Kind::Powerset { features }
         }
@@ -355,8 +355,10 @@ fn exec_actual(
         _ => unreachable!(),
     }
 
-    let pkg = cx.packages(id);
-    if !cx.exclude_all_features && pkg.features.len() + pkg.optional_deps().count() > 1 {
+    let pkg_features = cx.pkg_features(id);
+    if !cx.exclude_all_features
+        && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1
+    {
         // run with all features
         // https://github.com/taiki-e/cargo-hack/issues/42
         line.arg("--all-features");

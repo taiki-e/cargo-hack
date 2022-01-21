@@ -5,10 +5,11 @@ use std::{
 
 use crate::{metadata::Metadata, PackageId};
 
+#[derive(Debug)]
 pub(crate) struct Features {
     features: Vec<Feature>,
-    /// [package features len, package features + optional deps len]
-    len: [usize; 2],
+    optional_deps_start: usize,
+    deps_features_start: usize,
 }
 
 impl Features {
@@ -17,14 +18,19 @@ impl Features {
         let node = &metadata.resolve.nodes[id];
 
         let mut features = Vec::with_capacity(package.features.len());
+        let mut optional_deps = vec![];
 
-        for name in package.features.keys() {
-            features.push(name.into());
-        }
         for name in package.optional_deps() {
-            features.push(name.into());
+            optional_deps.push(name);
         }
-        let len = [package.features.len(), features.len()];
+        for name in package.features.keys() {
+            if !optional_deps.contains(&&**name) {
+                features.push(name.into());
+            }
+        }
+        let optional_deps_start = features.len();
+        features.extend(optional_deps.into_iter().map(Into::into));
+        let deps_features_start = features.len();
 
         // TODO: Unpublished dependencies are not included in `node.deps`.
         for dep in node.deps.iter().filter(|dep| {
@@ -42,19 +48,19 @@ impl Features {
             // TODO: Optional deps of `dep_package`.
         }
 
-        Self { features, len }
+        Self { features, optional_deps_start, deps_features_start }
     }
 
     pub(crate) fn normal(&self) -> &[Feature] {
-        &self.features[..self.len[0]]
+        &self.features[..self.optional_deps_start]
     }
 
     pub(crate) fn optional_deps(&self) -> &[Feature] {
-        &self.features[self.len[0]..self.len[1]]
+        &self.features[self.optional_deps_start..self.deps_features_start]
     }
 
     pub(crate) fn deps_features(&self) -> &[Feature] {
-        &self.features[self.len[1]..]
+        &self.features[self.deps_features_start..]
     }
 
     pub(crate) fn contains(&self, name: &str) -> bool {
@@ -66,13 +72,11 @@ impl Features {
 #[derive(Debug)]
 pub(crate) enum Feature {
     /// A feature of the current crate.
-    #[allow(dead_code)] // false positive that fixed in Rust 1.44
     Normal {
         /// Feature name. It is considered indivisible.
         name: String,
     },
     /// Grouped features.
-    #[allow(dead_code)] // false positive that fixed in Rust 1.44
     Group {
         /// Feature name concatenated with `,`.
         name: String,
@@ -80,12 +84,11 @@ pub(crate) enum Feature {
         list: Vec<String>,
     },
     /// A feature of a dependency.
-    #[allow(dead_code)] // false positive that fixed in Rust 1.44
     Path {
         /// Feature path separated with `/`.
         name: String,
         /// Index of `/`.
-        slash: usize,
+        _slash: usize,
     },
 }
 
@@ -96,7 +99,7 @@ impl Feature {
     }
 
     pub(crate) fn path(parent: &str, name: &str) -> Self {
-        Self::Path { name: format!("{}/{}", parent, name), slash: parent.len() }
+        Self::Path { name: format!("{}/{}", parent, name), _slash: parent.len() }
     }
 
     pub(crate) fn name(&self) -> &str {

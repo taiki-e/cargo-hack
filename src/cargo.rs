@@ -8,11 +8,8 @@ pub(crate) fn minor_version(mut cmd: ProcessBuilder<'_>) -> Result<u32> {
     let output = cmd.read()?;
 
     // Find the release line in the verbose version output.
-    let release = output
-        .lines()
-        .find(|line| line.starts_with("release: "))
-        .map(|line| &line["release: ".len()..])
-        .ok_or_else(|| {
+    let release =
+        output.lines().find_map(|line| line.strip_prefix("release: ")).ok_or_else(|| {
             format_err!("could not find rustc release from output of {}: {}", cmd, output)
         })?;
 

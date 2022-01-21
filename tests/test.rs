@@ -7,7 +7,7 @@ use std::{
     path::MAIN_SEPARATOR,
 };
 
-use auxiliary::{cargo_bin_exe, cargo_hack, has_stable_toolchain, target_triple, CommandExt};
+use auxiliary::{cargo_bin_exe, cargo_hack, has_stable_toolchain, CommandExt, TARGET_TRIPLE};
 
 #[test]
 fn failures() {
@@ -61,7 +61,7 @@ fn removed_flags() {
     ] {
         cargo_hack(["check", flag])
             .assert_failure("real")
-            .stderr_contains(format!("{} was removed, use {} instead", flag, alt));
+            .stderr_contains(format!("{flag} was removed, use {alt} instead"));
     }
 }
 
@@ -283,14 +283,13 @@ fn no_dev_deps_failure() {
     {
         cargo_hack(["check", "--no-dev-deps", flag])
             .assert_failure("real")
-            .stderr_contains(format!("--no-dev-deps may not be used together with {}", flag));
+            .stderr_contains(format!("--no-dev-deps may not be used together with {flag}"));
     }
 
     // with subcommands requires dev-deps
     for subcommand in &["test", "bench"] {
         cargo_hack([subcommand, "--no-dev-deps"]).assert_failure("real").stderr_contains(format!(
-            "--no-dev-deps may not be used together with {} subcommand",
-            subcommand
+            "--no-dev-deps may not be used together with {subcommand} subcommand"
         ));
     }
 }
@@ -303,13 +302,13 @@ fn remove_dev_deps_failure() {
     {
         cargo_hack(["check", "--remove-dev-deps", flag])
             .assert_failure("real")
-            .stderr_contains(format!("--remove-dev-deps may not be used together with {}", flag));
+            .stderr_contains(format!("--remove-dev-deps may not be used together with {flag}"));
     }
 
     // with subcommands requires dev-deps
     for subcommand in &["test", "bench"] {
         cargo_hack([subcommand, "--remove-dev-deps"]).assert_failure("real").stderr_contains(
-            format!("--remove-dev-deps may not be used together with {} subcommand", subcommand),
+            format!("--remove-dev-deps may not be used together with {subcommand} subcommand"),
         );
     }
 }
@@ -1084,10 +1083,14 @@ fn optional_deps() {
 
     cargo_hack(["check", "--each-feature"])
         .assert_success2("optional_deps", Some(31))
-        .stderr_contains("running `cargo check` on optional_deps (1/1)")
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on optional_deps (1/2)
+            running `cargo check --no-default-features --all-features` on optional_deps (2/2)
+            ",
+        )
         .stderr_not_contains(
             "
-            --no-default-features
             --features real
             --features renemed
             ",
@@ -1128,7 +1131,12 @@ fn optional_deps() {
 
     cargo_hack(["check", "--each-feature", "--optional-deps="])
         .assert_success2("optional_deps", Some(31))
-        .stderr_contains("running `cargo check` on optional_deps (1/1)");
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on optional_deps (1/2)
+            running `cargo check --no-default-features --all-features` on optional_deps (2/2)
+            ",
+        );
 }
 
 #[test]
@@ -1192,9 +1200,9 @@ fn short_flag() {
         .assert_success("virtual")
         .stderr_contains(format!(
             "
-            cargo{1} check -v --manifest-path member1{0}Cargo.toml` (1/1)
+            cargo{EXE_SUFFIX} check -v --manifest-path member1{0}Cargo.toml` (1/1)
             ",
-            MAIN_SEPARATOR, EXE_SUFFIX
+            MAIN_SEPARATOR
         ))
         .stderr_not_contains("member2");
 
@@ -1208,28 +1216,28 @@ fn short_flag() {
 fn verbose() {
     cargo_hack(["check", "--verbose"]).assert_success("virtual").stderr_contains(format!(
         "
-        cargo{1} check --manifest-path member1{0}Cargo.toml` (1/3)
-        cargo{1} check --manifest-path member2{0}Cargo.toml` (2/3)
-        cargo{1} check --manifest-path dir{0}not_find_manifest{0}Cargo.toml` (3/3)
+        cargo{EXE_SUFFIX} check --manifest-path member1{0}Cargo.toml` (1/3)
+        cargo{EXE_SUFFIX} check --manifest-path member2{0}Cargo.toml` (2/3)
+        cargo{EXE_SUFFIX} check --manifest-path dir{0}not_find_manifest{0}Cargo.toml` (3/3)
         ",
-        MAIN_SEPARATOR, EXE_SUFFIX
+        MAIN_SEPARATOR,
     ));
 
     // If `-vv` is passed, propagate `-v` to cargo.
     cargo_hack(["check", "-vv", "-p", "member1"]).assert_success("virtual").stderr_contains(
         format!(
             "
-            cargo{1} check -v --manifest-path member1{0}Cargo.toml` (1/1)
+            cargo{EXE_SUFFIX} check -v --manifest-path member1{0}Cargo.toml` (1/1)
             ",
-            MAIN_SEPARATOR, EXE_SUFFIX
+            MAIN_SEPARATOR,
         ),
     );
     cargo_hack(["check", "-vvv", "-p", "member1"]).assert_success("virtual").stderr_contains(
         format!(
             "
-            cargo{1} check -vv --manifest-path member1{0}Cargo.toml` (1/1)
+            cargo{EXE_SUFFIX} check -vv --manifest-path member1{0}Cargo.toml` (1/1)
             ",
-            MAIN_SEPARATOR, EXE_SUFFIX
+            MAIN_SEPARATOR,
         ),
     );
 }
@@ -1259,9 +1267,9 @@ fn propagate() {
         .stderr_contains("`cargo check --color auto`");
 
     // --target
-    cargo_hack(["check", "--target", &target_triple()])
+    cargo_hack(["check", "--target", &TARGET_TRIPLE])
         .assert_success("real")
-        .stderr_contains(format!("`cargo check --target {}`", target_triple()));
+        .stderr_contains(format!("`cargo check --target {}`", *TARGET_TRIPLE));
 
     // --verbose does not be propagated
     cargo_hack(["check", "--verbose"]).assert_success("real").stderr_not_contains("--verbose");
@@ -1301,14 +1309,14 @@ fn version_range() {
         ",
     );
 
-    cargo_hack(["check", "--version-range", "1.36..1.37", "--target", &target_triple()])
+    cargo_hack(["check", "--version-range", "1.36..1.37", "--target", &TARGET_TRIPLE])
         .assert_success("real")
         .stderr_contains(format!(
             "
             running `cargo +1.36 check --target {0}` on real (1/2)
             running `cargo +1.37 check --target {0}` on real (2/2)
             ",
-            target_triple()
+            *TARGET_TRIPLE
         ));
 
     if cfg!(target_os = "linux") {
@@ -1384,9 +1392,8 @@ fn keep_going() {
             failed to run 2 commands
             failed commands:
             keep_going:
-            cargo{0} check --manifest-path Cargo.toml --no-default-features`
-            cargo{0} check --manifest-path Cargo.toml --no-default-features --features a`
+            cargo{EXE_SUFFIX} check --manifest-path Cargo.toml --no-default-features`
+            cargo{EXE_SUFFIX} check --manifest-path Cargo.toml --no-default-features --features a`
             ",
-            EXE_SUFFIX
         ));
 }

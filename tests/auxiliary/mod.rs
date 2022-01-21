@@ -1,11 +1,11 @@
 use std::{
-    env,
+    env::{self, consts::EXE_SUFFIX},
     ffi::OsStr,
     path::{Path, PathBuf},
     process::{Command, ExitStatus},
 };
 
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use easy_ext::ext;
 use fs_err as fs;
 use once_cell::sync::Lazy;
@@ -25,7 +25,7 @@ pub fn cargo_bin_exe() -> Command {
 
 fn test_toolchain() -> String {
     if let Some(toolchain) = test_version() {
-        format!("+1.{} ", toolchain)
+        format!("+1.{toolchain} ")
     } else {
         String::new()
     }
@@ -37,7 +37,7 @@ fn test_version() -> Option<u32> {
             env::var_os("CARGO_HACK_TEST_TOOLCHAIN")?.to_string_lossy().parse().unwrap();
         // Install toolchain first to avoid toolchain installation conflicts.
         let _ = Command::new("rustup")
-            .args(&["toolchain", "install", &format!("1.{}", toolchain), "--no-self-update"])
+            .args(&["toolchain", "install", &format!("1.{toolchain}"), "--no-self-update"])
             .output();
         Some(toolchain)
     });
@@ -58,7 +58,7 @@ pub fn cargo_hack<O: AsRef<OsStr>>(args: impl AsRef<[O]>) -> Command {
     cmd.arg("hack");
     if let Some(toolchain) = test_version() {
         if !args.iter().any(|a| a.as_ref().to_str().unwrap().starts_with("--version-range")) {
-            cmd.arg(format!("--version-range=1.{0}..1.{0}", toolchain));
+            cmd.arg(format!("--version-range=1.{toolchain}..1.{toolchain}"));
         }
     }
     cmd.args(args);
@@ -76,10 +76,8 @@ impl Command {
             _ => {}
         }
         let (_test_project, cur_dir) = test_project(test_model).unwrap();
-        let output = self
-            .current_dir(cur_dir)
-            .output()
-            .unwrap_or_else(|e| panic!("could not execute process: {}", e));
+        let output =
+            self.current_dir(cur_dir).output().context("could not execute process").unwrap();
         AssertOutput(Some(AssertOutputInner {
             stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
             stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
@@ -140,9 +138,7 @@ struct AssertOutputInner {
 
 #[track_caller]
 fn line_separated(lines: &str, f: impl FnMut(&str)) {
-    let lines = if lines.contains("cargo +")
-        || lines.contains(&format!("cargo{} +", env::consts::EXE_SUFFIX))
-    {
+    let lines = if lines.contains("cargo +") || lines.contains(&format!("cargo{EXE_SUFFIX} +")) {
         lines.to_string()
     } else {
         lines.replace("cargo ", &format!("cargo {}", test_toolchain()))
@@ -158,9 +154,8 @@ impl AssertOutput {
             line_separated(pats.as_ref(), |pat| {
                 if !output.stderr.contains(pat) {
                     panic!(
-                        "assertion failed: `self.stderr.contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
+                        "assertion failed: `self.stderr.contains(..)`:\n\nEXPECTED:\n{0}\n{pat}\n{0}\n\nACTUAL:\n{0}\n{1}\n{0}\n",
                         "-".repeat(60),
-                        pat,
                         output.stderr
                     );
                 }
@@ -176,9 +171,8 @@ impl AssertOutput {
             line_separated(pats.as_ref(), |pat| {
                 if output.stderr.contains(pat) {
                     panic!(
-                        "assertion failed: `!self.stderr.contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
+                        "assertion failed: `!self.stderr.contains(..)`:\n\nEXPECTED:\n{0}\n{pat}\n{0}\n\nACTUAL:\n{0}\n{1}\n{0}\n",
                         "-".repeat(60),
-                        pat,
                         output.stderr
                     );
                 }
@@ -194,9 +188,8 @@ impl AssertOutput {
             line_separated(pats.as_ref(), |pat| {
                 if !output.stdout.contains(pat) {
                     panic!(
-                        "assertion failed: `self.stdout.contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
+                        "assertion failed: `self.stdout.contains(..)`:\n\nEXPECTED:\n{0}\n{pat}\n{0}\n\nACTUAL:\n{0}\n{1}\n{0}\n",
                         "-".repeat(60),
-                        pat,
                         output.stdout
                     );
                 }
@@ -212,9 +205,8 @@ impl AssertOutput {
             line_separated(pats.as_ref(), |pat| {
                 if output.stdout.contains(pat) {
                     panic!(
-                        "assertion failed: `!self.stdout.contains(..)`:\n\nEXPECTED:\n{0}\n{1}\n{0}\n\nACTUAL:\n{0}\n{2}\n{0}\n",
+                        "assertion failed: `!self.stdout.contains(..)`:\n\nEXPECTED:\n{0}\n{pat}\n{0}\n\nACTUAL:\n{0}\n{1}\n{0}\n",
                         "-".repeat(60),
-                        pat,
                         output.stdout
                     );
                 }
@@ -224,7 +216,7 @@ impl AssertOutput {
     }
 }
 
-pub fn target_triple() -> String {
+pub static TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
     let triple = env::consts::ARCH.to_string();
     if cfg!(target_os = "macos") {
         triple + "-apple-darwin"
@@ -243,7 +235,7 @@ pub fn target_triple() -> String {
     } else {
         unreachable!()
     }
-}
+});
 
 fn test_project(model: &str) -> Result<(TempDir, PathBuf)> {
     let tmpdir = tempfile::tempdir()?;
