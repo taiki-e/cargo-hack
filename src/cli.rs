@@ -118,15 +118,15 @@ impl Args {
         }
         let rest = raw_args.collect::<Result<Vec<_>>>()?;
 
-        let mut cargo_args = Vec::new();
+        let mut cargo_args = vec![];
         let mut subcommand: Option<String> = None;
 
         let mut manifest_path = None;
         let mut color = None;
 
-        let mut package = Vec::new();
-        let mut exclude = Vec::new();
-        let mut features = Vec::new();
+        let mut package = vec![];
+        let mut exclude = vec![];
+        let mut features = vec![];
 
         let mut workspace = false;
         let mut no_dev_deps = false;
@@ -142,14 +142,14 @@ impl Args {
         let mut version_step = None;
 
         let mut optional_deps = None;
-        let mut include_features = Vec::new();
+        let mut include_features = vec![];
         let mut include_deps_features = false;
 
-        let mut exclude_features = Vec::new();
+        let mut exclude_features = vec![];
         let mut exclude_no_default_features = false;
         let mut exclude_all_features = false;
 
-        let mut group_features: Vec<String> = Vec::new();
+        let mut group_features: Vec<String> = vec![];
         let mut depth = None;
 
         let mut verbose = 0;
@@ -211,12 +211,13 @@ impl Args {
             }
 
             match arg {
+                Long("color") => parse_opt!(color, true),
+                Long("target") => parse_opt!(target, true),
+
                 Long("manifest-path") => parse_opt!(manifest_path, false),
                 Long("depth") => parse_opt!(depth, false),
-                Long("color") => parse_opt!(color, true),
                 Long("version-range") => parse_opt!(version_range, false),
                 Long("version-step") => parse_opt!(version_step, false),
-                Long("target") => parse_opt!(target, true),
 
                 Short('p') | Long("package") => package.push(parser.value()?.parse()?),
                 Long("exclude") => exclude.push(parser.value()?.parse()?),
@@ -272,10 +273,10 @@ impl Args {
 
                 // detect similar arg
                 Long("each-features") => {
-                    similar_arg(&arg, subcommand.as_deref(), "--each-feature", None)?
+                    similar_arg(&arg, subcommand.as_deref(), "--each-feature", None)?;
                 }
                 Long("features-powerset") => {
-                    similar_arg(&arg, subcommand.as_deref(), "--feature-powerset", None)?
+                    similar_arg(&arg, subcommand.as_deref(), "--feature-powerset", None)?;
                 }
 
                 // propagated
@@ -532,10 +533,10 @@ impl Args {
         term::verbose::set(verbose != 0);
         // If `-vv` is passed, propagate `-v` to cargo.
         if verbose > 1 {
-            cargo_args.push(format!("-{}", "v".repeat(verbose - 1)))
+            cargo_args.push(format!("-{}", "v".repeat(verbose - 1)));
         }
 
-        Ok(Args {
+        Ok(Self {
             leading_args: cargo_args,
             trailing_args: rest,
 
@@ -581,7 +582,7 @@ fn has_z_flag(args: &[String], name: &str) -> bool {
         if arg == "-Z" {
             arg = iter.next().unwrap();
         } else if let Some(a) = arg.strip_prefix("-Z") {
-            arg = a
+            arg = a;
         } else {
             continue;
         }

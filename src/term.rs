@@ -17,9 +17,9 @@ enum Coloring {
 }
 
 impl Coloring {
-    const AUTO: u8 = Coloring::Auto as _;
-    const ALWAYS: u8 = Coloring::Always as _;
-    const NEVER: u8 = Coloring::Never as _;
+    const AUTO: u8 = Self::Auto as _;
+    const ALWAYS: u8 = Self::Always as _;
+    const NEVER: u8 = Self::Never as _;
 }
 
 impl FromStr for Coloring {
