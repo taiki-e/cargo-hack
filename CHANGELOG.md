@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.5.11] - 2022-01-21
+
 - Fix breakage on nightly-2022-01-20 or later. ([#146](https://github.com/taiki-e/cargo-hack/pull/146))
 
 ## [0.5.10] - 2022-01-05
@@ -260,7 +262,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.10...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.11...HEAD
+[0.5.11]: https://github.com/taiki-e/cargo-hack/compare/v0.5.10...v0.5.11
 [0.5.10]: https://github.com/taiki-e/cargo-hack/compare/v0.5.9...v0.5.10
 [0.5.9]: https://github.com/taiki-e/cargo-hack/compare/v0.5.8...v0.5.9
 [0.5.8]: https://github.com/taiki-e/cargo-hack/compare/v0.5.7...v0.5.8
