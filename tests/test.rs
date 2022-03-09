@@ -7,7 +7,7 @@ use std::{
     path::MAIN_SEPARATOR,
 };
 
-use auxiliary::{cargo_bin_exe, cargo_hack, has_stable_toolchain, CommandExt, TARGET_TRIPLE};
+use auxiliary::{cargo_bin_exe, cargo_hack, has_stable_toolchain, CommandExt, TARGET};
 
 #[test]
 fn failures() {
@@ -1267,9 +1267,9 @@ fn propagate() {
         .stderr_contains("`cargo check --color auto`");
 
     // --target
-    cargo_hack(["check", "--target", &TARGET_TRIPLE])
+    cargo_hack(["check", "--target", &TARGET])
         .assert_success("real")
-        .stderr_contains(format!("`cargo check --target {}`", *TARGET_TRIPLE));
+        .stderr_contains(format!("`cargo check --target {}`", *TARGET));
 
     // --verbose does not be propagated
     cargo_hack(["check", "--verbose"]).assert_success("real").stderr_not_contains("--verbose");
@@ -1307,14 +1307,14 @@ fn version_range() {
         ",
     );
 
-    cargo_hack(["check", "--version-range", "1.36..1.37", "--target", &TARGET_TRIPLE])
+    cargo_hack(["check", "--version-range", "1.36..1.37", "--target", &TARGET])
         .assert_success("real")
         .stderr_contains(format!(
             "
             running `cargo +1.36 check --target {0}` on real (1/2)
             running `cargo +1.37 check --target {0}` on real (2/2)
             ",
-            *TARGET_TRIPLE
+            *TARGET
         ));
 
     if cfg!(target_os = "linux") {

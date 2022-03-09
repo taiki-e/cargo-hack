@@ -45,7 +45,7 @@ git diff --exit-code
 git diff --exit-code --staged
 
 # Make sure the same release has not been created in the past.
-if gh release view "${tag}" >/dev/null; then
+if gh release view "${tag}" &>/dev/null; then
     bail "tag '${tag}' has already been created and pushed"
 fi
 

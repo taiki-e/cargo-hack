@@ -248,7 +248,7 @@ foo = \"0.1\"
 "
     );
 
-    // NOTE: `a = [dev-dependencies]` is not valid TOML format.
+    // Note: `a = [dev-dependencies]` is not valid TOML format.
     test!(
         not_table,
         "\
@@ -281,7 +281,7 @@ c = [\"dev-dependencies\"]
 "
     );
 
-    // NOTE: `foo = [[dev-dependencies]]` is not valid TOML format.
+    // Note: `foo = [[dev-dependencies]]` is not valid TOML format.
     test!(
         not_table_multi_line,
         "\

@@ -312,7 +312,7 @@ allow publishing a package with cyclic dev-dependencies. ([cargo#4242])
 cargo hack publish --no-dev-deps --dry-run --allow-dirty
 ```
 
-NOTE: Currently, using `--no-dev-deps` flag removes dev-dependencies from
+Note: Currently, using `--no-dev-deps` flag removes dev-dependencies from
 real manifest while cargo-hack is running and restores it when finished.
 See [cargo#4242] for why this is necessary.
 Also, this behavior may change in the future on some subcommands. See also
@@ -411,7 +411,7 @@ This makes the installation faster and may avoid the impact of [problems caused 
 <!-- omit in toc -->
 ### Via Homebrew
 
-You can install cargo-hack using [Homebrew tap on macOS and Linux](https://github.com/taiki-e/homebrew-tap/blob/main/Formula/cargo-hack.rb):
+You can install cargo-hack using [Homebrew tap on macOS and Linux](https://github.com/taiki-e/homebrew-tap/blob/HEAD/Formula/cargo-hack.rb):
 
 ```sh
 brew install taiki-e/tap/cargo-hack
@@ -426,7 +426,7 @@ You can install [cargo-hack from AUR](https://aur.archlinux.org/packages/cargo-h
 paru -S cargo-hack
 ```
 
-NOTE: AUR package is maintained by community, not maintainer of cargo-hack.
+Note: AUR package is maintained by community, not maintainer of cargo-hack.
 
 ## Related Projects
 

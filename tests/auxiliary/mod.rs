@@ -15,8 +15,52 @@ use walkdir::WalkDir;
 static FIXTURES_PATH: Lazy<PathBuf> =
     Lazy::new(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
 
+pub static TARGET: Lazy<String> = Lazy::new(|| {
+    let triple = env::consts::ARCH.to_string();
+    if cfg!(target_os = "macos") {
+        triple + "-apple-darwin"
+    } else if cfg!(target_os = "windows") {
+        if cfg!(target_env = "gnu") {
+            triple + "-pc-windows-gnu"
+        } else if cfg!(target_env = "msvc") {
+            triple + "-pc-windows-msvc"
+        } else {
+            unreachable!()
+        }
+    } else if cfg!(target_env = "gnu") {
+        triple + "-unknown-" + env::consts::OS + "-gnu"
+    } else if cfg!(target_env = "musl") {
+        triple + "-unknown-" + env::consts::OS + "-musl"
+    } else {
+        unreachable!()
+    }
+});
+static RUNNER: Lazy<Option<Vec<String>>> = Lazy::new(|| {
+    let runner: Vec<_> =
+        env::var(format!("CARGO_TARGET_{}_RUNNER", TARGET.replace('-', "_").to_ascii_uppercase()))
+            .ok()?
+            .split(' ')
+            .filter(|s| !s.is_empty())
+            .map(str::to_owned)
+            .collect();
+    if runner.is_empty() {
+        None
+    } else {
+        Some(runner)
+    }
+});
+
 pub fn cargo_bin_exe() -> Command {
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_cargo-hack"));
+    let bin = env!("CARGO_BIN_EXE_cargo-hack");
+    let mut cmd = match &*RUNNER {
+        Some(runner) => {
+            let mut cmd = Command::new(&runner[0]);
+            cmd.args(&runner[1..]);
+            cmd.arg(bin);
+            cmd
+        }
+        None => Command::new(bin),
+    };
     cmd.env("CARGO_HACK_DENY_WARNINGS", "true");
     cmd.env_remove("RUSTFLAGS");
     cmd.env_remove("CARGO_TERM_COLOR");
@@ -215,27 +259,6 @@ impl AssertOutput {
         self
     }
 }
-
-pub static TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
-    let triple = env::consts::ARCH.to_string();
-    if cfg!(target_os = "macos") {
-        triple + "-apple-darwin"
-    } else if cfg!(target_os = "windows") {
-        if cfg!(target_env = "gnu") {
-            triple + "-pc-windows-gnu"
-        } else if cfg!(target_env = "msvc") {
-            triple + "-pc-windows-msvc"
-        } else {
-            unreachable!()
-        }
-    } else if cfg!(target_env = "gnu") {
-        triple + "-unknown-" + env::consts::OS + "-gnu"
-    } else if cfg!(target_env = "musl") {
-        triple + "-unknown-" + env::consts::OS + "-musl"
-    } else {
-        unreachable!()
-    }
-});
 
 fn test_project(model: &str) -> Result<(TempDir, PathBuf)> {
     let tmpdir = tempfile::tempdir()?;
