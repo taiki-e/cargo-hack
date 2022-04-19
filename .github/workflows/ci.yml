@@ -100,7 +100,7 @@ jobs:
       - run: rustup toolchain remove stable
       - run: CARGO_HACK_TEST_TOOLCHAIN=${{ matrix.rust }} cargo test --workspace --all-features
 
-  build:
+  msrv:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v3
@@ -110,7 +110,7 @@ jobs:
       - run: cargo hack build --workspace --ignore-private --no-dev-deps --version-range .. --version-step 2
 
   fuzz:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
@@ -151,7 +151,7 @@ jobs:
     needs:
       - test
       - test-compat
-      - build
+      - msrv
       - fuzz
       - tidy
     runs-on: ubuntu-18.04
