@@ -1,6 +1,6 @@
 [package]
 name = "cargo-hack"
-version = "0.5.12" #publish:version
+version = "0.5.13" #publish:version
 edition = "2018"
 rust-version = "1.46"
 license = "Apache-2.0 OR MIT"

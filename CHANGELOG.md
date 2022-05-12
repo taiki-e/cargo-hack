@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.5.13] - 2022-05-12
+
 - Support short flag of `--features` (`-F`). ([#150](https://github.com/taiki-e/cargo-hack/pull/150))
 
 ## [0.5.12] - 2022-01-21
@@ -268,7 +270,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.12...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.13...HEAD
+[0.5.13]: https://github.com/taiki-e/cargo-hack/compare/v0.5.12...v0.5.13
 [0.5.12]: https://github.com/taiki-e/cargo-hack/compare/v0.5.11...v0.5.12
 [0.5.11]: https://github.com/taiki-e/cargo-hack/compare/v0.5.10...v0.5.11
 [0.5.10]: https://github.com/taiki-e/cargo-hack/compare/v0.5.9...v0.5.10
