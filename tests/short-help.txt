@@ -12,7 +12,7 @@ OPTIONS:
         --workspace                      Perform command for all packages in the workspace
         --exclude <SPEC>...              Exclude packages from the check
         --manifest-path <PATH>           Path to Cargo.toml
-        --features <FEATURES>...         Space-separated list of features to activate
+    -F, --features <FEATURES>...         Space-separated list of features to activate
         --each-feature                   Perform for each feature of the package
         --feature-powerset               Perform for the feature powerset of the package
         --optional-deps [DEPS]...        Use optional dependencies as features

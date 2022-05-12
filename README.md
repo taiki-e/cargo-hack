@@ -52,7 +52,7 @@ OPTIONS:
         --manifest-path <PATH>
             Path to Cargo.toml.
 
-        --features <FEATURES>...
+    -F, --features <FEATURES>...
             Space-separated list of features to activate.
 
         --each-feature
