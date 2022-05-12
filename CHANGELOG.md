@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support short flag of `--features` (`-F`). ([#150](https://github.com/taiki-e/cargo-hack/pull/150))
+
 ## [0.5.12] - 2022-01-21
 
 - Distribute prebuilt binaries for aarch64 Linux (gnu and musl).

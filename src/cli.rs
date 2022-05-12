@@ -90,7 +90,7 @@ impl Args {
         const SUBCMD: &str = "hack";
 
         // rustc/cargo args must be valid Unicode
-        // https://github.com/rust-lang/rust/blob/3bc9dd0dd293ab82945e35888ed6d7ab802761ef/compiler/rustc_driver/src/lib.rs#L1365-L1375
+        // https://github.com/rust-lang/rust/blob/1.60.0/compiler/rustc_driver/src/lib.rs#L1319-L1329
         fn handle_args(
             args: impl IntoIterator<Item = impl Into<OsString>>,
         ) -> impl Iterator<Item = Result<String>> {
@@ -223,7 +223,7 @@ impl Args {
                 Long("exclude") => exclude.push(parser.value()?.parse()?),
                 Long("group-features") => group_features.push(parser.value()?.parse()?),
 
-                Long("features") => parse_multi_opt!(features),
+                Short('F') | Long("features") => parse_multi_opt!(features),
                 Long("skip") | Long("exclude-features") => parse_multi_opt!(exclude_features),
                 Long("include-features") => parse_multi_opt!(include_features),
 
@@ -606,7 +606,7 @@ const HELP: &[HelpText<'_>] = &[
         "This flag can only be used together with --workspace",
     ]),
     ("", "--manifest-path", "<PATH>", "Path to Cargo.toml", &[]),
-    ("", "--features", "<FEATURES>...", "Space-separated list of features to activate", &[]),
+    ("-F", "--features", "<FEATURES>...", "Space-separated list of features to activate", &[]),
     ("", "--each-feature", "", "Perform for each feature of the package", &[
         "This also includes runs with just --no-default-features flag, and default features.",
         "When this flag is not used together with --exclude-features (--skip) and \
