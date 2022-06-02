@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Distribute prebuilt binaries for aarch64 macOS. ([#151](https://github.com/taiki-e/cargo-hack/pull/151))
+
 ## [0.5.13] - 2022-05-12
 
 - Support short flag of `--features` (`-F`). ([#150](https://github.com/taiki-e/cargo-hack/pull/150))
