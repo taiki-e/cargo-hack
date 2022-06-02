@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.5.14] - 2022-06-02
+
 - Distribute prebuilt binaries for aarch64 macOS. ([#151](https://github.com/taiki-e/cargo-hack/pull/151))
 
 ## [0.5.13] - 2022-05-12
@@ -272,7 +274,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.13...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.14...HEAD
+[0.5.14]: https://github.com/taiki-e/cargo-hack/compare/v0.5.13...v0.5.14
 [0.5.13]: https://github.com/taiki-e/cargo-hack/compare/v0.5.12...v0.5.13
 [0.5.12]: https://github.com/taiki-e/cargo-hack/compare/v0.5.11...v0.5.12
 [0.5.11]: https://github.com/taiki-e/cargo-hack/compare/v0.5.10...v0.5.11
