@@ -166,7 +166,7 @@ impl<'a> ProcessBuilder<'a> {
         let mut cmd = Command::new(&*self.program);
 
         cmd.args(&*self.leading_args);
-        cmd.args(&*self.propagated_leading_args);
+        cmd.args(self.propagated_leading_args);
         cmd.args(&self.args);
         if !self.features.is_empty() {
             cmd.arg("--features");
@@ -174,7 +174,7 @@ impl<'a> ProcessBuilder<'a> {
         }
         if !self.trailing_args.is_empty() {
             cmd.arg("--");
-            cmd.args(&*self.trailing_args);
+            cmd.args(self.trailing_args);
         }
 
         cmd
@@ -224,7 +224,7 @@ impl fmt::Display for ProcessBuilder<'_> {
 
         if !self.trailing_args.is_empty() {
             write!(f, " --")?;
-            for arg in &*self.trailing_args {
+            for arg in self.trailing_args {
                 write!(f, " {}", arg)?;
             }
         }
