@@ -2,7 +2,7 @@
 name = "cargo-hack"
 version = "0.5.14" #publish:version
 edition = "2018"
-rust-version = "1.46"
+rust-version = "1.59"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/taiki-e/cargo-hack"
 keywords = ["cargo", "subcommand", "testing"]
@@ -21,6 +21,7 @@ bin-dir = "{ bin }{ binary-ext }"
 pkg-fmt = "tgz"
 
 [workspace]
+resolver = "2"
 
 [dependencies]
 anyhow = "1.0.34"
@@ -29,7 +30,7 @@ ctrlc = { version = "3.1.4", features = ["termination"] }
 lexopt = "0.2"
 serde_json = "1"
 termcolor = "1.1"
-toml = "0.5.2"
+toml_edit = "0.14.3"
 
 [dev-dependencies]
 easy-ext = "1"

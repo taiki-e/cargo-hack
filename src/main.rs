@@ -15,7 +15,6 @@ mod features;
 mod fs;
 mod manifest;
 mod metadata;
-mod remove_dev_deps;
 mod restore;
 mod rustup;
 mod version;

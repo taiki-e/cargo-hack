@@ -117,19 +117,6 @@ jobs:
       - uses: taiki-e/install-action@cargo-hack
       - run: cargo hack build --workspace --ignore-private --no-dev-deps --version-range .. --version-step 2
 
-  fuzz:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          persist-credentials: false
-      - uses: taiki-e/github-actions/install-rust@main
-      - uses: dtolnay/install@cargo-fuzz
-      - run: cargo install afl --debug
-      - run: cargo fuzz build
-      - run: cargo afl build
-        working-directory: fuzz/afl
-
   tidy:
     runs-on: ubuntu-18.04
     steps:
@@ -160,7 +147,6 @@ jobs:
       - test
       - test-compat
       - msrv
-      - fuzz
       - tidy
     runs-on: ubuntu-18.04
     steps:
