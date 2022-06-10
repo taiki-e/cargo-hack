@@ -1300,19 +1300,19 @@ fn default_feature_behavior() {
 
 #[test]
 fn version_range() {
-    cargo_hack(["check", "--version-range", "1.36..1.37"]).assert_success("real").stderr_contains(
+    cargo_hack(["check", "--version-range", "1.58..1.59"]).assert_success("real").stderr_contains(
         "
-        running `cargo +1.36 check` on real (1/2)
-        running `cargo +1.37 check` on real (2/2)
+        running `cargo +1.58 check` on real (1/2)
+        running `cargo +1.59 check` on real (2/2)
         ",
     );
 
-    cargo_hack(["check", "--version-range", "1.36..1.37", "--target", &TARGET])
+    cargo_hack(["check", "--version-range", "1.58..1.59", "--target", &TARGET])
         .assert_success("real")
         .stderr_contains(format!(
             "
-            running `cargo +1.36 check --target {0}` on real (1/2)
-            running `cargo +1.37 check --target {0}` on real (2/2)
+            running `cargo +1.58 check --target {0}` on real (1/2)
+            running `cargo +1.59 check --target {0}` on real (2/2)
             ",
             *TARGET
         ));
@@ -1321,15 +1321,15 @@ fn version_range() {
         cargo_hack([
             "check",
             "--version-range",
-            "1.36..1.37",
+            "1.58..1.59",
             "--target",
             "x86_64-unknown-linux-musl",
         ])
         .assert_success("real")
         .stderr_contains(
             "
-            running `cargo +1.36 check --target x86_64-unknown-linux-musl` on real (1/2)
-            running `cargo +1.37 check --target x86_64-unknown-linux-musl` on real (2/2)
+            running `cargo +1.58 check --target x86_64-unknown-linux-musl` on real (1/2)
+            running `cargo +1.59 check --target x86_64-unknown-linux-musl` on real (2/2)
             ",
         );
     }
