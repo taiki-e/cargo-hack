@@ -411,10 +411,29 @@ This makes the installation faster and may avoid the impact of [problems caused 
 <!-- omit in toc -->
 ### Via Homebrew
 
-You can install cargo-hack using [Homebrew tap on macOS and Linux](https://github.com/taiki-e/homebrew-tap/blob/HEAD/Formula/cargo-hack.rb):
+You can install [cargo-hack using Homebrew tap on macOS and Linux](https://github.com/taiki-e/homebrew-tap/blob/HEAD/Formula/cargo-hack.rb):
 
 ```sh
 brew install taiki-e/tap/cargo-hack
+```
+
+<!-- omit in toc -->
+### Via Scoop (Windows)
+
+You can install [cargo-hack using Scoop](https://github.com/taiki-e/scoop-bucket/blob/HEAD/bucket/cargo-hack.json):
+
+```sh
+scoop bucket add taiki-e https://github.com/taiki-e/scoop-bucket
+scoop install cargo-hack
+```
+
+<!-- omit in toc -->
+### Via cargo-binstall
+
+You can install cargo-hack using [cargo-binstall](https://github.com/ryankurte/cargo-binstall):
+
+```sh
+cargo binstall cargo-hack
 ```
 
 <!-- omit in toc -->
