@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.5.15] - 2022-07-18
+
 - Support namespaced features (features with `dep:` prefix). ([#154](https://github.com/taiki-e/cargo-hack/pull/154))
 
 - Fix handling of quoted keys in `--no-dev-deps` and `--remove-dev-deps`. ([#152](https://github.com/taiki-e/cargo-hack/pull/152))
@@ -285,7 +287,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.14...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.15...HEAD
+[0.5.15]: https://github.com/taiki-e/cargo-hack/compare/v0.5.14...v0.5.15
 [0.5.14]: https://github.com/taiki-e/cargo-hack/compare/v0.5.13...v0.5.14
 [0.5.13]: https://github.com/taiki-e/cargo-hack/compare/v0.5.12...v0.5.13
 [0.5.12]: https://github.com/taiki-e/cargo-hack/compare/v0.5.11...v0.5.12
