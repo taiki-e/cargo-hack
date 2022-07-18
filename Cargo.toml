@@ -2,7 +2,7 @@
 name = "cargo-hack"
 version = "0.5.14" #publish:version
 edition = "2018"
-rust-version = "1.59"
+rust-version = "1.56"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/taiki-e/cargo-hack"
 keywords = ["cargo", "subcommand", "testing"]

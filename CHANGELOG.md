@@ -12,6 +12,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Support namespaced features (features with `dep:` prefix). ([#154](https://github.com/taiki-e/cargo-hack/pull/154))
 
+- Fix handling of quoted keys in `--no-dev-deps` and `--remove-dev-deps`. ([#152](https://github.com/taiki-e/cargo-hack/pull/152))
+
+  This increases the rustc version required to build cargo-hack. (rustc 1.46+ -> 1.56+)
+  The cargo/rustc version required to run cargo-hack remains unchanged. (cargo 1.26+)
+
 - Add metadata for cargo binstall.
 
 ## [0.5.14] - 2022-06-02
