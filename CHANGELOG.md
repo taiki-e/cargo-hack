@@ -17,6 +17,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
   This increases the rustc version required to build cargo-hack. (rustc 1.46+ -> 1.56+)
   The cargo/rustc version required to run cargo-hack remains unchanged. (cargo 1.26+)
 
+  This also increases the compile time of cargo-hack. Consider [installing cargo-hack from prebuilt binaries](https://github.com/taiki-e/cargo-hack#from-prebuilt-binaries).
+
 - Add metadata for cargo binstall.
 
 ## [0.5.14] - 2022-06-02
