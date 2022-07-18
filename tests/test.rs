@@ -1393,3 +1393,15 @@ fn keep_going() {
             ",
         ));
 }
+
+#[test]
+fn namespaced_features() {
+    cargo_hack(["check", "--feature-powerset"])
+        .assert_success2("namespaced_features", Some(60))
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on namespaced_features (1/2)
+            running `cargo check --no-default-features --features easytime` on namespaced_features (2/2)
+            ",
+        );
+}

@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{collections::BTreeMap, path::Path};
 
 use anyhow::{format_err, Context as _, Result};
 
@@ -12,6 +12,7 @@ pub(crate) struct Manifest {
     pub(crate) raw: String,
     pub(crate) doc: toml_edit::Document,
     pub(crate) package: Package,
+    pub(crate) features: BTreeMap<String, Vec<String>>,
 }
 
 impl Manifest {
@@ -23,7 +24,10 @@ impl Manifest {
         let package = Package::from_table(&doc).map_err(|s| {
             format_err!("failed to parse `{}` field from manifest `{}`", s, path.display())
         })?;
-        Ok(Self { raw, doc, package })
+        let features = Features::from_table(&doc).map_err(|s| {
+            format_err!("failed to parse `{}` field from manifest `{}`", s, path.display())
+        })?;
+        Ok(Self { raw, doc, package, features })
     }
 
     pub(crate) fn remove_dev_deps(&self) -> String {
@@ -59,6 +63,31 @@ impl Package {
                 Some(None) => return Err("rust-version"),
             },
         })
+    }
+}
+
+struct Features {}
+
+impl Features {
+    fn from_table(doc: &toml_edit::Document) -> ParseResult<BTreeMap<String, Vec<String>>> {
+        let features = match doc.get("features") {
+            Some(features) => features.as_table().ok_or("features")?,
+            None => return Ok(BTreeMap::new()),
+        };
+        let mut res = BTreeMap::new();
+        for (name, values) in features {
+            res.insert(
+                name.to_owned(),
+                values
+                    .as_array()
+                    .ok_or("features")?
+                    .into_iter()
+                    .flat_map(toml_edit::Value::as_str)
+                    .map(str::to_owned)
+                    .collect(),
+            );
+        }
+        Ok(res)
     }
 }
 
