@@ -214,10 +214,7 @@ fn powerset<T: Copy>(iter: impl IntoIterator<Item = T>, depth: Option<usize>) ->
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        collections::{BTreeMap, BTreeSet},
-        iter::FromIterator,
-    };
+    use std::collections::{BTreeMap, BTreeSet};
 
     use super::{feature_deps, feature_powerset, powerset, Feature};
 
