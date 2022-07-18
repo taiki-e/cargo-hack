@@ -1,0 +1,16 @@
+[package]
+name = "namespaced_features"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[workspace]
+resolver = "2"
+
+[features]
+easytime = ["dep:easytime"]
+
+[dependencies]
+easytime = { version = "0.2", optional = true, default-features = false }
+
+[dev-dependencies]

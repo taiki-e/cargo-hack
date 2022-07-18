@@ -46,33 +46,27 @@ impl Context {
             bail!("--include-deps-features requires Cargo 1.41 or later");
         }
 
+        let mut manifests = HashMap::with_capacity(metadata.workspace_members.len());
         let mut pkg_features = HashMap::with_capacity(metadata.workspace_members.len());
+
         for id in &metadata.workspace_members {
-            let features = Features::new(&metadata, id);
+            let manifest_path = &metadata.packages[id].manifest_path;
+            let manifest = Manifest::new(manifest_path)?;
+            let features = Features::new(&metadata, &manifest, id);
+            manifests.insert(id.clone(), manifest);
             pkg_features.insert(id.clone(), features);
         }
 
         let mut this = Self {
             args,
             metadata,
-            manifests: HashMap::new(),
+            manifests,
             pkg_features,
             cargo: cargo.into(),
             restore,
             current_dir: env::current_dir()?,
             version_range: None,
         };
-
-        // Only a few options require information from cargo manifest.
-        // If manifest information is not required, do not read and parse them.
-        if this.require_manifest_info() {
-            this.manifests.reserve(this.metadata.workspace_members.len());
-            for id in &this.metadata.workspace_members {
-                let manifest_path = &this.metadata.packages[id].manifest_path;
-                let manifest = Manifest::new(manifest_path)?;
-                this.manifests.insert(id.clone(), manifest);
-            }
-        }
 
         this.version_range = this
             .args
@@ -103,7 +97,6 @@ impl Context {
     }
 
     pub(crate) fn manifests(&self, id: &PackageId) -> &Manifest {
-        debug_assert!(self.require_manifest_info());
         &self.manifests[id]
     }
 
@@ -138,14 +131,6 @@ impl Context {
         } else {
             Cow::Borrowed(&package.name)
         }
-    }
-
-    /// Return `true` if options that require information from cargo manifest is specified.
-    pub(crate) fn require_manifest_info(&self) -> bool {
-        (self.metadata.cargo_version < 39 && self.ignore_private)
-            || (self.metadata.cargo_version < 58 && self.args.version_range.is_some())
-            || self.no_dev_deps
-            || self.remove_dev_deps
     }
 
     pub(crate) fn cargo(&self) -> ProcessBuilder<'_> {

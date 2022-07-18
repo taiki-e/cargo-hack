@@ -3,7 +3,7 @@ use std::{
     slice,
 };
 
-use crate::{metadata::Metadata, PackageId};
+use crate::{manifest::Manifest, metadata::Metadata, PackageId};
 
 #[derive(Debug)]
 pub(crate) struct Features {
@@ -13,15 +13,26 @@ pub(crate) struct Features {
 }
 
 impl Features {
-    pub(crate) fn new(metadata: &Metadata, id: &PackageId) -> Self {
+    pub(crate) fn new(metadata: &Metadata, manifest: &Manifest, id: &PackageId) -> Self {
         let package = &metadata.packages[id];
         let node = &metadata.resolve.nodes[id];
 
         let mut features = Vec::with_capacity(package.features.len());
         let mut optional_deps = vec![];
+        let mut namespaced_features = vec![]; // features with `dep:` prefix
 
+        // package.features.values() does not provide a way to determine the `dep:` specified by the user.
+        for names in manifest.features.values() {
+            for name in names {
+                if let Some(name) = name.strip_prefix("dep:") {
+                    namespaced_features.push(name);
+                }
+            }
+        }
         for name in package.optional_deps() {
-            optional_deps.push(name);
+            if !namespaced_features.contains(&name) {
+                optional_deps.push(name);
+            }
         }
         for name in package.features.keys() {
             if !optional_deps.contains(&&**name) {

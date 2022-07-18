@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support namespaced features (features with `dep:` prefix). ([#154](https://github.com/taiki-e/cargo-hack/pull/154))
+
 - Add metadata for cargo binstall.
 
 ## [0.5.14] - 2022-06-02
