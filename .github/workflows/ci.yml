@@ -36,7 +36,7 @@ jobs:
           - rust: beta
           - rust: nightly
           - rust: nightly
-            os: macos-10.15
+            os: macos-11
           - rust: nightly
             os: windows-2019
     runs-on: ${{ matrix.os || 'ubuntu-18.04' }}
