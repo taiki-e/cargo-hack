@@ -1298,6 +1298,7 @@ fn default_feature_behavior() {
         .stdout_not_contains("has default feature!");
 }
 
+#[cfg_attr(windows, ignore)] // rustup bug: https://github.com/rust-lang/rustup/issues/3036
 #[test]
 fn version_range() {
     cargo_hack(["check", "--version-range", "1.58..1.59"]).assert_success("real").stderr_contains(
@@ -1335,6 +1336,7 @@ fn version_range() {
     }
 }
 
+#[cfg_attr(windows, ignore)] // rustup bug: https://github.com/rust-lang/rustup/issues/3036
 #[test]
 fn version_range_failure() {
     // zero step
