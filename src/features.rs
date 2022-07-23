@@ -174,23 +174,23 @@ pub(crate) fn feature_powerset<'a>(
 }
 
 fn feature_deps(map: &BTreeMap<String, Vec<String>>) -> BTreeMap<&str, BTreeSet<&str>> {
-    let mut feat_deps = BTreeMap::new();
-    for feat in map.keys() {
-        let mut set = BTreeSet::new();
-        fn f<'a>(
-            map: &'a BTreeMap<String, Vec<String>>,
-            set: &mut BTreeSet<&'a str>,
-            curr: &str,
-            root: &str,
-        ) {
-            if let Some(v) = map.get(curr) {
-                for x in v {
-                    if x != root && set.insert(x) {
-                        f(map, set, x, root);
-                    }
+    fn f<'a>(
+        map: &'a BTreeMap<String, Vec<String>>,
+        set: &mut BTreeSet<&'a str>,
+        curr: &str,
+        root: &str,
+    ) {
+        if let Some(v) = map.get(curr) {
+            for x in v {
+                if x != root && set.insert(x) {
+                    f(map, set, x, root);
                 }
             }
         }
+    }
+    let mut feat_deps = BTreeMap::new();
+    for feat in map.keys() {
+        let mut set = BTreeSet::new();
         f(map, &mut set, feat, feat);
         feat_deps.insert(&**feat, set);
     }

@@ -343,6 +343,7 @@ impl Dependency {
     }
 }
 
+#[allow(clippy::option_option)]
 fn allow_null<T>(value: Value, f: impl FnOnce(Value) -> Option<T>) -> Option<Option<T>> {
     if value.is_null() {
         Some(None)

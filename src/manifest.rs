@@ -82,7 +82,7 @@ impl Features {
                     .as_array()
                     .ok_or("features")?
                     .into_iter()
-                    .flat_map(toml_edit::Value::as_str)
+                    .filter_map(toml_edit::Value::as_str)
                     .map(str::to_owned)
                     .collect(),
             );

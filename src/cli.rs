@@ -224,7 +224,7 @@ impl Args {
                 Long("group-features") => group_features.push(parser.value()?.parse()?),
 
                 Short('F') | Long("features") => parse_multi_opt!(features),
-                Long("skip") | Long("exclude-features") => parse_multi_opt!(exclude_features),
+                Long("skip" | "exclude-features") => parse_multi_opt!(exclude_features),
                 Long("include-features") => parse_multi_opt!(include_features),
 
                 Long("optional-deps") => {
@@ -256,7 +256,7 @@ impl Args {
                     }
                 }
 
-                Long("workspace") | Long("all") => parse_flag!(workspace),
+                Long("workspace" | "all") => parse_flag!(workspace),
                 Long("no-dev-deps") => parse_flag!(no_dev_deps),
                 Long("remove-dev-deps") => parse_flag!(remove_dev_deps),
                 Long("each-feature") => parse_flag!(each_feature),
