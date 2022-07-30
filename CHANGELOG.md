@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.5.16] - 2022-07-30
+
 - Fix an issue that a warning was displayed when excluding a feature that exists only in some crates in the workspace. ([#158](https://github.com/taiki-e/cargo-hack/pull/158))
 
 ## [0.5.15] - 2022-07-18
@@ -289,7 +291,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.15...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.16...HEAD
+[0.5.16]: https://github.com/taiki-e/cargo-hack/compare/v0.5.15...v0.5.16
 [0.5.15]: https://github.com/taiki-e/cargo-hack/compare/v0.5.14...v0.5.15
 [0.5.14]: https://github.com/taiki-e/cargo-hack/compare/v0.5.13...v0.5.14
 [0.5.13]: https://github.com/taiki-e/cargo-hack/compare/v0.5.12...v0.5.13
