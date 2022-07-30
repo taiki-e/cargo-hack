@@ -84,7 +84,7 @@ impl Context {
         &self.metadata.packages[id]
     }
 
-    pub(crate) fn workspace_members(&self) -> impl Iterator<Item = &PackageId> {
+    pub(crate) fn workspace_members(&self) -> impl ExactSizeIterator<Item = &PackageId> {
         self.metadata.workspace_members.iter()
     }
 
