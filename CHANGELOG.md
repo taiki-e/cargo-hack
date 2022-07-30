@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix an issue that a warning was displayed when excluding a feature that exists only in some crates in the workspace. ([#158](https://github.com/taiki-e/cargo-hack/pull/158))
+
 ## [0.5.15] - 2022-07-18
 
 - Support namespaced features (features with `dep:` prefix). ([#154](https://github.com/taiki-e/cargo-hack/pull/154))

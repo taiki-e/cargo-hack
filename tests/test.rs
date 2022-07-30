@@ -773,6 +773,13 @@ fn include_features() {
 }
 
 #[test]
+fn exclude_features() {
+    cargo_hack(["check", "--each-feature", "--exclude-features", "f"])
+        .assert_success("virtual")
+        .stderr_not_contains("specified feature `f` not found");
+}
+
+#[test]
 fn exclude_features_failure() {
     cargo_hack(["check", "--exclude-features", "a"])
         .assert_failure("real")

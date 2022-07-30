@@ -131,7 +131,12 @@ enum Kind<'a> {
     Powerset { features: Vec<Vec<&'a Feature>> },
 }
 
-fn determine_kind<'a>(cx: &'a Context, id: &PackageId, progress: &mut Progress) -> Kind<'a> {
+fn determine_kind<'a>(
+    cx: &'a Context,
+    id: &PackageId,
+    progress: &mut Progress,
+    multiple_packages: bool,
+) -> Kind<'a> {
     if cx.ignore_private && cx.is_private(id) {
         info!("skipped running on private package `{}`", cx.name_verbose(id));
         return Kind::SkipAsPrivate;
@@ -151,18 +156,22 @@ fn determine_kind<'a>(cx: &'a Context, id: &PackageId, progress: &mut Progress) 
             && !cx.group_features.iter().any(|g| g.matches(f.name()))
     };
     let features = if cx.include_features.is_empty() {
-        cx.exclude_features.iter().for_each(|d| {
-            if !pkg_features.contains(d) {
-                warn!("specified feature `{}` not found in package `{}`", d, package.name);
+        // TODO
+        if !multiple_packages {
+            for name in &cx.exclude_features {
+                if !pkg_features.contains(name) {
+                    warn!("specified feature `{}` not found in package `{}`", name, package.name);
+                }
             }
-        });
+        }
 
         let mut features: Vec<_> = pkg_features.normal().iter().filter(filter).collect();
 
         if let Some(opt_deps) = &cx.optional_deps {
             if opt_deps.len() == 1 && opt_deps[0].is_empty() {
                 // --optional-deps=
-            } else {
+            } else if !multiple_packages {
+                // TODO
                 for d in opt_deps {
                     if !pkg_features.optional_deps().iter().any(|f| f == d) {
                         warn!(
@@ -244,9 +253,10 @@ fn determine_package_list<'a>(
             }
         }
 
+        let multiple_packages = cx.workspace_members().len().saturating_sub(cx.exclude.len()) > 1;
         cx.workspace_members()
             .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
-            .map(|id| (id, determine_kind(cx, id, progress)))
+            .map(|id| (id, determine_kind(cx, id, progress, multiple_packages)))
             .collect()
     } else if !cx.package.is_empty() {
         if let Some(spec) = cx
@@ -257,17 +267,22 @@ fn determine_package_list<'a>(
             bail!("package ID specification `{}` matched no packages", spec)
         }
 
+        let multiple_packages = cx.package.len() > 1;
         cx.workspace_members()
             .filter(|id| cx.package.contains(&cx.packages(id).name))
-            .map(|id| (id, determine_kind(cx, id, progress)))
+            .map(|id| (id, determine_kind(cx, id, progress, multiple_packages)))
             .collect()
     } else if cx.current_package().is_none() {
-        cx.workspace_members().map(|id| (id, determine_kind(cx, id, progress))).collect()
+        let multiple_packages = cx.workspace_members().len() > 1;
+        cx.workspace_members()
+            .map(|id| (id, determine_kind(cx, id, progress, multiple_packages)))
+            .collect()
     } else {
         let current_package = &cx.packages(cx.current_package().unwrap()).name;
+        let multiple_packages = false;
         cx.workspace_members()
             .find(|id| cx.packages(id).name == *current_package)
-            .map(|id| vec![(id, determine_kind(cx, id, progress))])
+            .map(|id| vec![(id, determine_kind(cx, id, progress, multiple_packages))])
             .unwrap_or_default()
     })
 }
