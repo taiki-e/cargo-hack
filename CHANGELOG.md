@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.5.17] - 2022-08-12
+
 - Distribute prebuilt binaries for x86_64 FreeBSD. ([#160](https://github.com/taiki-e/cargo-hack/pull/160))
 
 ## [0.5.16] - 2022-07-30
@@ -293,7 +295,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.16...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.17...HEAD
+[0.5.17]: https://github.com/taiki-e/cargo-hack/compare/v0.5.16...v0.5.17
 [0.5.16]: https://github.com/taiki-e/cargo-hack/compare/v0.5.15...v0.5.16
 [0.5.15]: https://github.com/taiki-e/cargo-hack/compare/v0.5.14...v0.5.15
 [0.5.14]: https://github.com/taiki-e/cargo-hack/compare/v0.5.13...v0.5.14
