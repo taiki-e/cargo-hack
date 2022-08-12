@@ -396,7 +396,7 @@ cargo-hack requires Cargo 1.26+.
 ### From prebuilt binaries
 
 You can download prebuilt binaries from the [Release page](https://github.com/taiki-e/cargo-hack/releases).
-Prebuilt binaries are available for macOS, Linux (gnu and musl), and Windows (static executable).
+Prebuilt binaries are available for macOS, Linux (gnu and musl), Windows (static executable), and FreeBSD.
 
 <!-- omit in toc -->
 ### On GitHub Actions
