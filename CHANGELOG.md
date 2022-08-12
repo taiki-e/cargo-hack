@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Distribute prebuilt binaries for x86_64 FreeBSD. ([#160](https://github.com/taiki-e/cargo-hack/pull/160))
+
 ## [0.5.16] - 2022-07-30
 
 - Fix an issue that a warning was displayed when excluding a feature that exists only in some crates in the workspace. ([#158](https://github.com/taiki-e/cargo-hack/pull/158))

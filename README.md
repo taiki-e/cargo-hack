@@ -383,7 +383,7 @@ fields of [`cargo metadata`][cargo-metadata].*
 ### From source
 
 ```sh
-cargo install cargo-hack
+cargo +stable install cargo-hack
 ```
 
 *Compiler support: requires rustc 1.56+*
@@ -396,7 +396,19 @@ cargo-hack requires Cargo 1.26+.
 ### From prebuilt binaries
 
 You can download prebuilt binaries from the [Release page](https://github.com/taiki-e/cargo-hack/releases).
-Prebuilt binaries are available for macOS, Linux (gnu and musl), and Windows (static executable).
+Prebuilt binaries are available for macOS, Linux (gnu and musl), Windows (static executable), and FreeBSD.
+
+<details>
+<summary>Example of script to download cargo-hack</summary>
+
+```sh
+# Get host target
+host=$(rustc -Vv | grep host | sed 's/host: //')
+# Download binary and install to $HOME/.cargo/bin
+curl -LsSf https://github.com/taiki-e/cargo-hack/releases/latest/download/cargo-hack-$host.tar.gz | tar xzf - -C $HOME/.cargo/bin
+```
+
+</details>
 
 <!-- omit in toc -->
 ### On GitHub Actions
