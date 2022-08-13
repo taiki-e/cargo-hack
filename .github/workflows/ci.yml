@@ -57,17 +57,25 @@ jobs:
       - run: cargo minimal-versions build --workspace --all-features --ignore-private
         if: startsWith(matrix.rust, 'nightly')
 
-  cross:
+  build:
     name: build (${{ matrix.target }})
+    env:
+      cargo: cargo
     strategy:
       fail-fast: false
       matrix:
+        # When updating this list, the reminder to update the target list in release.yml.
         include:
           - target: aarch64-unknown-linux-gnu
           - target: aarch64-unknown-linux-musl
           - target: aarch64-apple-darwin
             os: macos-11
+          - target: x86_64-unknown-linux-gnu
           - target: x86_64-unknown-linux-musl
+          - target: x86_64-apple-darwin
+            os: macos-11
+          - target: x86_64-pc-windows-msvc
+            os: windows-2019
           - target: x86_64-unknown-freebsd
     runs-on: ${{ matrix.os || 'ubuntu-18.04' }}
     steps:
@@ -79,10 +87,13 @@ jobs:
           target: ${{ matrix.target }}
       - uses: taiki-e/install-action@cross
         if: matrix.os == '' || startsWith(matrix.os, 'ubuntu')
-      - run: cross build --target ${{ matrix.target }}
-        if: matrix.os == '' || startsWith(matrix.os, 'ubuntu')
-      - run: cargo build --target ${{ matrix.target }}
-        if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'windows')
+      - run: echo "RUSTFLAGS=${RUSTFLAGS} -C target-feature=+crt-static" >> "${GITHUB_ENV}"
+        if: endsWith(matrix.target, 'windows-msvc')
+      - run: |
+          echo "cargo=cross" >>"${GITHUB_ENV}"
+        if: matrix.target != 'x86_64-unknown-linux-gnu' && (matrix.os == '' || startsWith(matrix.os, 'ubuntu'))
+      - run: $cargo build --target ${{ matrix.target }}
+      - run: $cargo build --target ${{ matrix.target }} --release
 
   test-compat:
     name: test (1.${{ matrix.rust }})
@@ -139,21 +150,26 @@ jobs:
         if: always()
       - run: shellcheck $(git ls-files '*.sh')
         if: always()
+      - name: Check workflow
+        run: |
+          set -ex
+          pip3 install yq
+          jobs_actual=($(yq '.jobs' .github/workflows/ci.yml | jq -r 'keys_unsorted[]'))
+          unset jobs_actual[-1]
+          jobs_expected=($(yq -r '.jobs."ci-success".needs[]' .github/workflows/ci.yml))
+          if [[ "${jobs_actual[*]}" != "${jobs_expected[*]}" ]]; then
+            printf -v jobs '%s, ' "${jobs_actual[@]}"
+            echo "::error::please update 'needs' section in 'ci-success' job to '[${jobs%, }]'"
+            exit 1
+          fi
+        if: always()
 
-  # This job doesn't actually test anything, but they're used to tell bors the
-  # build completed, as there is no practical way to detect when a workflow is
-  # successful listening to webhooks only.
-  #
   # ALL THE PREVIOUS JOBS NEEDS TO BE ADDED TO THE `needs` SECTION OF THIS JOB!
 
   ci-success:
     name: ci
     if: github.event_name == 'push' && success()
-    needs:
-      - test
-      - test-compat
-      - msrv
-      - tidy
+    needs: [test, build, test-compat, msrv, tidy]
     runs-on: ubuntu-18.04
     steps:
       - name: Mark the job as a success
