@@ -49,7 +49,7 @@ jobs:
       - create-release
     strategy:
       matrix:
-        # When updating this list, the reminder to update the target list in release.yml.
+        # When updating this list, the reminder to update the target list in ci.yml.
         include:
           - target: aarch64-unknown-linux-gnu
           - target: aarch64-unknown-linux-musl
