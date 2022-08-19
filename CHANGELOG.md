@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Distribute prebuilt binaries for aarch64 Windows.
+
 ## [0.5.17] - 2022-08-12
 
 - Distribute prebuilt binaries for x86_64 FreeBSD. ([#160](https://github.com/taiki-e/cargo-hack/pull/160))

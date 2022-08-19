@@ -70,6 +70,8 @@ jobs:
           - target: aarch64-unknown-linux-musl
           - target: aarch64-apple-darwin
             os: macos-11
+          - target: aarch64-pc-windows-msvc
+            os: windows-2019
           - target: x86_64-unknown-linux-gnu
           - target: x86_64-unknown-linux-musl
           - target: x86_64-apple-darwin
@@ -93,6 +95,17 @@ jobs:
         if: matrix.target != 'x86_64-unknown-linux-gnu' && (matrix.os == '' || startsWith(matrix.os, 'ubuntu'))
       - run: $cargo build --target ${{ matrix.target }}
       - run: $cargo build --target ${{ matrix.target }} --release
+      # For debugging
+      # - uses: actions/upload-artifact@v3
+      #   with:
+      #     name: ${{ matrix.target }}
+      #     path: target/${{ matrix.target }}/release/cargo-hack.exe
+      #   if: startsWith(matrix.os, 'windows')
+      # - uses: actions/upload-artifact@v3
+      #   with:
+      #     name: ${{ matrix.target }}
+      #     path: target/${{ matrix.target }}/release/cargo-hack
+      #   if: "!startsWith(matrix.os, 'windows')"
 
   test-compat:
     name: test (1.${{ matrix.rust }})
