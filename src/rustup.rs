@@ -87,9 +87,7 @@ pub(crate) fn install_toolchain(
     target: Option<&str>,
     print_output: bool,
 ) -> Result<()> {
-    if toolchain.starts_with('+') {
-        toolchain = &toolchain[1..];
-    }
+    toolchain = toolchain.strip_prefix('+').unwrap_or(toolchain);
 
     if target.is_none()
         && cmd!("cargo", format!("+{}", toolchain), "--version").run_with_output().is_ok()

@@ -6,6 +6,7 @@ use std::{
 };
 
 use anyhow::{Context as _, Result};
+pub use build_info::TARGET;
 use easy_ext::ext;
 use fs_err as fs;
 use once_cell::sync::Lazy;
@@ -15,34 +16,16 @@ use walkdir::WalkDir;
 static FIXTURES_PATH: Lazy<PathBuf> =
     Lazy::new(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
 
-pub static TARGET: Lazy<String> = Lazy::new(|| {
-    let triple = env::consts::ARCH.to_string();
-    if cfg!(target_os = "macos") {
-        triple + "-apple-darwin"
-    } else if cfg!(target_os = "windows") {
-        if cfg!(target_env = "gnu") {
-            triple + "-pc-windows-gnu"
-        } else if cfg!(target_env = "msvc") {
-            triple + "-pc-windows-msvc"
-        } else {
-            unreachable!()
-        }
-    } else if cfg!(target_env = "gnu") {
-        triple + "-unknown-" + env::consts::OS + "-gnu"
-    } else if cfg!(target_env = "musl") {
-        triple + "-unknown-" + env::consts::OS + "-musl"
-    } else {
-        unreachable!()
-    }
-});
 static RUNNER: Lazy<Option<Vec<String>>> = Lazy::new(|| {
-    let runner: Vec<_> =
-        env::var(format!("CARGO_TARGET_{}_RUNNER", TARGET.replace('-', "_").to_ascii_uppercase()))
-            .ok()?
-            .split(' ')
-            .filter(|s| !s.is_empty())
-            .map(str::to_owned)
-            .collect();
+    let runner: Vec<_> = env::var(format!(
+        "CARGO_TARGET_{}_RUNNER",
+        TARGET.replace(['-', '.'], "_").to_ascii_uppercase()
+    ))
+    .ok()?
+    .split(' ')
+    .filter(|s| !s.is_empty())
+    .map(str::to_owned)
+    .collect();
     if runner.is_empty() {
         None
     } else {

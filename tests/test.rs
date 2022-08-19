@@ -1274,9 +1274,9 @@ fn propagate() {
         .stderr_contains("`cargo check --color auto`");
 
     // --target
-    cargo_hack(["check", "--target", &TARGET])
+    cargo_hack(["check", "--target", TARGET])
         .assert_success("real")
-        .stderr_contains(format!("`cargo check --target {}`", *TARGET));
+        .stderr_contains(format!("`cargo check --target {}`", TARGET));
 
     // --verbose does not be propagated
     cargo_hack(["check", "--verbose"]).assert_success("real").stderr_not_contains("--verbose");
@@ -1315,14 +1315,14 @@ fn version_range() {
         ",
     );
 
-    cargo_hack(["check", "--version-range", "1.58..1.59", "--target", &TARGET])
+    cargo_hack(["check", "--version-range", "1.58..1.59", "--target", TARGET])
         .assert_success("real")
         .stderr_contains(format!(
             "
             running `cargo +1.58 check --target {0}` on real (1/2)
             running `cargo +1.59 check --target {0}` on real (2/2)
             ",
-            *TARGET
+            TARGET
         ));
 
     if cfg!(target_os = "linux") {
