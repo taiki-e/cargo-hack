@@ -16,34 +16,8 @@ use walkdir::WalkDir;
 static FIXTURES_PATH: Lazy<PathBuf> =
     Lazy::new(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
 
-static RUNNER: Lazy<Option<Vec<String>>> = Lazy::new(|| {
-    let runner: Vec<_> = env::var(format!(
-        "CARGO_TARGET_{}_RUNNER",
-        TARGET.replace(['-', '.'], "_").to_ascii_uppercase()
-    ))
-    .ok()?
-    .split(' ')
-    .filter(|s| !s.is_empty())
-    .map(str::to_owned)
-    .collect();
-    if runner.is_empty() {
-        None
-    } else {
-        Some(runner)
-    }
-});
-
 pub fn cargo_bin_exe() -> Command {
-    let bin = env!("CARGO_BIN_EXE_cargo-hack");
-    let mut cmd = match &*RUNNER {
-        Some(runner) => {
-            let mut cmd = Command::new(&runner[0]);
-            cmd.args(&runner[1..]);
-            cmd.arg(bin);
-            cmd
-        }
-        None => Command::new(bin),
-    };
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_cargo-hack"));
     cmd.env("CARGO_HACK_DENY_WARNINGS", "true");
     cmd.env_remove("RUSTFLAGS");
     cmd.env_remove("CARGO_TERM_COLOR");
