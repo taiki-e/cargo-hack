@@ -38,7 +38,7 @@ fn test_version() -> Option<u32> {
             env::var_os("CARGO_HACK_TEST_TOOLCHAIN")?.to_string_lossy().parse().unwrap();
         // Install toolchain first to avoid toolchain installation conflicts.
         let _ = Command::new("rustup")
-            .args(&["toolchain", "install", &format!("1.{toolchain}"), "--no-self-update"])
+            .args(["toolchain", "install", &format!("1.{toolchain}"), "--no-self-update"])
             .output();
         Some(toolchain)
     });
@@ -47,7 +47,7 @@ fn test_version() -> Option<u32> {
 
 pub fn has_stable_toolchain() -> bool {
     static HAS_STABLE_TOOLCHAIN: Lazy<Option<bool>> = Lazy::new(|| {
-        let output = Command::new("rustup").args(&["toolchain", "list"]).output().ok()?;
+        let output = Command::new("rustup").args(["toolchain", "list"]).output().ok()?;
         Some(String::from_utf8(output.stdout).ok()?.contains("stable"))
     });
     HAS_STABLE_TOOLCHAIN.unwrap_or_default()

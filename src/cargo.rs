@@ -4,7 +4,7 @@ use crate::{version::Version, ProcessBuilder};
 
 // The version detection logic is based on https://github.com/cuviper/autocfg/blob/1.0.1/src/version.rs#L25-L59
 pub(crate) fn minor_version(mut cmd: ProcessBuilder<'_>) -> Result<u32> {
-    cmd.args(&["--version", "--verbose"]);
+    cmd.args(["--version", "--verbose"]);
     let output = cmd.read()?;
 
     // Find the release line in the verbose version output.

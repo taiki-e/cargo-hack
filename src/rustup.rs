@@ -100,7 +100,7 @@ pub(crate) fn install_toolchain(
     // because the windows environment cannot self-update rustup.exe.
     let mut cmd = cmd!("rustup", "toolchain", "add", toolchain, "--no-self-update");
     if let Some(target) = target {
-        cmd.args(&["--target", target]);
+        cmd.args(["--target", target]);
     }
 
     if print_output {
