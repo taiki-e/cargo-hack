@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.5.18] - 2022-09-04
+
 - Allow empty strings in `--features` (`-F`), `--exclude-features` (`--skip`), `--include-features`.
   Passing an empty string to them is now considered the same as not passing the flag. See [#163](https://github.com/taiki-e/cargo-hack/pull/163) for more.
 
@@ -300,7 +302,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.17...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.18...HEAD
+[0.5.18]: https://github.com/taiki-e/cargo-hack/compare/v0.5.17...v0.5.18
 [0.5.17]: https://github.com/taiki-e/cargo-hack/compare/v0.5.16...v0.5.17
 [0.5.16]: https://github.com/taiki-e/cargo-hack/compare/v0.5.15...v0.5.16
 [0.5.15]: https://github.com/taiki-e/cargo-hack/compare/v0.5.14...v0.5.15
