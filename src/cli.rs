@@ -194,11 +194,8 @@ impl Args {
                     {
                         val = &val[1..val.len() - 1];
                     }
-                    if val.contains(',') {
-                        $v.extend(val.split(',').map(str::to_owned));
-                    } else {
-                        $v.extend(val.split(' ').map(str::to_owned));
-                    }
+                    let sep = if val.contains(',') { ',' } else { ' ' };
+                    $v.extend(val.split(sep).filter(|s| !s.is_empty()).map(str::to_owned));
                 }};
             }
 
