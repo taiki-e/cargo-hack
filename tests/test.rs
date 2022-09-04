@@ -1414,3 +1414,10 @@ fn namespaced_features() {
             ",
         );
 }
+
+#[test]
+fn empty_string() {
+    cargo_hack(["check", "--each-feature", "--skip", ""])
+        .assert_success("real")
+        .stderr_not_contains("not found");
+}

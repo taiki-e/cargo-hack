@@ -10,6 +10,9 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Allow empty strings in `--features` (`-F`), `--exclude-features` (`--skip`), `--include-features`.
+  Passing an empty string to them is now considered the same as not passing the flag. See [#163](https://github.com/taiki-e/cargo-hack/pull/163) for more.
+
 - Distribute prebuilt binaries for aarch64 Windows.
 
 ## [0.5.17] - 2022-08-12
