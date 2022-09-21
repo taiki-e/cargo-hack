@@ -13,8 +13,9 @@ use once_cell::sync::Lazy;
 use tempfile::TempDir;
 use walkdir::WalkDir;
 
-static FIXTURES_PATH: Lazy<PathBuf> =
-    Lazy::new(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
+pub fn fixtures_path() -> &'static Path {
+    Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures"))
+}
 
 pub fn cargo_bin_exe() -> Command {
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_cargo-hack"));
@@ -225,11 +226,11 @@ fn test_project(model: &str) -> Result<(TempDir, PathBuf)> {
     let workspace_root;
     if model.contains('/') {
         let mut model = model.splitn(2, '/');
-        model_path = FIXTURES_PATH.join(model.next().unwrap());
+        model_path = fixtures_path().join(model.next().unwrap());
         workspace_root = tmpdir_path.join(model.next().unwrap());
         assert!(model.next().is_none());
     } else {
-        model_path = FIXTURES_PATH.join(model);
+        model_path = fixtures_path().join(model);
         workspace_root = tmpdir_path.to_path_buf();
     }
 
