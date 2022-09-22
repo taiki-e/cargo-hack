@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.5.19] - 2022-09-22
+
 - Fix "failed to parse `rust-version` field from manifest" error when workspace inheritance is used. ([#165](https://github.com/taiki-e/cargo-hack/pull/165))
 
 ## [0.5.18] - 2022-09-04
@@ -304,7 +306,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.18...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.19...HEAD
+[0.5.19]: https://github.com/taiki-e/cargo-hack/compare/v0.5.18...v0.5.19
 [0.5.18]: https://github.com/taiki-e/cargo-hack/compare/v0.5.17...v0.5.18
 [0.5.17]: https://github.com/taiki-e/cargo-hack/compare/v0.5.16...v0.5.17
 [0.5.16]: https://github.com/taiki-e/cargo-hack/compare/v0.5.15...v0.5.16
