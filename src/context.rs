@@ -51,7 +51,7 @@ impl Context {
 
         for id in &metadata.workspace_members {
             let manifest_path = &metadata.packages[id].manifest_path;
-            let manifest = Manifest::new(manifest_path)?;
+            let manifest = Manifest::new(manifest_path, &metadata)?;
             let features = Features::new(&metadata, &manifest, id);
             manifests.insert(id.clone(), manifest);
             pkg_features.insert(id.clone(), features);
@@ -108,7 +108,7 @@ impl Context {
         if self.metadata.cargo_version >= 39 {
             !self.packages(id).publish
         } else {
-            !self.manifests(id).package.publish
+            !self.manifests(id).package.publish.unwrap()
         }
     }
 
@@ -116,7 +116,7 @@ impl Context {
         if self.metadata.cargo_version >= 58 {
             self.packages(id).rust_version.as_deref()
         } else {
-            self.manifests(id).package.rust_version.as_deref()
+            self.manifests(id).package.rust_version.as_ref().unwrap().as_deref()
         }
     }
 
