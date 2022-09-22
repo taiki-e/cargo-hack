@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, path::Path};
 
 use anyhow::{format_err, Context as _, Result};
 
-use crate::fs;
+use crate::{fs, metadata::Metadata};
 
 type ParseResult<T> = Result<T, &'static str>;
 
@@ -16,12 +16,12 @@ pub(crate) struct Manifest {
 }
 
 impl Manifest {
-    pub(crate) fn new(path: &Path) -> Result<Self> {
+    pub(crate) fn new(path: &Path, metadata: &Metadata) -> Result<Self> {
         let raw = fs::read_to_string(path)?;
         let doc: toml_edit::Document = raw
             .parse()
             .with_context(|| format!("failed to parse manifest `{}` as toml", path.display()))?;
-        let package = Package::from_table(&doc).map_err(|s| {
+        let package = Package::from_table(&doc, metadata).map_err(|s| {
             format_err!("failed to parse `{}` field from manifest `{}`", s, path.display())
         })?;
         let features = Features::from_table(&doc).map_err(|s| {
@@ -39,28 +39,37 @@ impl Manifest {
 
 pub(crate) struct Package {
     // `metadata.package.publish` requires Rust 1.39
-    pub(crate) publish: bool,
+    pub(crate) publish: Option<bool>,
     // `metadata.package.rust_version` requires Rust 1.58
-    pub(crate) rust_version: Option<String>,
+    #[allow(clippy::option_option)]
+    pub(crate) rust_version: Option<Option<String>>,
 }
 
 impl Package {
-    fn from_table(doc: &toml_edit::Document) -> ParseResult<Self> {
+    fn from_table(doc: &toml_edit::Document, metadata: &Metadata) -> ParseResult<Self> {
         let package = doc.get("package").and_then(toml_edit::Item::as_table).ok_or("package")?;
 
         Ok(Self {
             // Publishing is unrestricted if `true` or the field is not
             // specified, and forbidden if `false` or the array is empty.
-            publish: match package.get("publish") {
-                None => true,
-                Some(toml_edit::Item::Value(toml_edit::Value::Boolean(b))) => *b.value(),
-                Some(toml_edit::Item::Value(toml_edit::Value::Array(a))) => !a.is_empty(),
-                Some(_) => return Err("publish"),
+            publish: if metadata.cargo_version >= 39 {
+                None // Use `metadata.package.publish` instead.
+            } else {
+                Some(match package.get("publish") {
+                    None => true,
+                    Some(toml_edit::Item::Value(toml_edit::Value::Boolean(b))) => *b.value(),
+                    Some(toml_edit::Item::Value(toml_edit::Value::Array(a))) => !a.is_empty(),
+                    Some(_) => return Err("publish"),
+                })
             },
-            rust_version: match package.get("rust-version").map(toml_edit::Item::as_str) {
-                None => None,
-                Some(Some(v)) => Some(v.to_owned()),
-                Some(None) => return Err("rust-version"),
+            rust_version: if metadata.cargo_version >= 58 {
+                None // use `metadata.package.rust_version` instead.
+            } else {
+                Some(match package.get("rust-version").map(toml_edit::Item::as_str) {
+                    None => None,
+                    Some(Some(v)) => Some(v.to_owned()),
+                    Some(None) => return Err("rust-version"),
+                })
             },
         })
     }
