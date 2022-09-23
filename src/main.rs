@@ -63,13 +63,21 @@ fn exec_on_workspace(cx: &Context) -> Result<()> {
     let packages = determine_package_list(cx, &mut progress)?;
     let mut keep_going = KeepGoing::default();
     if let Some(range) = &cx.version_range {
-        progress.total *= range.len();
+        let total = progress.total;
+        progress.total = 0;
+        for (cargo_version, _) in range {
+            if cx.target.is_empty() || *cargo_version >= 64 {
+                progress.total += total;
+            } else {
+                progress.total += total * cx.target.len();
+            }
+        }
         let line = cmd!("cargo");
         {
             // First, generate the lockfile using the oldest cargo specified.
             // https://github.com/taiki-e/cargo-hack/issues/105
-            let toolchain = &range[0];
-            rustup::install_toolchain(toolchain, cx.target.as_deref(), true)?;
+            let toolchain = &range[0].1;
+            rustup::install_toolchain(toolchain, &cx.target, true)?;
             let mut line = line.clone();
             line.leading_arg(toolchain);
             line.arg("generate-lockfile");
@@ -86,9 +94,9 @@ fn exec_on_workspace(cx: &Context) -> Result<()> {
             line.run_with_output()?;
         }
 
-        range.iter().enumerate().try_for_each(|(i, toolchain)| {
+        range.iter().enumerate().try_for_each(|(i, (cargo_version, toolchain))| {
             if i != 0 {
-                rustup::install_toolchain(toolchain, cx.target.as_deref(), true)?;
+                rustup::install_toolchain(toolchain, &cx.target, true)?;
             }
 
             if cx.clean_per_version {
@@ -98,16 +106,12 @@ fn exec_on_workspace(cx: &Context) -> Result<()> {
             let mut line = line.clone();
             line.leading_arg(toolchain);
             line.apply_context(cx);
-            packages.iter().try_for_each(|(id, kind)| {
-                exec_on_package(cx, id, kind, &line, &mut progress, &mut keep_going)
-            })
+            exec_on_packages(cx, &packages, line, &mut progress, &mut keep_going, *cargo_version)
         })?;
     } else {
         let mut line = cx.cargo();
         line.apply_context(cx);
-        packages.iter().try_for_each(|(id, kind)| {
-            exec_on_package(cx, id, kind, &line, &mut progress, &mut keep_going)
-        })?;
+        exec_on_packages(cx, &packages, line, &mut progress, &mut keep_going, cx.cargo_version)?;
     }
     if keep_going.count > 0 {
         eprintln!();
@@ -285,6 +289,35 @@ fn determine_package_list<'a>(
             .map(|id| vec![(id, determine_kind(cx, id, progress, multiple_packages))])
             .unwrap_or_default()
     })
+}
+
+fn exec_on_packages(
+    cx: &Context,
+    packages: &[(&PackageId, Kind<'_>)],
+    mut line: ProcessBuilder<'_>,
+    progress: &mut Progress,
+    keep_going: &mut KeepGoing,
+    cargo_version: u32,
+) -> Result<()> {
+    if cx.target.is_empty() || cargo_version >= 64 {
+        // TODO: Test that cargo multitarget does not break the resolver behavior required for a correct check.
+        for target in &cx.target {
+            line.arg("--target");
+            line.arg(target);
+        }
+        packages
+            .iter()
+            .try_for_each(|(id, kind)| exec_on_package(cx, id, kind, &line, progress, keep_going))
+    } else {
+        cx.target.iter().try_for_each(|target| {
+            let mut line = line.clone();
+            line.arg("--target");
+            line.arg(target);
+            packages.iter().try_for_each(|(id, kind)| {
+                exec_on_package(cx, id, kind, &line, progress, keep_going)
+            })
+        })
+    }
 }
 
 fn exec_on_package(

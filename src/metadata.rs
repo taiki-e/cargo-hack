@@ -46,11 +46,12 @@ pub(crate) struct Metadata {
 }
 
 impl Metadata {
-    pub(crate) fn new(args: &Args, cargo: &OsStr, restore: &restore::Manager) -> Result<Self> {
-        // If failed to determine cargo version, assign 0 to skip all version-dependent decisions.
-        let mut cargo_version = cargo::minor_version(cmd!(cargo))
-            .map_err(|e| warn!("unable to determine cargo version: {:#}", e))
-            .unwrap_or(0);
+    pub(crate) fn new(
+        args: &Args,
+        cargo: &OsStr,
+        mut cargo_version: u32,
+        restore: &restore::Manager,
+    ) -> Result<Self> {
         let stable_cargo_version = cargo::minor_version(cmd!("cargo", "+stable")).unwrap_or(0);
 
         let mut cmd;

@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support multiple `--target` options. This uses cargo 1.64's [multi-target builds](https://blog.rust-lang.org/2022/09/22/Rust-1.64.0.html#cargo-improvements-workspace-inheritance-and-multi-target-builds) on cargo 1.64+, otherwise fallback to perform command per targets. ([#168](https://github.com/taiki-e/cargo-hack/pull/168))
+
 ## [0.5.19] - 2022-09-22
 
 - Fix "failed to parse `rust-version` field from manifest" error when workspace inheritance is used. ([#165](https://github.com/taiki-e/cargo-hack/pull/165))

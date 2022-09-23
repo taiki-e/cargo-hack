@@ -19,7 +19,11 @@ impl Rustup {
     }
 }
 
-pub(crate) fn version_range(range: &str, step: Option<&str>, cx: &Context) -> Result<Vec<String>> {
+pub(crate) fn version_range(
+    range: &str,
+    step: Option<&str>,
+    cx: &Context,
+) -> Result<Vec<(u32, String)>> {
     let check = |version: &Version| {
         if version.major != 1 {
             bail!("major version must be 1");
@@ -59,7 +63,7 @@ pub(crate) fn version_range(range: &str, step: Option<&str>, cx: &Context) -> Re
 
     let end = match split.next() {
         Some("") | None => {
-            install_toolchain("stable", None, false)?;
+            install_toolchain("stable", &[], false)?;
             cargo::minor_version(cmd!("cargo", "+stable"))?
         }
         Some(end) => {
@@ -74,8 +78,10 @@ pub(crate) fn version_range(range: &str, step: Option<&str>, cx: &Context) -> Re
         bail!("--version-step cannot be zero");
     }
 
-    let versions: Vec<_> =
-        (start.minor..=end).step_by(step as _).map(|minor| format!("+1.{}", minor)).collect();
+    let versions: Vec<_> = (start.minor..=end)
+        .step_by(step as _)
+        .map(|minor| (minor, format!("+1.{}", minor)))
+        .collect();
     if versions.is_empty() {
         bail!("specified version range `{}` is empty", range);
     }
@@ -84,12 +90,12 @@ pub(crate) fn version_range(range: &str, step: Option<&str>, cx: &Context) -> Re
 
 pub(crate) fn install_toolchain(
     mut toolchain: &str,
-    target: Option<&str>,
+    target: &[String],
     print_output: bool,
 ) -> Result<()> {
     toolchain = toolchain.strip_prefix('+').unwrap_or(toolchain);
 
-    if target.is_none()
+    if target.is_empty()
         && cmd!("cargo", format!("+{}", toolchain), "--version").run_with_output().is_ok()
     {
         // Do not run `rustup toolchain install` if the toolchain already has installed.
@@ -99,8 +105,8 @@ pub(crate) fn install_toolchain(
     // In Github Actions and Azure Pipelines, --no-self-update is necessary
     // because the windows environment cannot self-update rustup.exe.
     let mut cmd = cmd!("rustup", "toolchain", "add", toolchain, "--no-self-update");
-    if let Some(target) = target {
-        cmd.args(["--target", target]);
+    if !target.is_empty() {
+        cmd.args(["--target", &target.join(",")]);
     }
 
     if print_output {

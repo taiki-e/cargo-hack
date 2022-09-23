@@ -10,6 +10,7 @@ use std::{
 use anyhow::{bail, Result};
 
 use crate::{
+    cargo,
     cli::Args,
     features::Features,
     manifest::Manifest,
@@ -23,9 +24,10 @@ pub(crate) struct Context {
     manifests: HashMap<PackageId, Manifest>,
     pkg_features: HashMap<PackageId, Features>,
     cargo: PathBuf,
+    pub(crate) cargo_version: u32,
     pub(crate) restore: restore::Manager,
     pub(crate) current_dir: PathBuf,
-    pub(crate) version_range: Option<Vec<String>>,
+    pub(crate) version_range: Option<Vec<(u32, String)>>,
 }
 
 impl Context {
@@ -38,8 +40,13 @@ impl Context {
             "no subcommand or valid flag specified"
         );
 
+        // If failed to determine cargo version, assign 0 to skip all version-dependent decisions.
+        let cargo_version = cargo::minor_version(cmd!(&cargo))
+            .map_err(|e| warn!("unable to determine cargo version: {:#}", e))
+            .unwrap_or(0);
+
         let mut restore = restore::Manager::new(true);
-        let metadata = Metadata::new(&args, &cargo, &restore)?;
+        let metadata = Metadata::new(&args, &cargo, cargo_version, &restore)?;
         // if `--remove-dev-deps` flag is off, restore manifest file.
         restore.needs_restore = args.no_dev_deps && !args.remove_dev_deps;
         if metadata.cargo_version < 41 && args.include_deps_features {
@@ -63,6 +70,7 @@ impl Context {
             manifests,
             pkg_features,
             cargo: cargo.into(),
+            cargo_version,
             restore,
             current_dir: env::current_dir()?,
             version_range: None,

@@ -75,14 +75,12 @@ pub(crate) struct Args {
     // options that will be propagated to cargo
     /// --features <FEATURES>...
     pub(crate) features: Vec<String>,
+    /// --target <TRIPLE>...
+    pub(crate) target: Vec<String>,
 
     // propagated to cargo (as a part of leading_args)
     /// --no-default-features
     pub(crate) no_default_features: bool,
-    // Note: specifying multiple `--target` flags requires unstable `-Z multitarget`,
-    // so cargo-hack currently only supports a single `--target`.
-    /// --target <TRIPLE>...
-    pub(crate) target: Option<String>,
 }
 
 impl Args {
@@ -155,7 +153,7 @@ impl Args {
         let mut verbose = 0;
         let mut no_default_features = false;
         let mut all_features = false;
-        let mut target = None;
+        let mut target = vec![];
 
         let mut parser = lexopt::Parser::from_args(args);
         let mut next_flag: Option<OwnedFlag> = None;
@@ -209,7 +207,7 @@ impl Args {
 
             match arg {
                 Long("color") => parse_opt!(color, true),
-                Long("target") => parse_opt!(target, true),
+                Long("target") => target.push(parser.value()?.parse()?),
 
                 Long("manifest-path") => parse_opt!(manifest_path, false),
                 Long("depth") => parse_opt!(depth, false),

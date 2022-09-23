@@ -1340,6 +1340,24 @@ fn version_range() {
             running `cargo +1.59 check --target x86_64-unknown-linux-musl` on real (2/2)
             ",
         );
+
+        cargo_hack([
+            "check",
+            "--version-range",
+            "1.63..1.64",
+            "--target",
+            "x86_64-unknown-linux-gnu",
+            "--target",
+            "x86_64-unknown-linux-musl",
+        ])
+        .assert_success("real")
+        .stderr_contains(
+            "
+            running `cargo +1.63 check --target x86_64-unknown-linux-gnu` on real (1/3)
+            running `cargo +1.63 check --target x86_64-unknown-linux-musl` on real (2/3)
+            running `cargo +1.64 check --target x86_64-unknown-linux-gnu --target x86_64-unknown-linux-musl` on real (3/3)
+            ",
+        );
     }
 }
 
