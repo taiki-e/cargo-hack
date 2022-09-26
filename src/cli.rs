@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::{bail, format_err, Result};
+use indexmap::IndexSet;
 use lexopt::{
     Arg::{Long, Short, Value},
     ValueExt,
@@ -153,7 +154,7 @@ impl Args {
         let mut verbose = 0;
         let mut no_default_features = false;
         let mut all_features = false;
-        let mut target = vec![];
+        let mut target = IndexSet::new();
 
         let mut parser = lexopt::Parser::from_args(args);
         let mut next_flag: Option<OwnedFlag> = None;
@@ -207,7 +208,9 @@ impl Args {
 
             match arg {
                 Long("color") => parse_opt!(color, true),
-                Long("target") => target.push(parser.value()?.parse()?),
+                Long("target") => {
+                    target.insert(parser.value()?.parse()?);
+                }
 
                 Long("manifest-path") => parse_opt!(manifest_path, false),
                 Long("depth") => parse_opt!(depth, false),
@@ -566,7 +569,7 @@ impl Args {
             features,
 
             no_default_features,
-            target,
+            target: target.into_iter().collect(),
         })
     }
 }
