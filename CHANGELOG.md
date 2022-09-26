@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Improve handling of multiple `--target` options in old cargo. ([#169](https://github.com/taiki-e/cargo-hack/pull/169))
+
 ## [0.5.20] - 2022-09-24
 
 - Support multiple `--target` options. This uses cargo 1.64's [multi-target builds](https://blog.rust-lang.org/2022/09/22/Rust-1.64.0.html#cargo-improvements-workspace-inheritance-and-multi-target-builds) on cargo 1.64+, otherwise fallback to perform command per targets. ([#168](https://github.com/taiki-e/cargo-hack/pull/168))
