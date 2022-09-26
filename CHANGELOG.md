@@ -12,7 +12,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.5.21] - 2022-09-26
 
-- Improve handling of multiple `--target` options in old cargo. ([#169](https://github.com/taiki-e/cargo-hack/pull/169))
+- Improve handling of multiple `--target` options on older cargo. ([#169](https://github.com/taiki-e/cargo-hack/pull/169))
 
 ## [0.5.20] - 2022-09-24
 
