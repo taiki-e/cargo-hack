@@ -1276,7 +1276,7 @@ fn propagate() {
     // --target
     cargo_hack(["check", "--target", TARGET])
         .assert_success("real")
-        .stderr_contains(format!("`cargo check --target {}`", TARGET));
+        .stderr_contains(format!("`cargo check --target {TARGET}`"));
 
     // --verbose does not be propagated
     cargo_hack(["check", "--verbose"]).assert_success("real").stderr_not_contains("--verbose");

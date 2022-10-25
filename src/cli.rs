@@ -94,9 +94,9 @@ impl Args {
             args: impl IntoIterator<Item = impl Into<OsString>>,
         ) -> impl Iterator<Item = Result<String>> {
             args.into_iter().enumerate().map(|(i, arg)| {
-                arg.into().into_string().map_err(|arg| {
-                    format_err!("argument {} is not valid Unicode: {:?}", i + 1, arg)
-                })
+                arg.into()
+                    .into_string()
+                    .map_err(|arg| format_err!("argument {} is not valid Unicode: {arg:?}", i + 1))
             })
         }
 
@@ -104,8 +104,8 @@ impl Args {
         raw_args.next(); // cargo
         match raw_args.next().transpose()? {
             Some(a) if a == SUBCMD => {}
-            Some(a) => bail!("expected subcommand '{}', found argument '{}'", SUBCMD, a),
-            None => bail!("expected subcommand '{}'", SUBCMD),
+            Some(a) => bail!("expected subcommand '{SUBCMD}', found argument '{a}'"),
+            None => bail!("expected subcommand '{SUBCMD}'"),
         }
         let mut args = vec![];
         for arg in &mut raw_args {
@@ -303,9 +303,9 @@ impl Args {
                 // passthrough
                 Long(flag) => {
                     removed_flags(flag)?;
-                    let flag = format!("--{}", flag);
+                    let flag = format!("--{flag}");
                     if let Some(val) = parser.optional_value() {
-                        cargo_args.push(format!("{}={}", flag, val.parse::<String>()?));
+                        cargo_args.push(format!("{flag}={}", val.parse::<String>()?));
                     } else {
                         cargo_args.push(flag);
                     }
@@ -314,11 +314,11 @@ impl Args {
                     if matches!(flag, 'q' | 'r') {
                         // To handle combined short flags properly, handle known
                         // short flags without value as special cases.
-                        cargo_args.push(format!("-{}", flag));
+                        cargo_args.push(format!("-{flag}"));
                     } else if let Some(val) = parser.optional_value() {
-                        cargo_args.push(format!("-{}{}", flag, val.parse::<String>()?));
+                        cargo_args.push(format!("-{flag}{}", val.parse::<String>()?));
                     } else {
-                        cargo_args.push(format!("-{}", flag));
+                        cargo_args.push(format!("-{flag}"));
                     }
                 }
                 Value(val) => {
@@ -417,19 +417,17 @@ impl Args {
                 "test" | "bench" => {
                     if remove_dev_deps {
                         bail!(
-                            "--remove-dev-deps may not be used together with {} subcommand",
-                            subcommand
+                            "--remove-dev-deps may not be used together with {subcommand} subcommand",
                         );
                     } else if no_dev_deps {
                         bail!(
-                            "--no-dev-deps may not be used together with {} subcommand",
-                            subcommand
+                            "--no-dev-deps may not be used together with {subcommand} subcommand",
                         );
                     }
                 }
                 // cargo-hack may not be used together with subcommands that do not have the --manifest-path flag.
                 "install" => {
-                    bail!("cargo-hack may not be used together with {} subcommand", subcommand)
+                    bail!("cargo-hack may not be used together with {subcommand} subcommand")
                 }
                 _ => {}
             }
@@ -480,19 +478,16 @@ impl Args {
 
         for f in &exclude_features {
             if features.contains(f) {
-                bail!("feature `{}` specified by both --exclude-features and --features", f);
+                bail!("feature `{f}` specified by both --exclude-features and --features");
             }
             if optional_deps.as_ref().map_or(false, |d| d.contains(f)) {
-                bail!("feature `{}` specified by both --exclude-features and --optional-deps", f);
+                bail!("feature `{f}` specified by both --exclude-features and --optional-deps");
             }
             if group_features.iter().any(|v| v.matches(f)) {
-                bail!("feature `{}` specified by both --exclude-features and --group-features", f);
+                bail!("feature `{f}` specified by both --exclude-features and --group-features");
             }
             if include_features.contains(f) {
-                bail!(
-                    "feature `{}` specified by both --exclude-features and --include-features",
-                    f
-                );
+                bail!("feature `{f}` specified by both --exclude-features and --include-features");
             }
         }
 
@@ -759,13 +754,13 @@ impl fmt::Display for Help {
                 if written + s.len() + 1 >= size {
                     writeln!(f)?;
                     (0..indent).try_for_each(|_| write!(f, " "))?;
-                    write!(f, "{}", s)?;
+                    write!(f, "{s}")?;
                     written = s.len();
                 } else if written == 0 {
-                    write!(f, "{}", s)?;
+                    write!(f, "{s}")?;
                     written += s.len();
                 } else {
-                    write!(f, " {}", s)?;
+                    write!(f, " {s}")?;
                     written += s.len() + 1;
                 }
             }
@@ -786,12 +781,12 @@ OPTIONS:",
         )?;
 
         for &(short, long, value_name, desc, additional) in HELP {
-            write!(f, "    {:2}{} ", short, if short.is_empty() { " " } else { "," })?;
+            write!(f, "    {short:2}{} ", if short.is_empty() { " " } else { "," })?;
             if self.long {
                 if value_name.is_empty() {
-                    writeln!(f, "{}", long)?;
+                    writeln!(f, "{long}")?;
                 } else {
-                    writeln!(f, "{} {}", long, value_name)?;
+                    writeln!(f, "{long} {value_name}")?;
                 }
                 write(f, 12, true, self.term_size, desc)?;
                 writeln!(f, ".\n")?;
@@ -801,10 +796,10 @@ OPTIONS:",
                 }
             } else {
                 if value_name.is_empty() {
-                    write!(f, "{:32} ", long)?;
+                    write!(f, "{long:32} ")?;
                 } else {
-                    let long = format!("{} {}", long, value_name);
-                    write!(f, "{:32} ", long)?;
+                    let long = format!("{long} {value_name}");
+                    write!(f, "{long:32} ")?;
                 }
                 write(f, 41, false, self.term_size, desc)?;
                 writeln!(f)?;
@@ -834,7 +829,7 @@ fn removed_flags(flag: &str) -> Result<()> {
         "skip-no-default-features" => "--exclude-no-default-features",
         _ => return Ok(()),
     };
-    bail!("--{} was removed, use {} instead", flag, alt)
+    bail!("--{flag} was removed, use {alt} instead")
 }
 
 #[cold]
@@ -842,13 +837,12 @@ fn removed_flags(flag: &str) -> Result<()> {
 fn mini_usage(msg: &str) -> Result<()> {
     bail!(
         "\
-{}
+{msg}
 
 USAGE:
     cargo hack [OPTIONS] [SUBCOMMAND]
 
 For more information try --help",
-        msg,
     )
 }
 
@@ -882,8 +876,8 @@ impl From<lexopt::Arg<'_>> for OwnedFlag {
 
 fn format_flag(flag: &lexopt::Arg<'_>) -> String {
     match flag {
-        Long(flag) => format!("--{}", flag),
-        Short(flag) => format!("-{}", flag),
+        Long(flag) => format!("--{flag}"),
+        Short(flag) => format!("-{flag}"),
         Value(_) => unreachable!(),
     }
 }
@@ -895,16 +889,14 @@ fn multi_arg(flag: &lexopt::Arg<'_>, subcommand: Option<&str>) -> Result<()> {
     let arg = get_help(flag).map_or_else(|| flag.to_string(), |arg| format!("{} {}", arg.1, arg.2));
     bail!(
         "\
-The argument '{}' was provided more than once, but cannot be used multiple times
+The argument '{flag}' was provided more than once, but cannot be used multiple times
 
 USAGE:
-    cargo hack{} {}
+    cargo hack{} {arg}
 
 For more information try --help
 ",
-        flag,
         subcommand.map_or_else(String::new, |subcommand| String::from(" ") + subcommand),
-        arg,
     )
 }
 
@@ -919,17 +911,15 @@ fn similar_arg(
     let flag = &format_flag(flag);
     bail!(
         "\
-Found argument '{0}' which wasn't expected, or isn't valid in this context
-        Did you mean {2}?
+Found argument '{flag}' which wasn't expected, or isn't valid in this context
+        Did you mean {expected}?
 
 USAGE:
-    cargo{1} {2} {3}
+    cargo{} {expected} {}
 
 For more information try --help
 ",
-        flag,
         subcommand.map_or_else(String::new, |subcommand| String::from(" ") + subcommand),
-        expected,
         value.unwrap_or_default()
     )
 }
@@ -953,13 +943,13 @@ fn requires(flag: &str, requires: &[&str]) -> Result<()> {
             with
         }
     };
-    bail!("{} can only be used together with {}", flag, with);
+    bail!("{flag} can only be used together with {with}");
 }
 
 #[cold]
 #[inline(never)]
 fn conflicts(a: &str, b: &str) -> Result<()> {
-    bail!("{} may not be used together with {}", a, b);
+    bail!("{a} may not be used together with {b}");
 }
 
 #[cfg(test)]

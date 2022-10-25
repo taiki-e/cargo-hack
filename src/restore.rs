@@ -23,7 +23,7 @@ impl Manager {
         let cloned = this.clone();
         ctrlc::set_handler(move || {
             if let Err(e) = cloned.restore() {
-                error!("{:#}", e);
+                error!("{e:#}");
                 std::process::exit(1)
             }
             std::process::exit(0)
@@ -83,7 +83,7 @@ impl Handle<'_> {
 impl Drop for Handle<'_> {
     fn drop(&mut self) {
         if let Err(e) = self.close() {
-            error!("{:#}", e);
+            error!("{e:#}");
         }
     }
 }

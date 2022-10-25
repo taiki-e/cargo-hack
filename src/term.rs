@@ -30,7 +30,7 @@ impl FromStr for Coloring {
             "auto" => Ok(Self::Auto),
             "always" => Ok(Self::Always),
             "never" => Ok(Self::Never),
-            other => Err(format!("must be auto, always, or never, but found `{}`", other)),
+            other => Err(format!("must be auto, always, or never, but found `{other}`")),
         }
     }
 }
@@ -38,13 +38,12 @@ impl FromStr for Coloring {
 static COLORING: AtomicU8 = AtomicU8::new(Coloring::AUTO);
 pub(crate) fn set_coloring(color: Option<&str>) -> Result<()> {
     let mut coloring = match color {
-        Some(color) => color.parse().map_err(|e| format_err!("argument for --color {}", e))?,
+        Some(color) => color.parse().map_err(|e| format_err!("argument for --color {e}"))?,
         // https://doc.rust-lang.org/nightly/cargo/reference/config.html#termcolor
         None => match env::var_os("CARGO_TERM_COLOR") {
-            Some(color) => color
-                .to_string_lossy()
-                .parse()
-                .map_err(|e| format_err!("CARGO_TERM_COLOR {}", e))?,
+            Some(color) => {
+                color.to_string_lossy().parse().map_err(|e| format_err!("CARGO_TERM_COLOR {e}"))?
+            }
             None => Coloring::Auto,
         },
     };
@@ -97,7 +96,7 @@ global_flag!(warn: bool = AtomicBool::new(false));
 pub(crate) fn print_status(status: &str, color: Option<Color>) -> StandardStream {
     let mut stream = StandardStream::stderr(coloring());
     let _ = stream.set_color(ColorSpec::new().set_bold(true).set_fg(color));
-    let _ = write!(stream, "{}", status);
+    let _ = write!(stream, "{status}");
     let _ = stream.set_color(ColorSpec::new().set_bold(true));
     let _ = write!(stream, ":");
     let _ = stream.reset();

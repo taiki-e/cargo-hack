@@ -12,7 +12,7 @@ impl Rustup {
     pub(crate) fn new() -> Self {
         // If failed to determine rustup version, assign 0 to skip all version-dependent decisions.
         let version = minor_version()
-            .map_err(|e| warn!("unable to determine rustup version: {:#}", e))
+            .map_err(|e| warn!("unable to determine rustup version: {e:#}"))
             .unwrap_or(0);
 
         Self { version }
@@ -31,8 +31,7 @@ pub(crate) fn version_range(
         if let Some(patch) = version.patch {
             warn!(
                 "--version-range always selects the latest patch release per minor release, \
-                     not the specified patch release `{}`",
-                patch
+                     not the specified patch release `{patch}`",
             );
         }
         Ok(())
@@ -80,10 +79,10 @@ pub(crate) fn version_range(
 
     let versions: Vec<_> = (start.minor..=end)
         .step_by(step as _)
-        .map(|minor| (minor, format!("+1.{}", minor)))
+        .map(|minor| (minor, format!("+1.{minor}")))
         .collect();
     if versions.is_empty() {
-        bail!("specified version range `{}` is empty", range);
+        bail!("specified version range `{range}` is empty");
     }
     Ok(versions)
 }
@@ -96,7 +95,7 @@ pub(crate) fn install_toolchain(
     toolchain = toolchain.strip_prefix('+').unwrap_or(toolchain);
 
     if target.is_empty()
-        && cmd!("cargo", format!("+{}", toolchain), "--version").run_with_output().is_ok()
+        && cmd!("cargo", format!("+{toolchain}"), "--version").run_with_output().is_ok()
     {
         // Do not run `rustup toolchain install` if the toolchain already has installed.
         return Ok(());
@@ -130,10 +129,10 @@ fn minor_version() -> Result<u32> {
         }
         output.next()
     })()
-    .ok_or_else(|| format_err!("unexpected output from {}: {}", cmd, output))?;
+    .ok_or_else(|| format_err!("unexpected output from {cmd}: {output}"))?;
     let version: Version = version.parse()?;
     if version.major != 1 || version.patch.is_none() {
-        bail!("unexpected output from {}: {}", cmd, output);
+        bail!("unexpected output from {cmd}: {output}");
     }
 
     Ok(version.minor)

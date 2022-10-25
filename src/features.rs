@@ -110,7 +110,7 @@ impl Feature {
     }
 
     pub(crate) fn path(parent: &str, name: &str) -> Self {
-        Self::Path { name: format!("{}/{}", parent, name), _slash: parent.len() }
+        Self::Path { name: format!("{parent}/{name}"), _slash: parent.len() }
     }
 
     pub(crate) fn name(&self) -> &str {

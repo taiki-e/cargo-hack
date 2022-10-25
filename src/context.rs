@@ -42,7 +42,7 @@ impl Context {
 
         // If failed to determine cargo version, assign 0 to skip all version-dependent decisions.
         let cargo_version = cargo::minor_version(cmd!(&cargo))
-            .map_err(|e| warn!("unable to determine cargo version: {:#}", e))
+            .map_err(|e| warn!("unable to determine cargo version: {e:#}"))
             .unwrap_or(0);
 
         let mut restore = restore::Manager::new(true);

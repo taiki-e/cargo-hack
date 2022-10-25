@@ -62,7 +62,7 @@ impl Metadata {
                 cmd.arg(manifest_path);
             }
             let no_deps: Object = serde_json::from_str(&cmd.read()?)
-                .with_context(|| format!("failed to parse output from {}", cmd))?;
+                .with_context(|| format!("failed to parse output from {cmd}"))?;
             let lockfile =
                 Path::new(no_deps["workspace_root"].as_str().unwrap()).join("Cargo.lock");
             if !lockfile.exists() {
@@ -112,9 +112,9 @@ impl Metadata {
         };
 
         let map = serde_json::from_str(&json)
-            .with_context(|| format!("failed to parse output from {}", cmd))?;
+            .with_context(|| format!("failed to parse output from {cmd}"))?;
         Self::from_obj(map, cargo_version)
-            .map_err(|s| format_err!("failed to parse `{}` field from metadata", s))
+            .map_err(|s| format_err!("failed to parse `{s}` field from metadata"))
     }
 
     fn from_obj(mut map: Object, cargo_version: u32) -> ParseResult<Self> {

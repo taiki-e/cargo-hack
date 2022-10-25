@@ -35,7 +35,7 @@ use crate::{
 
 fn main() {
     if let Err(e) = try_main() {
-        error!("{:#}", e);
+        error!("{e:#}");
     }
     if term::error()
         || term::warn() && env::var_os("CARGO_HACK_DENY_WARNINGS").filter(|v| v == "true").is_some()
@@ -115,7 +115,7 @@ fn exec_on_workspace(cx: &Context) -> Result<()> {
     }
     if keep_going.count > 0 {
         eprintln!();
-        error!("{}", keep_going);
+        error!("{keep_going}");
     }
     Ok(())
 }
@@ -164,7 +164,7 @@ fn determine_kind<'a>(
         if !multiple_packages {
             for name in &cx.exclude_features {
                 if !pkg_features.contains(name) {
-                    warn!("specified feature `{}` not found in package `{}`", name, package.name);
+                    warn!("specified feature `{name}` not found in package `{}`", package.name);
                 }
             }
         }
@@ -179,8 +179,8 @@ fn determine_kind<'a>(
                 for d in opt_deps {
                     if !pkg_features.optional_deps().iter().any(|f| f == d) {
                         warn!(
-                            "specified optional dependency `{}` not found in package `{}`",
-                            d, package.name
+                            "specified optional dependency `{d}` not found in package `{}`",
+                            package.name
                         );
                     }
                 }
@@ -250,8 +250,7 @@ fn determine_package_list<'a>(
         for spec in &cx.exclude {
             if !cx.workspace_members().any(|id| cx.packages(id).name == *spec) {
                 warn!(
-                    "excluded package(s) `{}` not found in workspace `{}`",
-                    spec,
+                    "excluded package(s) `{spec}` not found in workspace `{}`",
                     cx.workspace_root().display()
                 );
             }
@@ -268,7 +267,7 @@ fn determine_package_list<'a>(
             .iter()
             .find(|&spec| !cx.workspace_members().any(|id| cx.packages(id).name == *spec))
         {
-            bail!("package ID specification `{}` matched no packages", spec)
+            bail!("package ID specification `{spec}` matched no packages")
         }
 
         let multiple_packages = cx.package.len() > 1;
@@ -441,9 +440,9 @@ impl fmt::Display for KeepGoing {
         writeln!(f)?;
         writeln!(f, "failed commands:")?;
         for (pkg, commands) in &self.failed_commands {
-            writeln!(f, "    {}:", pkg)?;
+            writeln!(f, "    {pkg}:")?;
             for cmd in commands {
-                writeln!(f, "        {}", cmd)?;
+                writeln!(f, "        {cmd}")?;
             }
         }
         Ok(())
@@ -460,13 +459,13 @@ fn exec_cargo(
     let res = exec_cargo_inner(cx, id, line, progress);
     if cx.keep_going {
         if let Err(e) = res {
-            error!("{:#}", e);
+            error!("{e:#}");
             keep_going.count = keep_going.count.saturating_add(1);
             let name = cx.packages(id).name.clone();
             if !keep_going.failed_commands.contains_key(&name) {
                 keep_going.failed_commands.insert(name.clone(), vec![]);
             }
-            keep_going.failed_commands.get_mut(&name).unwrap().push(format!("{:#}", line));
+            keep_going.failed_commands.get_mut(&name).unwrap().push(format!("{line:#}"));
         }
         Ok(())
     } else {
@@ -492,12 +491,12 @@ fn exec_cargo_inner(
     // running `<command>` (on <package>) (<count>/<total>)
     let mut msg = String::new();
     if term::verbose() {
-        write!(msg, "running {}", line).unwrap();
+        write!(msg, "running {line}").unwrap();
     } else {
-        write!(msg, "running {} on {}", line, cx.packages(id).name).unwrap();
+        write!(msg, "running {line} on {}", cx.packages(id).name).unwrap();
     }
     write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
-    info!("{}", msg);
+    info!("{msg}");
 
     line.run()
 }
@@ -512,7 +511,7 @@ fn cargo_clean(cx: &Context, id: Option<&PackageId>) -> Result<()> {
 
     if term::verbose() {
         // running `cargo clean [--package <package>]`
-        info!("running {}", line);
+        info!("running {line}");
     }
 
     line.run()

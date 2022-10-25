@@ -10,7 +10,7 @@ pub(crate) fn minor_version(mut cmd: ProcessBuilder<'_>) -> Result<u32> {
     // Find the release line in the verbose version output.
     let release =
         output.lines().find_map(|line| line.strip_prefix("release: ")).ok_or_else(|| {
-            format_err!("could not find rustc release from output of {}: {}", cmd, output)
+            format_err!("could not find rustc release from output of {cmd}: {output}")
         })?;
 
     // Split the version and channel info.
@@ -20,7 +20,7 @@ pub(crate) fn minor_version(mut cmd: ProcessBuilder<'_>) -> Result<u32> {
 
     let version: Version = version.parse()?;
     if version.major != 1 || version.patch.is_none() {
-        bail!("unexpected output from {}: {}", cmd, output);
+        bail!("unexpected output from {cmd}: {output}");
     }
 
     Ok(version.minor)

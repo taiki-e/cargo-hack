@@ -22,10 +22,10 @@ impl Manifest {
             .parse()
             .with_context(|| format!("failed to parse manifest `{}` as toml", path.display()))?;
         let package = Package::from_table(&doc, metadata).map_err(|s| {
-            format_err!("failed to parse `{}` field from manifest `{}`", s, path.display())
+            format_err!("failed to parse `{s}` field from manifest `{}`", path.display())
         })?;
         let features = Features::from_table(&doc).map_err(|s| {
-            format_err!("failed to parse `{}` field from manifest `{}`", s, path.display())
+            format_err!("failed to parse `{s}` field from manifest `{}`", path.display())
         })?;
         Ok(Self { raw, doc, package, features })
     }
