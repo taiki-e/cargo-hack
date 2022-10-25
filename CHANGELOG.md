@@ -10,6 +10,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Update `toml_edit` to 0.15.
+
+  This increases the rustc version required to build cargo-hack. (rustc 1.56+ -> 1.60+)
+  The cargo/rustc version required to run cargo-hack remains unchanged. (cargo 1.26+)
+
 ## [0.5.21] - 2022-09-26
 
 - Improve handling of multiple `--target` options on older cargo. ([#169](https://github.com/taiki-e/cargo-hack/pull/169))
