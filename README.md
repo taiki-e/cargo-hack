@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/cargo-hack?style=flat-square&logo=rust)](https://crates.io/crates/cargo-hack)
 [![license](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue?style=flat-square)](#license)
-[![rustc](https://img.shields.io/badge/rustc-1.56+-blue?style=flat-square&logo=rust)](https://www.rust-lang.org)
+[![rustc](https://img.shields.io/badge/rustc-1.60+-blue?style=flat-square&logo=rust)](https://www.rust-lang.org)
 [![build status](https://img.shields.io/github/workflow/status/taiki-e/cargo-hack/CI/main?style=flat-square&logo=github)](https://github.com/taiki-e/cargo-hack/actions)
 
 Cargo subcommand to provide various options useful for testing and continuous
@@ -12,8 +12,14 @@ integration.
   - [--each-feature](#--each-feature)
   - [--feature-powerset](#--feature-powerset)
   - [Options for adjusting the behavior of --each-feature and --feature-powerset](#options-for-adjusting-the-behavior-of---each-feature-and---feature-powerset)
+    - [--optional-deps](#--optional-deps)
+    - [--exclude-features, --skip](#--exclude-features---skip)
+    - [--depth](#--depth)
+    - [--group-features](#--group-features)
   - [--version-range](#--version-range)
   - [Improvement of the behavior of existing cargo flags](#improvement-of-the-behavior-of-existing-cargo-flags)
+    - [--features, --no-default-features](#--features---no-default-features)
+    - [--all, --workspace](#--all---workspace)
 - [Installation](#installation)
 - [Related Projects](#related-projects)
 - [License](#license)
@@ -386,7 +392,7 @@ fields of [`cargo metadata`][cargo-metadata].*
 cargo +stable install cargo-hack
 ```
 
-*Compiler support: requires rustc 1.56+*
+*Compiler support: requires rustc 1.60+*
 
 cargo-hack is usually runnable with Cargo versions older than the Rust version
 required for installation (e.g., `cargo +1.31 hack check`). Currently, to run
