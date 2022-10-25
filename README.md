@@ -14,12 +14,8 @@ integration.
   - [Options for adjusting the behavior of --each-feature and --feature-powerset](#options-for-adjusting-the-behavior-of---each-feature-and---feature-powerset)
     - [--optional-deps](#--optional-deps)
     - [--exclude-features, --skip](#--exclude-features---skip)
-    - [--depth](#--depth)
-    - [--group-features](#--group-features)
   - [--version-range](#--version-range)
   - [Improvement of the behavior of existing cargo flags](#improvement-of-the-behavior-of-existing-cargo-flags)
-    - [--features, --no-default-features](#--features---no-default-features)
-    - [--all, --workspace](#--all---workspace)
 - [Installation](#installation)
 - [Related Projects](#related-projects)
 - [License](#license)
@@ -268,6 +264,7 @@ cargo hack check --feature-powerset --optional-deps deps1,deps2
 
 Space-separated list of features to exclude.
 
+<!-- omit in toc -->
 #### --depth
 
 Specify a max number of simultaneous feature flags of `--feature-powerset`.
@@ -275,6 +272,7 @@ Specify a max number of simultaneous feature flags of `--feature-powerset`.
 If the number is set to 1, `--feature-powerset` is equivalent to
 `--each-feature`.
 
+<!-- omit in toc -->
 #### --group-features
 
 Space-separated list of features to group.
@@ -356,12 +354,14 @@ This also works as a workaround for [rust-clippy#4612].
 
 `cargo-hack` changes the behavior of the following existing flags.
 
+<!-- omit in toc -->
 #### --features, --no-default-features
 
 Unlike `cargo` ([cargo#3620], [cargo#4106], [cargo#4463], [cargo#4753],
 [cargo#5015], [cargo#5364], [cargo#6195]), it can also be applied to
 sub-crates.
 
+<!-- omit in toc -->
 #### --all, --workspace
 
 Perform command for all packages in the workspace.
