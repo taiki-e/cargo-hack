@@ -837,6 +837,8 @@ fn removed_flags(flag: &str) -> Result<()> {
     bail!("--{} was removed, use {} instead", flag, alt)
 }
 
+#[cold]
+#[inline(never)]
 fn mini_usage(msg: &str) -> Result<()> {
     bail!(
         "\
@@ -886,6 +888,8 @@ fn format_flag(flag: &lexopt::Arg<'_>) -> String {
     }
 }
 
+#[cold]
+#[inline(never)]
 fn multi_arg(flag: &lexopt::Arg<'_>, subcommand: Option<&str>) -> Result<()> {
     let flag = &format_flag(flag);
     let arg = get_help(flag).map_or_else(|| flag.to_string(), |arg| format!("{} {}", arg.1, arg.2));
@@ -904,6 +908,8 @@ For more information try --help
     )
 }
 
+#[cold]
+#[inline(never)]
 fn similar_arg(
     flag: &lexopt::Arg<'_>,
     subcommand: Option<&str>,
@@ -928,7 +934,9 @@ For more information try --help
     )
 }
 
-// `flag` requires one of `requires`.
+/// `flag` requires one of `requires`.
+#[cold]
+#[inline(never)]
 fn requires(flag: &str, requires: &[&str]) -> Result<()> {
     let with = match requires.len() {
         0 => unreachable!(),
@@ -948,6 +956,8 @@ fn requires(flag: &str, requires: &[&str]) -> Result<()> {
     bail!("{} can only be used together with {}", flag, with);
 }
 
+#[cold]
+#[inline(never)]
 fn conflicts(a: &str, b: &str) -> Result<()> {
     bail!("{} may not be used together with {}", a, b);
 }
