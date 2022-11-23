@@ -34,6 +34,7 @@ use crate::{
 };
 
 fn main() {
+    term::init_coloring();
     if let Err(e) = try_main() {
         error!("{e:#}");
     }
