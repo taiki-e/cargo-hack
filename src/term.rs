@@ -36,8 +36,15 @@ impl FromStr for Coloring {
 }
 
 static COLORING: AtomicU8 = AtomicU8::new(Coloring::AUTO);
+// Errors during argument parsing are returned before set_coloring, so check is_terminal first.
+pub(crate) fn init_coloring() {
+    use is_terminal::IsTerminal;
+    if !std::io::stderr().is_terminal() {
+        COLORING.store(Coloring::NEVER, Ordering::Relaxed);
+    }
+}
 pub(crate) fn set_coloring(color: Option<&str>) -> Result<()> {
-    let mut coloring = match color {
+    let new = match color {
         Some(color) => color.parse().map_err(|e| format_err!("argument for --color {e}"))?,
         // https://doc.rust-lang.org/nightly/cargo/reference/config.html#termcolor
         None => match env::var_os("CARGO_TERM_COLOR") {
@@ -47,10 +54,11 @@ pub(crate) fn set_coloring(color: Option<&str>) -> Result<()> {
             None => Coloring::Auto,
         },
     };
-    if coloring == Coloring::Auto && !atty::is(atty::Stream::Stderr) {
-        coloring = Coloring::Never;
+    if new == Coloring::Auto && coloring() == ColorChoice::Never {
+        // If coloring is already set to never by init_coloring, respect it.
+    } else {
+        COLORING.store(new as _, Ordering::Relaxed);
     }
-    COLORING.store(coloring as _, Ordering::Relaxed);
     Ok(())
 }
 fn coloring() -> ColorChoice {
