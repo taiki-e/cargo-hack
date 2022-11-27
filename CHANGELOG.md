@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.5.23] - 2022-11-27
+
 - Replace `atty` with `is-terminal`. ([#171](https://github.com/taiki-e/cargo-hack/pull/171))
 
 ## [0.5.22] - 2022-10-25
@@ -323,7 +325,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.22...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.23...HEAD
+[0.5.23]: https://github.com/taiki-e/cargo-hack/compare/v0.5.22...v0.5.23
 [0.5.22]: https://github.com/taiki-e/cargo-hack/compare/v0.5.21...v0.5.22
 [0.5.21]: https://github.com/taiki-e/cargo-hack/compare/v0.5.20...v0.5.21
 [0.5.20]: https://github.com/taiki-e/cargo-hack/compare/v0.5.19...v0.5.20
