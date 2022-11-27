@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Replace `atty` with `is-terminal`. ([#171](https://github.com/taiki-e/cargo-hack/pull/171))
+
 ## [0.5.22] - 2022-10-25
 
 - Update `toml_edit` to 0.15.
