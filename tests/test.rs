@@ -1207,9 +1207,8 @@ fn short_flag() {
         .assert_success("virtual")
         .stderr_contains(format!(
             "
-            cargo{EXE_SUFFIX} check -v --manifest-path member1{0}Cargo.toml` (1/1)
+            cargo{EXE_SUFFIX} check -v --manifest-path member1{MAIN_SEPARATOR}Cargo.toml` (1/1)
             ",
-            MAIN_SEPARATOR
         ))
         .stderr_not_contains("member2");
 
@@ -1223,28 +1222,25 @@ fn short_flag() {
 fn verbose() {
     cargo_hack(["check", "--verbose"]).assert_success("virtual").stderr_contains(format!(
         "
-        cargo{EXE_SUFFIX} check --manifest-path member1{0}Cargo.toml` (1/3)
-        cargo{EXE_SUFFIX} check --manifest-path member2{0}Cargo.toml` (2/3)
-        cargo{EXE_SUFFIX} check --manifest-path dir{0}not_find_manifest{0}Cargo.toml` (3/3)
+        cargo{EXE_SUFFIX} check --manifest-path member1{MAIN_SEPARATOR}Cargo.toml` (1/3)
+        cargo{EXE_SUFFIX} check --manifest-path member2{MAIN_SEPARATOR}Cargo.toml` (2/3)
+        cargo{EXE_SUFFIX} check --manifest-path dir{MAIN_SEPARATOR}not_find_manifest{MAIN_SEPARATOR}Cargo.toml` (3/3)
         ",
-        MAIN_SEPARATOR,
     ));
 
     // If `-vv` is passed, propagate `-v` to cargo.
     cargo_hack(["check", "-vv", "-p", "member1"]).assert_success("virtual").stderr_contains(
         format!(
             "
-            cargo{EXE_SUFFIX} check -v --manifest-path member1{0}Cargo.toml` (1/1)
+            cargo{EXE_SUFFIX} check -v --manifest-path member1{MAIN_SEPARATOR}Cargo.toml` (1/1)
             ",
-            MAIN_SEPARATOR,
         ),
     );
     cargo_hack(["check", "-vvv", "-p", "member1"]).assert_success("virtual").stderr_contains(
         format!(
             "
-            cargo{EXE_SUFFIX} check -vv --manifest-path member1{0}Cargo.toml` (1/1)
+            cargo{EXE_SUFFIX} check -vv --manifest-path member1{MAIN_SEPARATOR}Cargo.toml` (1/1)
             ",
-            MAIN_SEPARATOR,
         ),
     );
 }
@@ -1319,10 +1315,9 @@ fn version_range() {
         .assert_success("real")
         .stderr_contains(format!(
             "
-            running `cargo +1.63 check --target {0}` on real (1/2)
-            running `cargo +1.64 check --target {0}` on real (2/2)
+            running `cargo +1.63 check --target {TARGET}` on real (1/2)
+            running `cargo +1.64 check --target {TARGET}` on real (2/2)
             ",
-            TARGET
         ));
 }
 
