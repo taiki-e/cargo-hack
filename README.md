@@ -183,6 +183,9 @@ OPTIONS:
         --keep-going
             Keep going on failure.
 
+        --no-manifest-path
+            Do not pass --manifest-path option to cargo (Unstable).
+
     -v, --verbose
             Use verbose output.
 

@@ -21,6 +21,8 @@ pub(crate) struct Args {
 
     /// --manifest-path <PATH>
     pub(crate) manifest_path: Option<String>,
+    /// --no-manifest-path
+    pub(crate) no_manifest_path: bool,
     /// -p, --package <SPEC>...
     pub(crate) package: Vec<String>,
     /// --exclude <SPEC>...
@@ -137,6 +139,7 @@ impl Args {
         let mut clean_per_run = false;
         let mut clean_per_version = false;
         let mut keep_going = false;
+        let mut no_manifest_path = false;
         let mut version_range = None;
         let mut version_step = None;
 
@@ -266,6 +269,7 @@ impl Args {
                 Long("clean-per-run") => parse_flag!(clean_per_run),
                 Long("clean-per-version") => parse_flag!(clean_per_version),
                 Long("keep-going") => parse_flag!(keep_going),
+                Long("no-manifest-path") => parse_flag!(no_manifest_path),
                 Long("ignore-unknown-features") => parse_flag!(ignore_unknown_features),
                 Short('v') | Long("verbose") => verbose += 1,
 
@@ -549,6 +553,7 @@ impl Args {
             clean_per_run,
             clean_per_version,
             keep_going,
+            no_manifest_path,
             include_features: include_features.into_iter().map(Into::into).collect(),
             include_deps_features,
             version_range,
@@ -710,6 +715,7 @@ const HELP: &[HelpText<'_>] = &[
         "This flag can only be used together with --version-range flag.",
     ]),
     ("", "--keep-going", "", "Keep going on failure", &[]),
+    ("", "--no-manifest-path", "", "Do not pass --manifest-path option to cargo (Unstable)", &[]),
     ("-v", "--verbose", "", "Use verbose output", &[]),
     ("", "--color", "<WHEN>", "Coloring: auto, always, never", &[
         "This flag will be propagated to cargo.",
