@@ -13,7 +13,12 @@ pub(crate) struct Features {
 }
 
 impl Features {
-    pub(crate) fn new(metadata: &Metadata, manifest: &Manifest, id: &PackageId) -> Self {
+    pub(crate) fn new(
+        metadata: &Metadata,
+        manifest: &Manifest,
+        id: &PackageId,
+        include_deps_features: bool,
+    ) -> Self {
         let package = &metadata.packages[id];
         let node = &metadata.resolve.nodes[id];
 
@@ -43,20 +48,22 @@ impl Features {
         features.extend(optional_deps.into_iter().map(Into::into));
         let deps_features_start = features.len();
 
-        // TODO: Unpublished dependencies are not included in `node.deps`.
-        for dep in node.deps.iter().filter(|dep| {
-            // ignore if `dep_kinds` is empty (i.e., not Rust 1.41+), target specific or not a normal dependency.
-            dep.dep_kinds.iter().any(|kind| kind.kind.is_none() && kind.target.is_none())
-        }) {
-            let dep_package = &metadata.packages[&dep.pkg];
-            // TODO: `dep.name` (`resolve.nodes[].deps[].name`) is a valid rust identifier, not a valid feature flag.
-            // And `packages[].dependencies` doesn't have package identifier,
-            // so I'm not sure if there is a way to find the actual feature name exactly.
-            if let Some(d) = package.dependencies.iter().find(|d| d.name == dep_package.name) {
-                let name = d.rename.as_ref().unwrap_or(&d.name);
-                features.extend(dep_package.features.keys().map(|f| Feature::path(name, f)));
+        if include_deps_features {
+            // TODO: Unpublished dependencies are not included in `node.deps`.
+            for dep in node.deps.iter().filter(|dep| {
+                // ignore if `dep_kinds` is empty (i.e., not Rust 1.41+), target specific or not a normal dependency.
+                dep.dep_kinds.iter().any(|kind| kind.kind.is_none() && kind.target.is_none())
+            }) {
+                let dep_package = &metadata.packages[&dep.pkg];
+                // TODO: `dep.name` (`resolve.nodes[].deps[].name`) is a valid rust identifier, not a valid feature flag.
+                // And `packages[].dependencies` doesn't have package identifier,
+                // so I'm not sure if there is a way to find the actual feature name exactly.
+                if let Some(d) = package.dependencies.iter().find(|d| d.name == dep_package.name) {
+                    let name = d.rename.as_ref().unwrap_or(&d.name);
+                    features.extend(dep_package.features.keys().map(|f| Feature::path(name, f)));
+                }
+                // TODO: Optional deps of `dep_package`.
             }
-            // TODO: Optional deps of `dep_package`.
         }
 
         Self { features, optional_deps_start, deps_features_start }

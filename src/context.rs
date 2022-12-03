@@ -58,7 +58,7 @@ impl Context {
         for id in &metadata.workspace_members {
             let manifest_path = &metadata.packages[id].manifest_path;
             let manifest = Manifest::new(manifest_path, &metadata)?;
-            let features = Features::new(&metadata, &manifest, id);
+            let features = Features::new(&metadata, &manifest, id, args.include_deps_features);
             manifests.insert(id.clone(), manifest);
             pkg_features.insert(id.clone(), features);
         }
