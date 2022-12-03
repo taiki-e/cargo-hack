@@ -138,14 +138,15 @@ struct AssertOutputInner {
     status: ExitStatus,
 }
 
-#[track_caller]
-fn line_separated(lines: &str, f: impl FnMut(&str)) {
-    let lines = if lines.contains("cargo +") || lines.contains(&format!("cargo{EXE_SUFFIX} +")) {
-        lines.to_string()
+fn replace_command(lines: &str) -> String {
+    if lines.contains("cargo +") || lines.contains(&format!("cargo{EXE_SUFFIX} +")) {
+        lines.to_owned()
     } else {
         lines.replace("cargo ", &format!("cargo {}", test_toolchain()))
-    };
-    lines.split('\n').map(str::trim).filter(|line| !line.is_empty()).for_each(f);
+    }
+}
+fn line_separated(lines: &str) -> impl Iterator<Item = &'_ str> {
+    lines.split('\n').map(str::trim).filter(|line| !line.is_empty())
 }
 
 impl AssertOutput {
@@ -153,7 +154,7 @@ impl AssertOutput {
     #[track_caller]
     pub fn stderr_contains(&self, pats: impl AsRef<str>) -> &Self {
         if let Some(output) = &self.0 {
-            line_separated(pats.as_ref(), |pat| {
+            for pat in line_separated(&replace_command(pats.as_ref())) {
                 if !output.stderr.contains(pat) {
                     panic!(
                         "assertion failed: `self.stderr.contains(..)`:\n\nEXPECTED:\n{0}\n{pat}\n{0}\n\nACTUAL:\n{0}\n{1}\n{0}\n",
@@ -161,7 +162,7 @@ impl AssertOutput {
                         output.stderr
                     );
                 }
-            });
+            }
         }
         self
     }
@@ -170,7 +171,7 @@ impl AssertOutput {
     #[track_caller]
     pub fn stderr_not_contains(&self, pats: impl AsRef<str>) -> &Self {
         if let Some(output) = &self.0 {
-            line_separated(pats.as_ref(), |pat| {
+            for pat in line_separated(&replace_command(pats.as_ref())) {
                 if output.stderr.contains(pat) {
                     panic!(
                         "assertion failed: `!self.stderr.contains(..)`:\n\nEXPECTED:\n{0}\n{pat}\n{0}\n\nACTUAL:\n{0}\n{1}\n{0}\n",
@@ -178,7 +179,7 @@ impl AssertOutput {
                         output.stderr
                     );
                 }
-            });
+            }
         }
         self
     }
@@ -187,7 +188,7 @@ impl AssertOutput {
     #[track_caller]
     pub fn stdout_contains(&self, pats: impl AsRef<str>) -> &Self {
         if let Some(output) = &self.0 {
-            line_separated(pats.as_ref(), |pat| {
+            for pat in line_separated(&replace_command(pats.as_ref())) {
                 if !output.stdout.contains(pat) {
                     panic!(
                         "assertion failed: `self.stdout.contains(..)`:\n\nEXPECTED:\n{0}\n{pat}\n{0}\n\nACTUAL:\n{0}\n{1}\n{0}\n",
@@ -195,7 +196,7 @@ impl AssertOutput {
                         output.stdout
                     );
                 }
-            });
+            }
         }
         self
     }
@@ -204,7 +205,7 @@ impl AssertOutput {
     #[track_caller]
     pub fn stdout_not_contains(&self, pats: impl AsRef<str>) -> &Self {
         if let Some(output) = &self.0 {
-            line_separated(pats.as_ref(), |pat| {
+            for pat in line_separated(&replace_command(pats.as_ref())) {
                 if output.stdout.contains(pat) {
                     panic!(
                         "assertion failed: `!self.stdout.contains(..)`:\n\nEXPECTED:\n{0}\n{pat}\n{0}\n\nACTUAL:\n{0}\n{1}\n{0}\n",
@@ -212,7 +213,7 @@ impl AssertOutput {
                         output.stdout
                     );
                 }
-            });
+            }
         }
         self
     }
