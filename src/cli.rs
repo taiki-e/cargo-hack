@@ -273,14 +273,6 @@ impl Args {
                 Long("ignore-unknown-features") => parse_flag!(ignore_unknown_features),
                 Short('v') | Long("verbose") => verbose += 1,
 
-                // detect similar arg
-                Long("each-features") => {
-                    similar_arg(&arg, subcommand.as_deref(), "--each-feature", None)?;
-                }
-                Long("features-powerset") => {
-                    similar_arg(&arg, subcommand.as_deref(), "--feature-powerset", None)?;
-                }
-
                 // propagated
                 Long("no-default-features") => {
                     no_default_features = true;
@@ -307,6 +299,7 @@ impl Args {
                 // passthrough
                 Long(flag) => {
                     removed_flags(flag)?;
+                    similar_flags(flag, subcommand.as_deref())?;
                     let flag = format!("--{flag}");
                     if let Some(val) = parser.optional_value() {
                         cargo_args.push(format!("{flag}={}", val.parse::<String>()?));
@@ -840,6 +833,42 @@ fn removed_flags(flag: &str) -> Result<()> {
 
 #[cold]
 #[inline(never)]
+fn similar_arg(flag: &lexopt::Arg<'_>, subcommand: Option<&str>, expected: &str) -> Result<()> {
+    let flag = &format_flag(flag);
+    bail!(
+        "\
+Found argument '{flag}' which wasn't expected, or isn't valid in this context
+        Did you mean {expected}?
+
+USAGE:
+    cargo hack{} {expected}
+
+For more information try --help
+",
+        subcommand.map_or_else(String::new, |subcommand| String::from(" ") + subcommand),
+    )
+}
+
+// detect similar flags
+fn similar_flags(flag: &str, subcommand: Option<&str>) -> Result<()> {
+    let expected = match flag {
+        "no-dev-dep" => "--no-dev-deps",
+        "remove-dev-dep" => "--remove-dev-deps",
+        "each-features" => "--each-feature",
+        "features-powerset" => "--feature-powerset",
+        "exclude-no-default-feature" => "--exclude-no-default-features",
+        "exclude-all-feature" => "--exclude-all-features",
+        "include-dep-features" | "include-dep-feature" | "include-deps-feature" => {
+            "--include-deps-features"
+        }
+        "ignore-unknown-feature" => "--ignore-unknown-features",
+        _ => return Ok(()),
+    };
+    similar_arg(&Long(flag), subcommand, expected)
+}
+
+#[cold]
+#[inline(never)]
 fn mini_usage(msg: &str) -> Result<()> {
     bail!(
         "\
@@ -903,30 +932,6 @@ USAGE:
 For more information try --help
 ",
         subcommand.map_or_else(String::new, |subcommand| String::from(" ") + subcommand),
-    )
-}
-
-#[cold]
-#[inline(never)]
-fn similar_arg(
-    flag: &lexopt::Arg<'_>,
-    subcommand: Option<&str>,
-    expected: &str,
-    value: Option<&str>,
-) -> Result<()> {
-    let flag = &format_flag(flag);
-    bail!(
-        "\
-Found argument '{flag}' which wasn't expected, or isn't valid in this context
-        Did you mean {expected}?
-
-USAGE:
-    cargo{} {expected} {}
-
-For more information try --help
-",
-        subcommand.map_or_else(String::new, |subcommand| String::from(" ") + subcommand),
-        value.unwrap_or_default()
     )
 }
 

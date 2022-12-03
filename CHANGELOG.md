@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Pin `libc` to 0.2.137 to work around build failure on FreeBSD. ([#174](https://github.com/taiki-e/cargo-hack/pull/174))
 
+- Diagnostics improvements.
+
 ## [0.5.23] - 2022-11-27
 
 - Replace `atty` with `is-terminal`. ([#171](https://github.com/taiki-e/cargo-hack/pull/171))
