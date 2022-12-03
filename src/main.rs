@@ -52,13 +52,28 @@ fn try_main() -> Result<()> {
 }
 
 fn exec_on_workspace(cx: &Context) -> Result<()> {
-    // TODO: Ideally, we should do this, but for now, we allow it as cargo-hack
-    // may mistakenly interpret the specified valid feature flag as unknown.
-    // if cx.ignore_unknown_features && !cx.workspace && !cx.current_manifest().is_virtual() {
-    //     bail!(
-    //         "--ignore-unknown-features can only be used in the root of a virtual workspace or together with --workspace"
-    //     )
-    // }
+    let restore_handles = if cx.no_dev_deps || cx.remove_dev_deps {
+        let mut restore_handles = Vec::with_capacity(cx.metadata.workspace_members.len());
+        for id in &cx.metadata.workspace_members {
+            let manifest_path = &cx.packages(id).manifest_path;
+            let manifest = cx.manifests(id);
+            let doc = manifest.remove_dev_deps();
+            restore_handles.push(cx.restore.register(&manifest.raw, manifest_path));
+            if term::verbose() {
+                info!("removing dev-dependencies from {}", manifest_path.display());
+            }
+            fs::write(manifest_path, doc)?;
+        }
+        restore_handles
+    } else {
+        vec![]
+    };
+
+    if cx.subcommand.is_none() {
+        // Restore original Cargo.toml and Cargo.lock.
+        drop(restore_handles);
+        return Ok(());
+    }
 
     let mut progress = Progress::default();
     let packages = determine_package_list(cx, &mut progress)?;
@@ -120,6 +135,10 @@ fn exec_on_workspace(cx: &Context) -> Result<()> {
         eprintln!();
         error!("{keep_going}");
     }
+
+    // Restore original Cargo.toml and Cargo.lock.
+    drop(restore_handles);
+
     Ok(())
 }
 
@@ -130,8 +149,6 @@ struct Progress {
 }
 
 enum Kind<'a> {
-    // If there is no subcommand, then kind need not be determined.
-    NoSubcommand,
     SkipAsPrivate,
     Normal,
     Each { features: Vec<&'a Feature> },
@@ -144,12 +161,10 @@ fn determine_kind<'a>(
     progress: &mut Progress,
     multiple_packages: bool,
 ) -> Kind<'a> {
+    assert!(cx.subcommand.is_some());
     if cx.ignore_private && cx.is_private(id) {
         info!("skipped running on private package `{}`", cx.name_verbose(id));
         return Kind::SkipAsPrivate;
-    }
-    if cx.subcommand.is_none() {
-        return Kind::NoSubcommand;
     }
     if !cx.each_feature && !cx.feature_powerset {
         progress.total += 1;
@@ -346,18 +361,7 @@ fn exec_on_package(
         );
     }
 
-    if cx.no_dev_deps || cx.remove_dev_deps {
-        let new = cx.manifests(id).remove_dev_deps();
-        let mut handle = cx.restore.set(&cx.manifests(id).raw, &cx.packages(id).manifest_path);
-
-        fs::write(&package.manifest_path, new)?;
-
-        exec_actual(cx, id, kind, &mut line, progress, keep_going)?;
-
-        handle.close()
-    } else {
-        exec_actual(cx, id, kind, &mut line, progress, keep_going)
-    }
+    exec_actual(cx, id, kind, &mut line, progress, keep_going)
 }
 
 fn exec_actual(
@@ -369,7 +373,6 @@ fn exec_actual(
     keep_going: &mut KeepGoing,
 ) -> Result<()> {
     match kind {
-        Kind::NoSubcommand => return Ok(()),
         Kind::SkipAsPrivate => unreachable!(),
         Kind::Normal => {
             // only run with default features

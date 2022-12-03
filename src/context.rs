@@ -20,7 +20,7 @@ use crate::{
 
 pub(crate) struct Context {
     args: Args,
-    metadata: Metadata,
+    pub(crate) metadata: Metadata,
     manifests: HashMap<PackageId, Manifest>,
     pkg_features: HashMap<PackageId, Features>,
     cargo: PathBuf,
@@ -45,10 +45,9 @@ impl Context {
             .map_err(|e| warn!("unable to determine cargo version: {e:#}"))
             .unwrap_or(0);
 
-        let mut restore = restore::Manager::new(true);
-        let metadata = Metadata::new(&args, &cargo, cargo_version, &restore)?;
         // if `--remove-dev-deps` flag is off, restore manifest file.
-        restore.needs_restore = args.no_dev_deps && !args.remove_dev_deps;
+        let restore = restore::Manager::new(!args.remove_dev_deps);
+        let metadata = Metadata::new(&args, &cargo, cargo_version, &restore)?;
         if metadata.cargo_version < 41 && args.include_deps_features {
             bail!("--include-deps-features requires Cargo 1.41 or later");
         }
@@ -82,6 +81,14 @@ impl Context {
             .as_ref()
             .map(|range| rustup::version_range(range, this.args.version_step.as_deref(), &this))
             .transpose()?;
+
+        // TODO: Ideally, we should do this, but for now, we allow it as cargo-hack
+        // may mistakenly interpret the specified valid feature flag as unknown.
+        // if this.ignore_unknown_features && !this.workspace && !this.current_manifest().is_virtual() {
+        //     bail!(
+        //         "--ignore-unknown-features can only be used in the root of a virtual workspace or together with --workspace"
+        //     )
+        // }
 
         Ok(this)
     }
