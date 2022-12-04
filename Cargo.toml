@@ -36,8 +36,6 @@ slab = "0.4.4"
 termcolor = "1.1"
 toml_edit = "0.15"
 
-libc = "=0.2.137" # https://github.com/taiki-e/cargo-hack/issues/174
-
 [dev-dependencies]
 build-info = { path = "tests/auxiliary/build-info" }
 easy-ext = "1"
