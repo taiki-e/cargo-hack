@@ -134,7 +134,7 @@ mod tests {
 [package]
 [dependencies]
 [[example]]
-[dev-dependencies.opencl]
+[dev-dependencies.serde]
 [dev-dependencies]",
         "\
 [package]
@@ -149,7 +149,7 @@ mod tests {
 [package]
 [dependencies]
 [[example]]
-[dev-dependencies.opencl]
+[dev-dependencies.serde]
 [dev-dependencies]
 ",
         "\
@@ -193,7 +193,7 @@ bar = { features = [], a = [] }
         "\
 [package]\n\n
 
-[dev-dependencies.opencl]
+[dev-dependencies.serde]
 
 
 [dev-dependencies]

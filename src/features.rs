@@ -225,7 +225,7 @@ mod tests {
 
     use super::{feature_deps, feature_powerset, powerset, Feature};
 
-    macro_rules! svec {
+    macro_rules! v {
         ($($expr:expr),* $(,)?) => {
             vec![$($expr.into()),*]
         };
@@ -246,7 +246,7 @@ mod tests {
     #[test]
     fn feature_deps1() {
         let map =
-            map![("a", svec![]), ("b", svec!["a"]), ("c", svec!["b"]), ("d", svec!["a", "b"])];
+            map![("a", v![]), ("b", v!["a"]), ("c", v!["b"]), ("d", v!["a", "b"])];
         let fd = feature_deps(&map);
         assert_eq!(fd, map![
             ("a", set![]),
@@ -254,7 +254,7 @@ mod tests {
             ("c", set!["a", "b"]),
             ("d", set!["a", "b"])
         ]);
-        let list: Vec<Feature> = svec!["a", "b", "c", "d"];
+        let list: Vec<Feature> = v!["a", "b", "c", "d"];
         let ps = powerset(list.iter().collect::<Vec<_>>(), None);
         assert_eq!(ps, vec![
             vec![],
