@@ -245,8 +245,7 @@ mod tests {
 
     #[test]
     fn feature_deps1() {
-        let map =
-            map![("a", v![]), ("b", v!["a"]), ("c", v!["b"]), ("d", v!["a", "b"])];
+        let map = map![("a", v![]), ("b", v!["a"]), ("c", v!["b"]), ("d", v!["a", "b"])];
         let fd = feature_deps(&map);
         assert_eq!(fd, map![
             ("a", set![]),
