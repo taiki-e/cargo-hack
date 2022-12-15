@@ -4,8 +4,8 @@ use std::{
     fmt,
     path::Path,
     process::{Command, ExitStatus, Output},
-    rc::Rc,
     str,
+    sync::Arc,
 };
 
 use anyhow::{Context as _, Result};
@@ -30,7 +30,7 @@ macro_rules! cmd {
 #[must_use]
 pub(crate) struct ProcessBuilder<'a> {
     /// The program to execute.
-    program: Rc<OsStr>,
+    program: Arc<OsStr>,
     /// A list of arguments to pass to the program (until '--').
     propagated_leading_args: &'a [String],
     /// A list of arguments to pass to the program (after '--').
@@ -119,6 +119,24 @@ impl<'a> ProcessBuilder<'a> {
     /// status to an error.
     pub(crate) fn run(&mut self) -> Result<()> {
         let status = self.build().status().with_context(|| {
+            ProcessError::new(&format!("could not execute process {self:#}"), None, None)
+        })?;
+        if status.success() {
+            Ok(())
+        } else {
+            Err(ProcessError::new(
+                &format!("process didn't exit successfully: {self:#}"),
+                Some(status),
+                None,
+            )
+            .into())
+        }
+    }
+
+    /// Functionally similar to `run(&mut self) -> Result<()>` but with support to provide
+    /// key-value pair of environment variable
+    pub(crate) fn run_with_env<'b>(&mut self, env: (&'b str, &'b str)) -> Result<()> {
+        let status = self.build().env(env.0, env.1).status().with_context(|| {
             ProcessError::new(&format!("could not execute process {self:#}"), None, None)
         })?;
         if status.success() {
