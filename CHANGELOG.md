@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Update `toml_edit` to 0.16.
+
 ## [0.5.24] - 2022-12-03
 
 - Pin `libc` to 0.2.137 to work around build failure on FreeBSD. ([#174](https://github.com/taiki-e/cargo-hack/pull/174))
