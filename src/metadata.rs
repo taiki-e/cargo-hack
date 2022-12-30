@@ -74,7 +74,7 @@ impl Metadata {
                 cmd.run_with_output()?;
             }
             let guard = term::verbose::scoped(false);
-            let mut handle = restore.register_always(&fs::read_to_string(&lockfile)?, lockfile);
+            let mut handle = restore.register_always(fs::read_to_string(&lockfile)?, lockfile);
             // Try with stable cargo because if workspace member has
             // a dependency that requires newer cargo features, `cargo metadata`
             // with older cargo may fail.

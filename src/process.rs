@@ -207,7 +207,7 @@ impl fmt::Display for ProcessBuilder<'_> {
                 if f.alternate() || term::verbose() {
                     let path = env::current_dir()
                         .ok()
-                        .and_then(|cwd| path.strip_prefix(&cwd).ok())
+                        .and_then(|cwd| path.strip_prefix(cwd).ok())
                         .unwrap_or(path);
 
                     write!(f, " --manifest-path")?;
