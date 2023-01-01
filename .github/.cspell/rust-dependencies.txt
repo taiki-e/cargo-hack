@@ -7,7 +7,6 @@ cell
 ctrlc
 easy
 edit
-indexmap
 info
 json
 lexopt
