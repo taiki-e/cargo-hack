@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Distribute prebuilt macOS universal binary.
+
 ## [0.5.25] - 2022-12-25
 
 - Update `toml_edit` to 0.16.

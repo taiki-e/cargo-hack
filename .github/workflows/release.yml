@@ -64,6 +64,8 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-2019
           - target: x86_64-unknown-freebsd
+          - target: universal-apple-darwin
+            os: macos-11
     runs-on: ${{ matrix.os || 'ubuntu-18.04' }}
     steps:
       - uses: actions/checkout@v3
