@@ -250,7 +250,7 @@ impl ProcessError {
             Some(s) => s.to_string(),
             None => "never executed".to_string(),
         };
-        let mut desc = format!("{} ({exit})", &msg);
+        let mut desc = format!("{msg} ({exit})");
 
         if let Some(out) = output {
             match str::from_utf8(&out.stdout) {
