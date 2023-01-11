@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.5.26] - 2023-01-11
+
 - Distribute prebuilt macOS universal binary.
 
 ## [0.5.25] - 2022-12-25
@@ -341,7 +343,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.25...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.5.26...HEAD
+[0.5.26]: https://github.com/taiki-e/cargo-hack/compare/v0.5.25...v0.5.26
 [0.5.25]: https://github.com/taiki-e/cargo-hack/compare/v0.5.24...v0.5.25
 [0.5.24]: https://github.com/taiki-e/cargo-hack/compare/v0.5.23...v0.5.24
 [0.5.23]: https://github.com/taiki-e/cargo-hack/compare/v0.5.22...v0.5.23
