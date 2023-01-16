@@ -2,7 +2,9 @@ use std::sync::{self, Arc, Mutex};
 
 use nanoid::nanoid;
 
-/// TargetDir pool
+/// ``TargetDir`` pool
+///
+/// Provides access to parallel build directories 
 #[derive(Default)]
 pub(crate) struct TargetDirPool {
     ready: Arc<Mutex<Vec<String>>>,
@@ -10,30 +12,28 @@ pub(crate) struct TargetDirPool {
 
 impl TargetDirPool {
     pub(crate) fn new() -> Self {
-        Default::default()
+        Self::default()
     }
 
     pub(crate) fn get(&self) -> String {
-        let mut ready = unpoison_mutex(self.ready.lock());
+        let mut ready = cure_mutex(self.ready.lock());
 
-        let value = ready.pop().unwrap_or(nanoid!());
-        value
+        ready.pop().unwrap_or_else(|| nanoid!())
     }
     pub(crate) fn give_back(&self, dir_name: String) {
-        let mut ready = unpoison_mutex(self.ready.lock());
-        ready.push(dir_name)
+        let mut ready = cure_mutex(self.ready.lock());
+        ready.push(dir_name);
     }
 }
 
-pub(crate) fn unpoison_mutex<T>(
+pub(crate) fn cure_mutex<T>(
     lock: sync::LockResult<sync::MutexGuard<'_, T>>,
 ) -> sync::MutexGuard<'_, T> {
     match lock {
         Ok(res) => res,
-        Err(eres) => {
-            let res_inner = eres.into_inner();
+        Err(error_response) => {
             eprintln!("ERROR: Mutex Lock poisoned");
-            res_inner
+            error_response.into_inner()
         }
     }
 }

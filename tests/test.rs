@@ -1361,9 +1361,9 @@ fn multitarget() {
     .assert_success("real")
     .stderr_contains(format!(
         "
-        running `cargo +1.63 check --target x86_64{target_suffix}` on real (1/3)
-        running `cargo +1.63 check --target aarch64{target_suffix}` on real (2/3)
-        running `cargo +1.64 check --target x86_64{target_suffix} --target aarch64{target_suffix}` on real (3/3)
+        running `cargo +1.63 check --target aarch64{target_suffix}` on real (1/3)
+        running `cargo +1.63 check --target x86_64{target_suffix}` on real (2/3)
+        running `cargo +1.64 check --target aarch64{target_suffix} --target x86_64{target_suffix}` on real (3/3)
         ",
     ));
 

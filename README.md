@@ -3,7 +3,7 @@
 [![crates.io](https://img.shields.io/crates/v/cargo-hack?style=flat-square&logo=rust)](https://crates.io/crates/cargo-hack)
 [![license](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue?style=flat-square)](#license)
 [![rustc](https://img.shields.io/badge/rustc-1.60+-blue?style=flat-square&logo=rust)](https://www.rust-lang.org)
-[![build status](https://img.shields.io/github/workflow/status/taiki-e/cargo-hack/CI/main?style=flat-square&logo=github)](https://github.com/taiki-e/cargo-hack/actions)
+[![build status](https://img.shields.io/github/actions/workflow/status/taiki-e/cargo-hack/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/taiki-e/cargo-hack/actions)
 
 Cargo subcommand to provide various options useful for testing and continuous
 integration.
@@ -392,7 +392,7 @@ fields of [`cargo metadata`][cargo-metadata].*
 ### From source
 
 ```sh
-cargo +stable install cargo-hack
+cargo +stable install cargo-hack --locked
 ```
 
 *Compiler support: requires rustc 1.60+*
@@ -472,11 +472,15 @@ Note: AUR package is maintained by community, not maintainer of cargo-hack.
 
 - [cargo-llvm-cov]: Cargo subcommand to easily use LLVM source-based code coverage.
 - [cargo-minimal-versions]: Cargo subcommand for proper use of `-Z minimal-versions`.
+- [cargo-config2]: Library to load and resolve Cargo configuration.
+- [cargo-no-dev-deps]: Cargo subcommand for running cargo without dev-dependencies. This is an extraction of the [`--no-dev-deps` flag of cargo-hack](#--no-dev-deps) to be used as a stand-alone cargo subcommand.
 
 [#15]: https://github.com/taiki-e/cargo-hack/issues/15
+[cargo-config2]: https://github.com/taiki-e/cargo-config2
 [cargo-llvm-cov]: https://github.com/taiki-e/cargo-llvm-cov
 [cargo-metadata]: https://doc.rust-lang.org/cargo/commands/cargo-metadata.html
 [cargo-minimal-versions]: https://github.com/taiki-e/cargo-minimal-versions
+[cargo-no-dev-deps]: https://github.com/taiki-e/cargo-no-dev-deps
 [cargo#3620]: https://github.com/rust-lang/cargo/issues/3620
 [cargo#4106]: https://github.com/rust-lang/cargo/issues/4106
 [cargo#4242]: https://github.com/rust-lang/cargo/issues/4242

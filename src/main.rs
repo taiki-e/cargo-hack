@@ -30,7 +30,7 @@ use std::{
 
 use anyhow::{bail, Result};
 pub const CURRENT: &str = env!("CARGO_MANIFEST_DIR");
-use multithread::{unpoison_mutex, TargetDirPool};
+use multithread::{cure_mutex, TargetDirPool};
 use rayon::prelude::*;
 
 use crate::{
@@ -85,7 +85,7 @@ fn exec_on_workspace(cx: &Context) -> Result<()> {
     let keep_going = sync::Arc::new(sync::Mutex::new(KeepGoing::default()));
     if let Some(range) = &cx.version_range {
         let line = {
-            let mut progress = unpoison_mutex(progress.lock());
+            let mut progress = cure_mutex(progress.lock());
             let total = progress.total;
             progress.total = 0;
             for (cargo_version, _) in range {
@@ -140,7 +140,7 @@ fn exec_on_workspace(cx: &Context) -> Result<()> {
         line.apply_context(cx);
         exec_on_packages(cx, &packages, line, &progress, &keep_going, cx.cargo_version)?;
     }
-    let keep_going = unpoison_mutex(keep_going.lock());
+    let keep_going = cure_mutex(keep_going.lock());
     if keep_going.count > 0 {
         eprintln!();
         error!("{keep_going}");
@@ -171,7 +171,7 @@ impl ToString for Kind<'_> {
             Kind::SkipAsPrivate => "skip_as_private",
             Kind::Normal => "normal",
             Kind::Each { .. } => "each",
-            Kind::Powerset { .. } => "powerest",
+            Kind::Powerset { .. } => "powerset",
         })
     }
 }
@@ -182,7 +182,7 @@ fn determine_kind<'a>(
     progress: &sync::Arc<sync::Mutex<Progress>>,
     multiple_packages: bool,
 ) -> Kind<'a> {
-    let mut progress = unpoison_mutex(progress.lock());
+    let mut progress = cure_mutex(progress.lock());
     assert!(cx.subcommand.is_some());
     if cx.ignore_private && cx.is_private(id) {
         info!("skipped running on private package `{}`", cx.name_verbose(id));
@@ -505,7 +505,7 @@ fn exec_cargo(
     let res = exec_cargo_inner(cx, id, line, progress, target_dirs);
     if cx.keep_going {
         if let Err(e) = res {
-            let mut keep_going = unpoison_mutex(keep_going.lock());
+            let mut keep_going = cure_mutex(keep_going.lock());
             error!("{e:#}");
             keep_going.count = keep_going.count.saturating_add(1);
             let name = cx.packages(id).name.clone();
@@ -528,7 +528,7 @@ fn exec_cargo_inner(
     target_dirs: &TargetDirPool,
 ) -> Result<()> {
     {
-        let mut progress = unpoison_mutex(progress.lock());
+        let mut progress = cure_mutex(progress.lock());
         if progress.count != 0 {
             eprintln!();
         }

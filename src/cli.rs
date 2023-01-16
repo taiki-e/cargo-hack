@@ -1,11 +1,11 @@
 use std::{
+    collections::BTreeSet,
     env,
     ffi::{OsStr, OsString},
     fmt, mem,
 };
 
 use anyhow::{bail, format_err, Result};
-use indexmap::IndexSet;
 use lexopt::{
     Arg::{Long, Short, Value},
     ValueExt,
@@ -157,7 +157,16 @@ impl Args {
         let mut verbose = 0;
         let mut no_default_features = false;
         let mut all_features = false;
-        let mut target = IndexSet::new();
+
+        // Cargo seems to be deduplicating targets internally using BTreeSet or BTreeMap.
+        // For example, the following commands all run the test once each in the order aarch64 -> x86_64.
+        //
+        // ```
+        // cargo test -v --target x86_64-apple-darwin --target aarch64-apple-darwin
+        // cargo test -v --target aarch64-apple-darwin --target x86_64-apple-darwin
+        // cargo test -v --target x86_64-apple-darwin --target aarch64-apple-darwin --target x86_64-apple-darwin
+        // ```
+        let mut target = BTreeSet::new();
 
         let mut parser = lexopt::Parser::from_args(args);
         let mut next_flag: Option<OwnedFlag> = None;

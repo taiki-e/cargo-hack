@@ -225,7 +225,7 @@ impl fmt::Display for ProcessBuilder<'_> {
                 if f.alternate() || term::verbose() {
                     let path = env::current_dir()
                         .ok()
-                        .and_then(|cwd| path.strip_prefix(&cwd).ok())
+                        .and_then(|cwd| path.strip_prefix(cwd).ok())
                         .unwrap_or(path);
 
                     write!(f, " --manifest-path")?;
@@ -268,7 +268,7 @@ impl ProcessError {
             Some(s) => s.to_string(),
             None => "never executed".to_string(),
         };
-        let mut desc = format!("{} ({exit})", &msg);
+        let mut desc = format!("{msg} ({exit})");
 
         if let Some(out) = output {
             match str::from_utf8(&out.stdout) {
