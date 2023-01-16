@@ -13,6 +13,10 @@ Cargo subcommand to provide various options useful for testing and continuous in
 """
 authors = ["Taiki Endo <te316e89@gmail.com>", "cargo-hack Contributors"]
 
+[features]
+default = []
+multi = ["dep:rayon", "dep:nanoid"]
+
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
@@ -33,8 +37,8 @@ lexopt = "0.2"
 serde_json = "1"
 slab = "0.4.4"
 termcolor = "1.1"
-rayon = "1.6.0"
-nanoid = "0.4.0"
+rayon = { version = "1.6.0", optional = true }
+nanoid = {version = "0.4.0", optional = true }
 toml_edit = "0.17"
 
 [dev-dependencies]

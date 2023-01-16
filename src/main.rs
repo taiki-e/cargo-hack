@@ -16,6 +16,7 @@ mod features;
 mod fs;
 mod manifest;
 mod metadata;
+#[cfg(feature = "multi")]
 mod multithread;
 mod restore;
 mod rustup;
@@ -25,12 +26,16 @@ use std::{
     collections::BTreeMap,
     env,
     fmt::{self, Write},
-    sync,
 };
+#[cfg(feature = "multi")]
+use std::sync;
 
 use anyhow::{bail, Result};
+#[cfg(feature = "multi")]
 pub const CURRENT: &str = env!("CARGO_MANIFEST_DIR");
+#[cfg(feature = "multi")]
 use multithread::{cure_mutex, TargetDirPool};
+#[cfg(feature = "multi")]
 use rayon::prelude::*;
 
 use crate::{
@@ -79,12 +84,19 @@ fn exec_on_workspace(cx: &Context) -> Result<()> {
         drop(restore_handles);
         return Ok(());
     }
-
+    #[cfg(feature = "multi")]
     let progress = sync::Arc::new(sync::Mutex::new(Progress::default()));
-    let packages = determine_package_list(cx, &progress)?;
+    #[cfg(not(feature = "multi"))]
+    let mut progress = Progress::default();
+    let packages = determine_package_list(cx, &mut progress)?;
+    #[cfg(feature = "multi")]
     let keep_going = sync::Arc::new(sync::Mutex::new(KeepGoing::default()));
+    #[cfg(not(feature = "multi"))]
+    let mut keep_going = KeepGoing::default();
+
     if let Some(range) = &cx.version_range {
         let line = {
+            #[cfg(feature = "multi")]
             let mut progress = cure_mutex(progress.lock());
             let total = progress.total;
             progress.total = 0;
@@ -133,13 +145,20 @@ fn exec_on_workspace(cx: &Context) -> Result<()> {
             let mut line = line.clone();
             line.leading_arg(toolchain);
             line.apply_context(cx);
-            exec_on_packages(cx, &packages, line, &progress, &keep_going, *cargo_version)
+            #[cfg(feature = "multi")]
+            {exec_on_packages(cx, &packages, line, &progress, &keep_going, *cargo_version)}
+            #[cfg(not(feature = "multi"))]
+            {exec_on_packages(cx, &packages, line, &mut progress, &mut keep_going, *cargo_version)}
         })?;
     } else {
         let mut line = cx.cargo();
         line.apply_context(cx);
+        #[cfg(feature = "multi")]
         exec_on_packages(cx, &packages, line, &progress, &keep_going, cx.cargo_version)?;
+        #[cfg(not(feature = "multi"))]
+        exec_on_packages(cx, &packages, line, &mut progress, &mut keep_going, cx.cargo_version)?;
     }
+    #[cfg(feature = "multi")]
     let keep_going = cure_mutex(keep_going.lock());
     if keep_going.count > 0 {
         eprintln!();
@@ -165,6 +184,7 @@ enum Kind<'a> {
     Powerset { features: Vec<Vec<&'a Feature>> },
 }
 
+#[cfg(feature = "multi")]
 impl ToString for Kind<'_> {
     fn to_string(&self) -> String {
         String::from(match *self {
@@ -179,9 +199,13 @@ impl ToString for Kind<'_> {
 fn determine_kind<'a>(
     cx: &'a Context,
     id: &PackageId,
+    #[cfg(feature = "multi")]
     progress: &sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))]
+    progress: &mut Progress,
     multiple_packages: bool,
 ) -> Kind<'a> {
+    #[cfg(feature = "multi")]
     let mut progress = cure_mutex(progress.lock());
     assert!(cx.subcommand.is_some());
     if cx.ignore_private && cx.is_private(id) {
@@ -284,7 +308,10 @@ fn determine_kind<'a>(
 
 fn determine_package_list<'a>(
     cx: &'a Context,
+    #[cfg(feature = "multi")]
     progress: &sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))]
+    progress: &mut Progress
 ) -> Result<Vec<(&'a PackageId, Kind<'a>)>> {
     Ok(if cx.workspace {
         for spec in &cx.exclude {
@@ -334,10 +361,17 @@ fn exec_on_packages(
     cx: &Context,
     packages: &[(&PackageId, Kind<'_>)],
     mut line: ProcessBuilder<'_>,
+    #[cfg(feature = "multi")]
     progress: &sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))]
+    progress: &mut Progress,
+    #[cfg(feature = "multi")]
     keep_going: &sync::Arc<sync::Mutex<KeepGoing>>,
+    #[cfg(not(feature = "multi"))]
+    keep_going: &mut KeepGoing,
     cargo_version: u32,
 ) -> Result<()> {
+    #[cfg(feature = "multi")]
     let target_dirs = TargetDirPool::new();
     if cx.target.is_empty() || cargo_version >= 64 {
         // TODO: Test that cargo multitarget does not break the resolver behavior required for a correct check.
@@ -345,15 +379,23 @@ fn exec_on_packages(
             line.arg("--target");
             line.arg(target);
         }
-        packages.par_iter().try_for_each(|(id, kind)| {
+        #[cfg(feature = "multi")]
+        let output = packages.par_iter().try_for_each(|(id, kind)| {
             exec_on_package(cx, id, kind, &line, progress.clone(), keep_going.clone(), &target_dirs)
-        })
+        });
+        #[cfg(not(feature = "multi"))]
+        let output = packages
+            .iter()
+            .try_for_each(|(id, kind)| exec_on_package(cx, id, kind, &line, progress, keep_going));
+        
+        output
     } else {
         cx.target.iter().try_for_each(|target| {
             let mut line = line.clone();
             line.arg("--target");
             line.arg(target);
-            packages.par_iter().try_for_each(|(id, kind)| {
+            #[cfg(feature = "multi")]
+            let output = packages.par_iter().try_for_each(|(id, kind)| {
                 exec_on_package(
                     cx,
                     id,
@@ -363,7 +405,13 @@ fn exec_on_packages(
                     keep_going.clone(),
                     &target_dirs,
                 )
-            })
+            });
+            #[cfg(not(feature = "multi"))]
+            let output = packages.iter().try_for_each(|(id, kind)| {
+                exec_on_package(cx, id, kind, &line, progress, keep_going)
+            });
+            
+            output
         })
     }
 }
@@ -374,8 +422,15 @@ fn exec_on_package(
     id: &PackageId,
     kind: &Kind<'_>,
     line: &ProcessBuilder<'_>,
+    #[cfg(feature = "multi")]
     progress: sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))]
+    mut progress: &mut Progress,
+    #[cfg(feature = "multi")]
     keep_going: sync::Arc<sync::Mutex<KeepGoing>>,
+    #[cfg(not(feature = "multi"))]
+    mut keep_going: &mut KeepGoing,
+    #[cfg(feature = "multi")]
     target_dirs: &TargetDirPool,
 ) -> Result<()> {
     if let Kind::SkipAsPrivate = kind {
@@ -393,24 +448,37 @@ fn exec_on_package(
             package.manifest_path.strip_prefix(&cx.current_dir).unwrap_or(&package.manifest_path),
         );
     }
-
-    exec_actual(cx, id, kind, &mut line, &progress, &keep_going, target_dirs)
+    #[cfg(feature = "multi")]
+    {exec_actual(cx, id, kind, &mut line, &progress, &keep_going, target_dirs)}
+    #[cfg(not(feature = "multi"))]
+    {exec_actual(cx, id, kind, &mut line, &mut progress, &mut keep_going)}
 }
 
 fn exec_actual(
     cx: &Context,
     id: &PackageId,
     kind: &Kind<'_>,
-    line: &mut ProcessBuilder<'_>,
+    mut line: &mut ProcessBuilder<'_>,
+    #[cfg(feature = "multi")]
     progress: &sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))]
+    progress: &mut Progress,
+
+    #[cfg(feature = "multi")]
     keep_going: &sync::Arc<sync::Mutex<KeepGoing>>,
+    #[cfg(not(feature = "multi"))]
+    keep_going: &mut KeepGoing,
+    #[cfg(feature = "multi")]
     target_dirs: &TargetDirPool,
 ) -> Result<()> {
     match kind {
         Kind::SkipAsPrivate => unreachable!(),
         Kind::Normal => {
             // only run with default features
+            #[cfg(feature = "multi")]
             return exec_cargo(cx, id, line, progress, keep_going, target_dirs);
+            #[cfg(not(feature = "multi"))]
+            return exec_cargo(cx, id, &mut line, progress, keep_going);
         }
         Kind::Each { .. } | Kind::Powerset { .. } => {}
     }
@@ -428,19 +496,28 @@ fn exec_actual(
 
     if !cx.exclude_no_default_features {
         // run with no default features if the package has other features
+        #[cfg(feature = "multi")]
         exec_cargo(cx, id, &mut line, progress, keep_going, target_dirs)?;
+        #[cfg(not(feature = "multi"))]
+        exec_cargo(cx, id, &mut line, progress, keep_going)?;
     }
 
     match kind {
         Kind::Each { features } => {
             features.iter().try_for_each(|f| {
-                exec_cargo_with_features(cx, id, &line, progress, keep_going, Some(f), target_dirs)
+                #[cfg(feature = "multi")]
+                {exec_cargo_with_features(cx, id, &line, progress, keep_going, Some(f), target_dirs)}
+                #[cfg(not(feature = "multi"))]
+                {exec_cargo_with_features(cx, id, &line, progress, keep_going, Some(f))}
             })?;
         }
         Kind::Powerset { features } => {
             // The first element of a powerset is `[]` so it should be skipped.
             features.iter().skip(1).try_for_each(|f| {
-                exec_cargo_with_features(cx, id, &line, progress, keep_going, f, target_dirs)
+                #[cfg(feature = "multi")]
+                {exec_cargo_with_features(cx, id, &line, progress, keep_going, f, target_dirs)}
+                #[cfg(not(feature = "multi"))]
+                {exec_cargo_with_features(cx, id, &line, progress, keep_going, f)}
             })?;
         }
         _ => unreachable!(),
@@ -453,7 +530,11 @@ fn exec_actual(
         // run with all features
         // https://github.com/taiki-e/cargo-hack/issues/42
         line.arg("--all-features");
+        #[cfg(feature = "multi")]
         exec_cargo(cx, id, &mut line, progress, keep_going, target_dirs)?;
+        #[cfg(not(feature = "multi"))]
+        exec_cargo(cx, id, &mut line, progress, keep_going)?;
+
     }
 
     Ok(())
@@ -463,14 +544,25 @@ fn exec_cargo_with_features(
     cx: &Context,
     id: &PackageId,
     line: &ProcessBuilder<'_>,
+    #[cfg(feature = "multi")]
     progress: &sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))]
+    progress: &mut Progress,
+
+    #[cfg(feature = "multi")]
     keep_going: &sync::Arc<sync::Mutex<KeepGoing>>,
+    #[cfg(not(feature = "multi"))]
+    keep_going: &mut KeepGoing,
     features: impl IntoIterator<Item = impl AsRef<str>>,
+    #[cfg(feature = "multi")]
     target_dirs: &TargetDirPool,
 ) -> Result<()> {
     let mut line = line.clone();
     line.append_features(features);
-    exec_cargo(cx, id, &mut line, progress, keep_going, target_dirs)
+    #[cfg(feature = "multi")]
+    {exec_cargo(cx, id, &mut line, progress, keep_going, target_dirs)}
+    #[cfg(not(feature = "multi"))]
+    {exec_cargo(cx, id, &mut line, progress, keep_going)}
 }
 
 #[derive(Default)]
@@ -498,13 +590,26 @@ fn exec_cargo(
     cx: &Context,
     id: &PackageId,
     line: &mut ProcessBuilder<'_>,
+    #[cfg(feature = "multi")]
     progress: &sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))]
+    progress: &mut Progress,
+
+    #[cfg(feature = "multi")]
     keep_going: &sync::Arc<sync::Mutex<KeepGoing>>,
+    #[cfg(not(feature = "multi"))]
+    keep_going: &mut KeepGoing,
+
+    #[cfg(feature = "multi")]
     target_dirs: &TargetDirPool,
 ) -> Result<()> {
+    #[cfg(feature = "multi")]
     let res = exec_cargo_inner(cx, id, line, progress, target_dirs);
+    #[cfg(not(feature = "multi"))]
+    let res = exec_cargo_inner(cx, id, line, progress);
     if cx.keep_going {
         if let Err(e) = res {
+            #[cfg(feature = "multi")]
             let mut keep_going = cure_mutex(keep_going.lock());
             error!("{e:#}");
             keep_going.count = keep_going.count.saturating_add(1);
@@ -524,10 +629,15 @@ fn exec_cargo_inner(
     cx: &Context,
     id: &PackageId,
     line: &mut ProcessBuilder<'_>,
+    #[cfg(feature = "multi")]
     progress: &sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))]
+    progress: &mut Progress,
+    #[cfg(feature = "multi")]
     target_dirs: &TargetDirPool,
 ) -> Result<()> {
     {
+        #[cfg(feature = "multi")]
         let mut progress = cure_mutex(progress.lock());
         if progress.count != 0 {
             eprintln!();
@@ -548,13 +658,19 @@ fn exec_cargo_inner(
         write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
         info!("{msg}");
     }
-
-    let target_dir_inner = target_dirs.get();
-    let target_dir = env::current_dir().unwrap().join("target").join(&target_dir_inner);
-    // line.arg("--target-dir");
-    // line.arg(target_dir);
-    line.run_with_env(("CARGO_TARGET_DIR", target_dir.to_str().unwrap()))?;
-    target_dirs.give_back(target_dir_inner);
+    #[cfg(feature = "multi")]
+    {    
+        let target_dir_inner = target_dirs.get();
+        let target_dir = env::current_dir().unwrap().join("target").join(&target_dir_inner);
+        // line.arg("--target-dir");
+        // line.arg(target_dir);
+        line.run_with_env(("CARGO_TARGET_DIR", target_dir.to_str().unwrap()))?;
+        target_dirs.give_back(target_dir_inner);
+    }
+    #[cfg(not(feature = "multi"))]
+    {
+        line.run()?;
+    }
     Ok(())
 }
 

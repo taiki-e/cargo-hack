@@ -135,6 +135,7 @@ impl<'a> ProcessBuilder<'a> {
 
     /// Functionally similar to `run(&mut self) -> Result<()>` but with support to provide
     /// key-value pair of environment variable
+    #[cfg(feature = "multi")]
     pub(crate) fn run_with_env<'b>(&mut self, env: (&'b str, &'b str)) -> Result<()> {
         let status = self.build().env(env.0, env.1).status().with_context(|| {
             ProcessError::new(&format!("could not execute process {self:#}"), None, None)
