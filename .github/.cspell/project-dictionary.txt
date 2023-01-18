@@ -1,5 +1,4 @@
 binstall
-bools
 compat
 curr
 easytime
