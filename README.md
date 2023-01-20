@@ -458,7 +458,7 @@ cargo binstall cargo-hack
 ```
 
 <!-- omit in toc -->
-### Via AUR (ArchLinux)
+### Via AUR (Arch Linux)
 
 You can install [cargo-hack from AUR](https://aur.archlinux.org/packages/cargo-hack):
 
