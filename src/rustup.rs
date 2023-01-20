@@ -97,7 +97,7 @@ pub(crate) fn install_toolchain(
     if target.is_empty()
         && cmd!("cargo", format!("+{toolchain}"), "--version").run_with_output().is_ok()
     {
-        // Do not run `rustup toolchain install` if the toolchain already has installed.
+        // Do not run `rustup toolchain add` if the toolchain already has installed.
         return Ok(());
     }
 
