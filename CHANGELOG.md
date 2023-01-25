@@ -10,6 +10,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Update `toml_edit` to 0.18.
+
+- Update `lexopt` to 0.3
+
 ## [0.5.26] - 2023-01-11
 
 - Distribute prebuilt macOS universal binary.
