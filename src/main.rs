@@ -22,13 +22,13 @@ mod restore;
 mod rustup;
 mod version;
 
+#[cfg(feature = "multi")]
+use std::sync;
 use std::{
     collections::BTreeMap,
     env,
     fmt::{self, Write},
 };
-#[cfg(feature = "multi")]
-use std::sync;
 
 use anyhow::{bail, Result};
 #[cfg(feature = "multi")]
@@ -88,7 +88,13 @@ fn exec_on_workspace(cx: &Context) -> Result<()> {
     let progress = sync::Arc::new(sync::Mutex::new(Progress::default()));
     #[cfg(not(feature = "multi"))]
     let mut progress = Progress::default();
+
+    #[cfg(not(feature = "multi"))]
     let packages = determine_package_list(cx, &mut progress)?;
+
+    #[cfg(feature = "multi")]
+    let packages = determine_package_list(cx, &progress)?;
+
     #[cfg(feature = "multi")]
     let keep_going = sync::Arc::new(sync::Mutex::new(KeepGoing::default()));
     #[cfg(not(feature = "multi"))]
@@ -146,9 +152,20 @@ fn exec_on_workspace(cx: &Context) -> Result<()> {
             line.leading_arg(toolchain);
             line.apply_context(cx);
             #[cfg(feature = "multi")]
-            {exec_on_packages(cx, &packages, line, &progress, &keep_going, *cargo_version)}
+            {
+                exec_on_packages(cx, &packages, line, &progress, &keep_going, *cargo_version)
+            }
             #[cfg(not(feature = "multi"))]
-            {exec_on_packages(cx, &packages, line, &mut progress, &mut keep_going, *cargo_version)}
+            {
+                exec_on_packages(
+                    cx,
+                    &packages,
+                    line,
+                    &mut progress,
+                    &mut keep_going,
+                    *cargo_version,
+                )
+            }
         })?;
     } else {
         let mut line = cx.cargo();
@@ -199,10 +216,8 @@ impl ToString for Kind<'_> {
 fn determine_kind<'a>(
     cx: &'a Context,
     id: &PackageId,
-    #[cfg(feature = "multi")]
-    progress: &sync::Arc<sync::Mutex<Progress>>,
-    #[cfg(not(feature = "multi"))]
-    progress: &mut Progress,
+    #[cfg(feature = "multi")] progress: &sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))] progress: &mut Progress,
     multiple_packages: bool,
 ) -> Kind<'a> {
     #[cfg(feature = "multi")]
@@ -308,10 +323,8 @@ fn determine_kind<'a>(
 
 fn determine_package_list<'a>(
     cx: &'a Context,
-    #[cfg(feature = "multi")]
-    progress: &sync::Arc<sync::Mutex<Progress>>,
-    #[cfg(not(feature = "multi"))]
-    progress: &mut Progress
+    #[cfg(feature = "multi")] progress: &sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))] progress: &mut Progress,
 ) -> Result<Vec<(&'a PackageId, Kind<'a>)>> {
     Ok(if cx.workspace {
         for spec in &cx.exclude {
@@ -361,14 +374,10 @@ fn exec_on_packages(
     cx: &Context,
     packages: &[(&PackageId, Kind<'_>)],
     mut line: ProcessBuilder<'_>,
-    #[cfg(feature = "multi")]
-    progress: &sync::Arc<sync::Mutex<Progress>>,
-    #[cfg(not(feature = "multi"))]
-    progress: &mut Progress,
-    #[cfg(feature = "multi")]
-    keep_going: &sync::Arc<sync::Mutex<KeepGoing>>,
-    #[cfg(not(feature = "multi"))]
-    keep_going: &mut KeepGoing,
+    #[cfg(feature = "multi")] progress: &sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))] progress: &mut Progress,
+    #[cfg(feature = "multi")] keep_going: &sync::Arc<sync::Mutex<KeepGoing>>,
+    #[cfg(not(feature = "multi"))] keep_going: &mut KeepGoing,
     cargo_version: u32,
 ) -> Result<()> {
     #[cfg(feature = "multi")]
@@ -387,7 +396,7 @@ fn exec_on_packages(
         let output = packages
             .iter()
             .try_for_each(|(id, kind)| exec_on_package(cx, id, kind, &line, progress, keep_going));
-        
+
         output
     } else {
         cx.target.iter().try_for_each(|target| {
@@ -410,7 +419,7 @@ fn exec_on_packages(
             let output = packages.iter().try_for_each(|(id, kind)| {
                 exec_on_package(cx, id, kind, &line, progress, keep_going)
             });
-            
+
             output
         })
     }
@@ -422,16 +431,11 @@ fn exec_on_package(
     id: &PackageId,
     kind: &Kind<'_>,
     line: &ProcessBuilder<'_>,
-    #[cfg(feature = "multi")]
-    progress: sync::Arc<sync::Mutex<Progress>>,
-    #[cfg(not(feature = "multi"))]
-    mut progress: &mut Progress,
-    #[cfg(feature = "multi")]
-    keep_going: sync::Arc<sync::Mutex<KeepGoing>>,
-    #[cfg(not(feature = "multi"))]
-    mut keep_going: &mut KeepGoing,
-    #[cfg(feature = "multi")]
-    target_dirs: &TargetDirPool,
+    #[cfg(feature = "multi")] progress: sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))] progress: &mut Progress,
+    #[cfg(feature = "multi")] keep_going: sync::Arc<sync::Mutex<KeepGoing>>,
+    #[cfg(not(feature = "multi"))] keep_going: &mut KeepGoing,
+    #[cfg(feature = "multi")] target_dirs: &TargetDirPool,
 ) -> Result<()> {
     if let Kind::SkipAsPrivate = kind {
         return Ok(());
@@ -449,27 +453,26 @@ fn exec_on_package(
         );
     }
     #[cfg(feature = "multi")]
-    {exec_actual(cx, id, kind, &mut line, &progress, &keep_going, target_dirs)}
+    {
+        exec_actual(cx, id, kind, &mut line, &progress, &keep_going, target_dirs)
+    }
     #[cfg(not(feature = "multi"))]
-    {exec_actual(cx, id, kind, &mut line, &mut progress, &mut keep_going)}
+    {
+        exec_actual(cx, id, kind, &mut line, progress, keep_going)
+    }
 }
 
 fn exec_actual(
     cx: &Context,
     id: &PackageId,
     kind: &Kind<'_>,
-    mut line: &mut ProcessBuilder<'_>,
-    #[cfg(feature = "multi")]
-    progress: &sync::Arc<sync::Mutex<Progress>>,
-    #[cfg(not(feature = "multi"))]
-    progress: &mut Progress,
+    line: &mut ProcessBuilder<'_>,
+    #[cfg(feature = "multi")] progress: &sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))] progress: &mut Progress,
 
-    #[cfg(feature = "multi")]
-    keep_going: &sync::Arc<sync::Mutex<KeepGoing>>,
-    #[cfg(not(feature = "multi"))]
-    keep_going: &mut KeepGoing,
-    #[cfg(feature = "multi")]
-    target_dirs: &TargetDirPool,
+    #[cfg(feature = "multi")] keep_going: &sync::Arc<sync::Mutex<KeepGoing>>,
+    #[cfg(not(feature = "multi"))] keep_going: &mut KeepGoing,
+    #[cfg(feature = "multi")] target_dirs: &TargetDirPool,
 ) -> Result<()> {
     match kind {
         Kind::SkipAsPrivate => unreachable!(),
@@ -478,7 +481,7 @@ fn exec_actual(
             #[cfg(feature = "multi")]
             return exec_cargo(cx, id, line, progress, keep_going, target_dirs);
             #[cfg(not(feature = "multi"))]
-            return exec_cargo(cx, id, &mut line, progress, keep_going);
+            return exec_cargo(cx, id, line, progress, keep_going);
         }
         Kind::Each { .. } | Kind::Powerset { .. } => {}
     }
@@ -506,18 +509,34 @@ fn exec_actual(
         Kind::Each { features } => {
             features.iter().try_for_each(|f| {
                 #[cfg(feature = "multi")]
-                {exec_cargo_with_features(cx, id, &line, progress, keep_going, Some(f), target_dirs)}
+                {
+                    exec_cargo_with_features(
+                        cx,
+                        id,
+                        &line,
+                        progress,
+                        keep_going,
+                        Some(f),
+                        target_dirs,
+                    )
+                }
                 #[cfg(not(feature = "multi"))]
-                {exec_cargo_with_features(cx, id, &line, progress, keep_going, Some(f))}
+                {
+                    exec_cargo_with_features(cx, id, &line, progress, keep_going, Some(f))
+                }
             })?;
         }
         Kind::Powerset { features } => {
             // The first element of a powerset is `[]` so it should be skipped.
             features.iter().skip(1).try_for_each(|f| {
                 #[cfg(feature = "multi")]
-                {exec_cargo_with_features(cx, id, &line, progress, keep_going, f, target_dirs)}
+                {
+                    exec_cargo_with_features(cx, id, &line, progress, keep_going, f, target_dirs)
+                }
                 #[cfg(not(feature = "multi"))]
-                {exec_cargo_with_features(cx, id, &line, progress, keep_going, f)}
+                {
+                    exec_cargo_with_features(cx, id, &line, progress, keep_going, f)
+                }
             })?;
         }
         _ => unreachable!(),
@@ -534,7 +553,6 @@ fn exec_actual(
         exec_cargo(cx, id, &mut line, progress, keep_going, target_dirs)?;
         #[cfg(not(feature = "multi"))]
         exec_cargo(cx, id, &mut line, progress, keep_going)?;
-
     }
 
     Ok(())
@@ -544,25 +562,24 @@ fn exec_cargo_with_features(
     cx: &Context,
     id: &PackageId,
     line: &ProcessBuilder<'_>,
-    #[cfg(feature = "multi")]
-    progress: &sync::Arc<sync::Mutex<Progress>>,
-    #[cfg(not(feature = "multi"))]
-    progress: &mut Progress,
+    #[cfg(feature = "multi")] progress: &sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))] progress: &mut Progress,
 
-    #[cfg(feature = "multi")]
-    keep_going: &sync::Arc<sync::Mutex<KeepGoing>>,
-    #[cfg(not(feature = "multi"))]
-    keep_going: &mut KeepGoing,
+    #[cfg(feature = "multi")] keep_going: &sync::Arc<sync::Mutex<KeepGoing>>,
+    #[cfg(not(feature = "multi"))] keep_going: &mut KeepGoing,
     features: impl IntoIterator<Item = impl AsRef<str>>,
-    #[cfg(feature = "multi")]
-    target_dirs: &TargetDirPool,
+    #[cfg(feature = "multi")] target_dirs: &TargetDirPool,
 ) -> Result<()> {
     let mut line = line.clone();
     line.append_features(features);
     #[cfg(feature = "multi")]
-    {exec_cargo(cx, id, &mut line, progress, keep_going, target_dirs)}
+    {
+        exec_cargo(cx, id, &mut line, progress, keep_going, target_dirs)
+    }
     #[cfg(not(feature = "multi"))]
-    {exec_cargo(cx, id, &mut line, progress, keep_going)}
+    {
+        exec_cargo(cx, id, &mut line, progress, keep_going)
+    }
 }
 
 #[derive(Default)]
@@ -590,18 +607,13 @@ fn exec_cargo(
     cx: &Context,
     id: &PackageId,
     line: &mut ProcessBuilder<'_>,
-    #[cfg(feature = "multi")]
-    progress: &sync::Arc<sync::Mutex<Progress>>,
-    #[cfg(not(feature = "multi"))]
-    progress: &mut Progress,
+    #[cfg(feature = "multi")] progress: &sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))] progress: &mut Progress,
 
-    #[cfg(feature = "multi")]
-    keep_going: &sync::Arc<sync::Mutex<KeepGoing>>,
-    #[cfg(not(feature = "multi"))]
-    keep_going: &mut KeepGoing,
+    #[cfg(feature = "multi")] keep_going: &sync::Arc<sync::Mutex<KeepGoing>>,
+    #[cfg(not(feature = "multi"))] keep_going: &mut KeepGoing,
 
-    #[cfg(feature = "multi")]
-    target_dirs: &TargetDirPool,
+    #[cfg(feature = "multi")] target_dirs: &TargetDirPool,
 ) -> Result<()> {
     #[cfg(feature = "multi")]
     let res = exec_cargo_inner(cx, id, line, progress, target_dirs);
@@ -629,12 +641,9 @@ fn exec_cargo_inner(
     cx: &Context,
     id: &PackageId,
     line: &mut ProcessBuilder<'_>,
-    #[cfg(feature = "multi")]
-    progress: &sync::Arc<sync::Mutex<Progress>>,
-    #[cfg(not(feature = "multi"))]
-    progress: &mut Progress,
-    #[cfg(feature = "multi")]
-    target_dirs: &TargetDirPool,
+    #[cfg(feature = "multi")] progress: &sync::Arc<sync::Mutex<Progress>>,
+    #[cfg(not(feature = "multi"))] progress: &mut Progress,
+    #[cfg(feature = "multi")] target_dirs: &TargetDirPool,
 ) -> Result<()> {
     {
         #[cfg(feature = "multi")]
@@ -659,7 +668,7 @@ fn exec_cargo_inner(
         info!("{msg}");
     }
     #[cfg(feature = "multi")]
-    {    
+    {
         let target_dir_inner = target_dirs.get();
         let target_dir = env::current_dir().unwrap().join("target").join(&target_dir_inner);
         // line.arg("--target-dir");

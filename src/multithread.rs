@@ -4,7 +4,7 @@ use nanoid::nanoid;
 
 /// ``TargetDir`` pool
 ///
-/// Provides access to parallel build directories 
+/// Provides access to parallel build directories
 #[derive(Default)]
 pub(crate) struct TargetDirPool {
     ready: Arc<Mutex<Vec<String>>>,
