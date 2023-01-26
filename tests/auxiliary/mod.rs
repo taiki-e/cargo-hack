@@ -39,7 +39,7 @@ fn test_version() -> Option<u32> {
             env::var_os("CARGO_HACK_TEST_TOOLCHAIN")?.to_string_lossy().parse().unwrap();
         // Install toolchain first to avoid toolchain installation conflicts.
         let _ = Command::new("rustup")
-            .args(["toolchain", "install", &format!("1.{toolchain}"), "--no-self-update"])
+            .args(["toolchain", "add", &format!("1.{toolchain}"), "--no-self-update"])
             .output();
         Some(toolchain)
     });

@@ -188,7 +188,7 @@ impl Args {
                     if $propagate {
                         cargo_args.push(format_flag(&arg));
                     }
-                    let val = parser.value()?.parse::<String>()?;
+                    let val = parser.value()?.string()?;
                     if $propagate {
                         cargo_args.push(val.clone());
                     }
@@ -311,7 +311,7 @@ impl Args {
                     similar_flags(flag, subcommand.as_deref())?;
                     let flag = format!("--{flag}");
                     if let Some(val) = parser.optional_value() {
-                        cargo_args.push(format!("{flag}={}", val.parse::<String>()?));
+                        cargo_args.push(format!("{flag}={}", val.string()?));
                     } else {
                         cargo_args.push(flag);
                     }
@@ -322,13 +322,13 @@ impl Args {
                         // short flags without value as special cases.
                         cargo_args.push(format!("-{flag}"));
                     } else if let Some(val) = parser.optional_value() {
-                        cargo_args.push(format!("-{flag}{}", val.parse::<String>()?));
+                        cargo_args.push(format!("-{flag}{}", val.string()?));
                     } else {
                         cargo_args.push(format!("-{flag}"));
                     }
                 }
                 Value(val) => {
-                    let val = val.parse::<String>()?;
+                    let val = val.string()?;
                     if subcommand.is_none() {
                         subcommand = Some(val.clone());
                     }

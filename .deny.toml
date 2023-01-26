@@ -2,8 +2,10 @@
 [advisories]
 vulnerability = "deny"
 unmaintained = "deny"
+unsound = "deny"
 yanked = "deny"
 notice = "deny"
+git-fetch-with-cli = true
 ignore = []
 
 # https://embarkstudios.github.io/cargo-deny/checks/bans/cfg.html

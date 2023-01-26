@@ -1,6 +1,6 @@
 [package]
 name = "cargo-hack"
-version = "0.5.26"
+version = "0.5.27"
 edition = "2021"
 rust-version = "1.60"
 license = "Apache-2.0 OR MIT"
@@ -33,13 +33,13 @@ members = ["tests/auxiliary/build-info"]
 anyhow = "1.0.47"
 ctrlc = { version = "3.1.4", features = ["termination"] }
 is-terminal = "0.4"
-lexopt = "0.2"
+lexopt = "0.3"
 serde_json = "1"
 slab = "0.4.4"
 termcolor = "1.1"
 rayon = { version = "1.6.0", optional = true }
 nanoid = {version = "0.4.0", optional = true }
-toml_edit = "0.17"
+toml_edit = "0.18"
 
 [dev-dependencies]
 build-info = { path = "tests/auxiliary/build-info" }
