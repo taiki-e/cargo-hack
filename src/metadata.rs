@@ -8,8 +8,11 @@ use std::{
     collections::{BTreeMap, HashMap},
     ffi::OsStr,
     path::{Path, PathBuf},
-    rc::Rc,
 };
+#[cfg(feature = "multi")]
+type RefCounter<T> = std::sync::Arc<T>;
+#[cfg(not(feature = "multi"))]
+type RefCounter<T> = std::rc::Rc<T>;
 
 use anyhow::{format_err, Context as _, Result};
 use serde_json::{Map, Value};
@@ -24,7 +27,7 @@ type ParseResult<T> = Result<T, &'static str>;
 pub(crate) struct PackageId {
     /// The underlying string representation of id.
     /// The precise format is an implementation detail and is subject to change.
-    repr: Rc<str>,
+    repr: RefCounter<str>,
 }
 
 impl From<String> for PackageId {
