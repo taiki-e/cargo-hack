@@ -8,7 +8,7 @@ use std::{
 use anyhow::{format_err, Result};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq)]
 #[repr(u8)]
 enum Coloring {
     Auto = 0,
