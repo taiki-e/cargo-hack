@@ -91,7 +91,7 @@ impl Args {
         const SUBCMD: &str = "hack";
 
         // rustc/cargo args must be valid Unicode
-        // https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_driver/src/lib.rs#L1317-L1327
+        // https://github.com/rust-lang/rust/blob/1.67.0/compiler/rustc_driver/src/lib.rs#L1372-L1382
         fn handle_args(
             args: impl IntoIterator<Item = impl Into<OsString>>,
         ) -> impl Iterator<Item = Result<String>> {
