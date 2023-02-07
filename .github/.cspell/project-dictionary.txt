@@ -1,7 +1,6 @@
 binstall
 compat
 curr
-easytime
 libc
 multitarget
 paru
