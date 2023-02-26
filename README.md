@@ -265,7 +265,12 @@ cargo hack check --feature-powerset --optional-deps deps1,deps2
 
 #### --exclude-features, --skip
 
-Space-separated list of features to exclude.
+Comma-separated list of features to exclude.
+
+```sh
+cargo hack check --feature-powerset --exclude-features feature1,feature2
+cargo hack check --feature-powerset --skip feature1,feature2
+```
 
 <!-- omit in toc -->
 #### --depth
