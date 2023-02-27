@@ -55,7 +55,7 @@ OPTIONS:
             Path to Cargo.toml.
 
     -F, --features <FEATURES>...
-            Space-separated list of features to activate.
+            Space or comma separated list of features to activate.
 
         --each-feature
             Perform for each feature of the package.
@@ -88,7 +88,7 @@ OPTIONS:
             Alias for --exclude-features.
 
         --exclude-features <FEATURES>...
-            Space-separated list of features to exclude.
+            Space or comma separated list of features to exclude.
 
             To exclude run of default feature, using value `--exclude-features default`.
 
@@ -120,7 +120,7 @@ OPTIONS:
             This flag can only be used together with --feature-powerset flag.
 
         --group-features <FEATURES>...
-            Space-separated list of features to group.
+            Space or comma separated list of features to group.
 
             To specify multiple groups, use this option multiple times: `--group-features a,b
             --group-features c,d`
@@ -265,7 +265,7 @@ cargo hack check --feature-powerset --optional-deps deps1,deps2
 
 #### --exclude-features, --skip
 
-Comma-separated list of features to exclude.
+Space or comma separated list of features to exclude.
 
 ```sh
 cargo hack check --feature-powerset --exclude-features feature1,feature2
@@ -283,7 +283,7 @@ If the number is set to 1, `--feature-powerset` is equivalent to
 <!-- omit in toc -->
 #### --group-features
 
-Space-separated list of features to group.
+Space or comma separated list of features to group.
 
 To specify multiple groups, use this option multiple times:
 `--group-features a,b --group-features c,d`

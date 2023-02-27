@@ -606,7 +606,7 @@ const HELP: &[HelpText<'_>] = &[
         "This flag can only be used together with --workspace",
     ]),
     ("", "--manifest-path", "<PATH>", "Path to Cargo.toml", &[]),
-    ("-F", "--features", "<FEATURES>...", "Space-separated list of features to activate", &[]),
+    ("-F", "--features", "<FEATURES>...", "Space or comma separated list of features to activate", &[]),
     ("", "--each-feature", "", "Perform for each feature of the package", &[
         "This also includes runs with just --no-default-features flag, and default features.",
         "When this flag is not used together with --exclude-features (--skip) and \
@@ -627,7 +627,7 @@ const HELP: &[HelpText<'_>] = &[
          flag.",
     ]),
     ("", "--skip", "<FEATURES>...", "Alias for --exclude-features", &[]),
-    ("", "--exclude-features", "<FEATURES>...", "Space-separated list of features to exclude", &[
+    ("", "--exclude-features", "<FEATURES>...", "Space or comma separated list of features to exclude", &[
         "To exclude run of default feature, using value `--exclude-features default`.",
         "To exclude run of just --no-default-features flag, using --exclude-no-default-features \
          flag.",
@@ -653,7 +653,7 @@ const HELP: &[HelpText<'_>] = &[
             "This flag can only be used together with --feature-powerset flag.",
         ],
     ),
-    ("", "--group-features", "<FEATURES>...", "Space-separated list of features to group", &[
+    ("", "--group-features", "<FEATURES>...", "Space or comma separated list of features to group", &[
         "To specify multiple groups, use this option multiple times: `--group-features a,b \
          --group-features c,d`",
         "This flag can only be used together with --feature-powerset flag.",
