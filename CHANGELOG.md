@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Add unstable `--print-command-list` flag. ([#175](https://github.com/taiki-e/cargo-hack/pull/175))
 
+- Update `toml_edit` to 0.19.
+
 ## [0.5.27] - 2023-01-25
 
 - Update `toml_edit` to 0.18.
