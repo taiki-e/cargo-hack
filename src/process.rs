@@ -44,6 +44,7 @@ pub(crate) struct ProcessBuilder<'a> {
     /// This list always has a trailing comma if it is not empty.
     // cargo less than Rust 1.38 cannot handle multiple '--features' flags, so it creates another String.
     features: String,
+    pub(crate) strip_program_path: bool,
 }
 
 impl<'a> ProcessBuilder<'a> {
@@ -56,6 +57,7 @@ impl<'a> ProcessBuilder<'a> {
             leading_args: Vec::new(),
             args: Vec::new(),
             features: String::new(),
+            strip_program_path: false,
         }
     }
 
@@ -185,7 +187,7 @@ impl fmt::Display for ProcessBuilder<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "`")?;
 
-        if f.alternate() || term::verbose() {
+        if !self.strip_program_path && (f.alternate() || term::verbose()) {
             write!(f, "{}", self.program.to_string_lossy())?;
         } else {
             write!(f, "{}", Path::new(&*self.program).file_stem().unwrap().to_string_lossy())?;
