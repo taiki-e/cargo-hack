@@ -1461,3 +1461,20 @@ fn empty_string() {
         .assert_success("real")
         .stderr_not_contains("not found");
 }
+
+#[test]
+fn print_command_list() {
+    cargo_hack(["check", "--each-feature", "--print-command-list"])
+        .assert_success("real")
+        .stdout_contains(
+            "
+            cargo check --manifest-path Cargo.toml --no-default-features
+            cargo check --manifest-path Cargo.toml --no-default-features --features a
+            cargo check --manifest-path Cargo.toml --no-default-features --features b
+            cargo check --manifest-path Cargo.toml --no-default-features --features c
+            cargo check --manifest-path Cargo.toml --no-default-features --features default
+            cargo check --manifest-path Cargo.toml --no-default-features --all-features
+            ",
+        )
+        .stdout_not_contains("`");
+}

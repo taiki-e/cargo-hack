@@ -39,6 +39,7 @@ OPTIONS:
                                          command
         --clean-per-version              Remove artifacts per Rust version
         --keep-going                     Keep going on failure
+        --print-command-list             Print commands without run (Unstable)
         --no-manifest-path               Do not pass --manifest-path option to cargo (Unstable)
     -v, --verbose                        Use verbose output
         --color <WHEN>                   Coloring: auto, always, never

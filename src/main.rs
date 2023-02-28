@@ -494,13 +494,18 @@ fn exec_cargo_inner(
     line: &mut ProcessBuilder<'_>,
     progress: &mut Progress,
 ) -> Result<()> {
-    if progress.count != 0 {
+    if progress.count != 0 && !cx.print_command_list {
         eprintln!();
     }
     progress.count += 1;
 
     if cx.clean_per_run {
         cargo_clean(cx, Some(id))?;
+    }
+
+    if cx.print_command_list {
+        print_command(line.clone());
+        return Ok(());
     }
 
     // running `<command>` (on <package>) (<count>/<total>)
@@ -524,10 +529,22 @@ fn cargo_clean(cx: &Context, id: Option<&PackageId>) -> Result<()> {
         line.arg(&cx.packages(id).name);
     }
 
+    if cx.print_command_list {
+        print_command(line);
+        return Ok(());
+    }
+
     if term::verbose() {
         // running `cargo clean [--package <package>]`
         info!("running {line}");
     }
 
     line.run()
+}
+
+fn print_command(mut line: ProcessBuilder<'_>) {
+    let _guard = term::verbose::scoped(true);
+    line.strip_program_path = true;
+    let l = line.to_string();
+    println!("{}", &l[1..l.len() - 1]);
 }

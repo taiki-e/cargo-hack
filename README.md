@@ -183,6 +183,9 @@ OPTIONS:
         --keep-going
             Keep going on failure.
 
+        --print-command-list
+            Print commands without run (Unstable).
+
         --no-manifest-path
             Do not pass --manifest-path option to cargo (Unstable).
 

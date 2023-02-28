@@ -47,6 +47,8 @@ pub(crate) struct Args {
     pub(crate) clean_per_version: bool,
     /// --keep-going
     pub(crate) keep_going: bool,
+    /// --print-command-list
+    pub(crate) print_command_list: bool,
     /// --version-range
     pub(crate) version_range: Option<String>,
     /// --version-step
@@ -55,7 +57,7 @@ pub(crate) struct Args {
     // options for --each-feature and --feature-powerset
     /// --optional-deps [DEPS]...
     pub(crate) optional_deps: Option<Vec<String>>,
-    /// --include-features
+    /// --include-features <FEATURES>...
     pub(crate) include_features: Vec<Feature>,
     /// --include-deps-features
     pub(crate) include_deps_features: bool,
@@ -139,6 +141,7 @@ impl Args {
         let mut clean_per_run = false;
         let mut clean_per_version = false;
         let mut keep_going = false;
+        let mut print_command_list = false;
         let mut no_manifest_path = false;
         let mut version_range = None;
         let mut version_step = None;
@@ -278,6 +281,7 @@ impl Args {
                 Long("clean-per-run") => parse_flag!(clean_per_run),
                 Long("clean-per-version") => parse_flag!(clean_per_version),
                 Long("keep-going") => parse_flag!(keep_going),
+                Long("print-command-list") => parse_flag!(print_command_list),
                 Long("no-manifest-path") => parse_flag!(no_manifest_path),
                 Long("ignore-unknown-features") => parse_flag!(ignore_unknown_features),
                 Short('v') | Long("verbose") => verbose += 1,
@@ -555,6 +559,7 @@ impl Args {
             clean_per_run,
             clean_per_version,
             keep_going,
+            print_command_list,
             no_manifest_path,
             include_features: include_features.into_iter().map(Into::into).collect(),
             include_deps_features,
@@ -717,6 +722,7 @@ const HELP: &[HelpText<'_>] = &[
         "This flag can only be used together with --version-range flag.",
     ]),
     ("", "--keep-going", "", "Keep going on failure", &[]),
+    ("", "--print-command-list", "", "Print commands without run (Unstable)", &[]),
     ("", "--no-manifest-path", "", "Do not pass --manifest-path option to cargo (Unstable)", &[]),
     ("-v", "--verbose", "", "Use verbose output", &[]),
     ("", "--color", "<WHEN>", "Coloring: auto, always, never", &[
