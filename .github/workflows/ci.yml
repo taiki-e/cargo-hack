@@ -64,7 +64,7 @@ jobs:
       - run: rustup toolchain add nightly --no-self-update
       - uses: taiki-e/install-action@cargo-hack
       - uses: taiki-e/install-action@cargo-minimal-versions
-      - run: echo "RUSTFLAGS=${RUSTFLAGS} -C target-feature=+crt-static" >> "${GITHUB_ENV}"
+      - run: echo "RUSTFLAGS=${RUSTFLAGS} -C target-feature=+crt-static" >>"${GITHUB_ENV}"
         if: startsWith(matrix.os, 'windows')
       - run: cargo test --workspace --all-features
       - run: cargo minimal-versions build --workspace --all-features --ignore-private
@@ -106,7 +106,7 @@ jobs:
         if: (matrix.os == '' || startsWith(matrix.os, 'ubuntu')) && !contains(matrix.target, '-musl')
       - uses: taiki-e/install-action@cross
         if: contains(matrix.target, '-musl')
-      - run: echo "RUSTFLAGS=${RUSTFLAGS} -C target-feature=+crt-static" >> "${GITHUB_ENV}"
+      - run: echo "RUSTFLAGS=${RUSTFLAGS} -C target-feature=+crt-static" >>"${GITHUB_ENV}"
         if: endsWith(matrix.target, 'windows-msvc')
       - run: echo "cargo=cross" >>"${GITHUB_ENV}"
         if: contains(matrix.target, '-musl')
