@@ -6,8 +6,6 @@ multitarget
 paru
 qpmember
 renemed
-SIGINT
-SIGTERM
 subcmd
 subcrate
 tempdir
