@@ -52,7 +52,7 @@ jobs:
             os: macos-11
           - rust: nightly
             os: windows-2019
-    runs-on: ${{ matrix.os || 'ubuntu-18.04' }}
+    runs-on: ${{ matrix.os || 'ubuntu-20.04' }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
@@ -90,7 +90,7 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-2019
           - target: x86_64-unknown-freebsd
-    runs-on: ${{ matrix.os || 'ubuntu-18.04' }}
+    runs-on: ${{ matrix.os || 'ubuntu-20.04' }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
@@ -131,7 +131,7 @@ jobs:
           - 36
           - 39
           - 41
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
