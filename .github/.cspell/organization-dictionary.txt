@@ -29,6 +29,7 @@ Zmiri
 
 // Rust target triple
 aarch
+amdgpu
 androideabi
 armeb
 armebv
@@ -61,6 +62,7 @@ musleabi
 musleabihf
 newlibeabihf
 nvptx
+ohos
 openwrt
 riscv
 softfloat
@@ -144,6 +146,7 @@ objdump
 pipefail
 powerset
 proto
+ranlib
 readelf
 SIGABRT
 SIGILL
