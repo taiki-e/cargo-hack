@@ -2,7 +2,7 @@
 name = "cargo-hack"
 version = "0.5.28"
 edition = "2021"
-rust-version = "1.60"
+rust-version = "1.64"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/taiki-e/cargo-hack"
 keywords = ["cargo", "subcommand", "testing"]
