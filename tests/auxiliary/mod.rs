@@ -6,7 +6,7 @@ use std::{
 };
 
 use anyhow::{Context as _, Result};
-pub use build_info::TARGET;
+pub use build_context::TARGET;
 use easy_ext::ext;
 use fs_err as fs;
 use once_cell::sync::Lazy;

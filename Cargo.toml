@@ -23,7 +23,6 @@ pkg-fmt = "tgz"
 
 [workspace]
 resolver = "2"
-members = ["tests/auxiliary/build-info"]
 
 [dependencies]
 anyhow = "1.0.47"
@@ -36,7 +35,7 @@ termcolor = "1.1"
 toml_edit = "0.19"
 
 [dev-dependencies]
-build-info = { path = "tests/auxiliary/build-info" }
+build-context = "0.1"
 easy-ext = "1"
 fs-err = "2"
 once_cell = "1"
