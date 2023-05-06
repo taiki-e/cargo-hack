@@ -1,12 +1,7 @@
 #![forbid(unsafe_code)]
 #![warn(rust_2018_idioms, single_use_lifetimes, unreachable_pub)]
 #![warn(clippy::pedantic)]
-#![allow(
-    clippy::cast_lossless,
-    clippy::let_underscore_untyped,
-    clippy::struct_excessive_bools,
-    clippy::too_many_lines
-)]
+#![allow(clippy::cast_lossless, clippy::struct_excessive_bools, clippy::too_many_lines)]
 
 #[macro_use]
 mod term;
