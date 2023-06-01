@@ -3,13 +3,13 @@ use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
     process::{Command, ExitStatus},
+    sync::OnceLock,
 };
 
 use anyhow::{Context as _, Result};
 pub use build_context::TARGET;
 use easy_ext::ext;
 use fs_err as fs;
-use once_cell::sync::Lazy;
 use tempfile::TempDir;
 use walkdir::WalkDir;
 
@@ -34,7 +34,8 @@ fn test_toolchain() -> String {
 }
 
 fn test_version() -> Option<u32> {
-    static TEST_VERSION: Lazy<Option<u32>> = Lazy::new(|| {
+    static TEST_VERSION: OnceLock<Option<u32>> = OnceLock::new();
+    *TEST_VERSION.get_or_init(|| {
         let toolchain =
             env::var_os("CARGO_HACK_TEST_TOOLCHAIN")?.to_string_lossy().parse().unwrap();
         // Install toolchain first to avoid toolchain installation conflicts.
@@ -42,16 +43,17 @@ fn test_version() -> Option<u32> {
             .args(["toolchain", "add", &format!("1.{toolchain}"), "--no-self-update"])
             .output();
         Some(toolchain)
-    });
-    *TEST_VERSION
+    })
 }
 
 pub fn has_stable_toolchain() -> bool {
-    static HAS_STABLE_TOOLCHAIN: Lazy<Option<bool>> = Lazy::new(|| {
-        let output = Command::new("rustup").args(["toolchain", "list"]).output().ok()?;
-        Some(String::from_utf8(output.stdout).ok()?.contains("stable"))
-    });
-    HAS_STABLE_TOOLCHAIN.unwrap_or_default()
+    static HAS_STABLE_TOOLCHAIN: OnceLock<Option<bool>> = OnceLock::new();
+    HAS_STABLE_TOOLCHAIN
+        .get_or_init(|| {
+            let output = Command::new("rustup").args(["toolchain", "list"]).output().ok()?;
+            Some(String::from_utf8(output.stdout).ok()?.contains("stable"))
+        })
+        .unwrap_or_default()
 }
 
 pub fn cargo_hack<O: AsRef<OsStr>>(args: impl AsRef<[O]>) -> Command {

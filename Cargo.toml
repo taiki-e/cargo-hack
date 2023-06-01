@@ -38,7 +38,6 @@ toml_edit = "0.19"
 build-context = "0.1"
 easy-ext = "1"
 fs-err = "2"
-once_cell = "1"
 tempfile = "3"
 walkdir = "2"
 
