@@ -1,4 +1,5 @@
 #![warn(rust_2018_idioms, single_use_lifetimes)]
+#![cfg(not(miri))] // Miri doesn't support file with non-default mode: https://github.com/rust-lang/miri/pull/2720
 
 mod auxiliary;
 

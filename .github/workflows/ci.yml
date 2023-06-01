@@ -144,3 +144,18 @@ jobs:
       # Remove stable toolchain to disable https://github.com/taiki-e/cargo-hack/pull/138's behavior.
       - run: rustup toolchain remove stable
       - run: CARGO_HACK_TEST_TOOLCHAIN=${{ matrix.rust }} cargo test --workspace --all-features
+
+  miri:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        run: rustup toolchain add nightly --no-self-update --component miri && rustup default nightly
+      - run: cargo miri test --workspace --all-features
+        env:
+          MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-retag-fields -Zmiri-disable-isolation
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -Z randomize-layout
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -Z randomize-layout
