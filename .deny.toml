@@ -12,9 +12,8 @@ ignore = []
 [bans]
 multiple-versions = "deny"
 wildcards = "allow" # https://github.com/EmbarkStudios/cargo-deny/issues/448
-skip = []
-skip-tree = [
-    { name = "windows-sys", version = "=0.45" },
+skip = [
+    { name = "bitflags", version = "1" },
 ]
 
 # https://embarkstudios.github.io/cargo-deny/checks/licenses/cfg.html
