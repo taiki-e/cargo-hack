@@ -24,7 +24,6 @@ rustsec
 rustup
 valgrind
 xcompile
-Zdoctest
 Zmiri
 
 // Rust target triple
@@ -38,6 +37,7 @@ asmjs
 atmega
 bpfeb
 bpfel
+csky
 cuda
 eabi
 eabihf
@@ -45,6 +45,7 @@ emscripten
 espidf
 fortanix
 gnuabi
+gnuabiv
 gnueabi
 gnueabihf
 gnullvm
@@ -156,6 +157,7 @@ noninteractive
 noprofile
 norc
 nproc
+objcopy
 objdump
 pipefail
 powerset
