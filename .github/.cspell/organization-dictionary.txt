@@ -151,6 +151,7 @@ endianness
 esac
 euxo
 gsub
+libc
 moreutils
 msys
 noninteractive

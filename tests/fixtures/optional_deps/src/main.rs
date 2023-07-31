@@ -5,6 +5,6 @@ fn main() {
     println!("member3");
     #[cfg(feature = "real")]
     println!("real");
-    #[cfg(feature = "renemed")]
-    println!("renemed");
+    #[cfg(feature = "renamed")]
+    println!("renamed");
 }

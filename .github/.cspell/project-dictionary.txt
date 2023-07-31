@@ -1,13 +1,8 @@
 binstall
 compat
-curr
-libc
-multitarget
 paru
 qpmember
-renemed
 subcrate
 tempdir
 tmpdir
-tmppath
 vvpmember

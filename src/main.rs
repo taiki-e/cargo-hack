@@ -317,7 +317,7 @@ fn exec_on_packages(
     cargo_version: u32,
 ) -> Result<()> {
     if cx.target.is_empty() || cargo_version >= 64 {
-        // TODO: Test that cargo multitarget does not break the resolver behavior required for a correct check.
+        // TODO: We should test that cargo's multi-target build does not break the resolver behavior required for a correct check.
         for target in &cx.target {
             line.arg("--target");
             line.arg(target);

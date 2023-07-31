@@ -1068,17 +1068,17 @@ fn not_find_manifest() {
 #[test]
 fn optional_deps() {
     // require Rust 1.31 due to optional_deps uses renamed deps
-    cargo_hack(["run", "--features=real,member2,renemed", "--ignore-unknown-features"])
+    cargo_hack(["run", "--features=real,member2,renamed", "--ignore-unknown-features"])
         .assert_success2("optional_deps", Some(31))
         .stderr_contains(
             "
             skipped applying unknown `member2` feature to optional_deps
-            running `cargo run --features real,renemed` on optional_deps
+            running `cargo run --features real,renamed` on optional_deps
             ",
         )
         .stdout_contains(
             "
-            renemed
+            renamed
             real
             ",
         )
@@ -1100,7 +1100,7 @@ fn optional_deps() {
         .stderr_not_contains(
             "
             --features real
-            --features renemed
+            --features renamed
             ",
         );
 
@@ -1110,7 +1110,7 @@ fn optional_deps() {
             "
             running `cargo check --no-default-features` on optional_deps (1/4)
             running `cargo check --no-default-features --features real` on optional_deps (2/4)
-            running `cargo check --no-default-features --features renemed` on optional_deps (3/4)
+            running `cargo check --no-default-features --features renamed` on optional_deps (3/4)
             running `cargo check --no-default-features --all-features` on optional_deps (4/4)
             ",
         );
@@ -1124,14 +1124,14 @@ fn optional_deps() {
             running `cargo check --no-default-features --all-features` on optional_deps (3/3)
             ",
         )
-        .stderr_not_contains("--features renemed");
+        .stderr_not_contains("--features renamed");
 
-    cargo_hack(["check", "--each-feature", "--optional-deps=renemed"])
+    cargo_hack(["check", "--each-feature", "--optional-deps=renamed"])
         .assert_success2("optional_deps", Some(31))
         .stderr_contains(
             "
             running `cargo check --no-default-features` on optional_deps (1/3)
-            running `cargo check --no-default-features --features renemed` on optional_deps (2/3)
+            running `cargo check --no-default-features --features renamed` on optional_deps (2/3)
             running `cargo check --no-default-features --all-features` on optional_deps (3/3)
             ",
         )
@@ -1164,7 +1164,7 @@ fn skip_optional_deps() {
         .stderr_contains(
             "
             running `cargo check --no-default-features` on optional_deps (1/2)
-            running `cargo check --no-default-features --features renemed` on optional_deps (2/2)
+            running `cargo check --no-default-features --features renamed` on optional_deps (2/2)
             ",
         )
         .stderr_not_contains("--features real");
@@ -1173,33 +1173,33 @@ fn skip_optional_deps() {
 #[test]
 fn list_separator() {
     // require Rust 1.31 due to optional_deps uses renamed deps
-    cargo_hack(["run", "--features='real,renemed'"])
+    cargo_hack(["run", "--features='real,renamed'"])
         .assert_success2("optional_deps", Some(31))
-        .stderr_contains("running `cargo run --features real,renemed` on optional_deps");
+        .stderr_contains("running `cargo run --features real,renamed` on optional_deps");
 
-    cargo_hack(["run", "--features=\"real,renemed\""])
+    cargo_hack(["run", "--features=\"real,renamed\""])
         .assert_success2("optional_deps", Some(31))
-        .stderr_contains("running `cargo run --features real,renemed` on optional_deps");
+        .stderr_contains("running `cargo run --features real,renamed` on optional_deps");
 
-    cargo_hack(["run", "--features=real,renemed"])
+    cargo_hack(["run", "--features=real,renamed"])
         .assert_success2("optional_deps", Some(31))
-        .stderr_contains("running `cargo run --features real,renemed` on optional_deps");
+        .stderr_contains("running `cargo run --features real,renamed` on optional_deps");
 
-    cargo_hack(["run", "--features", "real,renemed"])
+    cargo_hack(["run", "--features", "real,renamed"])
         .assert_success2("optional_deps", Some(31))
-        .stderr_contains("running `cargo run --features real,renemed` on optional_deps");
+        .stderr_contains("running `cargo run --features real,renamed` on optional_deps");
 
-    cargo_hack(["run", "--features='real renemed'"])
+    cargo_hack(["run", "--features='real renamed'"])
         .assert_success2("optional_deps", Some(31))
-        .stderr_contains("running `cargo run --features real,renemed` on optional_deps");
+        .stderr_contains("running `cargo run --features real,renamed` on optional_deps");
 
-    cargo_hack(["run", "--features=\"real renemed\""])
+    cargo_hack(["run", "--features=\"real renamed\""])
         .assert_success2("optional_deps", Some(31))
-        .stderr_contains("running `cargo run --features real,renemed` on optional_deps");
+        .stderr_contains("running `cargo run --features real,renamed` on optional_deps");
 
-    cargo_hack(["run", "--features", "real renemed"])
+    cargo_hack(["run", "--features", "real renamed"])
         .assert_success2("optional_deps", Some(31))
-        .stderr_contains("running `cargo run --features real,renemed` on optional_deps");
+        .stderr_contains("running `cargo run --features real,renamed` on optional_deps");
 }
 
 #[test]
@@ -1324,7 +1324,7 @@ fn version_range() {
 
 #[cfg_attr(windows, ignore)] // rustup bug: https://github.com/rust-lang/rustup/issues/3036
 #[test]
-fn multitarget() {
+fn multi_target() {
     let target_suffix = if cfg!(target_os = "linux") && cfg!(target_env = "gnu") {
         "-unknown-linux-gnu"
     } else if cfg!(target_os = "macos") {

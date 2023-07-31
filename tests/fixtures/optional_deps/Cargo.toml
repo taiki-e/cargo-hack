@@ -16,4 +16,4 @@ members = [
 [dependencies]
 real = { path = "real", optional = true }
 member2 = { path = "member2" }
-renemed = { path = "member3", package = "member3", optional = true }
+renamed = { path = "member3", package = "member3", optional = true }

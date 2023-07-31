@@ -239,12 +239,12 @@ fn test_project(model: &str) -> Result<(TempDir, PathBuf)> {
 
     for entry in WalkDir::new(&model_path).into_iter().filter_map(Result::ok) {
         let path = entry.path();
-        let tmppath = &tmpdir_path.join(path.strip_prefix(&model_path)?);
-        if !tmppath.exists() {
+        let tmp_path = &tmpdir_path.join(path.strip_prefix(&model_path)?);
+        if !tmp_path.exists() {
             if path.is_dir() {
-                fs::create_dir_all(tmppath)?;
+                fs::create_dir_all(tmp_path)?;
             } else {
-                fs::copy(path, tmppath)?;
+                fs::copy(path, tmp_path)?;
             }
         }
     }

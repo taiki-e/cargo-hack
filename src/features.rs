@@ -184,10 +184,10 @@ fn feature_deps(map: &BTreeMap<String, Vec<String>>) -> BTreeMap<&str, BTreeSet<
     fn f<'a>(
         map: &'a BTreeMap<String, Vec<String>>,
         set: &mut BTreeSet<&'a str>,
-        curr: &str,
+        cur: &str,
         root: &str,
     ) {
-        if let Some(v) = map.get(curr) {
+        if let Some(v) = map.get(cur) {
             for x in v {
                 if x != root && set.insert(x) {
                     f(map, set, x, root);
@@ -206,9 +206,9 @@ fn feature_deps(map: &BTreeMap<String, Vec<String>>) -> BTreeMap<&str, BTreeSet<
 
 fn powerset<T: Copy>(iter: impl IntoIterator<Item = T>, depth: Option<usize>) -> Vec<Vec<T>> {
     iter.into_iter().fold(vec![vec![]], |mut acc, elem| {
-        let ext = acc.clone().into_iter().map(|mut curr| {
-            curr.push(elem);
-            curr
+        let ext = acc.clone().into_iter().map(|mut cur| {
+            cur.push(elem);
+            cur
         });
         if let Some(depth) = depth {
             acc.extend(ext.filter(|f| f.len() <= depth));
