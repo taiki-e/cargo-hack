@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Documentation improvements.
+
 ## [0.5.28] - 2023-02-28
 
 - Add unstable `--print-command-list` flag. ([#175](https://github.com/taiki-e/cargo-hack/pull/175))
