@@ -11,6 +11,8 @@ exclude = ["/.*", "/tools"]
 description = """
 Cargo subcommand to provide various options useful for testing and continuous integration.
 """
+# The official tools/services of rust-lang no longer refer to it since RFC 3052,
+# but it seems still useful for packaging. https://github.com/taiki-e/cargo-hack/pull/173
 authors = ["Taiki Endo <te316e89@gmail.com>", "cargo-hack Contributors"]
 
 [package.metadata.docs.rs]
