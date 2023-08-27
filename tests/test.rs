@@ -471,10 +471,12 @@ fn feature_powerset_failure() {
 
 #[test]
 fn powerset_deduplication() {
-    // basic
     // require Rust 1.34 due to easytime requires it.
+    let require = Some(34);
+
+    // basic
     cargo_hack(["check", "--feature-powerset"])
-        .assert_success2("powerset_deduplication", Some(34))
+        .assert_success2("powerset_deduplication", require)
         .stderr_contains(
             "
             running `cargo check --no-default-features` on deduplication (1/10)
@@ -502,7 +504,7 @@ fn powerset_deduplication() {
 
     // with --optional-deps
     cargo_hack(["check", "--feature-powerset", "--optional-deps"])
-        .assert_success2("powerset_deduplication", Some(34))
+        .assert_success2("powerset_deduplication", require)
         .stderr_contains(
             "
             running `cargo check --no-default-features` on deduplication (1/14)
@@ -534,7 +536,7 @@ fn powerset_deduplication() {
 
     // with --group-features
     cargo_hack(["check", "--feature-powerset", "--group-features", "b,d"])
-        .assert_success2("powerset_deduplication", Some(34))
+        .assert_success2("powerset_deduplication", require)
         .stderr_contains(
             "
             running `cargo check --no-default-features` on deduplication (1/7)
@@ -555,7 +557,7 @@ fn powerset_deduplication() {
 
     // with --group-features + --optional-deps
     cargo_hack(["check", "--feature-powerset", "--group-features", "b,d", "--optional-deps"])
-        .assert_success2("powerset_deduplication", Some(34))
+        .assert_success2("powerset_deduplication", require)
         .stderr_contains(
             "
             running `cargo check --no-default-features` on deduplication (1/10)
@@ -1068,8 +1070,10 @@ fn not_find_manifest() {
 #[test]
 fn optional_deps() {
     // require Rust 1.31 due to optional_deps uses renamed deps
+    let require = Some(31);
+
     cargo_hack(["run", "--features=real,member2,renamed", "--ignore-unknown-features"])
-        .assert_success2("optional_deps", Some(31))
+        .assert_success2("optional_deps", require)
         .stderr_contains(
             "
             skipped applying unknown `member2` feature to optional_deps
@@ -1090,7 +1094,7 @@ fn optional_deps() {
         );
 
     cargo_hack(["check", "--each-feature"])
-        .assert_success2("optional_deps", Some(31))
+        .assert_success2("optional_deps", require)
         .stderr_contains(
             "
             running `cargo check --no-default-features` on optional_deps (1/2)
@@ -1105,7 +1109,7 @@ fn optional_deps() {
         );
 
     cargo_hack(["check", "--each-feature", "--optional-deps"])
-        .assert_success2("optional_deps", Some(31))
+        .assert_success2("optional_deps", require)
         .stderr_contains(
             "
             running `cargo check --no-default-features` on optional_deps (1/4)
@@ -1116,7 +1120,7 @@ fn optional_deps() {
         );
 
     cargo_hack(["check", "--each-feature", "--optional-deps", "real"])
-        .assert_success2("optional_deps", Some(31))
+        .assert_success2("optional_deps", require)
         .stderr_contains(
             "
             running `cargo check --no-default-features` on optional_deps (1/3)
@@ -1127,7 +1131,7 @@ fn optional_deps() {
         .stderr_not_contains("--features renamed");
 
     cargo_hack(["check", "--each-feature", "--optional-deps=renamed"])
-        .assert_success2("optional_deps", Some(31))
+        .assert_success2("optional_deps", require)
         .stderr_contains(
             "
             running `cargo check --no-default-features` on optional_deps (1/3)
@@ -1138,7 +1142,7 @@ fn optional_deps() {
         .stderr_not_contains("--features real");
 
     cargo_hack(["check", "--each-feature", "--optional-deps="])
-        .assert_success2("optional_deps", Some(31))
+        .assert_success2("optional_deps", require)
         .stderr_contains(
             "
             running `cargo check --no-default-features` on optional_deps (1/2)
@@ -1159,8 +1163,10 @@ fn optional_deps_failure() {
 #[test]
 fn skip_optional_deps() {
     // require Rust 1.31 due to optional_deps uses renamed deps
+    let require = Some(31);
+
     cargo_hack(["check", "--each-feature", "--optional-deps", "--exclude-features", "real"])
-        .assert_success2("optional_deps", Some(31))
+        .assert_success2("optional_deps", require)
         .stderr_contains(
             "
             running `cargo check --no-default-features` on optional_deps (1/2)
@@ -1173,32 +1179,34 @@ fn skip_optional_deps() {
 #[test]
 fn list_separator() {
     // require Rust 1.31 due to optional_deps uses renamed deps
+    let require = Some(31);
+
     cargo_hack(["run", "--features='real,renamed'"])
-        .assert_success2("optional_deps", Some(31))
+        .assert_success2("optional_deps", require)
         .stderr_contains("running `cargo run --features real,renamed` on optional_deps");
 
     cargo_hack(["run", "--features=\"real,renamed\""])
-        .assert_success2("optional_deps", Some(31))
+        .assert_success2("optional_deps", require)
         .stderr_contains("running `cargo run --features real,renamed` on optional_deps");
 
     cargo_hack(["run", "--features=real,renamed"])
-        .assert_success2("optional_deps", Some(31))
+        .assert_success2("optional_deps", require)
         .stderr_contains("running `cargo run --features real,renamed` on optional_deps");
 
     cargo_hack(["run", "--features", "real,renamed"])
-        .assert_success2("optional_deps", Some(31))
+        .assert_success2("optional_deps", require)
         .stderr_contains("running `cargo run --features real,renamed` on optional_deps");
 
     cargo_hack(["run", "--features='real renamed'"])
-        .assert_success2("optional_deps", Some(31))
+        .assert_success2("optional_deps", require)
         .stderr_contains("running `cargo run --features real,renamed` on optional_deps");
 
     cargo_hack(["run", "--features=\"real renamed\""])
-        .assert_success2("optional_deps", Some(31))
+        .assert_success2("optional_deps", require)
         .stderr_contains("running `cargo run --features real,renamed` on optional_deps");
 
     cargo_hack(["run", "--features", "real renamed"])
-        .assert_success2("optional_deps", Some(31))
+        .assert_success2("optional_deps", require)
         .stderr_contains("running `cargo run --features real,renamed` on optional_deps");
 }
 

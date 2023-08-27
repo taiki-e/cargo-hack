@@ -11,6 +11,7 @@ resolver = "2"
 easytime = ["dep:easytime"]
 
 [dependencies]
-easytime = { version = "0.2", optional = true, default-features = false }
+# easytime 0.2.6 requires Rust 1.58
+easytime = { version = "=0.2.5", optional = true, default-features = false }
 
 [dev-dependencies]
