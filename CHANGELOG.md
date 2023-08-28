@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.2] - 2023-08-28
+
 - Work around spurious "failed to select a version" error when `--version-range` option is used.
 
   (This does *not* work around the [underlying cargo bug](https://github.com/rust-lang/cargo/issues/10623).)
@@ -375,7 +377,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/taiki-e/cargo-hack/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/taiki-e/cargo-hack/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/taiki-e/cargo-hack/compare/v0.5.29...v0.6.0
 [0.5.29]: https://github.com/taiki-e/cargo-hack/compare/v0.5.28...v0.5.29
