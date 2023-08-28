@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix bug in `--no-private` flag on Windows.
+
 ## [0.6.2] - 2023-08-28
 
 - Work around spurious "failed to select a version" error when `--version-range` option is used.
