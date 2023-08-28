@@ -143,6 +143,9 @@ OPTIONS:
             Equivalent to --no-dev-deps flag except for does not restore the original `Cargo.toml`
             after performed.
 
+        --no-private
+            Perform without `publish = false` crates.
+
         --ignore-private
             Skip to perform on `publish = false` packages.
 
@@ -346,7 +349,14 @@ with `--no-dev-deps`.
 <!-- omit in toc -->
 ### --ignore-private
 
-Skip to perform on `publish = false` packages.
+Skip to perform on `publish = false` crates.
+
+<!-- omit in toc -->
+### --no-private
+
+Perform without `publish = false` crates. This is similar to `--ignore-private`, but is more powerful because this also prevents private crates from affecting lockfile and metadata.
+
+Note: `--no-private` flag modifies `Cargo.toml` while cargo-hack is running and restores it when finished.
 
 <!-- omit in toc -->
 ### --ignore-unknown-features

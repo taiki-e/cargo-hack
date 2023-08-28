@@ -28,6 +28,7 @@ OPTIONS:
         --no-dev-deps                    Perform without dev-dependencies
         --remove-dev-deps                Equivalent to --no-dev-deps flag except for does not
                                          restore the original `Cargo.toml` after performed
+        --no-private                     Perform without `publish = false` crates
         --ignore-private                 Skip to perform on `publish = false` packages
         --ignore-unknown-features        Skip passing --features flag to `cargo` if that feature
                                          does not exist in the package

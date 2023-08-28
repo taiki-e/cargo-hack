@@ -691,6 +691,7 @@ const HELP: &[HelpText<'_>] = &[
          after performed",
         &[],
     ),
+    ("", "--no-private", "", "Perform without `publish = false` crates", &[]),
     ("", "--ignore-private", "", "Skip to perform on `publish = false` packages", &[]),
     (
         "",

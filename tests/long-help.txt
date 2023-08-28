@@ -114,6 +114,9 @@ OPTIONS:
             Equivalent to --no-dev-deps flag except for does not restore the original `Cargo.toml`
             after performed.
 
+        --no-private
+            Perform without `publish = false` crates.
+
         --ignore-private
             Skip to perform on `publish = false` packages.
 
