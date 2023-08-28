@@ -558,7 +558,7 @@ impl Args {
             no_dev_deps,
             remove_dev_deps,
             no_private,
-            ignore_private,
+            ignore_private: ignore_private | no_private,
             ignore_unknown_features,
             optional_deps,
             clean_per_run,

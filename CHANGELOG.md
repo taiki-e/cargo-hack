@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix bug in `--no-private` flag.
+
 ## [0.6.0] - 2023-08-28
 
 - Add `--no-private` flag to exclude `publish = false` crates.
