@@ -1,8 +1,16 @@
-use std::{collections::BTreeMap, path::Path};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
-use anyhow::{format_err, Context as _, Result};
+use anyhow::{bail, format_err, Context as _, Result};
 
-use crate::{fs, metadata::Metadata};
+use crate::{
+    context::Context,
+    fs,
+    metadata::{self, Metadata},
+    term,
+};
 
 type ParseResult<T> = Result<T, &'static str>;
 
@@ -28,12 +36,6 @@ impl Manifest {
             format_err!("failed to parse `{s}` field from manifest `{}`", path.display())
         })?;
         Ok(Self { raw, doc, package, features })
-    }
-
-    pub(crate) fn remove_dev_deps(&self) -> String {
-        let mut doc = self.doc.clone();
-        remove_dev_deps(&mut doc);
-        doc.to_string()
     }
 }
 
@@ -100,6 +102,85 @@ impl Features {
     }
 }
 
+pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
+    // TODO: provide option to keep updated Cargo.lock
+    let restore_lockfile = true;
+    let no_dev_deps = cx.no_dev_deps | cx.remove_dev_deps;
+    let no_private = cx.no_private;
+    let restore_handles = if no_dev_deps || no_private {
+        let mut restore_handles = Vec::with_capacity(cx.metadata.workspace_members.len());
+        let workspace_root = &cx.metadata.workspace_root;
+        let root_manifest = &workspace_root.join("Cargo.toml");
+        let mut has_root_crate = false;
+        let mut root_id = None;
+        let mut private_crates = vec![];
+        for id in &cx.metadata.workspace_members {
+            let package = cx.packages(id);
+            let manifest_path = &package.manifest_path;
+            let is_root = manifest_path == root_manifest;
+            if is_root {
+                root_id = Some(id);
+            }
+            has_root_crate |= is_root;
+            let is_private = cx.is_private(id);
+            if is_private && no_private {
+                if is_root {
+                    bail!(
+                        "--no-private is not supported yet with workspace with private root crate"
+                    );
+                }
+                private_crates.push(manifest_path);
+            } else if is_root && no_private {
+                //
+            } else if no_dev_deps {
+                let manifest = cx.manifests(id);
+                let mut doc = manifest.doc.clone();
+                if term::verbose() {
+                    info!("removing dev-dependencies from {}", manifest_path.display());
+                }
+                remove_dev_deps(&mut doc);
+                restore_handles.push(cx.restore.register(&manifest.raw, manifest_path));
+                fs::write(manifest_path, doc.to_string())?;
+            }
+        }
+        if no_private && (no_dev_deps && has_root_crate || !private_crates.is_empty()) {
+            let manifest_path = root_manifest;
+            let manifest = cx.manifests(root_id.unwrap());
+            let mut doc = manifest.doc.clone();
+            if no_dev_deps && has_root_crate {
+                if term::verbose() {
+                    info!("removing dev-dependencies from {}", manifest_path.display());
+                }
+                remove_dev_deps(&mut doc);
+            }
+            if !private_crates.is_empty() {
+                if term::verbose() {
+                    info!("removing private crates from {}", manifest_path.display());
+                }
+                remove_private_crates(&mut doc, &cx.metadata, &private_crates)?;
+            }
+            restore_handles.push(cx.restore.register(&manifest.raw, manifest_path));
+            fs::write(manifest_path, doc.to_string())?;
+        }
+        if restore_lockfile {
+            let lockfile = &cx.metadata.workspace_root.join("Cargo.lock");
+            if lockfile.exists() {
+                restore_handles.push(cx.restore.register(fs::read_to_string(lockfile)?, lockfile));
+            }
+        }
+        restore_handles
+    } else {
+        vec![]
+    };
+
+    f()?;
+
+    // Restore original Cargo.toml and Cargo.lock.
+    drop(restore_handles);
+
+    Ok(())
+}
+
 fn remove_dev_deps(doc: &mut toml_edit::Document) {
     const KEY: &str = "dev-dependencies";
     let table = doc.as_table_mut();
@@ -111,6 +192,33 @@ fn remove_dev_deps(doc: &mut toml_edit::Document) {
             }
         }
     }
+}
+
+fn remove_private_crates(
+    doc: &mut toml_edit::Document,
+    metadata: &metadata::Metadata,
+    private_crates: &[&PathBuf],
+) -> Result<()> {
+    let table = doc.as_table_mut();
+    if let Some(workspace) = table.get_mut("workspace").and_then(toml_edit::Item::as_table_like_mut)
+    {
+        if let Some(members) = workspace.get_mut("members").and_then(toml_edit::Item::as_array_mut)
+        {
+            let mut i = 0;
+            while i < members.len() {
+                if let Some(member) = members.get(i).and_then(toml_edit::Value::as_str) {
+                    let manifest_path =
+                        metadata.workspace_root.join(member).join("Cargo.toml").canonicalize()?;
+                    if private_crates.iter().any(|p| **p == manifest_path) {
+                        members.remove(i);
+                        continue;
+                    }
+                }
+                i += 1;
+            }
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

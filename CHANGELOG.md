@@ -10,6 +10,12 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Add `--no-private` flag to exclude `publish = false` crates.
+
+  This flag is more powerful than [`--ignore-private` flag](https://github.com/taiki-e/cargo-hack#--ignore-private), which also prevents private crate from affecting dependency resolution.
+
+- Restore `Cargo.lock` after run to match behavior with [cargo-minimal-versions](https://github.com/taiki-e/cargo-minimal-versions) and [cargo-no-dev-deps](https://github.com/taiki-e/cargo-no-dev-deps), when `--no-dev-deps`, `--remove-dev-deps`, or `--no-private` is used.
+
 ## [0.5.29] - 2023-08-06
 
 - Documentation improvements.

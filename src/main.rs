@@ -48,98 +48,87 @@ fn main() {
 fn try_main() -> Result<()> {
     let cx = &Context::new()?;
 
-    exec_on_workspace(cx)
-}
-
-fn exec_on_workspace(cx: &Context) -> Result<()> {
-    let restore_handles = if cx.no_dev_deps || cx.remove_dev_deps {
-        let mut restore_handles = Vec::with_capacity(cx.metadata.workspace_members.len());
-        for id in &cx.metadata.workspace_members {
-            let manifest_path = &cx.packages(id).manifest_path;
-            let manifest = cx.manifests(id);
-            let doc = manifest.remove_dev_deps();
-            restore_handles.push(cx.restore.register(&manifest.raw, manifest_path));
-            if term::verbose() {
-                info!("removing dev-dependencies from {}", manifest_path.display());
-            }
-            fs::write(manifest_path, doc)?;
+    manifest::with(cx, || {
+        if cx.subcommand.is_none() {
+            return Ok(());
         }
-        restore_handles
-    } else {
-        vec![]
-    };
 
-    if cx.subcommand.is_none() {
-        // Restore original Cargo.toml and Cargo.lock.
-        drop(restore_handles);
-        return Ok(());
-    }
-
-    let mut progress = Progress::default();
-    let packages = determine_package_list(cx, &mut progress)?;
-    let mut keep_going = KeepGoing::default();
-    if let Some(range) = &cx.version_range {
-        let total = progress.total;
-        progress.total = 0;
-        for (cargo_version, _) in range {
-            if cx.target.is_empty() || *cargo_version >= 64 {
-                progress.total += total;
-            } else {
-                progress.total += total * cx.target.len();
-            }
-        }
-        let line = cmd!("cargo");
-        {
-            // First, generate the lockfile using the oldest cargo specified.
-            // https://github.com/taiki-e/cargo-hack/issues/105
-            let toolchain = &range[0].1;
-            rustup::install_toolchain(toolchain, &cx.target, true)?;
-            let mut line = line.clone();
-            line.leading_arg(toolchain);
-            line.arg("generate-lockfile");
-            if let Some(pid) = cx.current_package() {
-                let package = cx.packages(pid);
-                if !cx.no_manifest_path {
-                    line.arg("--manifest-path");
-                    line.arg(
-                        package
-                            .manifest_path
-                            .strip_prefix(&cx.current_dir)
-                            .unwrap_or(&package.manifest_path),
-                    );
+        let mut progress = Progress::default();
+        let packages = determine_package_list(cx, &mut progress)?;
+        let mut keep_going = KeepGoing::default();
+        if let Some(range) = &cx.version_range {
+            let total = progress.total;
+            progress.total = 0;
+            for (cargo_version, _) in range {
+                if cx.target.is_empty() || *cargo_version >= 64 {
+                    progress.total += total;
+                } else {
+                    progress.total += total * cx.target.len();
                 }
             }
-            line.run_with_output()?;
-        }
-
-        range.iter().enumerate().try_for_each(|(i, (cargo_version, toolchain))| {
-            if i != 0 {
+            let line = cmd!("cargo");
+            {
+                // First, generate the lockfile using the oldest cargo specified.
+                // https://github.com/taiki-e/cargo-hack/issues/105
+                let toolchain = &range[0].1;
                 rustup::install_toolchain(toolchain, &cx.target, true)?;
+                let mut line = line.clone();
+                line.leading_arg(toolchain);
+                line.arg("generate-lockfile");
+                if let Some(pid) = cx.current_package() {
+                    let package = cx.packages(pid);
+                    if !cx.no_manifest_path {
+                        line.arg("--manifest-path");
+                        line.arg(
+                            package
+                                .manifest_path
+                                .strip_prefix(&cx.current_dir)
+                                .unwrap_or(&package.manifest_path),
+                        );
+                    }
+                }
+                line.run_with_output()?;
             }
 
-            if cx.clean_per_version {
-                cargo_clean(cx, None)?;
-            }
+            range.iter().enumerate().try_for_each(|(i, (cargo_version, toolchain))| {
+                if i != 0 {
+                    rustup::install_toolchain(toolchain, &cx.target, true)?;
+                }
 
-            let mut line = line.clone();
-            line.leading_arg(toolchain);
+                if cx.clean_per_version {
+                    cargo_clean(cx, None)?;
+                }
+
+                let mut line = line.clone();
+                line.leading_arg(toolchain);
+                line.apply_context(cx);
+                exec_on_packages(
+                    cx,
+                    &packages,
+                    line,
+                    &mut progress,
+                    &mut keep_going,
+                    *cargo_version,
+                )
+            })?;
+        } else {
+            let mut line = cx.cargo();
             line.apply_context(cx);
-            exec_on_packages(cx, &packages, line, &mut progress, &mut keep_going, *cargo_version)
-        })?;
-    } else {
-        let mut line = cx.cargo();
-        line.apply_context(cx);
-        exec_on_packages(cx, &packages, line, &mut progress, &mut keep_going, cx.cargo_version)?;
-    }
-    if keep_going.count > 0 {
-        eprintln!();
-        error!("{keep_going}");
-    }
-
-    // Restore original Cargo.toml and Cargo.lock.
-    drop(restore_handles);
-
-    Ok(())
+            exec_on_packages(
+                cx,
+                &packages,
+                line,
+                &mut progress,
+                &mut keep_going,
+                cx.cargo_version,
+            )?;
+        }
+        if keep_going.count > 0 {
+            eprintln!();
+            error!("{keep_going}");
+        }
+        Ok(())
+    })
 }
 
 #[derive(Default)]

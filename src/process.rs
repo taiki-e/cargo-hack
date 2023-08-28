@@ -14,7 +14,7 @@ use crate::{term, Context, PackageId};
 
 macro_rules! cmd {
     ($program:expr $(, $arg:expr)* $(,)?) => {{
-        let mut _cmd = crate::process::ProcessBuilder::new($program);
+        let mut _cmd = $crate::process::ProcessBuilder::new($program);
         $(
             _cmd.arg($arg);
         )*

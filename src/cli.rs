@@ -37,6 +37,8 @@ pub(crate) struct Args {
     pub(crate) no_dev_deps: bool,
     /// --remove-dev-deps
     pub(crate) remove_dev_deps: bool,
+    /// --no-private
+    pub(crate) no_private: bool,
     /// --ignore-private
     pub(crate) ignore_private: bool,
     /// --ignore-unknown-features
@@ -136,6 +138,7 @@ impl Args {
         let mut remove_dev_deps = false;
         let mut each_feature = false;
         let mut feature_powerset = false;
+        let mut no_private = false;
         let mut ignore_private = false;
         let mut ignore_unknown_features = false;
         let mut clean_per_run = false;
@@ -274,6 +277,7 @@ impl Args {
                 Long("remove-dev-deps") => parse_flag!(remove_dev_deps),
                 Long("each-feature") => parse_flag!(each_feature),
                 Long("feature-powerset") => parse_flag!(feature_powerset),
+                Long("no-private") => parse_flag!(no_private),
                 Long("ignore-private") => parse_flag!(ignore_private),
                 Long("exclude-no-default-features") => parse_flag!(exclude_no_default_features),
                 Long("exclude-all-features") => parse_flag!(exclude_all_features),
@@ -553,6 +557,7 @@ impl Args {
             feature_powerset,
             no_dev_deps,
             remove_dev_deps,
+            no_private,
             ignore_private,
             ignore_unknown_features,
             optional_deps,
