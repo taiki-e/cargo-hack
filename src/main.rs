@@ -90,9 +90,32 @@ fn try_main() -> Result<()> {
                 line.run_with_output()?;
             }
 
+            let mut regenerate_lockfile_on_51_or_up = false;
             range.iter().enumerate().try_for_each(|(i, (cargo_version, toolchain))| {
                 if i != 0 {
                     rustup::install_toolchain(toolchain, &cx.target, true)?;
+                    if regenerate_lockfile_on_51_or_up && *cargo_version >= 51 {
+                        let mut line = line.clone();
+                        line.leading_arg(toolchain);
+                        line.arg("generate-lockfile");
+                        if let Some(pid) = cx.current_package() {
+                            let package = cx.packages(pid);
+                            if !cx.no_manifest_path {
+                                line.arg("--manifest-path");
+                                line.arg(
+                                    package
+                                        .manifest_path
+                                        .strip_prefix(&cx.current_dir)
+                                        .unwrap_or(&package.manifest_path),
+                                );
+                            }
+                        }
+                        line.run_with_output()?;
+                        regenerate_lockfile_on_51_or_up = false;
+                    }
+                }
+                if *cargo_version < 51 {
+                    regenerate_lockfile_on_51_or_up = true;
                 }
 
                 if cx.clean_per_version {
