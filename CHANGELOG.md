@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Work around spurious "failed to select a version" error when `--version-range` option is used.
 
+  (This does *not* work around the [underlying cargo bug](https://github.com/rust-lang/cargo/issues/10623).)
+
 ## [0.6.1] - 2023-08-28
 
 - Fix bug in `--no-private` flag.
