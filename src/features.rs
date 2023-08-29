@@ -170,6 +170,7 @@ pub(crate) fn feature_powerset<'a>(
     let deps_map = feature_deps(map);
     powerset(features, depth)
         .into_iter()
+        .skip(1) // The first element of a powerset is `[]` so it should be skipped.
         .filter(|fs| {
             !fs.iter().any(|f| {
                 f.as_group().iter().filter_map(|f| deps_map.get(&&**f)).any(|deps| {
@@ -274,9 +275,7 @@ mod tests {
             vec!["a", "b", "c", "d"],
         ]);
         let filtered = feature_powerset(list.iter().collect::<Vec<_>>(), None, &map);
-        assert_eq!(filtered, vec![vec![], vec!["a"], vec!["b"], vec!["c"], vec!["d"], vec![
-            "c", "d"
-        ]]);
+        assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"], vec!["c", "d"]]);
     }
 
     #[test]

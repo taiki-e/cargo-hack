@@ -31,7 +31,7 @@ pub(crate) fn version_range(
         if let Some(patch) = version.patch {
             warn!(
                 "--version-range always selects the latest patch release per minor release, \
-                     not the specified patch release `{patch}`",
+                 not the specified patch release `{patch}`",
             );
         }
         Ok(())

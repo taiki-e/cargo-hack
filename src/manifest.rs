@@ -111,7 +111,6 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
         let mut restore_handles = Vec::with_capacity(cx.metadata.workspace_members.len());
         let workspace_root = &cx.metadata.workspace_root;
         let root_manifest = &workspace_root.join("Cargo.toml");
-        let mut has_root_crate = false;
         let mut root_id = None;
         let mut private_crates = vec![];
         for id in &cx.metadata.workspace_members {
@@ -121,7 +120,6 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
             if is_root {
                 root_id = Some(id);
             }
-            has_root_crate |= is_root;
             let is_private = cx.is_private(id);
             if is_private && no_private {
                 if is_root {
@@ -131,7 +129,7 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
                 }
                 private_crates.push(manifest_path);
             } else if is_root && no_private {
-                //
+                // This case is handled in the if block after loop.
             } else if no_dev_deps {
                 let manifest = cx.manifests(id);
                 let mut doc = manifest.doc.clone();
@@ -143,11 +141,27 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
                 fs::write(manifest_path, doc.to_string())?;
             }
         }
-        if no_private && (no_dev_deps && has_root_crate || !private_crates.is_empty()) {
+        if no_private && (no_dev_deps && root_id.is_some() || !private_crates.is_empty()) {
             let manifest_path = root_manifest;
-            let manifest = cx.manifests(root_id.unwrap());
-            let mut doc = manifest.doc.clone();
-            if no_dev_deps && has_root_crate {
+            let (mut doc, orig) = match root_id {
+                Some(id) => {
+                    let manifest = cx.manifests(id);
+                    (manifest.doc.clone(), manifest.raw.clone())
+                }
+                None => {
+                    let orig = fs::read_to_string(manifest_path)?;
+                    (
+                        orig.parse().with_context(|| {
+                            format!(
+                                "failed to parse manifest `{}` as toml",
+                                manifest_path.display()
+                            )
+                        })?,
+                        orig,
+                    )
+                }
+            };
+            if no_dev_deps && root_id.is_some() {
                 if term::verbose() {
                     info!("removing dev-dependencies from {}", manifest_path.display());
                 }
@@ -159,7 +173,7 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
                 }
                 remove_private_crates(&mut doc, &cx.metadata, &private_crates)?;
             }
-            restore_handles.push(cx.restore.register(&manifest.raw, manifest_path));
+            restore_handles.push(cx.restore.register(orig, manifest_path));
             fs::write(manifest_path, doc.to_string())?;
         }
         if restore_lockfile {

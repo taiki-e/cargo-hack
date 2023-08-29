@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix bug in `--no-private` flag with virtual workspace.
+
 ## [0.6.3] - 2023-08-28
 
 - Fix bug in `--no-private` flag on Windows.

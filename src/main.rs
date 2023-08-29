@@ -1,7 +1,12 @@
 #![forbid(unsafe_code)]
 #![warn(rust_2018_idioms, single_use_lifetimes, unreachable_pub)]
 #![warn(clippy::pedantic)]
-#![allow(clippy::cast_lossless, clippy::struct_excessive_bools, clippy::too_many_lines)]
+#![allow(
+    clippy::cast_lossless,
+    clippy::single_match_else,
+    clippy::struct_excessive_bools,
+    clippy::too_many_lines
+)]
 
 #[macro_use]
 mod term;
@@ -67,52 +72,34 @@ fn try_main() -> Result<()> {
                 }
             }
             let line = cmd!("cargo");
-            {
-                // First, generate the lockfile using the oldest cargo specified.
-                // https://github.com/taiki-e/cargo-hack/issues/105
-                let toolchain = &range[0].1;
-                rustup::install_toolchain(toolchain, &cx.target, true)?;
-                let mut line = line.clone();
-                line.leading_arg(toolchain);
-                line.arg("generate-lockfile");
-                if let Some(pid) = cx.current_package() {
-                    let package = cx.packages(pid);
-                    if !cx.no_manifest_path {
-                        line.arg("--manifest-path");
-                        line.arg(
-                            package
-                                .manifest_path
-                                .strip_prefix(&cx.current_dir)
-                                .unwrap_or(&package.manifest_path),
-                        );
-                    }
-                }
-                line.run_with_output()?;
-            }
 
+            // First, generate the lockfile using the oldest cargo specified.
+            // https://github.com/taiki-e/cargo-hack/issues/105
+            let mut generate_lockfile = true;
+            // Workaround for spurious "failed to select a version" error.
+            // (This does not work around the underlying cargo bug: https://github.com/rust-lang/cargo/issues/10623)
             let mut regenerate_lockfile_on_51_or_up = false;
-            range.iter().enumerate().try_for_each(|(i, (cargo_version, toolchain))| {
-                if i != 0 {
-                    rustup::install_toolchain(toolchain, &cx.target, true)?;
-                    if regenerate_lockfile_on_51_or_up && *cargo_version >= 51 {
-                        let mut line = line.clone();
-                        line.leading_arg(toolchain);
-                        line.arg("generate-lockfile");
-                        if let Some(pid) = cx.current_package() {
-                            let package = cx.packages(pid);
-                            if !cx.no_manifest_path {
-                                line.arg("--manifest-path");
-                                line.arg(
-                                    package
-                                        .manifest_path
-                                        .strip_prefix(&cx.current_dir)
-                                        .unwrap_or(&package.manifest_path),
-                                );
-                            }
+            for (cargo_version, toolchain) in range {
+                rustup::install_toolchain(toolchain, &cx.target, true)?;
+                if generate_lockfile || regenerate_lockfile_on_51_or_up && *cargo_version >= 51 {
+                    let mut line = line.clone();
+                    line.leading_arg(toolchain);
+                    line.arg("generate-lockfile");
+                    if let Some(pid) = cx.current_package() {
+                        let package = cx.packages(pid);
+                        if !cx.no_manifest_path {
+                            line.arg("--manifest-path");
+                            line.arg(
+                                package
+                                    .manifest_path
+                                    .strip_prefix(&cx.current_dir)
+                                    .unwrap_or(&package.manifest_path),
+                            );
                         }
-                        line.run_with_output()?;
-                        regenerate_lockfile_on_51_or_up = false;
                     }
+                    line.run_with_output()?;
+                    generate_lockfile = false;
+                    regenerate_lockfile_on_51_or_up = false;
                 }
                 if *cargo_version < 51 {
                     regenerate_lockfile_on_51_or_up = true;
@@ -132,8 +119,8 @@ fn try_main() -> Result<()> {
                     &mut progress,
                     &mut keep_going,
                     *cargo_version,
-                )
-            })?;
+                )?;
+            }
         } else {
             let mut line = cx.cargo();
             line.apply_context(cx);
@@ -259,8 +246,7 @@ fn determine_kind<'a>(
             progress.total += 1;
             Kind::Normal
         } else {
-            // -1: the first element of a powerset is `[]`
-            progress.total += features.len() - 1
+            progress.total += features.len()
                 + !cx.exclude_no_default_features as usize
                 + (!cx.exclude_all_features
                     && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1)
@@ -373,27 +359,14 @@ fn exec_on_package(
         );
     }
 
-    exec_actual(cx, id, kind, &mut line, progress, keep_going)
-}
-
-fn exec_actual(
-    cx: &Context,
-    id: &PackageId,
-    kind: &Kind<'_>,
-    line: &mut ProcessBuilder<'_>,
-    progress: &mut Progress,
-    keep_going: &mut KeepGoing,
-) -> Result<()> {
     match kind {
-        Kind::SkipAsPrivate => unreachable!(),
         Kind::Normal => {
             // only run with default features
-            return exec_cargo(cx, id, line, progress, keep_going);
+            return exec_cargo(cx, id, &mut line, progress, keep_going);
         }
         Kind::Each { .. } | Kind::Powerset { .. } => {}
+        Kind::SkipAsPrivate => unreachable!(),
     }
-
-    let mut line = line.clone();
 
     if !cx.no_default_features {
         line.arg("--no-default-features");
@@ -411,15 +384,14 @@ fn exec_actual(
 
     match kind {
         Kind::Each { features } => {
-            features.iter().try_for_each(|f| {
-                exec_cargo_with_features(cx, id, &line, progress, keep_going, Some(f))
-            })?;
+            for f in features {
+                exec_cargo_with_features(cx, id, &line, progress, keep_going, Some(f))?;
+            }
         }
         Kind::Powerset { features } => {
-            // The first element of a powerset is `[]` so it should be skipped.
-            features.iter().skip(1).try_for_each(|f| {
-                exec_cargo_with_features(cx, id, &line, progress, keep_going, f)
-            })?;
+            for f in features {
+                exec_cargo_with_features(cx, id, &line, progress, keep_going, f)?;
+            }
         }
         _ => unreachable!(),
     }
