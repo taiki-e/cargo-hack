@@ -468,7 +468,7 @@ scoop install cargo-hack
 <!-- omit in toc -->
 ### Via cargo-binstall
 
-You can install cargo-hack using [cargo-binstall](https://github.com/ryankurte/cargo-binstall):
+You can install cargo-hack using [cargo-binstall](https://github.com/cargo-bins/cargo-binstall):
 
 ```sh
 cargo binstall cargo-hack
