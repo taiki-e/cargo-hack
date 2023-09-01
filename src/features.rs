@@ -1,6 +1,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
-    slice,
+    fmt, slice,
 };
 
 use crate::{manifest::Manifest, metadata::Metadata, PackageId};
@@ -87,7 +87,6 @@ impl Features {
 }
 
 /// The representation of Cargo feature.
-#[derive(Debug)]
 pub(crate) enum Feature {
     /// A feature of the current crate.
     Normal {
@@ -108,6 +107,20 @@ pub(crate) enum Feature {
         /// Index of `/`.
         _slash: usize,
     },
+}
+
+impl fmt::Debug for Feature {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use fmt::Write;
+        match self {
+            Self::Normal { name } | Self::Path { name, .. } => f.write_str(name),
+            Self::Group { name, .. } => {
+                f.write_char('[')?;
+                f.write_str(name)?;
+                f.write_char(']')
+            }
+        }
+    }
 }
 
 impl Feature {
