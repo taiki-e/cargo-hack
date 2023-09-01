@@ -384,8 +384,8 @@ fn exec_on_package(
 
     match kind {
         Kind::Each { features } => {
-            for f in features {
-                exec_cargo_with_features(cx, id, &line, progress, keep_going, Some(f))?;
+            for &f in features {
+                exec_cargo_with_features(cx, id, &line, progress, keep_going, &[f])?;
             }
         }
         Kind::Powerset { features } => {
@@ -415,7 +415,7 @@ fn exec_cargo_with_features(
     line: &ProcessBuilder<'_>,
     progress: &mut Progress,
     keep_going: &mut KeepGoing,
-    features: impl IntoIterator<Item = impl AsRef<str>>,
+    features: &[&Feature],
 ) -> Result<()> {
     let mut line = line.clone();
     line.append_features(features);
