@@ -203,6 +203,10 @@ fn feature_deps(map: &BTreeMap<String, Vec<String>>) -> BTreeMap<&str, BTreeSet<
     ) {
         if let Some(v) = map.get(cur) {
             for x in v {
+                // dep: actions aren't features, and can't enable other features in the same crate
+                if x.starts_with("dep:") {
+                    continue;
+                }
                 if x != root && set.insert(x) {
                     f(map, set, x, root);
                 }
