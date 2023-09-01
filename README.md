@@ -126,6 +126,15 @@ OPTIONS:
 
             This flag can only be used together with --feature-powerset flag.
 
+        --at-least-one-of <FEATURES>...
+            Space or comma separated list of features. Skips sets of features that don't enable any
+            of the features listed.
+
+            To specify multiple groups, use this option multiple times: `--at-least-one-of a,b
+            --at-least-one-of c,d`
+
+            This flag can only be used together with --feature-powerset flag.
+
         --include-features <FEATURES>...
             Include only the specified features in the feature combinations instead of package
             features.
