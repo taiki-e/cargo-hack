@@ -237,7 +237,8 @@ fn determine_kind<'a>(
             Kind::Each { features }
         }
     } else if cx.feature_powerset {
-        let features = features::feature_powerset(features, cx.depth, &package.features);
+        let features =
+            features::feature_powerset(features, cx.depth, &cx.at_least_one_of, &package.features);
 
         if (pkg_features.normal().is_empty() && pkg_features.optional_deps().is_empty()
             || !cx.include_features.is_empty())

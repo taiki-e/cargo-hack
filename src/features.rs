@@ -178,9 +178,12 @@ impl AsRef<str> for Feature {
 pub(crate) fn feature_powerset<'a>(
     features: impl IntoIterator<Item = &'a Feature>,
     depth: Option<usize>,
-    map: &BTreeMap<String, Vec<String>>,
+    at_least_one_of: &[Feature],
+    package_features: &BTreeMap<String, Vec<String>>,
 ) -> Vec<Vec<&'a Feature>> {
-    let deps_map = feature_deps(map);
+    let deps_map = feature_deps(package_features);
+    let at_least_one_of = at_least_one_of_for_package(at_least_one_of, &deps_map);
+
     powerset(features, depth)
         .into_iter()
         .skip(1) // The first element of a powerset is `[]` so it should be skipped.
@@ -189,6 +192,15 @@ pub(crate) fn feature_powerset<'a>(
                 f.as_group().iter().filter_map(|f| deps_map.get(&&**f)).any(|deps| {
                     fs.iter().any(|f| f.as_group().iter().all(|f| deps.contains(&&**f)))
                 })
+            })
+        })
+        .filter(move |fs| {
+            // all() returns true if at_least_one_of is empty
+            at_least_one_of.iter().all(|required_set| {
+                fs
+                    .iter()
+                    .flat_map(|f| f.as_group())
+                    .any(|f| required_set.contains(f.as_str()))
             })
         })
         .collect()
@@ -237,11 +249,44 @@ fn powerset<T: Copy>(iter: impl IntoIterator<Item = T>, depth: Option<usize>) ->
     })
 }
 
+// Leave only features that are possible to enable in the package.
+pub(crate) fn at_least_one_of_for_package<'a>(
+    at_least_one_of: &[Feature],
+    package_features_flattened: &BTreeMap<&'a str, BTreeSet<&'a str>>,
+) -> Vec<BTreeSet<&'a str>> {
+    if at_least_one_of.is_empty() {
+        return vec![];
+    }
+
+    let mut all_features_enabled_by = BTreeMap::new();
+    for (&enabled_by, enables) in package_features_flattened {
+        all_features_enabled_by.entry(enabled_by).or_insert_with(BTreeSet::new).insert(enabled_by);
+        for &enabled_feature in enables {
+            all_features_enabled_by
+                .entry(enabled_feature)
+                .or_insert_with(BTreeSet::new)
+                .insert(enabled_by);
+        }
+    }
+
+    at_least_one_of
+        .iter()
+        .map(|set| {
+            set.as_group()
+                .iter()
+                .filter_map(|f| all_features_enabled_by.get(f.as_str()))
+                .flat_map(|f| f.iter().copied())
+                .collect::<BTreeSet<_>>()
+        })
+        .filter(|set| !set.is_empty())
+        .collect::<Vec<_>>()
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use super::{feature_deps, feature_powerset, powerset, Feature};
+    use super::{at_least_one_of_for_package, feature_deps, feature_powerset, powerset, Feature};
 
     macro_rules! v {
         ($($expr:expr),* $(,)?) => {
@@ -259,6 +304,33 @@ mod tests {
         ($($expr:expr),* $(,)?) => {
             BTreeSet::from_iter(vec![$($expr),*])
         };
+    }
+
+    #[test]
+    fn at_least_one_of_for_package_filter() {
+        let map = map![("a", v![]), ("b", v!["a"]), ("c", v!["b"]), ("d", v!["a", "b"])];
+        let fd = feature_deps(&map);
+        let list: Vec<Feature> = v!["b", "x", "y", "z"];
+        let filtered = at_least_one_of_for_package(&list, &fd);
+        assert_eq!(filtered, vec![set!("b", "c", "d")]);
+    }
+
+    #[test]
+    fn powerset_with_filter() {
+        let map = map![("a", v![]), ("b", v!["a"]), ("c", v!["b"]), ("d", v!["a", "b"])];
+
+        let list = v!["a", "b", "c", "d"];
+        let filtered = feature_powerset(&list, None, &[], &map);
+        assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"], vec!["c", "d"]]);
+
+        let filtered = feature_powerset(&list, None, &["a".into()], &map);
+        assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"], vec!["c", "d"]]);
+
+        let filtered = feature_powerset(&list, None, &["c".into()], &map);
+        assert_eq!(filtered, vec![vec!["c"], vec!["c", "d"]]);
+
+        let filtered = feature_powerset(&list, None, &["a".into(), "c".into()], &map);
+        assert_eq!(filtered, vec![vec!["c"], vec!["c", "d"]]);
     }
 
     #[test]
@@ -291,7 +363,7 @@ mod tests {
             vec!["b", "c", "d"],
             vec!["a", "b", "c", "d"],
         ]);
-        let filtered = feature_powerset(list.iter().collect::<Vec<_>>(), None, &map);
+        let filtered = feature_powerset(list.iter().collect::<Vec<_>>(), None, &[], &map);
         assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"], vec!["c", "d"]]);
     }
 

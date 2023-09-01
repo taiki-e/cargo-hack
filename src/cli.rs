@@ -78,6 +78,9 @@ pub(crate) struct Args {
     pub(crate) depth: Option<usize>,
     /// --group-features <FEATURES>...
     pub(crate) group_features: Vec<Feature>,
+    /// --at-least-one-of <FEATURES>...
+    /// Implies --exclude-no-default-features. Can be specified multiple times.
+    pub(crate) at_least_one_of: Vec<Feature>,
 
     // options that will be propagated to cargo
     /// --features <FEATURES>...
@@ -151,6 +154,7 @@ impl Args {
 
         let mut optional_deps = None;
         let mut include_features = vec![];
+        let mut at_least_one_of = vec![];
         let mut include_deps_features = false;
 
         let mut exclude_features = vec![];
@@ -277,6 +281,7 @@ impl Args {
                 Long("remove-dev-deps") => parse_flag!(remove_dev_deps),
                 Long("each-feature") => parse_flag!(each_feature),
                 Long("feature-powerset") => parse_flag!(feature_powerset),
+                Long("at-least-one-of") => at_least_one_of.push(parser.value()?.parse()?),
                 Long("no-private") => parse_flag!(no_private),
                 Long("ignore-private") => parse_flag!(ignore_private),
                 Long("exclude-no-default-features") => parse_flag!(exclude_no_default_features),
@@ -391,8 +396,16 @@ impl Args {
                 requires("--include-features", &["--each-feature", "--feature-powerset"])?;
             } else if include_deps_features {
                 requires("--include-deps-features", &["--each-feature", "--feature-powerset"])?;
+            } else if !at_least_one_of.is_empty() {
+                requires("--at-least-one-of", &["--feature-powerset"])?;
             }
         }
+
+        if !at_least_one_of.is_empty() {
+            // there will always be a feature set
+            exclude_no_default_features = true;
+        }
+
         if !feature_powerset {
             if depth.is_some() {
                 requires("--depth", &["--feature-powerset"])?;
@@ -410,21 +423,8 @@ impl Args {
         }
 
         let depth = depth.as_deref().map(str::parse::<usize>).transpose()?;
-        let group_features =
-            group_features.iter().try_fold(Vec::with_capacity(group_features.len()), |mut v, g| {
-                let g = if g.contains(',') {
-                    g.split(',')
-                } else if g.contains(' ') {
-                    g.split(' ')
-                } else {
-                    bail!(
-                        "--group-features requires a list of two or more features separated by space \
-                         or comma"
-                    );
-                };
-                v.push(Feature::group(g));
-                Ok(v)
-            })?;
+        let group_features = parse_grouped_features(&group_features, "group-features")?;
+        let at_least_one_of = parse_grouped_features(&at_least_one_of, "at-least-one-of")?;
 
         if let Some(subcommand) = subcommand.as_deref() {
             match subcommand {
@@ -567,6 +567,7 @@ impl Args {
             print_command_list,
             no_manifest_path,
             include_features: include_features.into_iter().map(Into::into).collect(),
+            at_least_one_of,
             include_deps_features,
             version_range,
             version_step,
@@ -584,6 +585,28 @@ impl Args {
             target: target.into_iter().collect(),
         })
     }
+}
+
+fn parse_grouped_features(
+    group_features: &[String],
+    option_name: &str,
+) -> Result<Vec<Feature>, anyhow::Error> {
+    let group_features =
+        group_features.iter().try_fold(Vec::with_capacity(group_features.len()), |mut v, g| {
+            let g = if g.contains(',') {
+                g.split(',')
+            } else if g.contains(' ') {
+                g.split(' ')
+            } else {
+                bail!(
+                    "--{option_name} requires a list of two or more features separated by space \
+                         or comma"
+                );
+            };
+            v.push(Feature::group(g));
+            Ok(v)
+        })?;
+    Ok(group_features)
 }
 
 fn has_z_flag(args: &[String], name: &str) -> bool {
@@ -666,6 +689,11 @@ const HELP: &[HelpText<'_>] = &[
     ("", "--group-features", "<FEATURES>...", "Space or comma separated list of features to group", &[
         "To specify multiple groups, use this option multiple times: `--group-features a,b \
          --group-features c,d`",
+        "This flag can only be used together with --feature-powerset flag.",
+    ]),
+    ("", "--at-least-one-of", "<FEATURES>...", "Space or comma separated list of features. Skips sets of features that don't enable any of the features listed", &[
+        "To specify multiple groups, use this option multiple times: `--at-least-one-of a,b \
+         --at-least-one-of c,d`",
         "This flag can only be used together with --feature-powerset flag.",
     ]),
     (
