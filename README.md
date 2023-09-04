@@ -484,15 +484,13 @@ cargo binstall cargo-hack
 ```
 
 <!-- omit in toc -->
-### Via AUR (Arch Linux)
+### On Arch Linux
 
-You can install [cargo-hack from AUR](https://aur.archlinux.org/packages/cargo-hack):
+You can install cargo-hack from the [extra repository](https://archlinux.org/packages/extra/x86_64/cargo-hack/) with [pacman](https://wiki.archlinux.org/title/Pacman):
 
 ```sh
-paru -S cargo-hack
+pacman -S cargo-hack
 ```
-
-Note: AUR package is maintained by community, not maintainer of cargo-hack.
 
 ## Related Projects
 

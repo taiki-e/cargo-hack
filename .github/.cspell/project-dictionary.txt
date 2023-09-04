@@ -1,6 +1,6 @@
 binstall
 compat
-paru
+pacman
 qpmember
 subcrate
 tempdir
