@@ -1,6 +1,6 @@
 [package]
 name = "cargo-hack"
-version = "0.6.4"
+version = "0.6.5"
 edition = "2021"
 rust-version = "1.65"
 license = "Apache-2.0 OR MIT"

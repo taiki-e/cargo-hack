@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.5] - 2023-09-04
+
 - Add `--at-least-one-of` option. ([#193](https://github.com/taiki-e/cargo-hack/pull/193), thanks @kornelski)
 
 ## [0.6.4] - 2023-08-29
@@ -387,7 +389,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.4...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.5...HEAD
+[0.6.5]: https://github.com/taiki-e/cargo-hack/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/taiki-e/cargo-hack/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/taiki-e/cargo-hack/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/taiki-e/cargo-hack/compare/v0.6.1...v0.6.2
