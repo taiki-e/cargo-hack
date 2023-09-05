@@ -79,7 +79,6 @@ impl Context {
         this.version_range = this
             .args
             .version_range
-            .as_ref()
             .map(|range| rustup::version_range(range, this.args.version_step.as_deref(), &this))
             .transpose()?;
 

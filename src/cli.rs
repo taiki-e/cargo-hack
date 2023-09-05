@@ -11,7 +11,7 @@ use lexopt::{
     ValueExt,
 };
 
-use crate::{term, Feature, Rustup};
+use crate::{term, version::VersionRange, Feature, Rustup};
 
 pub(crate) struct Args {
     pub(crate) leading_args: Vec<String>,
@@ -52,7 +52,7 @@ pub(crate) struct Args {
     /// --print-command-list
     pub(crate) print_command_list: bool,
     /// --version-range
-    pub(crate) version_range: Option<String>,
+    pub(crate) version_range: Option<VersionRange>,
     /// --version-step
     pub(crate) version_step: Option<String>,
 
@@ -520,6 +520,7 @@ impl Args {
                 requires("--clean-per-version", &["--version-range"])?;
             }
         }
+        let version_range = version_range.map(|v| v.parse()).transpose()?;
 
         if no_dev_deps {
             info!(

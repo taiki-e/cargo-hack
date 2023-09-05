@@ -1418,7 +1418,7 @@ fn version_range_failure() {
     // empty
     cargo_hack(["check", "--version-range", "1.45..1.44"])
         .assert_failure("real")
-        .stderr_contains("specified version range `1.45..1.44` is empty");
+        .stderr_contains("specified version range `1.45..=1.44` is empty");
     cargo_hack(["check", "--version-range", "1.45..=1.44"])
         .assert_failure("real")
         .stderr_contains("specified version range `1.45..=1.44` is empty");
