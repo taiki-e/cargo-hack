@@ -413,14 +413,6 @@ impl Args {
                 requires("--group-features", &["--feature-powerset"])?;
             }
         }
-        if version_range.is_none() {
-            if version_step.is_some() {
-                requires("--version-step", &["--version-range"])?;
-            }
-            if clean_per_version {
-                requires("--clean-per-version", &["--version-range"])?;
-            }
-        }
 
         let depth = depth.as_deref().map(str::parse::<usize>).transpose()?;
         let group_features = parse_grouped_features(&group_features, "group-features")?;
@@ -519,6 +511,13 @@ impl Args {
             let rustup = Rustup::new();
             if rustup.version < 23 {
                 bail!("--version-range requires rustup 1.23 or later");
+            }
+        } else {
+            if version_step.is_some() {
+                requires("--version-step", &["--version-range"])?;
+            }
+            if clean_per_version {
+                requires("--clean-per-version", &["--version-range"])?;
             }
         }
 
