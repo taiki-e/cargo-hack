@@ -2,7 +2,11 @@ use std::str;
 
 use anyhow::{bail, format_err, Result};
 
-use crate::{cargo, context::Context, version::Version};
+use crate::{
+    cargo,
+    context::Context,
+    version::{Version, VersionRange},
+};
 
 pub(crate) struct Rustup {
     pub(crate) version: u32,
@@ -37,9 +41,11 @@ pub(crate) fn version_range(
         Ok(())
     };
 
-    let mut split = range.splitn(2, "..");
-    let start = match split.next().unwrap() {
-        "" => {
+    let VersionRange { start_inclusive, end_inclusive } = range.parse()?;
+
+    let start_inclusive = match start_inclusive {
+        Some(start) => start,
+        None => {
             let mut rust_version = None;
             for id in cx.workspace_members() {
                 let v = cx.rust_version(id);
@@ -56,29 +62,17 @@ pub(crate) fn version_range(
                 None => bail!("no rust-version field in Cargo.toml is specified"),
             }
         }
-        s => s.parse()?,
     };
-    check(&start)?;
+    check(&start_inclusive)?;
 
-    let end = match split.next() {
-        Some("") | None => {
-            install_toolchain("stable", &[], false)?;
-            cargo::version(cmd!("cargo", "+stable"))?
-        }
+    let end_inclusive = match end_inclusive {
         Some(end) => {
-            let end = match end.strip_prefix('=') {
-                Some(end) => end,
-                None => {
-                    warn!(
-                        "using `..` for inclusive range is deprecated; consider using `{}`",
-                        range.replace("..", "..=")
-                    );
-                    end
-                }
-            };
-            let end = end.parse()?;
             check(&end)?;
             end
+        }
+        None => {
+            install_toolchain("stable", &[], false)?;
+            cargo::version(cmd!("cargo", "+stable"))?
         }
     };
 
@@ -87,7 +81,7 @@ pub(crate) fn version_range(
         bail!("--version-step cannot be zero");
     }
 
-    let versions: Vec<_> = (start.minor..=end.minor)
+    let versions: Vec<_> = (start_inclusive.minor..=end_inclusive.minor)
         .step_by(step as _)
         .map(|minor| (minor, format!("+1.{minor}")))
         .collect();
