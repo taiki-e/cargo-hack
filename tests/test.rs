@@ -1343,6 +1343,13 @@ fn version_range() {
             running `cargo +1.64 check --target {TARGET}` on real (2/2)
             ",
         ));
+
+    cargo_hack(["check", "--version-range", "..=1.64"])
+        .assert_failure("rust-version")
+        .stderr_contains(
+            "no rust-version field in Cargo.toml is specified
+        ",
+        );
 }
 
 #[cfg_attr(windows, ignore)] // rustup bug: https://github.com/rust-lang/rustup/issues/3036
