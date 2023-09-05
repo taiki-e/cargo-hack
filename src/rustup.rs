@@ -24,7 +24,7 @@ impl Rustup {
 }
 
 pub(crate) fn version_range(
-    range: &str,
+    range: VersionRange,
     step: Option<&str>,
     cx: &Context,
 ) -> Result<Vec<(u32, String)>> {
@@ -41,7 +41,7 @@ pub(crate) fn version_range(
         Ok(())
     };
 
-    let VersionRange { start_inclusive, end_inclusive } = range.parse()?;
+    let VersionRange { start_inclusive, end_inclusive } = range;
 
     let start_inclusive = match start_inclusive {
         Some(start) => start,

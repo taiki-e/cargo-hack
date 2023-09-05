@@ -1,11 +1,24 @@
-use std::str::FromStr;
+use std::{fmt, str::FromStr};
 
 use anyhow::{Context as _, Error, Result};
 
+#[derive(Copy, Clone)]
 pub(crate) struct Version {
     pub(crate) major: u32,
     pub(crate) minor: u32,
     pub(crate) patch: Option<u32>,
+}
+
+impl fmt::Display for Version {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let major = self.major;
+        let minor = self.minor;
+        write!(f, "{major}.{minor}")?;
+        if let Some(patch) = self.patch {
+            write!(f, ".{patch}")?;
+        }
+        Ok(())
+    }
 }
 
 impl FromStr for Version {
@@ -20,9 +33,23 @@ impl FromStr for Version {
     }
 }
 
+#[derive(Copy, Clone)]
 pub(crate) struct VersionRange {
     pub(crate) start_inclusive: Option<Version>,
     pub(crate) end_inclusive: Option<Version>,
+}
+
+impl fmt::Display for VersionRange {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(start) = self.start_inclusive {
+            write!(f, "{start}")?;
+        }
+        write!(f, "..=")?;
+        if let Some(end) = self.end_inclusive {
+            write!(f, "{end}")?;
+        }
+        Ok(())
+    }
 }
 
 impl FromStr for VersionRange {
