@@ -163,6 +163,11 @@ OPTIONS:
 
             This flag can only be used together with either --features or --include-features.
 
+        --rust-version
+            Perform commands on `package.rust-version`.
+
+            This cannot be used with --version-range.
+
         --version-range [START]..[=END]
             Perform commands on a specified (inclusive) range of Rust versions.
 

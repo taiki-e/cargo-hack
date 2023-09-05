@@ -1355,6 +1355,16 @@ fn version_range() {
 
 #[cfg_attr(windows, ignore)] // rustup bug: https://github.com/rust-lang/rustup/issues/3036
 #[test]
+fn rust_version() {
+    cargo_hack(["check", "--rust-version"]).assert_success("rust-version").stderr_contains(
+        "
+            running `cargo +1.64 check` on real (1/1)
+            ",
+    );
+}
+
+#[cfg_attr(windows, ignore)] // rustup bug: https://github.com/rust-lang/rustup/issues/3036
+#[test]
 fn multi_target() {
     let target_suffix = if cfg!(target_os = "linux") && cfg!(target_env = "gnu") {
         "-unknown-linux-gnu"
