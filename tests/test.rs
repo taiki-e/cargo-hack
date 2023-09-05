@@ -1437,6 +1437,12 @@ fn version_range_failure() {
             not the specified patch release `2`
             ",
         );
+
+    // No rust-version
+    cargo_hack(["check", "--version-range", "..=1.64"]).assert_failure("real").stderr_contains(
+        "no rust-version field in Cargo.toml is specified
+        ",
+    );
 }
 
 #[test]
