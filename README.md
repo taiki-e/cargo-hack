@@ -163,11 +163,14 @@ OPTIONS:
 
             This flag can only be used together with either --features or --include-features.
 
-        --version-range <START>..[END]
+        --version-range [START]..[=END]
             Perform commands on a specified (inclusive) range of Rust versions.
 
-            If the given range is unclosed, the latest stable compiler is treated as the upper
-            bound.
+            If the upper bound of the range is omitted, the latest stable compiler is used as the
+            upper bound.
+
+            If the lower bound of the range is omitted, the value of the `rust-version` field in
+            `Cargo.toml` is used as the lower bound.
 
             Note that ranges are always inclusive ranges.
 
@@ -307,7 +310,7 @@ To specify multiple groups, use this option multiple times:
 Perform commands on a specified (inclusive) range of Rust versions.
 
 ```console
-$ cargo hack check --version-range 1.46..1.47
+$ cargo hack check --version-range 1.46..=1.47
 info: running `cargo +1.46 check` on cargo-hack (1/2)
 ...
 info: running `cargo +1.47 check` on cargo-hack (2/2)

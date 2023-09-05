@@ -62,7 +62,7 @@ pub fn cargo_hack<O: AsRef<OsStr>>(args: impl AsRef<[O]>) -> Command {
     cmd.arg("hack");
     if let Some(toolchain) = test_version() {
         if !args.iter().any(|a| a.as_ref().to_str().unwrap().starts_with("--version-range")) {
-            cmd.arg(format!("--version-range=1.{toolchain}..1.{toolchain}"));
+            cmd.arg(format!("--version-range=1.{toolchain}..=1.{toolchain}"));
         }
     }
     cmd.args(args);
