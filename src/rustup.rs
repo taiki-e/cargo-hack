@@ -66,6 +66,16 @@ pub(crate) fn version_range(
             cargo::minor_version(cmd!("cargo", "+stable"))?
         }
         Some(end) => {
+            let end = match end.strip_prefix('=') {
+                Some(end) => end,
+                None => {
+                    warn!(
+                        "using `..` for inclusive range is deprecated; consider using `{}`",
+                        range.replace("..", "..=")
+                    );
+                    end
+                }
+            };
             let end = end.parse()?;
             check(&end)?;
             end.minor

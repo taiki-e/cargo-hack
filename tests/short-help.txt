@@ -34,7 +34,7 @@ OPTIONS:
         --ignore-private                 Skip to perform on `publish = false` packages
         --ignore-unknown-features        Skip passing --features flag to `cargo` if that feature
                                          does not exist in the package
-        --version-range <START>..[END]   Perform commands on a specified (inclusive) range of Rust
+        --version-range [START]..[=END]  Perform commands on a specified (inclusive) range of Rust
                                          versions
         --version-step <NUM>             Specify the version interval of --version-range (default
                                          to `1`)

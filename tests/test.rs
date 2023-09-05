@@ -1318,14 +1318,24 @@ fn default_feature_behavior() {
 #[cfg_attr(windows, ignore)] // rustup bug: https://github.com/rust-lang/rustup/issues/3036
 #[test]
 fn version_range() {
-    cargo_hack(["check", "--version-range", "1.63..1.64"]).assert_success("real").stderr_contains(
+    cargo_hack(["check", "--version-range", "1.63..=1.64"]).assert_success("real").stderr_contains(
         "
         running `cargo +1.63 check` on real (1/2)
         running `cargo +1.64 check` on real (2/2)
         ",
     );
 
-    cargo_hack(["check", "--version-range", "1.63..1.64", "--target", TARGET])
+    cargo_hack(["check", "--version-range", "1.63..1.64"])
+        .assert_failure("real") // warn
+        .stderr_contains(
+            "
+            warning: using `..` for inclusive range is deprecated; consider using `1.63..=1.64`
+            running `cargo +1.63 check` on real (1/2)
+            running `cargo +1.64 check` on real (2/2)
+            ",
+        );
+
+    cargo_hack(["check", "--version-range", "1.63..=1.64", "--target", TARGET])
         .assert_success("real")
         .stderr_contains(format!(
             "
@@ -1349,7 +1359,7 @@ fn multi_target() {
     cargo_hack([
         "check",
         "--version-range",
-        "1.63..1.64",
+        "1.63..=1.64",
         "--target",
         &format!("aarch64{target_suffix}"),
     ])
@@ -1364,7 +1374,7 @@ fn multi_target() {
     cargo_hack([
         "check",
         "--version-range",
-        "1.63..1.64",
+        "1.63..=1.64",
         "--target",
         &format!("x86_64{target_suffix}"),
         "--target",
@@ -1382,7 +1392,7 @@ fn multi_target() {
     cargo_hack([
         "check",
         "--version-range",
-        "1.63..1.64",
+        "1.63..=1.64",
         "--target",
         &format!("x86_64{target_suffix}"),
         "--target",
@@ -1409,6 +1419,9 @@ fn version_range_failure() {
     cargo_hack(["check", "--version-range", "1.45..1.44"])
         .assert_failure("real")
         .stderr_contains("specified version range `1.45..1.44` is empty");
+    cargo_hack(["check", "--version-range", "1.45..=1.44"])
+        .assert_failure("real")
+        .stderr_contains("specified version range `1.45..=1.44` is empty");
 
     // v0
     cargo_hack(["check", "--version-range", "0.45.."])
