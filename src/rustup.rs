@@ -63,7 +63,7 @@ pub(crate) fn version_range(
     let end = match split.next() {
         Some("") | None => {
             install_toolchain("stable", &[], false)?;
-            cargo::minor_version(cmd!("cargo", "+stable"))?
+            cargo::version(cmd!("cargo", "+stable"))?
         }
         Some(end) => {
             let end = match end.strip_prefix('=') {
@@ -78,7 +78,7 @@ pub(crate) fn version_range(
             };
             let end = end.parse()?;
             check(&end)?;
-            end.minor
+            end
         }
     };
 
@@ -87,7 +87,7 @@ pub(crate) fn version_range(
         bail!("--version-step cannot be zero");
     }
 
-    let versions: Vec<_> = (start.minor..=end)
+    let versions: Vec<_> = (start.minor..=end.minor)
         .step_by(step as _)
         .map(|minor| (minor, format!("+1.{minor}")))
         .collect();
