@@ -1345,10 +1345,11 @@ fn version_range() {
         ));
 
     cargo_hack(["check", "--version-range", "..=1.64"])
-        .assert_failure("rust-version")
+        .assert_success("rust-version")
         .stderr_contains(
-            "no rust-version field in Cargo.toml is specified
-        ",
+            "
+            running `cargo +1.64 check` on real (1/1)
+            ",
         );
 }
 
