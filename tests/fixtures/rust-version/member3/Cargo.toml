@@ -1,0 +1,15 @@
+[package]
+name = "member3"
+version = "0.0.0"
+publish = true
+
+[features]
+default = ["a"]
+a = []
+b = []
+c = []
+
+[dependencies]
+member2 = { path = "../member2" }
+
+[dev-dependencies]

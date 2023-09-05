@@ -1,0 +1,23 @@
+[package]
+name = "real"
+version = "0.0.0"
+publish = false
+
+[workspace]
+members = [
+    "member1",
+    "member2",
+    "member3",
+    ".",
+]
+
+[features]
+default = []
+a = []
+b = []
+c = []
+
+[dependencies]
+member1 = { path = "member1", optional = true }
+
+[dev-dependencies]
