@@ -148,7 +148,6 @@ struct Progress {
 }
 
 enum Kind<'a> {
-    SkipAsPrivate,
     Normal,
     Each { features: Vec<&'a Feature> },
     Powerset { features: Vec<Vec<&'a Feature>> },
@@ -159,15 +158,15 @@ fn determine_kind<'a>(
     id: &PackageId,
     progress: &mut Progress,
     multiple_packages: bool,
-) -> Kind<'a> {
+) -> Option<Kind<'a>> {
     assert!(cx.subcommand.is_some());
     if cx.ignore_private && cx.is_private(id) {
         info!("skipped running on private package `{}`", cx.name_verbose(id));
-        return Kind::SkipAsPrivate;
+        return None;
     }
     if !cx.each_feature && !cx.feature_powerset {
         progress.total += 1;
-        return Kind::Normal;
+        return Some(Kind::Normal);
     }
 
     let package = cx.packages(id);
@@ -227,14 +226,14 @@ fn determine_kind<'a>(
             && features.is_empty()
         {
             progress.total += 1;
-            Kind::Normal
+            Some(Kind::Normal)
         } else {
             progress.total += features.len()
                 + !cx.exclude_no_default_features as usize
                 + (!cx.exclude_all_features
                     && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1)
                     as usize;
-            Kind::Each { features }
+            Some(Kind::Each { features })
         }
     } else if cx.feature_powerset {
         let features =
@@ -245,14 +244,14 @@ fn determine_kind<'a>(
             && features.is_empty()
         {
             progress.total += 1;
-            Kind::Normal
+            Some(Kind::Normal)
         } else {
             progress.total += features.len()
                 + !cx.exclude_no_default_features as usize
                 + (!cx.exclude_all_features
                     && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1)
                     as usize;
-            Kind::Powerset { features }
+            Some(Kind::Powerset { features })
         }
     } else {
         unreachable!()
@@ -276,7 +275,9 @@ fn determine_package_list<'a>(
         let multiple_packages = cx.workspace_members().len().saturating_sub(cx.exclude.len()) > 1;
         cx.workspace_members()
             .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
-            .map(|id| (id, determine_kind(cx, id, progress, multiple_packages)))
+            .filter_map(|id| {
+                determine_kind(cx, id, progress, multiple_packages).map(|kind| (id, kind))
+            })
             .collect()
     } else if !cx.package.is_empty() {
         if let Some(spec) = cx
@@ -290,19 +291,25 @@ fn determine_package_list<'a>(
         let multiple_packages = cx.package.len() > 1;
         cx.workspace_members()
             .filter(|id| cx.package.contains(&cx.packages(id).name))
-            .map(|id| (id, determine_kind(cx, id, progress, multiple_packages)))
+            .filter_map(|id| {
+                determine_kind(cx, id, progress, multiple_packages).map(|kind| (id, kind))
+            })
             .collect()
     } else if cx.current_package().is_none() {
         let multiple_packages = cx.workspace_members().len() > 1;
         cx.workspace_members()
-            .map(|id| (id, determine_kind(cx, id, progress, multiple_packages)))
+            .filter_map(|id| {
+                determine_kind(cx, id, progress, multiple_packages).map(|kind| (id, kind))
+            })
             .collect()
     } else {
         let current_package = &cx.packages(cx.current_package().unwrap()).name;
         let multiple_packages = false;
         cx.workspace_members()
             .find(|id| cx.packages(id).name == *current_package)
-            .map(|id| vec![(id, determine_kind(cx, id, progress, multiple_packages))])
+            .and_then(|id| {
+                determine_kind(cx, id, progress, multiple_packages).map(|kind| vec![(id, kind)])
+            })
             .unwrap_or_default()
     })
 }
@@ -344,10 +351,6 @@ fn exec_on_package(
     progress: &mut Progress,
     keep_going: &mut KeepGoing,
 ) -> Result<()> {
-    if let Kind::SkipAsPrivate = kind {
-        return Ok(());
-    }
-
     let package = cx.packages(id);
 
     let mut line = line.clone();
@@ -366,7 +369,6 @@ fn exec_on_package(
             return exec_cargo(cx, id, &mut line, progress, keep_going);
         }
         Kind::Each { .. } | Kind::Powerset { .. } => {}
-        Kind::SkipAsPrivate => unreachable!(),
     }
 
     if !cx.no_default_features {
@@ -394,7 +396,7 @@ fn exec_on_package(
                 exec_cargo_with_features(cx, id, &line, progress, keep_going, f)?;
             }
         }
-        _ => unreachable!(),
+        Kind::Normal => unreachable!(),
     }
 
     let pkg_features = cx.pkg_features(id);
