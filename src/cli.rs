@@ -149,6 +149,7 @@ impl Args {
         let mut keep_going = false;
         let mut print_command_list = false;
         let mut no_manifest_path = false;
+        let mut rust_version = false;
         let mut version_range = None;
         let mut version_step = None;
 
@@ -236,6 +237,7 @@ impl Args {
 
                 Long("manifest-path") => parse_opt!(manifest_path, false),
                 Long("depth") => parse_opt!(depth, false),
+                Long("rust-version") => parse_flag!(rust_version),
                 Long("version-range") => parse_opt!(version_range, false),
                 Long("version-step") => parse_opt!(version_step, false),
 
@@ -507,11 +509,28 @@ impl Args {
             }
         }
 
-        if version_range.is_some() {
-            let rustup = Rustup::new();
-            if rustup.version < 23 {
-                bail!("--version-range requires rustup 1.23 or later");
+        let version_range = match (version_range, rust_version) {
+            (Some(_), true) => {
+                conflicts("--version-range", "--rust-version")?;
+                unreachable!()
             }
+            (Some(version_range), false) => {
+                let rustup = Rustup::new();
+                if rustup.version < 23 {
+                    bail!("--version-range requires rustup 1.23 or later");
+                }
+                Some(version_range.parse()?)
+            }
+            (None, true) => {
+                let rustup = Rustup::new();
+                if rustup.version < 23 {
+                    bail!("--rust-version requires rustup 1.23 or later");
+                }
+                Some(VersionRange::msrv())
+            }
+            (None, false) => None,
+        };
+        if version_range.is_some() {
         } else {
             if version_step.is_some() {
                 requires("--version-step", &["--version-range"])?;
@@ -520,7 +539,6 @@ impl Args {
                 requires("--clean-per-version", &["--version-range"])?;
             }
         }
-        let version_range = version_range.map(|v| v.parse()).transpose()?;
 
         if no_dev_deps {
             info!(
@@ -727,6 +745,15 @@ const HELP: &[HelpText<'_>] = &[
         "",
         "Skip passing --features flag to `cargo` if that feature does not exist in the package",
         &["This flag can only be used together with either --features or --include-features."],
+    ),
+    (
+        "",
+        "--rust-version",
+        "",
+        "Perform commands on `package.rust-version`",
+        &[
+            "This cannot be used with --version-range.",
+        ],
     ),
     (
         "",

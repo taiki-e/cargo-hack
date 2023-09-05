@@ -61,7 +61,10 @@ pub fn cargo_hack<O: AsRef<OsStr>>(args: impl AsRef<[O]>) -> Command {
     let mut cmd = cargo_bin_exe();
     cmd.arg("hack");
     if let Some(toolchain) = test_version() {
-        if !args.iter().any(|a| a.as_ref().to_str().unwrap().starts_with("--version-range")) {
+        if !args.iter().any(|a| {
+            let s = a.as_ref().to_str().unwrap();
+            s.starts_with("--version-range") || s.starts_with("--rust-version")
+        }) {
             cmd.arg(format!("--version-range=1.{toolchain}..=1.{toolchain}"));
         }
     }

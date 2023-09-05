@@ -46,6 +46,12 @@ pub(crate) struct VersionRange {
     pub(crate) end_inclusive: MaybeVersion,
 }
 
+impl VersionRange {
+    pub(crate) fn msrv() -> Self {
+        Self { start_inclusive: MaybeVersion::Msrv, end_inclusive: MaybeVersion::Msrv }
+    }
+}
+
 impl fmt::Display for VersionRange {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let MaybeVersion::Version(start) = self.start_inclusive {
