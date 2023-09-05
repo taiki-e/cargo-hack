@@ -34,18 +34,25 @@ impl FromStr for Version {
 }
 
 #[derive(Copy, Clone)]
+pub(crate) enum MaybeVersion {
+    Version(Version),
+    Msrv,
+    Stable,
+}
+
+#[derive(Copy, Clone)]
 pub(crate) struct VersionRange {
-    pub(crate) start_inclusive: Option<Version>,
-    pub(crate) end_inclusive: Option<Version>,
+    pub(crate) start_inclusive: MaybeVersion,
+    pub(crate) end_inclusive: MaybeVersion,
 }
 
 impl fmt::Display for VersionRange {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(start) = self.start_inclusive {
+        if let MaybeVersion::Version(start) = self.start_inclusive {
             write!(f, "{start}")?;
         }
         write!(f, "..=")?;
-        if let Some(end) = self.end_inclusive {
+        if let MaybeVersion::Version(end) = self.end_inclusive {
             write!(f, "{end}")?;
         }
         Ok(())
@@ -56,7 +63,7 @@ impl FromStr for VersionRange {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (start, end_inclusive) = if let Some((start, end)) = s.split_once("..") {
+        let (start, end) = if let Some((start, end)) = s.split_once("..") {
             let end = match end.strip_prefix('=') {
                 Some(end) => end,
                 None => {
@@ -71,15 +78,16 @@ impl FromStr for VersionRange {
         } else {
             (s, None)
         };
-        let start_inclusive = maybe_version(start)?;
+        let start_inclusive = maybe_version(start)?.unwrap_or(MaybeVersion::Msrv);
+        let end_inclusive = end.unwrap_or(MaybeVersion::Stable);
         Ok(Self { start_inclusive, end_inclusive })
     }
 }
 
-fn maybe_version(s: &str) -> Result<Option<Version>, Error> {
+fn maybe_version(s: &str) -> Result<Option<MaybeVersion>, Error> {
     if s.is_empty() {
         Ok(None)
     } else {
-        s.parse().map(Some)
+        s.parse().map(MaybeVersion::Version).map(Some)
     }
 }

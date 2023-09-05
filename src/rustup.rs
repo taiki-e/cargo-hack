@@ -5,7 +5,7 @@ use anyhow::{bail, format_err, Result};
 use crate::{
     cargo,
     context::Context,
-    version::{Version, VersionRange},
+    version::{MaybeVersion, Version, VersionRange},
 };
 
 pub(crate) struct Rustup {
@@ -41,39 +41,65 @@ pub(crate) fn version_range(
         Ok(())
     };
 
-    let VersionRange { start_inclusive, end_inclusive } = range;
+    let mut stable_version = None;
+    let mut get_stable_version = || -> Result<Version> {
+        if let Some(stable_version) = stable_version {
+            Ok(stable_version)
+        } else {
+            install_toolchain("stable", &[], false)?;
+            let version = cargo::version(cmd!("cargo", "+stable"))?;
+            stable_version = Some(version);
+            Ok(version)
+        }
+    };
 
-    let start_inclusive = match start_inclusive {
-        Some(start) => start,
-        None => {
-            let mut rust_version = None;
+    let mut rust_version = None;
+    let mut get_rust_version = || -> Result<Version> {
+        if let Some(rust_version) = rust_version {
+            Ok(rust_version)
+        } else {
+            let mut version = None;
             for id in cx.workspace_members() {
                 let v = cx.rust_version(id);
-                if v.is_none() || v == rust_version {
+                if v.is_none() || v == version {
                     // no-op
-                } else if rust_version.is_none() {
-                    rust_version = v;
+                } else if version.is_none() {
+                    version = v;
                 } else {
                     bail!("automatic detection of the lower bound of the version range is not yet supported when the minimum supported Rust version of the crates in the workspace do not match")
                 }
             }
-            match rust_version {
+            let version = match version {
                 Some(v) => v.parse()?,
                 None => bail!("no rust-version field in Cargo.toml is specified"),
-            }
+            };
+            rust_version = Some(version);
+            Ok(version)
         }
     };
-    check(&start_inclusive)?;
+
+    let VersionRange { start_inclusive, end_inclusive } = range;
+
+    let start_inclusive = match start_inclusive {
+        MaybeVersion::Version(start) => {
+            check(&start)?;
+            start
+        }
+        MaybeVersion::Msrv => {
+            let start = get_rust_version()?;
+            check(&start)?;
+            start
+        }
+        MaybeVersion::Stable => get_stable_version()?,
+    };
 
     let end_inclusive = match end_inclusive {
-        Some(end) => {
+        MaybeVersion::Version(end) => {
             check(&end)?;
             end
         }
-        None => {
-            install_toolchain("stable", &[], false)?;
-            cargo::version(cmd!("cargo", "+stable"))?
-        }
+        MaybeVersion::Msrv => get_rust_version()?,
+        MaybeVersion::Stable => get_stable_version()?,
     };
 
     let step = step.map(str::parse::<u8>).transpose()?.unwrap_or(1);
