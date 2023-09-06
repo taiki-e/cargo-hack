@@ -153,10 +153,10 @@ enum Kind<'a> {
 
 fn determine_kind<'a>(
     cx: &'a Context,
-    id: &PackageId,
+    id: &'a PackageId,
     progress: &mut Progress,
     multiple_packages: bool,
-) -> Option<Kind<'a>> {
+) -> Option<PackageRuns<'a>> {
     assert!(cx.subcommand.is_some());
     if cx.ignore_private && cx.is_private(id) {
         info!("skipped running on private package `{}`", cx.name_verbose(id));
@@ -164,7 +164,8 @@ fn determine_kind<'a>(
     }
     if !cx.each_feature && !cx.feature_powerset {
         progress.total += 1;
-        return Some(Kind::Normal);
+        let kind = Kind::Normal;
+        return Some(PackageRuns { id, kind });
     }
 
     let package = cx.packages(id);
@@ -224,14 +225,16 @@ fn determine_kind<'a>(
             && features.is_empty()
         {
             progress.total += 1;
-            Some(Kind::Normal)
+            let kind = Kind::Normal;
+            Some(PackageRuns { id, kind })
         } else {
             progress.total += features.len()
                 + !cx.exclude_no_default_features as usize
                 + (!cx.exclude_all_features
                     && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1)
                     as usize;
-            Some(Kind::Each { features })
+            let kind = Kind::Each { features };
+            Some(PackageRuns { id, kind })
         }
     } else if cx.feature_powerset {
         let features =
@@ -242,14 +245,16 @@ fn determine_kind<'a>(
             && features.is_empty()
         {
             progress.total += 1;
-            Some(Kind::Normal)
+            let kind = Kind::Normal;
+            Some(PackageRuns { id, kind })
         } else {
             progress.total += features.len()
                 + !cx.exclude_no_default_features as usize
                 + (!cx.exclude_all_features
                     && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1)
                     as usize;
-            Some(Kind::Powerset { features })
+            let kind = Kind::Powerset { features };
+            Some(PackageRuns { id, kind })
         }
     } else {
         unreachable!()
@@ -278,10 +283,7 @@ fn determine_package_list<'a>(
         let multiple_packages = cx.workspace_members().len().saturating_sub(cx.exclude.len()) > 1;
         cx.workspace_members()
             .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
-            .filter_map(|id| {
-                determine_kind(cx, id, progress, multiple_packages)
-                    .map(|kind| PackageRuns { id, kind })
-            })
+            .filter_map(|id| determine_kind(cx, id, progress, multiple_packages))
             .collect()
     } else if !cx.package.is_empty() {
         if let Some(spec) = cx
@@ -295,28 +297,19 @@ fn determine_package_list<'a>(
         let multiple_packages = cx.package.len() > 1;
         cx.workspace_members()
             .filter(|id| cx.package.contains(&cx.packages(id).name))
-            .filter_map(|id| {
-                determine_kind(cx, id, progress, multiple_packages)
-                    .map(|kind| PackageRuns { id, kind })
-            })
+            .filter_map(|id| determine_kind(cx, id, progress, multiple_packages))
             .collect()
     } else if cx.current_package().is_none() {
         let multiple_packages = cx.workspace_members().len() > 1;
         cx.workspace_members()
-            .filter_map(|id| {
-                determine_kind(cx, id, progress, multiple_packages)
-                    .map(|kind| PackageRuns { id, kind })
-            })
+            .filter_map(|id| determine_kind(cx, id, progress, multiple_packages))
             .collect()
     } else {
         let current_package = &cx.packages(cx.current_package().unwrap()).name;
         let multiple_packages = false;
         cx.workspace_members()
             .find(|id| cx.packages(id).name == *current_package)
-            .and_then(|id| {
-                determine_kind(cx, id, progress, multiple_packages)
-                    .map(|kind| vec![PackageRuns { id, kind }])
-            })
+            .and_then(|id| determine_kind(cx, id, progress, multiple_packages).map(|p| vec![p]))
             .unwrap_or_default()
     })
 }
