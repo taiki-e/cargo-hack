@@ -1446,6 +1446,14 @@ fn version_range_failure() {
         .assert_failure("real")
         .stderr_contains("major version must be 1");
 
+    // inclusive range without end expression
+    cargo_hack(["check", "--version-range", "..="]).assert_failure("real").stderr_contains(
+        "inclusive range `..=` must have end expression; consider using `..` or `..=<end>`",
+    );
+    cargo_hack(["check", "--version-range", "1.45..="]).assert_failure("real").stderr_contains(
+        "inclusive range `1.45..=` must have end expression; consider using `1.45..` or `1.45..=<end>`",
+    );
+
     // patch version
     cargo_hack(["check", "--version-range", "1.45.2.."])
         .assert_failure("real") // warn
