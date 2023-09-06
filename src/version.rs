@@ -1,6 +1,6 @@
 use std::{fmt, str::FromStr};
 
-use anyhow::{Context as _, Error, Result};
+use anyhow::{bail, Context as _, Error, Result};
 
 #[derive(Copy, Clone)]
 pub(crate) struct Version {
@@ -57,9 +57,9 @@ impl fmt::Display for VersionRange {
         if let MaybeVersion::Version(start) = self.start_inclusive {
             write!(f, "{start}")?;
         }
-        write!(f, "..=")?;
+        write!(f, "..")?;
         if let MaybeVersion::Version(end) = self.end_inclusive {
-            write!(f, "{end}")?;
+            write!(f, "={end}")?;
         }
         Ok(())
     }
@@ -71,12 +71,24 @@ impl FromStr for VersionRange {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (start, end) = if let Some((start, end)) = s.split_once("..") {
             let end = match end.strip_prefix('=') {
-                Some(end) => end,
+                Some(end) => {
+                    if end.is_empty() {
+                        // Reject inclusive range without end expression (`..=` and `<start>..=`). (same behavior as Rust's inclusive range)
+                        bail!(
+                            "inclusive range `{s}` must have end expression; consider using `{}` or `{s}<end>`",
+                            s.replace("..=", "..")
+                        )
+                    }
+                    end
+                }
                 None => {
-                    warn!(
-                        "using `..` for inclusive range is deprecated; consider using `{}`",
-                        s.replace("..", "..=")
-                    );
+                    // `..` and `<start>..` are okay, so only warn `<start>..<end>`.
+                    if !end.is_empty() {
+                        warn!(
+                            "using `..` for inclusive range is deprecated; consider using `{}`",
+                            s.replace("..", "..=")
+                        );
+                    }
                     end
                 }
             };
