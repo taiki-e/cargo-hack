@@ -69,12 +69,15 @@ fn try_main() -> Result<()> {
         if let Some(range) = cx.version_range {
             if range == VersionRange::msrv() {
                 let mut versions = BTreeMap::new();
-                for (id, kind) in packages {
-                    let v =
-                        cx.rust_version(id).map(str::parse::<Version>).transpose()?.ok_or_else(
-                            || format_err!("no rust-version field in Cargo.toml is specified"),
-                        )?;
-                    versions.entry(v.strip_patch()).or_insert_with(Vec::new).push((id, kind));
+                for pkg in packages {
+                    let v = cx
+                        .rust_version(pkg.id)
+                        .map(str::parse::<Version>)
+                        .transpose()?
+                        .ok_or_else(|| {
+                            format_err!("no rust-version field in Cargo.toml is specified")
+                        })?;
+                    versions.entry(v.strip_patch()).or_insert_with(Vec::new).push(pkg);
                 }
 
                 // First, generate the lockfile using the oldest cargo specified.
@@ -253,10 +256,15 @@ fn determine_kind<'a>(
     }
 }
 
+struct PackageRuns<'a> {
+    id: &'a PackageId,
+    kind: Kind<'a>,
+}
+
 fn determine_package_list<'a>(
     cx: &'a Context,
     progress: &mut Progress,
-) -> Result<Vec<(&'a PackageId, Kind<'a>)>> {
+) -> Result<Vec<PackageRuns<'a>>> {
     Ok(if cx.workspace {
         for spec in &cx.exclude {
             if !cx.workspace_members().any(|id| cx.packages(id).name == *spec) {
@@ -271,7 +279,8 @@ fn determine_package_list<'a>(
         cx.workspace_members()
             .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
             .filter_map(|id| {
-                determine_kind(cx, id, progress, multiple_packages).map(|kind| (id, kind))
+                determine_kind(cx, id, progress, multiple_packages)
+                    .map(|kind| PackageRuns { id, kind })
             })
             .collect()
     } else if !cx.package.is_empty() {
@@ -287,14 +296,16 @@ fn determine_package_list<'a>(
         cx.workspace_members()
             .filter(|id| cx.package.contains(&cx.packages(id).name))
             .filter_map(|id| {
-                determine_kind(cx, id, progress, multiple_packages).map(|kind| (id, kind))
+                determine_kind(cx, id, progress, multiple_packages)
+                    .map(|kind| PackageRuns { id, kind })
             })
             .collect()
     } else if cx.current_package().is_none() {
         let multiple_packages = cx.workspace_members().len() > 1;
         cx.workspace_members()
             .filter_map(|id| {
-                determine_kind(cx, id, progress, multiple_packages).map(|kind| (id, kind))
+                determine_kind(cx, id, progress, multiple_packages)
+                    .map(|kind| PackageRuns { id, kind })
             })
             .collect()
     } else {
@@ -303,7 +314,8 @@ fn determine_package_list<'a>(
         cx.workspace_members()
             .find(|id| cx.packages(id).name == *current_package)
             .and_then(|id| {
-                determine_kind(cx, id, progress, multiple_packages).map(|kind| vec![(id, kind)])
+                determine_kind(cx, id, progress, multiple_packages)
+                    .map(|kind| vec![PackageRuns { id, kind }])
             })
             .unwrap_or_default()
     })
@@ -311,7 +323,7 @@ fn determine_package_list<'a>(
 
 fn versioned_cargo_exec_on_packages(
     cx: &Context,
-    packages: &[(&PackageId, Kind<'_>)],
+    packages: &[PackageRuns<'_>],
     cargo_version: u32,
     progress: &mut Progress,
     keep_going: &mut KeepGoing,
@@ -362,7 +374,7 @@ fn versioned_cargo_exec_on_packages(
 
 fn default_cargo_exec_on_packages(
     cx: &Context,
-    packages: &[(&PackageId, Kind<'_>)],
+    packages: &[PackageRuns<'_>],
     progress: &mut Progress,
     keep_going: &mut KeepGoing,
 ) -> Result<()> {
@@ -373,7 +385,7 @@ fn default_cargo_exec_on_packages(
 
 fn exec_on_packages(
     cx: &Context,
-    packages: &[(&PackageId, Kind<'_>)],
+    packages: &[PackageRuns<'_>],
     mut line: ProcessBuilder<'_>,
     progress: &mut Progress,
     keep_going: &mut KeepGoing,
@@ -387,14 +399,14 @@ fn exec_on_packages(
         }
         packages
             .iter()
-            .try_for_each(|(id, kind)| exec_on_package(cx, id, kind, &line, progress, keep_going))
+            .try_for_each(|pkg| exec_on_package(cx, pkg.id, &pkg.kind, &line, progress, keep_going))
     } else {
         cx.target.iter().try_for_each(|target| {
             let mut line = line.clone();
             line.arg("--target");
             line.arg(target);
-            packages.iter().try_for_each(|(id, kind)| {
-                exec_on_package(cx, id, kind, &line, progress, keep_going)
+            packages.iter().try_for_each(|pkg| {
+                exec_on_package(cx, pkg.id, &pkg.kind, &line, progress, keep_going)
             })
         })
     }
