@@ -15,7 +15,7 @@ use crate::{
     features::Features,
     manifest::Manifest,
     metadata::{Metadata, Package, PackageId},
-    restore, rustup, term, ProcessBuilder,
+    restore, term, ProcessBuilder,
 };
 
 pub(crate) struct Context {
@@ -27,7 +27,6 @@ pub(crate) struct Context {
     pub(crate) cargo_version: u32,
     pub(crate) restore: restore::Manager,
     pub(crate) current_dir: PathBuf,
-    pub(crate) version_range: Option<Vec<u32>>,
     pub(crate) use_github_action_grouping: bool,
 }
 
@@ -65,7 +64,7 @@ impl Context {
             pkg_features.insert(id.clone(), features);
         }
 
-        let mut this = Self {
+        let this = Self {
             args,
             metadata,
             manifests,
@@ -74,13 +73,9 @@ impl Context {
             cargo_version,
             restore,
             current_dir: env::current_dir()?,
-            version_range: None,
             // TODO: should be optional?
             use_github_action_grouping: env::var_os("GITHUB_ACTIONS").is_some(),
         };
-
-        this.version_range =
-            this.args.version_range.map(|range| rustup::version_range(range, &this)).transpose()?;
 
         // TODO: Ideally, we should do this, but for now, we allow it as cargo-hack
         // may mistakenly interpret the specified valid feature flag as unknown.
