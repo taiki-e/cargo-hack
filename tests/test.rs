@@ -1344,21 +1344,23 @@ fn version_range() {
         ));
 
     cargo_hack(["check", "--version-range", "..=1.64"])
-        .assert_success("rust-version")
+        .assert_failure("rust-version")
         .stderr_contains(
             "
-            running `rustup run 1.64 cargo check` on real (1/1)
+            automatic detection of the lower bound of the version range is not yet supported when the minimum supported Rust version of the crates in the workspace do not match
             ",
         );
 }
 
 #[test]
 fn rust_version() {
-    cargo_hack(["check", "--rust-version"]).assert_success("rust-version").stderr_contains(
-        "
-        running `rustup run 1.64 cargo check` on real (1/1)
-        ",
-    );
+    cargo_hack(["check", "--rust-version"])
+        .assert_failure("rust-version")
+        .stderr_contains(
+            "
+            automatic detection of the lower bound of the version range is not yet supported when the minimum supported Rust version of the crates in the workspace do not match
+            ",
+        );
 }
 
 #[test]
