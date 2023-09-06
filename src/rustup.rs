@@ -5,9 +5,8 @@ use anyhow::{bail, format_err, Result};
 use crate::{
     cargo,
     context::Context,
-    metadata::PackageId,
     version::{MaybeVersion, Version, VersionRange},
-    Kind,
+    PackageRuns,
 };
 
 pub(crate) struct Rustup {
@@ -28,7 +27,7 @@ impl Rustup {
 pub(crate) fn version_range(
     range: VersionRange,
     step: u16,
-    packages: &[(&PackageId, Kind<'_>)],
+    packages: &[PackageRuns<'_>],
     cx: &Context,
 ) -> Result<Vec<u32>> {
     let check = |version: &Version| {
@@ -62,8 +61,8 @@ pub(crate) fn version_range(
             Ok(rust_version)
         } else {
             let mut version = None;
-            for (id, _) in packages {
-                let v = cx.rust_version(id);
+            for pkg in packages {
+                let v = cx.rust_version(pkg.id);
                 if v.is_none() || v == version {
                     // no-op
                 } else if version.is_none() {
