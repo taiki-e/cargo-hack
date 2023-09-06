@@ -22,6 +22,7 @@ pub fn cargo_bin_exe() -> Command {
     cmd.env("CARGO_HACK_DENY_WARNINGS", "true");
     cmd.env_remove("RUSTFLAGS");
     cmd.env_remove("CARGO_TERM_COLOR");
+    cmd.env_remove("GITHUB_ACTIONS");
     cmd
 }
 

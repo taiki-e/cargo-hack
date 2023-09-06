@@ -28,6 +28,7 @@ pub(crate) struct Context {
     pub(crate) restore: restore::Manager,
     pub(crate) current_dir: PathBuf,
     pub(crate) version_range: Option<Vec<(u32, String)>>,
+    pub(crate) use_github_action_grouping: bool,
 }
 
 impl Context {
@@ -74,6 +75,8 @@ impl Context {
             restore,
             current_dir: env::current_dir()?,
             version_range: None,
+            // TODO: should be optional?
+            use_github_action_grouping: env::var_os("GITHUB_ACTIONS").is_some(),
         };
 
         this.version_range = this

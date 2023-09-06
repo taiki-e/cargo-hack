@@ -1,5 +1,6 @@
 binstall
 compat
+endgroup
 pacman
 qpmember
 subcrate
