@@ -476,7 +476,7 @@ fn exec_cargo_inner(
     line: &mut ProcessBuilder<'_>,
     progress: &mut Progress,
 ) -> Result<()> {
-    if progress.count != 0 && !cx.print_command_list {
+    if progress.count != 0 && !cx.print_command_list && !cx.use_github_action_grouping {
         eprintln!();
     }
     progress.count += 1;
@@ -498,7 +498,19 @@ fn exec_cargo_inner(
         write!(msg, "running {line} on {}", cx.packages(id).name).unwrap();
     }
     write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
-    info!("{msg}");
+    let _guard = if cx.use_github_action_grouping {
+        struct Guard;
+        impl Drop for Guard {
+            fn drop(&mut self) {
+                println!("::endgroup::");
+            }
+        }
+        println!("::group::{msg}");
+        Some(Guard)
+    } else {
+        info!("{msg}");
+        None
+    };
 
     line.run()
 }

@@ -62,11 +62,17 @@ jobs:
       - name: Install Rust
         run: rustup toolchain add ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
       - run: rustup toolchain add nightly --no-self-update
-      - uses: taiki-e/install-action@cargo-hack
-      - uses: taiki-e/install-action@cargo-minimal-versions
       - run: echo "RUSTFLAGS=${RUSTFLAGS} -C target-feature=+crt-static" >>"${GITHUB_ENV}"
         if: startsWith(matrix.os, 'windows')
       - run: cargo test --workspace --all-features
+      - run: |
+          set -euxo pipefail
+          cargo install --path . --debug
+          cd tests/fixtures/real
+          cargo hack check --feature-powerset --workspace
+          cargo uninstall cargo-hack
+      - uses: taiki-e/install-action@cargo-hack
+      - uses: taiki-e/install-action@cargo-minimal-versions
       - run: cargo minimal-versions build --workspace --all-features --ignore-private
 
   build:
