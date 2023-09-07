@@ -1315,13 +1315,12 @@ fn default_feature_behavior() {
         .stdout_not_contains("has default feature!");
 }
 
-#[cfg_attr(windows, ignore)] // rustup bug: https://github.com/rust-lang/rustup/issues/3036
 #[test]
 fn version_range() {
     cargo_hack(["check", "--version-range", "1.63..=1.64"]).assert_success("real").stderr_contains(
         "
-        running `cargo +1.63 check` on real (1/2)
-        running `cargo +1.64 check` on real (2/2)
+        running `rustup run 1.63 cargo check` on real (1/2)
+        running `rustup run 1.64 cargo check` on real (2/2)
         ",
     );
 
@@ -1330,8 +1329,8 @@ fn version_range() {
         .stderr_contains(
             "
             warning: using `..` for inclusive range is deprecated; consider using `1.63..=1.64`
-            running `cargo +1.63 check` on real (1/2)
-            running `cargo +1.64 check` on real (2/2)
+            running `rustup run 1.63 cargo check` on real (1/2)
+            running `rustup run 1.64 cargo check` on real (2/2)
             ",
         );
 
@@ -1339,8 +1338,8 @@ fn version_range() {
         .assert_success("real")
         .stderr_contains(format!(
             "
-            running `cargo +1.63 check --target {TARGET}` on real (1/2)
-            running `cargo +1.64 check --target {TARGET}` on real (2/2)
+            running `rustup run 1.63 cargo check --target {TARGET}` on real (1/2)
+            running `rustup run 1.64 cargo check --target {TARGET}` on real (2/2)
             ",
         ));
 
@@ -1348,31 +1347,23 @@ fn version_range() {
         .assert_success("rust-version")
         .stderr_contains(
             "
-            running `cargo +1.64 check` on real (1/1)
+            running `rustup run 1.64 cargo check` on real (1/1)
             ",
         );
 }
 
-#[cfg_attr(windows, ignore)] // rustup bug: https://github.com/rust-lang/rustup/issues/3036
 #[test]
 fn rust_version() {
     cargo_hack(["check", "--rust-version"]).assert_success("rust-version").stderr_contains(
         "
-            running `cargo +1.64 check` on real (1/1)
-            ",
+        running `rustup run 1.64 cargo check` on real (1/1)
+        ",
     );
 }
 
-#[cfg_attr(windows, ignore)] // rustup bug: https://github.com/rust-lang/rustup/issues/3036
 #[test]
 fn multi_target() {
-    let target_suffix = if cfg!(target_os = "linux") && cfg!(target_env = "gnu") {
-        "-unknown-linux-gnu"
-    } else if cfg!(target_os = "macos") {
-        "-apple-darwin"
-    } else {
-        unimplemented!()
-    };
+    let target_suffix = String::from("-") + TARGET.split_once('-').unwrap().1;
 
     cargo_hack([
         "check",
@@ -1384,8 +1375,8 @@ fn multi_target() {
     .assert_success("real")
     .stderr_contains(format!(
         "
-        running `cargo +1.63 check --target aarch64{target_suffix}` on real (1/2)
-        running `cargo +1.64 check --target aarch64{target_suffix}` on real (2/2)
+        running `rustup run 1.63 cargo check --target aarch64{target_suffix}` on real (1/2)
+        running `rustup run 1.64 cargo check --target aarch64{target_suffix}` on real (2/2)
         "
     ));
 
@@ -1401,9 +1392,9 @@ fn multi_target() {
     .assert_success("real")
     .stderr_contains(format!(
         "
-        running `cargo +1.63 check --target aarch64{target_suffix}` on real (1/3)
-        running `cargo +1.63 check --target x86_64{target_suffix}` on real (2/3)
-        running `cargo +1.64 check --target aarch64{target_suffix} --target x86_64{target_suffix}` on real (3/3)
+        running `rustup run 1.63 cargo check --target aarch64{target_suffix}` on real (1/3)
+        running `rustup run 1.63 cargo check --target x86_64{target_suffix}` on real (2/3)
+        running `rustup run 1.64 cargo check --target aarch64{target_suffix} --target x86_64{target_suffix}` on real (3/3)
         ",
     ));
 
@@ -1419,13 +1410,12 @@ fn multi_target() {
     .assert_success("real")
     .stderr_contains(format!(
         "
-        running `cargo +1.63 check --target x86_64{target_suffix}` on real (1/2)
-        running `cargo +1.64 check --target x86_64{target_suffix}` on real (2/2)
+        running `rustup run 1.63 cargo check --target x86_64{target_suffix}` on real (1/2)
+        running `rustup run 1.64 cargo check --target x86_64{target_suffix}` on real (2/2)
         ",
     ));
 }
 
-#[cfg_attr(windows, ignore)] // rustup bug: https://github.com/rust-lang/rustup/issues/3036
 #[test]
 fn version_range_failure() {
     // zero step

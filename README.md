@@ -316,11 +316,13 @@ Perform commands on a specified (inclusive) range of Rust versions.
 
 ```console
 $ cargo hack check --version-range 1.46..=1.47
-info: running `cargo +1.46 check` on cargo-hack (1/2)
+info: running `rustup run 1.46 cargo check` on cargo-hack (1/2)
 ...
-info: running `cargo +1.47 check` on cargo-hack (2/2)
+info: running `rustup run 1.47 cargo check` on cargo-hack (2/2)
 ...
 ```
+
+(We use `rustup run <toolchain> cargo` instead of `cargo +<toolchain>` to work around a [rustup bug](https://github.com/rust-lang/rustup/issues/3036).)
 
 This might be useful for catching issues like [termcolor#35], [regex#685],
 [rust-clippy#6324].
