@@ -43,7 +43,7 @@ pub(crate) fn version_range(range: VersionRange, cx: &Context) -> Result<Vec<u32
             Ok(stable_version)
         } else {
             install_toolchain("stable", &[], false)?;
-            let version = cargo::version(cmd!("cargo", "+stable"))?;
+            let version = cargo::version(cmd!("rustup", "run", "stable", "cargo"))?;
             stable_version = Some(version);
             Ok(version)
         }
@@ -114,7 +114,7 @@ pub(crate) fn install_toolchain(
     toolchain = toolchain.strip_prefix('+').unwrap_or(toolchain);
 
     if target.is_empty()
-        && cmd!("cargo", format!("+{toolchain}"), "--version").run_with_output().is_ok()
+        && cmd!("rustup", "run", toolchain, "cargo", "--version").run_with_output().is_ok()
     {
         // Do not run `rustup toolchain add` if the toolchain already has installed.
         return Ok(());

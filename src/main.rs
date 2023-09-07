@@ -71,7 +71,9 @@ fn try_main() -> Result<()> {
                     progress.total += total * cx.target.len();
                 }
             }
-            let line = cmd!("cargo");
+            // Do not use `cargo +<toolchain>` due to a rustup bug: https://github.com/rust-lang/rustup/issues/3036
+            let mut line = cmd!("rustup");
+            line.leading_arg("run");
 
             // First, generate the lockfile using the oldest cargo specified.
             // https://github.com/taiki-e/cargo-hack/issues/105
@@ -80,11 +82,12 @@ fn try_main() -> Result<()> {
             // (This does not work around the underlying cargo bug: https://github.com/rust-lang/cargo/issues/10623)
             let mut regenerate_lockfile_on_51_or_up = false;
             for cargo_version in range {
-                let toolchain = format!("+1.{cargo_version}");
+                let toolchain = format!("1.{cargo_version}");
                 rustup::install_toolchain(&toolchain, &cx.target, true)?;
                 if generate_lockfile || regenerate_lockfile_on_51_or_up && *cargo_version >= 51 {
                     let mut line = line.clone();
                     line.leading_arg(&toolchain);
+                    line.leading_arg("cargo");
                     line.arg("generate-lockfile");
                     if let Some(pid) = cx.current_package() {
                         let package = cx.packages(pid);
@@ -112,6 +115,7 @@ fn try_main() -> Result<()> {
 
                 let mut line = line.clone();
                 line.leading_arg(&toolchain);
+                line.leading_arg("cargo");
                 line.apply_context(cx);
                 exec_on_packages(
                     cx,

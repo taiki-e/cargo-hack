@@ -1,5 +1,5 @@
 use std::{
-    env::{self, consts::EXE_SUFFIX},
+    env,
     ffi::OsStr,
     path::{Path, PathBuf},
     process::{Command, ExitStatus},
@@ -24,14 +24,6 @@ pub fn cargo_bin_exe() -> Command {
     cmd.env_remove("CARGO_TERM_COLOR");
     cmd.env_remove("GITHUB_ACTIONS");
     cmd
-}
-
-fn test_toolchain() -> String {
-    if let Some(toolchain) = test_version() {
-        format!("+1.{toolchain} ")
-    } else {
-        String::new()
-    }
 }
 
 fn test_version() -> Option<u32> {
@@ -145,10 +137,12 @@ struct AssertOutputInner {
 }
 
 fn replace_command(lines: &str) -> String {
-    if lines.contains("cargo +") || lines.contains(&format!("cargo{EXE_SUFFIX} +")) {
+    if lines.contains("rustup run") {
         lines.to_owned()
+    } else if let Some(minor) = test_version() {
+        lines.replace("cargo ", &format!("rustup run 1.{minor} cargo "))
     } else {
-        lines.replace("cargo ", &format!("cargo {}", test_toolchain()))
+        lines.to_owned()
     }
 }
 fn line_separated(lines: &str) -> impl Iterator<Item = &'_ str> {
