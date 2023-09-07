@@ -253,7 +253,6 @@ pub(crate) struct Package {
     /// The minimum supported Rust version of this package.
     ///
     /// This is always `None` if running with a version of Cargo older than 1.58.
-    #[allow(dead_code)]
     pub(crate) rust_version: Option<String>,
 }
 
