@@ -1343,7 +1343,17 @@ fn version_range() {
             ",
         ));
 
-    cargo_hack(["check", "--version-range", "..=1.64"])
+    cargo_hack(["check", "--version-range", "..=1.64", "--package=member1", "--package=member2"])
+        .assert_success("rust-version")
+        .stderr_contains(
+            "
+            running `rustup run 1.63 cargo check` on member1 (1/4)
+            running `rustup run 1.63 cargo check` on member2 (2/4)
+            running `rustup run 1.64 cargo check` on member1 (3/4)
+            running `rustup run 1.64 cargo check` on member2 (4/4)
+            ",
+        );
+    cargo_hack(["check", "--version-range", "..=1.64", "--workspace"])
         .assert_failure("rust-version")
         .stderr_contains(
             "
@@ -1354,7 +1364,15 @@ fn version_range() {
 
 #[test]
 fn rust_version() {
-    cargo_hack(["check", "--rust-version"])
+    cargo_hack(["check", "--rust-version", "--package=member1", "--package=member2"])
+        .assert_success("rust-version")
+        .stderr_contains(
+            "
+            running `rustup run 1.63 cargo check` on member1 (1/2)
+            running `rustup run 1.63 cargo check` on member2 (2/2)
+            ",
+        );
+    cargo_hack(["check", "--rust-version", "--workspace"])
         .assert_failure("rust-version")
         .stderr_contains(
             "

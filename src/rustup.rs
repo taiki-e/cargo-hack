@@ -5,7 +5,9 @@ use anyhow::{bail, format_err, Result};
 use crate::{
     cargo,
     context::Context,
+    metadata::PackageId,
     version::{MaybeVersion, Version, VersionRange},
+    Kind,
 };
 
 pub(crate) struct Rustup {
@@ -23,7 +25,12 @@ impl Rustup {
     }
 }
 
-pub(crate) fn version_range(range: VersionRange, step: u16, cx: &Context) -> Result<Vec<u32>> {
+pub(crate) fn version_range(
+    range: VersionRange,
+    step: u16,
+    packages: &[(&PackageId, Kind<'_>)],
+    cx: &Context,
+) -> Result<Vec<u32>> {
     let check = |version: &Version| {
         if version.major != 1 {
             bail!("major version must be 1");
@@ -55,7 +62,7 @@ pub(crate) fn version_range(range: VersionRange, step: u16, cx: &Context) -> Res
             Ok(rust_version)
         } else {
             let mut version = None;
-            for id in cx.workspace_members() {
+            for (id, _) in packages {
                 let v = cx.rust_version(id);
                 if v.is_none() || v == version {
                     // no-op

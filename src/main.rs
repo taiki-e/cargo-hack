@@ -63,7 +63,7 @@ fn try_main() -> Result<()> {
 
         let mut keep_going = KeepGoing::default();
         if let Some(range) = cx.version_range {
-            let range = rustup::version_range(range, cx.version_step, cx)?;
+            let range = rustup::version_range(range, cx.version_step, &packages, cx)?;
 
             let total = progress.total;
             progress.total = 0;
