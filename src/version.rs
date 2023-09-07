@@ -2,11 +2,18 @@ use std::{fmt, str::FromStr};
 
 use anyhow::{bail, Context as _, Error, Result};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Version {
     pub(crate) major: u32,
     pub(crate) minor: u32,
     pub(crate) patch: Option<u32>,
+}
+
+impl Version {
+    pub(crate) fn strip_patch(mut self) -> Self {
+        self.patch = None;
+        self
+    }
 }
 
 impl fmt::Display for Version {
@@ -33,14 +40,14 @@ impl FromStr for Version {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub(crate) enum MaybeVersion {
     Version(Version),
     Msrv,
     Stable,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub(crate) struct VersionRange {
     pub(crate) start_inclusive: MaybeVersion,
     pub(crate) end_inclusive: MaybeVersion,
