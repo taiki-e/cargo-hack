@@ -74,9 +74,6 @@ fn try_main() -> Result<()> {
                     progress.total += total * cx.target.len();
                 }
             }
-            // Do not use `cargo +<toolchain>` due to a rustup bug: https://github.com/rust-lang/rustup/issues/3036
-            let mut line = cmd!("rustup");
-            line.leading_arg("run");
 
             // First, generate the lockfile using the oldest cargo specified.
             // https://github.com/taiki-e/cargo-hack/issues/105
@@ -84,62 +81,19 @@ fn try_main() -> Result<()> {
             // Workaround for spurious "failed to select a version" error.
             // (This does not work around the underlying cargo bug: https://github.com/rust-lang/cargo/issues/10623)
             let mut regenerate_lockfile_on_51_or_up = false;
-            for cargo_version in &range {
-                let toolchain = format!("1.{cargo_version}");
-                rustup::install_toolchain(&toolchain, &cx.target, true)?;
-                if generate_lockfile || regenerate_lockfile_on_51_or_up && *cargo_version >= 51 {
-                    let mut line = line.clone();
-                    line.leading_arg(&toolchain);
-                    line.leading_arg("cargo");
-                    line.arg("generate-lockfile");
-                    if let Some(pid) = cx.current_package() {
-                        let package = cx.packages(pid);
-                        if !cx.no_manifest_path {
-                            line.arg("--manifest-path");
-                            line.arg(
-                                package
-                                    .manifest_path
-                                    .strip_prefix(&cx.current_dir)
-                                    .unwrap_or(&package.manifest_path),
-                            );
-                        }
-                    }
-                    line.run_with_output()?;
-                    generate_lockfile = false;
-                    regenerate_lockfile_on_51_or_up = false;
-                }
-                if *cargo_version < 51 {
-                    regenerate_lockfile_on_51_or_up = true;
-                }
-
-                if cx.clean_per_version {
-                    cargo_clean(cx, None)?;
-                }
-
-                let mut line = line.clone();
-                line.leading_arg(&toolchain);
-                line.leading_arg("cargo");
-                line.apply_context(cx);
-                exec_on_packages(
+            for cargo_version in range {
+                versioned_cargo_exec_on_packages(
                     cx,
                     &packages,
-                    line,
+                    cargo_version,
                     &mut progress,
                     &mut keep_going,
-                    *cargo_version,
+                    &mut generate_lockfile,
+                    &mut regenerate_lockfile_on_51_or_up,
                 )?;
             }
         } else {
-            let mut line = cx.cargo();
-            line.apply_context(cx);
-            exec_on_packages(
-                cx,
-                &packages,
-                line,
-                &mut progress,
-                &mut keep_going,
-                cx.cargo_version,
-            )?;
+            default_cargo_exec_on_packages(cx, &packages, &mut progress, &mut keep_going)?;
         }
         if keep_going.count > 0 {
             eprintln!();
@@ -320,6 +274,68 @@ fn determine_package_list<'a>(
             })
             .unwrap_or_default()
     })
+}
+
+fn versioned_cargo_exec_on_packages(
+    cx: &Context,
+    packages: &[(&PackageId, Kind<'_>)],
+    cargo_version: u32,
+    progress: &mut Progress,
+    keep_going: &mut KeepGoing,
+    generate_lockfile: &mut bool,
+    regenerate_lockfile_on_51_or_up: &mut bool,
+) -> Result<()> {
+    // Do not use `cargo +<toolchain>` due to a rustup bug: https://github.com/rust-lang/rustup/issues/3036
+    let mut line = cmd!("rustup");
+    line.leading_arg("run");
+
+    let toolchain = format!("1.{cargo_version}");
+    rustup::install_toolchain(&toolchain, &cx.target, true)?;
+    if *generate_lockfile || *regenerate_lockfile_on_51_or_up && cargo_version >= 51 {
+        let mut line = line.clone();
+        line.leading_arg(&toolchain);
+        line.leading_arg("cargo");
+        line.arg("generate-lockfile");
+        if let Some(pid) = cx.current_package() {
+            let package = cx.packages(pid);
+            if !cx.no_manifest_path {
+                line.arg("--manifest-path");
+                line.arg(
+                    package
+                        .manifest_path
+                        .strip_prefix(&cx.current_dir)
+                        .unwrap_or(&package.manifest_path),
+                );
+            }
+        }
+        line.run_with_output()?;
+        *generate_lockfile = false;
+        *regenerate_lockfile_on_51_or_up = false;
+    }
+    if cargo_version < 51 {
+        *regenerate_lockfile_on_51_or_up = true;
+    }
+
+    if cx.clean_per_version {
+        cargo_clean(cx, None)?;
+    }
+
+    let mut line = line.clone();
+    line.leading_arg(&toolchain);
+    line.leading_arg("cargo");
+    line.apply_context(cx);
+    exec_on_packages(cx, packages, line, progress, keep_going, cargo_version)
+}
+
+fn default_cargo_exec_on_packages(
+    cx: &Context,
+    packages: &[(&PackageId, Kind<'_>)],
+    progress: &mut Progress,
+    keep_going: &mut KeepGoing,
+) -> Result<()> {
+    let mut line = cx.cargo();
+    line.apply_context(cx);
+    exec_on_packages(cx, packages, line, progress, keep_going, cx.cargo_version)
 }
 
 fn exec_on_packages(
