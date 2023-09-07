@@ -23,7 +23,7 @@ impl Rustup {
     }
 }
 
-pub(crate) fn version_range(range: VersionRange, cx: &Context) -> Result<Vec<(u32, String)>> {
+pub(crate) fn version_range(range: VersionRange, cx: &Context) -> Result<Vec<u32>> {
     let check = |version: &Version| {
         if version.major != 1 {
             bail!("major version must be 1");
@@ -98,10 +98,8 @@ pub(crate) fn version_range(range: VersionRange, cx: &Context) -> Result<Vec<(u3
         MaybeVersion::Stable => get_stable_version()?,
     };
 
-    let versions: Vec<_> = (start_inclusive.minor..=end_inclusive.minor)
-        .step_by(cx.version_step as _)
-        .map(|minor| (minor, format!("+1.{minor}")))
-        .collect();
+    let versions: Vec<_> =
+        (start_inclusive.minor..=end_inclusive.minor).step_by(cx.version_step as _).collect();
     if versions.is_empty() {
         bail!("specified version range `{range}` is empty");
     }
