@@ -54,7 +54,7 @@ pub(crate) struct Args {
     /// --version-range
     pub(crate) version_range: Option<VersionRange>,
     /// --version-step
-    pub(crate) version_step: Option<String>,
+    pub(crate) version_step: u16,
 
     // options for --each-feature and --feature-powerset
     /// --optional-deps [DEPS]...
@@ -129,7 +129,7 @@ impl Args {
         let mut cargo_args = vec![];
         let mut subcommand: Option<String> = None;
 
-        let mut manifest_path = None;
+        let mut manifest_path: Option<String> = None;
         let mut color = None;
 
         let mut package = vec![];
@@ -530,14 +530,18 @@ impl Args {
             }
             (None, false) => None,
         };
-        if version_range.is_some() {
-        } else {
+        if version_range.is_none() {
             if version_step.is_some() {
                 requires("--version-step", &["--version-range"])?;
             }
             if clean_per_version {
                 requires("--clean-per-version", &["--version-range"])?;
             }
+        }
+
+        let version_step = version_step.as_deref().map(str::parse::<u16>).transpose()?.unwrap_or(1);
+        if version_step == 0 {
+            bail!("--version-step cannot be zero");
         }
 
         if no_dev_deps {

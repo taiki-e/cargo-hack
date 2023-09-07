@@ -79,11 +79,8 @@ impl Context {
             use_github_action_grouping: env::var_os("GITHUB_ACTIONS").is_some(),
         };
 
-        this.version_range = this
-            .args
-            .version_range
-            .map(|range| rustup::version_range(range, this.args.version_step.as_deref(), &this))
-            .transpose()?;
+        this.version_range =
+            this.args.version_range.map(|range| rustup::version_range(range, &this)).transpose()?;
 
         // TODO: Ideally, we should do this, but for now, we allow it as cargo-hack
         // may mistakenly interpret the specified valid feature flag as unknown.
