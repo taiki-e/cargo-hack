@@ -1373,10 +1373,13 @@ fn rust_version() {
             ",
         );
     cargo_hack(["check", "--rust-version", "--workspace"])
-        .assert_failure("rust-version")
+        .assert_success("rust-version")
         .stderr_contains(
             "
-            automatic detection of the lower bound of the version range is not yet supported when the minimum supported Rust version of the crates in the workspace do not match
+            running `rustup run 1.63 cargo check` on member1 (1/4)
+            running `rustup run 1.63 cargo check` on member2 (2/4)
+            running `rustup run 1.64 cargo check` on member3 (3/4)
+            running `rustup run 1.65 cargo check` on real (4/4)
             ",
         );
 }

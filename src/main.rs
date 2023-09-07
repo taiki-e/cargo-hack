@@ -31,11 +31,15 @@ use std::{
     fmt::{self, Write},
 };
 
-use anyhow::{bail, Result};
+use anyhow::{bail, format_err, Result};
 
 use crate::{
-    context::Context, features::Feature, metadata::PackageId, process::ProcessBuilder,
+    context::Context,
+    features::Feature,
+    metadata::PackageId,
+    process::ProcessBuilder,
     rustup::Rustup,
+    version::{Version, VersionRange},
 };
 
 fn main() {
@@ -63,34 +67,63 @@ fn try_main() -> Result<()> {
 
         let mut keep_going = KeepGoing::default();
         if let Some(range) = cx.version_range {
-            let range = rustup::version_range(range, cx.version_step, &packages, cx)?;
-
-            let total = progress.total;
-            progress.total = 0;
-            for cargo_version in &range {
-                if cx.target.is_empty() || *cargo_version >= 64 {
-                    progress.total += total;
-                } else {
-                    progress.total += total * cx.target.len();
+            if range == VersionRange::msrv() {
+                let mut versions = BTreeMap::new();
+                for (id, kind) in packages {
+                    let v =
+                        cx.rust_version(id).map(str::parse::<Version>).transpose()?.ok_or_else(
+                            || format_err!("no rust-version field in Cargo.toml is specified"),
+                        )?;
+                    versions.entry(v.strip_patch()).or_insert_with(Vec::new).push((id, kind));
                 }
-            }
 
-            // First, generate the lockfile using the oldest cargo specified.
-            // https://github.com/taiki-e/cargo-hack/issues/105
-            let mut generate_lockfile = true;
-            // Workaround for spurious "failed to select a version" error.
-            // (This does not work around the underlying cargo bug: https://github.com/rust-lang/cargo/issues/10623)
-            let mut regenerate_lockfile_on_51_or_up = false;
-            for cargo_version in range {
-                versioned_cargo_exec_on_packages(
-                    cx,
-                    &packages,
-                    cargo_version,
-                    &mut progress,
-                    &mut keep_going,
-                    &mut generate_lockfile,
-                    &mut regenerate_lockfile_on_51_or_up,
-                )?;
+                // First, generate the lockfile using the oldest cargo specified.
+                // https://github.com/taiki-e/cargo-hack/issues/105
+                let mut generate_lockfile = true;
+                // Workaround for spurious "failed to select a version" error.
+                // (This does not work around the underlying cargo bug: https://github.com/rust-lang/cargo/issues/10623)
+                let mut regenerate_lockfile_on_51_or_up = false;
+                for (cargo_version, packages) in versions {
+                    versioned_cargo_exec_on_packages(
+                        cx,
+                        &packages,
+                        cargo_version.minor,
+                        &mut progress,
+                        &mut keep_going,
+                        &mut generate_lockfile,
+                        &mut regenerate_lockfile_on_51_or_up,
+                    )?;
+                }
+            } else {
+                let range = rustup::version_range(range, cx.version_step, &packages, cx)?;
+
+                let total = progress.total;
+                progress.total = 0;
+                for cargo_version in &range {
+                    if cx.target.is_empty() || *cargo_version >= 64 {
+                        progress.total += total;
+                    } else {
+                        progress.total += total * cx.target.len();
+                    }
+                }
+
+                // First, generate the lockfile using the oldest cargo specified.
+                // https://github.com/taiki-e/cargo-hack/issues/105
+                let mut generate_lockfile = true;
+                // Workaround for spurious "failed to select a version" error.
+                // (This does not work around the underlying cargo bug: https://github.com/rust-lang/cargo/issues/10623)
+                let mut regenerate_lockfile_on_51_or_up = false;
+                for cargo_version in range {
+                    versioned_cargo_exec_on_packages(
+                        cx,
+                        &packages,
+                        cargo_version,
+                        &mut progress,
+                        &mut keep_going,
+                        &mut generate_lockfile,
+                        &mut regenerate_lockfile_on_51_or_up,
+                    )?;
+                }
             }
         } else {
             default_cargo_exec_on_packages(cx, &packages, &mut progress, &mut keep_going)?;
