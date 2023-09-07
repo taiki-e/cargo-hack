@@ -64,7 +64,7 @@ fn try_main() -> Result<()> {
         if let Some(range) = &cx.version_range {
             let total = progress.total;
             progress.total = 0;
-            for (cargo_version, _) in range {
+            for cargo_version in range {
                 if cx.target.is_empty() || *cargo_version >= 64 {
                     progress.total += total;
                 } else {
@@ -79,11 +79,12 @@ fn try_main() -> Result<()> {
             // Workaround for spurious "failed to select a version" error.
             // (This does not work around the underlying cargo bug: https://github.com/rust-lang/cargo/issues/10623)
             let mut regenerate_lockfile_on_51_or_up = false;
-            for (cargo_version, toolchain) in range {
-                rustup::install_toolchain(toolchain, &cx.target, true)?;
+            for cargo_version in range {
+                let toolchain = format!("+1.{cargo_version}");
+                rustup::install_toolchain(&toolchain, &cx.target, true)?;
                 if generate_lockfile || regenerate_lockfile_on_51_or_up && *cargo_version >= 51 {
                     let mut line = line.clone();
-                    line.leading_arg(toolchain);
+                    line.leading_arg(&toolchain);
                     line.arg("generate-lockfile");
                     if let Some(pid) = cx.current_package() {
                         let package = cx.packages(pid);
@@ -110,7 +111,7 @@ fn try_main() -> Result<()> {
                 }
 
                 let mut line = line.clone();
-                line.leading_arg(toolchain);
+                line.leading_arg(&toolchain);
                 line.apply_context(cx);
                 exec_on_packages(
                     cx,

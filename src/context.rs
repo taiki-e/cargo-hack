@@ -27,7 +27,7 @@ pub(crate) struct Context {
     pub(crate) cargo_version: u32,
     pub(crate) restore: restore::Manager,
     pub(crate) current_dir: PathBuf,
-    pub(crate) version_range: Option<Vec<(u32, String)>>,
+    pub(crate) version_range: Option<Vec<u32>>,
     pub(crate) use_github_action_grouping: bool,
 }
 
