@@ -64,13 +64,12 @@ fn try_main() -> Result<()> {
 
         let packages = determine_package_list(cx)?;
         let mut progress = Progress::default();
-        for pkg in &packages {
-            progress.total += pkg.feature_count;
-        }
-
         let mut keep_going = KeepGoing::default();
         if let Some(range) = cx.version_range {
             if range == VersionRange::msrv() {
+                let total = packages.iter().map(|p| p.feature_count).sum();
+                progress.total = total;
+
                 let mut versions = BTreeMap::new();
                 for pkg in packages {
                     let v = cx
@@ -103,8 +102,7 @@ fn try_main() -> Result<()> {
             } else {
                 let range = rustup::version_range(range, cx.version_step, &packages, cx)?;
 
-                let total = progress.total;
-                progress.total = 0;
+                let total: usize = packages.iter().map(|p| p.feature_count).sum();
                 for cargo_version in &range {
                     if cx.target.is_empty() || *cargo_version >= 64 {
                         progress.total += total;
@@ -132,6 +130,8 @@ fn try_main() -> Result<()> {
                 }
             }
         } else {
+            let total = packages.iter().map(|p| p.feature_count).sum();
+            progress.total = total;
             default_cargo_exec_on_packages(cx, &packages, &mut progress, &mut keep_going)?;
         }
         if keep_going.count > 0 {
