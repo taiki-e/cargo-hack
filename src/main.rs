@@ -104,7 +104,7 @@ fn try_main() -> Result<()> {
 
                 let total: usize = packages.iter().map(|p| p.feature_count).sum();
                 for cargo_version in &range {
-                    if cx.target.is_empty() || *cargo_version >= 64 {
+                    if cx.target.is_empty() || cargo_version.minor >= 64 {
                         progress.total += total;
                     } else {
                         progress.total += total * cx.target.len();
@@ -121,7 +121,7 @@ fn try_main() -> Result<()> {
                     versioned_cargo_exec_on_packages(
                         cx,
                         &packages,
-                        cargo_version,
+                        cargo_version.minor,
                         &mut progress,
                         &mut keep_going,
                         &mut generate_lockfile,

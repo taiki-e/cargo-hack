@@ -29,7 +29,7 @@ pub(crate) fn version_range(
     step: u16,
     packages: &[PackageRuns<'_>],
     cx: &Context,
-) -> Result<Vec<u32>> {
+) -> Result<Vec<Version>> {
     let check = |version: &Version| {
         if version.major != 1 {
             bail!("major version must be 1");
@@ -104,8 +104,10 @@ pub(crate) fn version_range(
         MaybeVersion::Stable => get_stable_version()?,
     };
 
-    let versions: Vec<_> =
-        (start_inclusive.minor..=end_inclusive.minor).step_by(step as _).collect();
+    let versions: Vec<_> = (start_inclusive.minor..=end_inclusive.minor)
+        .step_by(step as _)
+        .map(|minor| Version { major: 1, minor, patch: None })
+        .collect();
     if versions.is_empty() {
         bail!("specified version range `{range}` is empty");
     }
