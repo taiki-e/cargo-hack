@@ -1353,11 +1353,30 @@ fn version_range() {
             running `rustup run 1.64 cargo check` on member2 (4/4)
             ",
         );
+    // Skips `real` because it isn't in range
     cargo_hack(["check", "--version-range", "..=1.64", "--workspace"])
-        .assert_failure("rust-version")
+        .assert_failure("rust-version") // warn
         .stderr_contains(
             "
-            automatic detection of the lower bound of the version range is not yet supported when the minimum supported Rust version of the crates in the workspace do not match
+            warning: skipping real, rust-version (1.65) is not in specified range (..=1.64)
+            running `rustup run 1.63 cargo check` on member1 (1/5)
+            running `rustup run 1.63 cargo check` on member2 (2/5)
+            running `rustup run 1.64 cargo check` on member1 (3/5)
+            running `rustup run 1.64 cargo check` on member2 (4/5)
+            running `rustup run 1.64 cargo check` on member3 (5/5)
+            ",
+        );
+    cargo_hack(["check", "--version-range", "..=1.66", "--version-step", "2", "--workspace"])
+        .assert_success("rust-version")
+        .stderr_contains(
+            "
+            running `rustup run 1.63 cargo check` on member1 (1/7)
+            running `rustup run 1.63 cargo check` on member2 (2/7)
+            running `rustup run 1.64 cargo check` on member3 (3/7)
+            running `rustup run 1.65 cargo check` on member1 (4/7)
+            running `rustup run 1.65 cargo check` on member2 (5/7)
+            running `rustup run 1.65 cargo check` on member3 (6/7)
+            running `rustup run 1.65 cargo check` on real (7/7)
             ",
         );
 }
