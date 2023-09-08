@@ -66,68 +66,70 @@ fn try_main() -> Result<()> {
         let mut progress = Progress::default();
         let mut keep_going = KeepGoing::default();
         if let Some(range) = cx.version_range {
-            if range == VersionRange::msrv() {
-                let total = packages.iter().map(|p| p.feature_count).sum();
-                progress.total = total;
-
-                let mut versions = BTreeMap::new();
-                for pkg in packages {
-                    let v = cx
-                        .rust_version(pkg.id)
-                        .map(str::parse::<Version>)
-                        .transpose()?
-                        .ok_or_else(|| {
-                            format_err!("no rust-version field in Cargo.toml is specified")
-                        })?;
-                    versions.entry(v.strip_patch()).or_insert_with(Vec::new).push(pkg);
-                }
-
-                // First, generate the lockfile using the oldest cargo specified.
-                // https://github.com/taiki-e/cargo-hack/issues/105
-                let mut generate_lockfile = true;
-                // Workaround for spurious "failed to select a version" error.
-                // (This does not work around the underlying cargo bug: https://github.com/rust-lang/cargo/issues/10623)
-                let mut regenerate_lockfile_on_51_or_up = false;
-                for (cargo_version, packages) in versions {
-                    versioned_cargo_exec_on_packages(
-                        cx,
-                        &packages,
-                        cargo_version.minor,
-                        &mut progress,
-                        &mut keep_going,
-                        &mut generate_lockfile,
-                        &mut regenerate_lockfile_on_51_or_up,
-                    )?;
-                }
-            } else {
-                let range = rustup::version_range(range, cx.version_step, &packages, cx)?;
-
-                let total: usize = packages.iter().map(|p| p.feature_count).sum();
-                for cargo_version in &range {
-                    if cx.target.is_empty() || cargo_version.minor >= 64 {
-                        progress.total += total;
-                    } else {
-                        progress.total += total * cx.target.len();
+            let mut versions = BTreeMap::new();
+            let steps = rustup::version_range(range, cx.version_step, &packages, cx)?;
+            for pkg in packages {
+                let msrv = cx
+                    .rust_version(pkg.id)
+                    .map(str::parse::<Version>)
+                    .transpose()?
+                    .map(Version::strip_patch);
+                if range == VersionRange::msrv() {
+                    let msrv = msrv.ok_or_else(|| {
+                        format_err!("no rust-version field in Cargo.toml is specified")
+                    })?;
+                    versions.entry(msrv).or_insert_with(Vec::new).push(pkg);
+                } else {
+                    let mut seen = false;
+                    for cargo_version in &steps {
+                        if msrv.is_some() && Some(*cargo_version) < msrv {
+                            continue;
+                        }
+                        if !seen {
+                            if Some(*cargo_version) != msrv {
+                                if let Some(msrv) = msrv {
+                                    versions.entry(msrv).or_insert_with(Vec::new).push(pkg.clone());
+                                }
+                            }
+                            seen = true;
+                        }
+                        versions.entry(*cargo_version).or_insert_with(Vec::new).push(pkg.clone());
+                    }
+                    if !seen {
+                        let package = cx.packages(pkg.id);
+                        let name = &package.name;
+                        let msrv = msrv.expect("always `seen` if no msrv");
+                        warn!("skipping {name}, rust-version ({msrv}) is not in specified range ({range})");
                     }
                 }
+            }
 
-                // First, generate the lockfile using the oldest cargo specified.
-                // https://github.com/taiki-e/cargo-hack/issues/105
-                let mut generate_lockfile = true;
-                // Workaround for spurious "failed to select a version" error.
-                // (This does not work around the underlying cargo bug: https://github.com/rust-lang/cargo/issues/10623)
-                let mut regenerate_lockfile_on_51_or_up = false;
-                for cargo_version in range {
-                    versioned_cargo_exec_on_packages(
-                        cx,
-                        &packages,
-                        cargo_version.minor,
-                        &mut progress,
-                        &mut keep_going,
-                        &mut generate_lockfile,
-                        &mut regenerate_lockfile_on_51_or_up,
-                    )?;
+            for (cargo_version, packages) in &versions {
+                for package in packages {
+                    if cx.target.is_empty() || cargo_version.minor >= 64 {
+                        progress.total += package.feature_count;
+                    } else {
+                        progress.total += package.feature_count * cx.target.len();
+                    }
                 }
+            }
+
+            // First, generate the lockfile using the oldest cargo specified.
+            // https://github.com/taiki-e/cargo-hack/issues/105
+            let mut generate_lockfile = true;
+            // Workaround for spurious "failed to select a version" error.
+            // (This does not work around the underlying cargo bug: https://github.com/rust-lang/cargo/issues/10623)
+            let mut regenerate_lockfile_on_51_or_up = false;
+            for (cargo_version, packages) in versions {
+                versioned_cargo_exec_on_packages(
+                    cx,
+                    &packages,
+                    cargo_version.minor,
+                    &mut progress,
+                    &mut keep_going,
+                    &mut generate_lockfile,
+                    &mut regenerate_lockfile_on_51_or_up,
+                )?;
             }
         } else {
             let total = packages.iter().map(|p| p.feature_count).sum();
@@ -148,6 +150,7 @@ struct Progress {
     count: usize,
 }
 
+#[derive(Clone)]
 enum Kind<'a> {
     Normal,
     Each { features: Vec<&'a Feature> },
@@ -263,6 +266,7 @@ fn determine_kind<'a>(
     }
 }
 
+#[derive(Clone)]
 struct PackageRuns<'a> {
     id: &'a PackageId,
     kind: Kind<'a>,

@@ -60,23 +60,30 @@ pub(crate) fn version_range(
         if let Some(rust_version) = rust_version {
             Ok(rust_version)
         } else {
-            let mut version = None;
+            let mut lowest_msrv = None;
             for pkg in packages {
-                let v = cx.rust_version(pkg.id);
-                if v.is_none() || v == version {
-                    // no-op
-                } else if version.is_none() {
-                    version = v;
-                } else {
-                    bail!("automatic detection of the lower bound of the version range is not yet supported when the minimum supported Rust version of the crates in the workspace do not match")
-                }
+                let pkg_msrv = cx
+                    .rust_version(pkg.id)
+                    .map(str::parse::<Version>)
+                    .transpose()?
+                    .map(Version::strip_patch);
+                lowest_msrv = match (lowest_msrv, pkg_msrv) {
+                    (Some(workspace), Some(pkg)) => {
+                        if workspace < pkg {
+                            Some(workspace)
+                        } else {
+                            Some(pkg)
+                        }
+                    }
+                    (Some(msrv), None) | (None, Some(msrv)) => Some(msrv),
+                    (None, None) => None,
+                };
             }
-            let version = match version {
-                Some(v) => v.parse()?,
-                None => bail!("no rust-version field in Cargo.toml is specified"),
+            let Some(lowest_msrv) = lowest_msrv else {
+                bail!("no rust-version field in Cargo.toml is specified")
             };
-            rust_version = Some(version);
-            Ok(version)
+            rust_version = Some(lowest_msrv);
+            Ok(lowest_msrv)
         }
     };
 
