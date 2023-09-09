@@ -27,7 +27,6 @@ pub(crate) struct Context {
     pub(crate) cargo_version: u32,
     pub(crate) restore: restore::Manager,
     pub(crate) current_dir: PathBuf,
-    pub(crate) use_github_action_grouping: bool,
 }
 
 impl Context {
@@ -74,8 +73,6 @@ impl Context {
             cargo_version,
             restore,
             current_dir: env::current_dir()?,
-            // TODO: should be optional?
-            use_github_action_grouping: env::var_os("GITHUB_ACTIONS").is_some(),
         };
 
         // TODO: Ideally, we should do this, but for now, we allow it as cargo-hack

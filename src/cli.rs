@@ -11,7 +11,7 @@ use lexopt::{
     ValueExt,
 };
 
-use crate::{term, version::VersionRange, Feature, Rustup};
+use crate::{term, version::VersionRange, Feature, LogGroup, Rustup};
 
 pub(crate) struct Args {
     pub(crate) leading_args: Vec<String>,
@@ -51,10 +51,12 @@ pub(crate) struct Args {
     pub(crate) keep_going: bool,
     /// --print-command-list
     pub(crate) print_command_list: bool,
-    /// --version-range
+    /// --version-range/--rust-version
     pub(crate) version_range: Option<VersionRange>,
     /// --version-step
     pub(crate) version_step: u16,
+    /// --log-group
+    pub(crate) log_group: LogGroup,
 
     // options for --each-feature and --feature-powerset
     /// --optional-deps [DEPS]...
@@ -152,6 +154,7 @@ impl Args {
         let mut rust_version = false;
         let mut version_range = None;
         let mut version_step = None;
+        let mut log_group: Option<String> = None;
 
         let mut optional_deps = None;
         let mut include_features = vec![];
@@ -240,6 +243,7 @@ impl Args {
                 Long("rust-version") => parse_flag!(rust_version),
                 Long("version-range") => parse_opt!(version_range, false),
                 Long("version-step") => parse_opt!(version_step, false),
+                Long("log-group") => parse_opt!(log_group, false),
 
                 Short('p') | Long("package") => package.push(parser.value()?.parse()?),
                 Long("exclude") => exclude.push(parser.value()?.parse()?),
@@ -544,6 +548,11 @@ impl Args {
             bail!("--version-step cannot be zero");
         }
 
+        let log_group = match log_group {
+            Some(v) => v.parse()?,
+            None => LogGroup::auto(),
+        };
+
         if no_dev_deps {
             info!(
                 "--no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished"
@@ -593,6 +602,7 @@ impl Args {
             include_deps_features,
             version_range,
             version_step,
+            log_group,
 
             depth,
             group_features,
@@ -789,6 +799,9 @@ const HELP: &[HelpText<'_>] = &[
         "This flag can only be used together with --version-range flag.",
     ]),
     ("", "--keep-going", "", "Keep going on failure", &[]),
+    ("", "--log-group", "<KIND>", "Log grouping: none, github-actions", &[
+        "If this option is not used, the environment will be automatically detected."
+    ]),
     ("", "--print-command-list", "", "Print commands without run (Unstable)", &[]),
     ("", "--no-manifest-path", "", "Do not pass --manifest-path option to cargo (Unstable)", &[]),
     ("-v", "--verbose", "", "Use verbose output", &[]),

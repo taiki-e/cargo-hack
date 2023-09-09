@@ -173,6 +173,11 @@ OPTIONS:
         --keep-going
             Keep going on failure.
 
+        --log-group <KIND>
+            Log grouping: none, github-actions.
+
+            If this option is not used, the environment will be automatically detected.
+
         --print-command-list
             Print commands without run (Unstable).
 

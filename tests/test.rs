@@ -300,6 +300,49 @@ fn exclude_failure() {
 }
 
 #[test]
+fn log_group() {
+    cargo_hack(["check", "--all", "--log-group", "none"])
+        .assert_success("virtual")
+        .stderr_contains(
+            "
+            running `cargo check` on member1
+            running `cargo check` on member2
+            ",
+        )
+        .stdout_not_contains(
+            "
+            ::endgroup::
+            ::group::
+            ",
+        )
+        .stderr_not_contains(
+            "
+            ::endgroup::
+            ::group::
+            ",
+        );
+
+    cargo_hack(["check", "--all", "--log-group", "github-actions"])
+        .assert_success("virtual")
+        .stdout_contains(
+            "
+            ::group::running `cargo check` on member1
+            ::endgroup::
+            ::group::running `cargo check` on member2
+            ::endgroup::
+            ",
+        )
+        .stderr_not_contains(
+            "
+            ::group::running `cargo check` on member1
+            ::endgroup::
+            ::group::running `cargo check` on member2
+            ::endgroup::
+            ",
+        );
+}
+
+#[test]
 fn no_dev_deps() {
     cargo_hack(["check", "--no-dev-deps"]).assert_success("real").stderr_contains(
         "
