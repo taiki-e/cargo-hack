@@ -14,7 +14,7 @@ use std::{
 use anyhow::{format_err, Context as _, Result};
 use serde_json::{Map, Value};
 
-use crate::{cargo, cli::Args, fs, restore, term};
+use crate::{cargo, fs, restore, term};
 
 type Object = Map<String, Value>;
 type ParseResult<T> = Result<T, &'static str>;
@@ -47,7 +47,7 @@ pub(crate) struct Metadata {
 
 impl Metadata {
     pub(crate) fn new(
-        args: &Args,
+        manifest_path: Option<&str>,
         cargo: &OsStr,
         mut cargo_version: u32,
         restore: &restore::Manager,
@@ -58,7 +58,7 @@ impl Metadata {
         let mut cmd;
         let json = if stable_cargo_version > cargo_version {
             cmd = cmd!(cargo, "metadata", "--format-version=1", "--no-deps");
-            if let Some(manifest_path) = &args.manifest_path {
+            if let Some(manifest_path) = manifest_path {
                 cmd.arg("--manifest-path");
                 cmd.arg(manifest_path);
             }
@@ -68,7 +68,7 @@ impl Metadata {
                 Path::new(no_deps["workspace_root"].as_str().unwrap()).join("Cargo.lock");
             if !lockfile.exists() {
                 let mut cmd = cmd!(cargo, "generate-lockfile");
-                if let Some(manifest_path) = &args.manifest_path {
+                if let Some(manifest_path) = manifest_path {
                     cmd.arg("--manifest-path");
                     cmd.arg(manifest_path);
                 }
@@ -80,7 +80,7 @@ impl Metadata {
             // a dependency that requires newer cargo features, `cargo metadata`
             // with older cargo may fail.
             cmd = cmd!("rustup", "run", "stable", "cargo", "metadata", "--format-version=1");
-            if let Some(manifest_path) = &args.manifest_path {
+            if let Some(manifest_path) = manifest_path {
                 cmd.arg("--manifest-path");
                 cmd.arg(manifest_path);
             }
@@ -95,7 +95,7 @@ impl Metadata {
                 Err(_e) => {
                     // If failed, try again with the version of cargo we will actually use.
                     cmd = cmd!(cargo, "metadata", "--format-version=1");
-                    if let Some(manifest_path) = &args.manifest_path {
+                    if let Some(manifest_path) = manifest_path {
                         cmd.arg("--manifest-path");
                         cmd.arg(manifest_path);
                     }
@@ -104,7 +104,7 @@ impl Metadata {
             }
         } else {
             cmd = cmd!(cargo, "metadata", "--format-version=1");
-            if let Some(manifest_path) = &args.manifest_path {
+            if let Some(manifest_path) = manifest_path {
                 cmd.arg("--manifest-path");
                 cmd.arg(manifest_path);
             }

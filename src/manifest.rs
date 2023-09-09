@@ -1,16 +1,8 @@
-use std::{
-    collections::BTreeMap,
-    path::{Path, PathBuf},
-};
+use std::{collections::BTreeMap, path::Path};
 
 use anyhow::{bail, format_err, Context as _, Result};
 
-use crate::{
-    context::Context,
-    fs,
-    metadata::{self, Metadata},
-    term,
-};
+use crate::{context::Context, fs, term};
 
 type ParseResult<T> = Result<T, &'static str>;
 
@@ -24,12 +16,12 @@ pub(crate) struct Manifest {
 }
 
 impl Manifest {
-    pub(crate) fn new(path: &Path, metadata: &Metadata) -> Result<Self> {
+    pub(crate) fn new(path: &Path, metadata_cargo_version: u32) -> Result<Self> {
         let raw = fs::read_to_string(path)?;
         let doc: toml_edit::Document = raw
             .parse()
             .with_context(|| format!("failed to parse manifest `{}` as toml", path.display()))?;
-        let package = Package::from_table(&doc, metadata).map_err(|s| {
+        let package = Package::from_table(&doc, metadata_cargo_version).map_err(|s| {
             format_err!("failed to parse `{s}` field from manifest `{}`", path.display())
         })?;
         let features = Features::from_table(&doc).map_err(|s| {
@@ -48,13 +40,13 @@ pub(crate) struct Package {
 }
 
 impl Package {
-    fn from_table(doc: &toml_edit::Document, metadata: &Metadata) -> ParseResult<Self> {
+    fn from_table(doc: &toml_edit::Document, metadata_cargo_version: u32) -> ParseResult<Self> {
         let package = doc.get("package").and_then(toml_edit::Item::as_table).ok_or("package")?;
 
         Ok(Self {
             // Publishing is unrestricted if `true` or the field is not
             // specified, and forbidden if `false` or the array is empty.
-            publish: if metadata.cargo_version >= 39 {
+            publish: if metadata_cargo_version >= 39 {
                 None // Use `metadata.package.publish` instead.
             } else {
                 Some(match package.get("publish") {
@@ -64,7 +56,7 @@ impl Package {
                     Some(_) => return Err("publish"),
                 })
             },
-            rust_version: if metadata.cargo_version >= 58 {
+            rust_version: if metadata_cargo_version >= 58 {
                 None // use `metadata.package.rust_version` instead.
             } else {
                 Some(match package.get("rust-version").map(toml_edit::Item::as_str) {
@@ -115,7 +107,7 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
         let mut private_crates = vec![];
         for id in &cx.metadata.workspace_members {
             let package = cx.packages(id);
-            let manifest_path = &package.manifest_path;
+            let manifest_path = &*package.manifest_path;
             let is_root = manifest_path == root_manifest;
             if is_root {
                 root_id = Some(id);
@@ -171,13 +163,13 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
                 if term::verbose() {
                     info!("removing private crates from {}", manifest_path.display());
                 }
-                remove_private_crates(&mut doc, &cx.metadata, &private_crates)?;
+                remove_private_crates(&mut doc, workspace_root, &private_crates)?;
             }
             restore_handles.push(cx.restore.register(orig, manifest_path));
             fs::write(manifest_path, doc.to_string())?;
         }
         if restore_lockfile {
-            let lockfile = &cx.metadata.workspace_root.join("Cargo.lock");
+            let lockfile = &workspace_root.join("Cargo.lock");
             if lockfile.exists() {
                 restore_handles.push(cx.restore.register(fs::read_to_string(lockfile)?, lockfile));
             }
@@ -210,8 +202,8 @@ fn remove_dev_deps(doc: &mut toml_edit::Document) {
 
 fn remove_private_crates(
     doc: &mut toml_edit::Document,
-    metadata: &metadata::Metadata,
-    private_crates: &[&PathBuf],
+    workspace_root: &Path,
+    private_crates: &[&Path],
 ) -> Result<()> {
     let table = doc.as_table_mut();
     if let Some(workspace) = table.get_mut("workspace").and_then(toml_edit::Item::as_table_like_mut)
@@ -221,7 +213,7 @@ fn remove_private_crates(
             let mut i = 0;
             while i < members.len() {
                 if let Some(member) = members.get(i).and_then(toml_edit::Value::as_str) {
-                    let manifest_path = metadata.workspace_root.join(member).join("Cargo.toml");
+                    let manifest_path = workspace_root.join(member).join("Cargo.toml");
                     if private_crates
                         .iter()
                         .find_map(|p| {

@@ -48,7 +48,8 @@ impl Context {
 
         // if `--remove-dev-deps` flag is off, restore manifest file.
         let restore = restore::Manager::new(!args.remove_dev_deps);
-        let metadata = Metadata::new(&args, &cargo, cargo_version, &restore)?;
+        let metadata =
+            Metadata::new(args.manifest_path.as_deref(), &cargo, cargo_version, &restore)?;
         if metadata.cargo_version < 41 && args.include_deps_features {
             bail!("--include-deps-features requires Cargo 1.41 or later");
         }
@@ -58,7 +59,7 @@ impl Context {
 
         for id in &metadata.workspace_members {
             let manifest_path = &metadata.packages[id].manifest_path;
-            let manifest = Manifest::new(manifest_path, &metadata)?;
+            let manifest = Manifest::new(manifest_path, metadata.cargo_version)?;
             let features = Features::new(&metadata, &manifest, id, args.include_deps_features);
             manifests.insert(id.clone(), manifest);
             pkg_features.insert(id.clone(), features);
