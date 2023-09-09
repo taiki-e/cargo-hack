@@ -15,10 +15,12 @@ pub(crate) struct Rustup {
 
 impl Rustup {
     pub(crate) fn new() -> Self {
-        // If failed to determine rustup version, assign 0 to skip all version-dependent decisions.
+        // If failed to determine rustup version, assume the latest version.
         let version = minor_version()
-            .map_err(|e| warn!("unable to determine rustup version: {e:#}"))
-            .unwrap_or(0);
+            .map_err(|e| {
+                warn!("unable to determine rustup version; assuming latest stable rustup: {e:#}");
+            })
+            .unwrap_or(u32::MAX);
 
         Self { version }
     }
