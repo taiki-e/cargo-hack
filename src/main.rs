@@ -29,9 +29,10 @@ use std::{
     collections::BTreeMap,
     env,
     fmt::{self, Write},
+    str::FromStr,
 };
 
-use anyhow::{bail, format_err, Result};
+use anyhow::{bail, format_err, Error, Result};
 
 use crate::{
     context::Context,
@@ -510,6 +511,36 @@ impl fmt::Display for KeepGoing {
     }
 }
 
+#[derive(Clone, Copy, PartialEq)]
+enum LogGroup {
+    None,
+    GithubActions,
+}
+
+impl LogGroup {
+    fn auto() -> Self {
+        if env::var_os("GITHUB_ACTIONS").is_some() {
+            Self::GithubActions
+        } else {
+            Self::None
+        }
+    }
+}
+
+impl FromStr for LogGroup {
+    type Err = Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "none" => Ok(Self::None),
+            "github-actions" => Ok(Self::GithubActions),
+            other => bail!(
+                "argument for --log-group must be none or github-actions, but found `{other}`"
+            ),
+        }
+    }
+}
+
 fn exec_cargo(
     cx: &Context,
     id: &PackageId,
@@ -540,7 +571,7 @@ fn exec_cargo_inner(
     line: &mut ProcessBuilder<'_>,
     progress: &mut Progress,
 ) -> Result<()> {
-    if progress.count != 0 && !cx.print_command_list && !cx.use_github_action_grouping {
+    if progress.count != 0 && !cx.print_command_list && cx.log_group == LogGroup::None {
         eprintln!();
     }
     progress.count += 1;
@@ -562,18 +593,21 @@ fn exec_cargo_inner(
         write!(msg, "running {line} on {}", cx.packages(id).name).unwrap();
     }
     write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
-    let _guard = if cx.use_github_action_grouping {
-        struct Guard;
-        impl Drop for Guard {
-            fn drop(&mut self) {
-                println!("::endgroup::");
+    let _guard = match cx.log_group {
+        LogGroup::GithubActions => {
+            struct Guard;
+            impl Drop for Guard {
+                fn drop(&mut self) {
+                    println!("::endgroup::");
+                }
             }
+            println!("::group::{msg}");
+            Some(Guard)
         }
-        println!("::group::{msg}");
-        Some(Guard)
-    } else {
-        info!("{msg}");
-        None
+        LogGroup::None => {
+            info!("{msg}");
+            None
+        }
     };
 
     line.run()

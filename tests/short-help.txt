@@ -43,6 +43,7 @@ OPTIONS:
                                          command
         --clean-per-version              Remove artifacts per Rust version
         --keep-going                     Keep going on failure
+        --log-group <KIND>               Log grouping: none, github-actions
         --print-command-list             Print commands without run (Unstable)
         --no-manifest-path               Do not pass --manifest-path option to cargo (Unstable)
     -v, --verbose                        Use verbose output
