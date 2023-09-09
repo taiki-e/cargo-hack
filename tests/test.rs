@@ -147,39 +147,81 @@ fn virtual_all_in_subcrate() {
 
 #[test]
 fn real_ignore_private() {
-    // --no-private is not supported yet with workspace with private root crate
-    let flag = "--ignore-private";
-    cargo_hack(["check", flag])
-        .assert_success("real")
-        .stderr_not_contains(
-            "
-            running `cargo check` on member1
-            skipped running on private package `member1`
-            running `cargo check` on member2
-            skipped running on private package `member2`
-            running `cargo check` on real
-            ",
-        )
-        .stderr_contains("skipped running on private package `real`");
+    for flag in ["--ignore-private", "--no-private"] {
+        if flag == "--no-private" {
+            // --no-private is not supported yet with workspace with private root crate
+            cargo_hack(["check", flag]).assert_failure("real").stderr_contains(
+                "--no-private is not supported yet with workspace with private root crate",
+            );
+            cargo_hack(["check", "--all", flag]).assert_failure("real").stderr_contains(
+                "--no-private is not supported yet with workspace with private root crate",
+            );
+        } else {
+            cargo_hack(["check", flag])
+                .assert_success("real")
+                .stderr_contains("skipped running on private package `real`")
+                .stderr_not_contains(
+                    "
+                    running `cargo check` on member1
+                    skipped running on private package `member1`
+                    running `cargo check` on member2
+                    skipped running on private package `member2`
+                    running `cargo check` on real
+                    ",
+                );
 
-    cargo_hack(["check", "--all", flag])
-        .assert_success("real")
-        .stderr_contains(
-            "
-            running `cargo check` on member1
-            skipped running on private package `member2`
-            running `cargo check` on member3
-            skipped running on private package `real`
-            ",
-        )
-        .stderr_not_contains(
-            "
-            skipped running on private package `member1`
-            running `cargo check` on member2
-            skipped running on private package `member3`
-            running `cargo check` on real
-            ",
-        );
+            cargo_hack(["check", "--all", flag])
+                .assert_success("real")
+                .stderr_contains(
+                    "
+                    running `cargo check` on member1
+                    skipped running on private package `member2`
+                    running `cargo check` on member3
+                    skipped running on private package `real`
+                    ",
+                )
+                .stderr_not_contains(
+                    "
+                    skipped running on private package `member1`
+                    running `cargo check` on member2
+                    skipped running on private package `member3`
+                    running `cargo check` on real
+                    ",
+                );
+        }
+
+        cargo_hack(["check", flag])
+            .assert_success("real_root_public")
+            .stderr_contains("running `cargo check` on real")
+            .stderr_not_contains(
+                "
+                running `cargo check` on member1
+                skipped running on private package `member1`
+                running `cargo check` on member2
+                skipped running on private package `member2`
+                skipped running on private package `real`
+                ",
+            );
+
+        cargo_hack(["check", "--all", flag])
+            .assert_success("real_root_public")
+            .stderr_contains(
+                "
+                running `cargo check` on member1
+                skipped running on private package `member2`
+                running `cargo check` on member3
+                running `cargo check` on real
+                ",
+            )
+            .stderr_not_contains(
+                "
+                skipped running on private package `member1`
+                running `cargo check` on member2
+                skipped running on private package `member3`
+                skipped running on private package `real`
+                ",
+            );
+    }
 }
 
 #[test]
