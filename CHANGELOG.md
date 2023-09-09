@@ -10,9 +10,27 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Add `--rust-version` flag to perform commands on the Rust version of `package.rust-version` field in `Cargo.toml`. ([#202](https://github.com/taiki-e/cargo-hack/pull/202), thanks @epage)
+
+- Support mixed MSRV in `--version-range` option. ([#213](https://github.com/taiki-e/cargo-hack/pull/213), thanks @epage)
+
+  Previously, crates in a workspace must have the same MSRVs, but that restriction is now removed.
+
+- Support `..=` as inclusive range syntax for `--version-range` option to match Rust's inclusive range syntax. ([#198](https://github.com/taiki-e/cargo-hack/pull/198))
+
+  The old inclusive range syntax is now deprecated, but continues to be supported.
+
+- Group logs on GitHub Actions. ([#206](https://github.com/taiki-e/cargo-hack/pull/206), [#214](https://github.com/taiki-e/cargo-hack/pull/214))
+
+  <img width="778" alt="log-group" src="https://github.com/taiki-e/cargo-hack/assets/43724913/7ef0baa3-37d2-466f-b7be-5b5d135c1bfc">
+
+  This can be opt-out by using `--log-group=none`, and can be force-enabled by `--log-group=github-actions`.
+
+- Work around a rustup bug ([rust-lang/rustup#3036](https://github.com/rust-lang/rustup/issues/3036)) on Windows. ([#209](https://github.com/taiki-e/cargo-hack/pull/209))
+
 ## [0.6.5] - 2023-09-04
 
-- Add `--at-least-one-of` option. ([#193](https://github.com/taiki-e/cargo-hack/pull/193), thanks @kornelski)
+- Add `--at-least-one-of` flag. ([#193](https://github.com/taiki-e/cargo-hack/pull/193), thanks @kornelski)
 
 ## [0.6.4] - 2023-08-29
 
