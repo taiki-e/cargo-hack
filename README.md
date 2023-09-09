@@ -13,6 +13,7 @@ integration.
   - [Options for adjusting the behavior of --each-feature and --feature-powerset](#options-for-adjusting-the-behavior-of---each-feature-and---feature-powerset)
     - [--optional-deps](#--optional-deps)
     - [--exclude-features, --skip](#--exclude-features---skip)
+  - [--rust-version](#--rust-version)
   - [--version-range](#--version-range)
   - [Improvement of the behavior of existing cargo flags](#improvement-of-the-behavior-of-existing-cargo-flags)
 - [Installation](#installation)
@@ -315,6 +316,10 @@ Space or comma separated list of features to group.
 To specify multiple groups, use this option multiple times:
 `--group-features a,b --group-features c,d`
 
+### --rust-version
+
+Perform commands on the Rust version of `package.rust-version` field in `Cargo.toml`
+
 ### --version-range
 
 Perform commands on a specified (inclusive) range of Rust versions.
@@ -455,7 +460,7 @@ Prebuilt binaries are available for macOS, Linux (gnu and musl), Windows (static
 # Get host target
 host=$(rustc -Vv | grep host | sed 's/host: //')
 # Download binary and install to $HOME/.cargo/bin
-curl -LsSf https://github.com/taiki-e/cargo-hack/releases/latest/download/cargo-hack-$host.tar.gz | tar xzf - -C $HOME/.cargo/bin
+curl -fsSL https://github.com/taiki-e/cargo-hack/releases/latest/download/cargo-hack-$host.tar.gz | tar xzf - -C $HOME/.cargo/bin
 ```
 
 </details>
