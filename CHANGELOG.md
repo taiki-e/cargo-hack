@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.6] - 2023-09-09
+
 - Add `--rust-version` flag to perform commands on the Rust version of `package.rust-version` field in `Cargo.toml`. ([#202](https://github.com/taiki-e/cargo-hack/pull/202), thanks @epage)
 
 - Support mixed MSRV in `--version-range` option. ([#213](https://github.com/taiki-e/cargo-hack/pull/213), thanks @epage)
@@ -407,7 +409,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.5...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.6...HEAD
+[0.6.6]: https://github.com/taiki-e/cargo-hack/compare/v0.6.5...v0.6.6
 [0.6.5]: https://github.com/taiki-e/cargo-hack/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/taiki-e/cargo-hack/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/taiki-e/cargo-hack/compare/v0.6.2...v0.6.3
