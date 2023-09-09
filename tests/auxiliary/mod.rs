@@ -26,6 +26,10 @@ pub fn cargo_bin_exe() -> Command {
     cmd
 }
 
+pub fn has_rustup() -> bool {
+    Command::new("rustup").arg("--version").output().is_ok()
+}
+
 fn test_version() -> Option<u32> {
     static TEST_VERSION: OnceLock<Option<u32>> = OnceLock::new();
     *TEST_VERSION.get_or_init(|| {

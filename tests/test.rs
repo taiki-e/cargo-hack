@@ -8,7 +8,7 @@ use std::{
     path::MAIN_SEPARATOR,
 };
 
-use auxiliary::{cargo_bin_exe, cargo_hack, has_stable_toolchain, CommandExt, TARGET};
+use auxiliary::{cargo_bin_exe, cargo_hack, has_rustup, has_stable_toolchain, CommandExt, TARGET};
 
 #[test]
 fn failures() {
@@ -1402,6 +1402,11 @@ fn default_feature_behavior() {
 
 #[test]
 fn version_range() {
+    // --version-range requires rustup
+    if !has_rustup() {
+        return;
+    }
+
     cargo_hack(["check", "--version-range", "1.63..=1.64"]).assert_success("real").stderr_contains(
         "
         running `rustup run 1.63 cargo check` on real (1/2)
@@ -1468,6 +1473,11 @@ fn version_range() {
 
 #[test]
 fn rust_version() {
+    // --rust-version requires rustup
+    if !has_rustup() {
+        return;
+    }
+
     cargo_hack(["check", "--rust-version", "--package=member1", "--package=member2"])
         .assert_success("rust-version")
         .stderr_contains(
@@ -1490,6 +1500,11 @@ fn rust_version() {
 
 #[test]
 fn multi_target() {
+    // --version-range requires rustup
+    if !has_rustup() {
+        return;
+    }
+
     let target_suffix = String::from("-") + TARGET.split_once('-').unwrap().1;
 
     cargo_hack([
