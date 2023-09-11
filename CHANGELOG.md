@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.7] - 2023-09-11
+
 - Group rustup output on GitHub Actions. ([#219](https://github.com/taiki-e/cargo-hack/pull/219))
 
 - Improve error message when no rust-version field is specified. ([#217](https://github.com/taiki-e/cargo-hack/pull/217))
@@ -413,7 +415,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.6...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.7...HEAD
+[0.6.7]: https://github.com/taiki-e/cargo-hack/compare/v0.6.6...v0.6.7
 [0.6.6]: https://github.com/taiki-e/cargo-hack/compare/v0.6.5...v0.6.6
 [0.6.5]: https://github.com/taiki-e/cargo-hack/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/taiki-e/cargo-hack/compare/v0.6.3...v0.6.4
