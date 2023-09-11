@@ -10,6 +10,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Group rustup output on GitHub Actions. ([#219](https://github.com/taiki-e/cargo-hack/pull/219))
+
+- Improve error message when no rust-version field is specified. ([#217](https://github.com/taiki-e/cargo-hack/pull/217))
+
 ## [0.6.6] - 2023-09-09
 
 - Add `--rust-version` flag to perform commands on the Rust version of `package.rust-version` field in `Cargo.toml`. ([#202](https://github.com/taiki-e/cargo-hack/pull/202), thanks @epage)
