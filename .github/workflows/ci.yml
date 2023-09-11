@@ -70,6 +70,9 @@ jobs:
           cargo install --path . --debug
           cd tests/fixtures/real
           cargo hack check --feature-powerset --workspace
+          cd ../rust-version
+          rustup toolchain remove 1.63 1.64 1.65
+          cargo hack check --rust-version --workspace
           cargo uninstall cargo-hack
       - uses: taiki-e/install-action@cargo-hack
       - uses: taiki-e/install-action@cargo-minimal-versions

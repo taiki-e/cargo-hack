@@ -6,7 +6,7 @@ use crate::{
     cargo,
     context::Context,
     version::{MaybeVersion, Version, VersionRange},
-    PackageRuns,
+    LogGroup, PackageRuns,
 };
 
 pub(crate) struct Rustup {
@@ -50,7 +50,8 @@ pub(crate) fn version_range(
         if let Some(stable_version) = stable_version {
             Ok(stable_version)
         } else {
-            install_toolchain("stable", &[], false)?;
+            let print_output = false;
+            install_toolchain("stable", &[], print_output, LogGroup::None)?;
             let version = cargo::version(cmd!("rustup", "run", "stable", "cargo"))?;
             stable_version = Some(version);
             Ok(version)
@@ -127,6 +128,7 @@ pub(crate) fn install_toolchain(
     mut toolchain: &str,
     target: &[String],
     print_output: bool,
+    log_group: LogGroup,
 ) -> Result<()> {
     toolchain = toolchain.strip_prefix('+').unwrap_or(toolchain);
 
@@ -145,6 +147,7 @@ pub(crate) fn install_toolchain(
     }
 
     if print_output {
+        let _guard = log_group.print(&format!("running {cmd}"));
         // The toolchain installation can take some time, so we'll show users
         // the progress.
         cmd.run()

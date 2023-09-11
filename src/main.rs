@@ -334,7 +334,8 @@ fn versioned_cargo_exec_on_packages(
     line.leading_arg("run");
 
     let toolchain = format!("1.{cargo_version}");
-    rustup::install_toolchain(&toolchain, &cx.target, true)?;
+    let print_output = true;
+    rustup::install_toolchain(&toolchain, &cx.target, print_output, cx.log_group)?;
     if *generate_lockfile || *regenerate_lockfile_on_51_or_up && cargo_version >= 51 {
         let mut line = line.clone();
         line.leading_arg(&toolchain);
@@ -528,6 +529,26 @@ impl LogGroup {
             Self::None
         }
     }
+
+    fn print(self, msg: &str) -> Option<LogGroupGuard> {
+        match self {
+            Self::GithubActions => {
+                println!("::group::{msg}");
+                Some(LogGroupGuard)
+            }
+            Self::None => {
+                info!("{msg}");
+                None
+            }
+        }
+    }
+}
+
+struct LogGroupGuard;
+impl Drop for LogGroupGuard {
+    fn drop(&mut self) {
+        println!("::endgroup::");
+    }
 }
 
 impl FromStr for LogGroup {
@@ -596,22 +617,7 @@ fn exec_cargo_inner(
         write!(msg, "running {line} on {}", cx.packages(id).name).unwrap();
     }
     write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
-    let _guard = match cx.log_group {
-        LogGroup::GithubActions => {
-            struct Guard;
-            impl Drop for Guard {
-                fn drop(&mut self) {
-                    println!("::endgroup::");
-                }
-            }
-            println!("::group::{msg}");
-            Some(Guard)
-        }
-        LogGroup::None => {
-            info!("{msg}");
-            None
-        }
-    };
+    let _guard = cx.log_group.print(&msg);
 
     line.run()
 }
