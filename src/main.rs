@@ -77,7 +77,10 @@ fn try_main() -> Result<()> {
                     .map(Version::strip_patch);
                 if range == VersionRange::msrv() {
                     let msrv = msrv.ok_or_else(|| {
-                        format_err!("no rust-version field in Cargo.toml is specified")
+                        format_err!(
+                            "no rust-version field in {}'s Cargo.toml is specified",
+                            cx.packages(pkg.id).name
+                        )
                     })?;
                     versions.entry(msrv).or_insert_with(Vec::new).push(pkg);
                 } else {

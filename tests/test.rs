@@ -1598,7 +1598,8 @@ fn version_range_failure() {
 
     // No rust-version
     cargo_hack(["check", "--version-range", "..=1.64"]).assert_failure("real").stderr_contains(
-        "no rust-version field in Cargo.toml is specified
+        "
+        no rust-version field in selected Cargo.toml's is specified
         ",
     );
 }
