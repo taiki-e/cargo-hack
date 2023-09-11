@@ -41,8 +41,8 @@ toml_edit = "0.19"
 build-context = "0.1"
 easy-ext = "1"
 fs-err = "2"
+ignore = "0.4"
 tempfile = "3"
-walkdir = "2"
 
 [profile.release]
 codegen-units = 1

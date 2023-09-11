@@ -5,4 +5,3 @@ easytime
 lexopt
 tempfile
 termcolor
-walkdir
