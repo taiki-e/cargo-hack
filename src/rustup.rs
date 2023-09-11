@@ -82,7 +82,7 @@ pub(crate) fn version_range(
                 };
             }
             let Some(lowest_msrv) = lowest_msrv else {
-                bail!("no rust-version field in Cargo.toml is specified")
+                bail!("no rust-version field in selected Cargo.toml's is specified")
             };
             rust_version = Some(lowest_msrv);
             Ok(lowest_msrv)
