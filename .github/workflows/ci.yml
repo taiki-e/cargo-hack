@@ -110,7 +110,7 @@ jobs:
     name: test (no rustup)
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    container: alpine:latest
+    container: alpine
     steps:
       - uses: actions/checkout@v4
         with:
