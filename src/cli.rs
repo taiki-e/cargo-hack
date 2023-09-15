@@ -155,6 +155,7 @@ impl Args {
         let mut version_range = None;
         let mut version_step = None;
         let mut log_group: Option<String> = None;
+        let mut disable_log_grouping = false;
 
         let mut optional_deps = None;
         let mut include_features = vec![];
@@ -328,6 +329,10 @@ impl Args {
                 Long(flag) => {
                     removed_flags(flag)?;
                     similar_flags(flag, subcommand.as_deref())?;
+                    if matches!(flag, "message-format") {
+                        // https://github.com/taiki-e/cargo-hack/issues/221
+                        disable_log_grouping = true;
+                    }
                     let flag = format!("--{flag}");
                     if let Some(val) = parser.optional_value() {
                         cargo_args.push(format!("{flag}={}", val.string()?));
@@ -550,6 +555,7 @@ impl Args {
 
         let log_group = match log_group {
             Some(v) => v.parse()?,
+            None if disable_log_grouping => LogGroup::None,
             None => LogGroup::auto(),
         };
 

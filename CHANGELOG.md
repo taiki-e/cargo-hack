@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Disable log grouping on GitHub Actions by default if an option is passed in which stdout is assumed to be used, such as `--message-format`. ([#221](https://github.com/taiki-e/cargo-hack/pull/221))
+
 ## [0.6.7] - 2023-09-11
 
 - Group rustup output on GitHub Actions. ([#219](https://github.com/taiki-e/cargo-hack/pull/219))
