@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 use std::{fmt, str::FromStr};
 
 use anyhow::{bail, Context as _, Error, Result};

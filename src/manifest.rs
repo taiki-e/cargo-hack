@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 use std::{collections::BTreeMap, path::Path};
 
 use anyhow::{bail, format_err, Context as _, Result};

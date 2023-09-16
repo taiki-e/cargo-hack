@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 // Refs:
 // - https://doc.rust-lang.org/nightly/cargo/commands/cargo-metadata.html#output-format
 // - https://github.com/rust-lang/cargo/blob/0.47.0/src/cargo/ops/cargo_output_metadata.rs#L56-L63

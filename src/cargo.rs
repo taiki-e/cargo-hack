@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 use anyhow::{bail, format_err, Result};
 
 use crate::{version::Version, ProcessBuilder};
