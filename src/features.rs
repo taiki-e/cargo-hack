@@ -346,7 +346,7 @@ mod tests {
             ("d", set!["a", "b"])
         ]);
         let list: Vec<Feature> = v!["a", "b", "c", "d"];
-        let ps = powerset(list.iter().collect::<Vec<_>>(), None);
+        let ps = powerset(&list, None);
         assert_eq!(ps, vec![
             vec![],
             vec!["a"],
@@ -365,7 +365,7 @@ mod tests {
             vec!["b", "c", "d"],
             vec!["a", "b", "c", "d"],
         ]);
-        let filtered = feature_powerset(list.iter().collect::<Vec<_>>(), None, &[], &map);
+        let filtered = feature_powerset(&list, None, &[], &map);
         assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"], vec!["c", "d"]]);
     }
 
