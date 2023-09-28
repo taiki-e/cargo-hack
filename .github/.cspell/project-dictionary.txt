@@ -3,7 +3,9 @@ compat
 endgroup
 pacman
 qpmember
+rustix
 subcrate
 tempdir
 tmpdir
 vvpmember
+winapi

@@ -6,12 +6,31 @@ unsound = "deny"
 yanked = "deny"
 notice = "deny"
 git-fetch-with-cli = true
-ignore = []
+ignore = [
+]
 
 # https://embarkstudios.github.io/cargo-deny/checks/bans/cfg.html
 [bans]
 multiple-versions = "warn"
 wildcards = "allow" # https://github.com/EmbarkStudios/cargo-deny/issues/488
+build.allow-build-scripts = [
+    { name = "anyhow" },
+    { name = "libc" },                         # via ctrlc & is-terminal
+    { name = "rustix" },                       # via is-terminal
+    { name = "serde_json" },
+    { name = "serde" },
+    { name = "slab" },
+    { name = "winapi-i686-pc-windows-gnu" },   # via same-file & termcolor
+    { name = "winapi-x86_64-pc-windows-gnu" }, # via same-file & termcolor
+    { name = "winapi" },                       # via same-file & termcolor
+    { name = "windows_aarch64_gnullvm" },      # via ctrlc & is-terminal
+    { name = "windows_aarch64_msvc" },         # via ctrlc & is-terminal
+    { name = "windows_i686_gnu" },             # via ctrlc & is-terminal
+    { name = "windows_i686_msvc" },            # via ctrlc & is-terminal
+    { name = "windows_x86_64_gnu" },           # via ctrlc & is-terminal
+    { name = "windows_x86_64_gnullvm" },       # via ctrlc & is-terminal
+    { name = "windows_x86_64_msvc" },          # via ctrlc & is-terminal
+]
 
 # https://embarkstudios.github.io/cargo-deny/checks/licenses/cfg.html
 [licenses]
