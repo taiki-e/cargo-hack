@@ -66,7 +66,7 @@ jobs:
         if: startsWith(matrix.os, 'windows')
       - run: cargo test --workspace --all-features
       - run: |
-          set -euxo pipefail
+          set -eEuxo pipefail
           cargo install --path . --debug
           cd tests/fixtures/real
           cargo hack check --feature-powerset --workspace
@@ -121,7 +121,7 @@ jobs:
         shell: sh
       - run: cargo test --workspace --all-features
       - run: |
-          set -euxo pipefail
+          set -eEuxo pipefail
           cargo install --path . --debug
           cd tests/fixtures/real
           cargo hack check --feature-powerset --workspace
