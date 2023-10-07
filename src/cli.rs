@@ -343,7 +343,7 @@ impl Args {
                     }
                 }
                 Short(flag) => {
-                    if matches!(flag, 'q' | 'r') {
+                    if matches!(flag, 'n' | 'q' | 'r') {
                         // To handle combined short flags properly, handle known
                         // short flags without value as special cases.
                         cargo_args.push(format!("-{flag}"));
