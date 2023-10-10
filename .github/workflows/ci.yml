@@ -10,7 +10,7 @@ on:
       - main
       - dev
   schedule:
-    - cron: '0 1 * * *'
+    - cron: '0 2 * * *'
   workflow_dispatch:
 
 env:
@@ -113,12 +113,13 @@ jobs:
     timeout-minutes: 60
     container: alpine
     steps:
+      - name: Install Rust
+        run: apk --no-cache add bash cargo git
+        shell: sh
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Install Rust
-        run: apk --no-cache add bash cargo
-        shell: sh
+      - run: git config --system --add safe.directory '*' # Workaround for https://github.com/actions/runner/issues/2033
       - run: cargo test --workspace --all-features
       - run: |
           set -eEuxo pipefail

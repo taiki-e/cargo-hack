@@ -41,7 +41,6 @@ toml_edit = "0.20"
 build-context = "0.1"
 easy-ext = "1"
 fs-err = "2"
-ignore = "0.4"
 tempfile = "3"
 
 [profile.release]

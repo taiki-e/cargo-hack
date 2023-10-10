@@ -5,10 +5,11 @@ use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
     process::{Command, ExitStatus},
+    str,
     sync::OnceLock,
 };
 
-use anyhow::{Context as _, Result};
+use anyhow::{bail, Context as _, Result};
 pub use build_context::TARGET;
 use easy_ext::ext;
 use fs_err as fs;
@@ -240,18 +241,40 @@ fn test_project(model: &str) -> Result<(TempDir, PathBuf)> {
         workspace_root = tmpdir_path.to_path_buf();
     }
 
-    for entry in ignore::WalkBuilder::new(&model_path).hidden(false).build().filter_map(Result::ok)
-    {
-        let path = entry.path();
-        let tmp_path = &tmpdir_path.join(path.strip_prefix(&model_path)?);
-        if !tmp_path.exists() {
-            if path.is_dir() {
-                fs::create_dir_all(tmp_path)?;
-            } else {
-                fs::copy(path, tmp_path)?;
-            }
+    for (file_name, from) in git_ls_files(&model_path, &[])? {
+        let to = &tmpdir_path.join(file_name);
+        if !to.parent().unwrap().is_dir() {
+            fs::create_dir_all(to.parent().unwrap())?;
         }
+        fs::copy(from, to)?;
     }
 
     Ok((tmpdir, workspace_root))
+}
+
+fn git_ls_files(dir: &Path, filters: &[&str]) -> Result<Vec<(String, PathBuf)>> {
+    let mut cmd = Command::new("git");
+    cmd.arg("ls-files").args(filters).current_dir(dir);
+    let output = cmd.output().with_context(|| format!("failed to run `{cmd:?}`"))?;
+    if !output.status.success() {
+        bail!(
+            "failed to run `{cmd:?}`:\nstdout:\n-------\n{}\n-------\nstderr:\n-------\n{}\n-------",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr),
+        );
+    }
+    Ok(str::from_utf8(&output.stdout)?
+        .lines()
+        .map(str::trim)
+        .filter_map(|f| {
+            if f.is_empty() {
+                return None;
+            }
+            let p = dir.join(f);
+            if !p.exists() {
+                return None;
+            }
+            Some((f.to_owned(), p))
+        })
+        .collect())
 }
