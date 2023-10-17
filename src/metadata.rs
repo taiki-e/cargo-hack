@@ -16,7 +16,7 @@ use std::{
 use anyhow::{format_err, Context as _, Result};
 use serde_json::{Map, Value};
 
-use crate::{cargo, fs, restore, term};
+use crate::{cargo, fs, process::ProcessBuilder, restore, term};
 
 type Object = Map<String, Value>;
 type ParseResult<T> = Result<T, &'static str>;
@@ -52,12 +52,31 @@ impl Metadata {
         manifest_path: Option<&str>,
         cargo: &OsStr,
         mut cargo_version: u32,
+        targets: &[String],
+        host: &str,
         restore: &restore::Manager,
     ) -> Result<Self> {
         let stable_cargo_version =
             cargo::version(cmd!("rustup", "run", "stable", "cargo")).map(|v| v.minor).unwrap_or(0);
 
         let mut cmd;
+        let append_metadata_args = |cmd: &mut ProcessBuilder<'_>| {
+            cmd.arg("metadata");
+            cmd.arg("--format-version=1");
+            if let Some(manifest_path) = manifest_path {
+                cmd.arg("--manifest-path");
+                cmd.arg(manifest_path);
+            }
+            if targets.is_empty() {
+                cmd.arg("--filter-platform");
+                cmd.arg(host);
+            } else {
+                for target in targets {
+                    cmd.arg("--filter-platform");
+                    cmd.arg(target);
+                }
+            }
+        };
         let json = if stable_cargo_version > cargo_version {
             cmd = cmd!(cargo, "metadata", "--format-version=1", "--no-deps");
             if let Some(manifest_path) = manifest_path {
@@ -81,11 +100,8 @@ impl Metadata {
             // Try with stable cargo because if workspace member has
             // a dependency that requires newer cargo features, `cargo metadata`
             // with older cargo may fail.
-            cmd = cmd!("rustup", "run", "stable", "cargo", "metadata", "--format-version=1");
-            if let Some(manifest_path) = manifest_path {
-                cmd.arg("--manifest-path");
-                cmd.arg(manifest_path);
-            }
+            cmd = cmd!("rustup", "run", "stable", "cargo");
+            append_metadata_args(&mut cmd);
             let json = cmd.read();
             handle.close()?;
             drop(guard);
@@ -96,20 +112,14 @@ impl Metadata {
                 }
                 Err(_e) => {
                     // If failed, try again with the version of cargo we will actually use.
-                    cmd = cmd!(cargo, "metadata", "--format-version=1");
-                    if let Some(manifest_path) = manifest_path {
-                        cmd.arg("--manifest-path");
-                        cmd.arg(manifest_path);
-                    }
+                    cmd = cmd!(cargo);
+                    append_metadata_args(&mut cmd);
                     cmd.read()?
                 }
             }
         } else {
-            cmd = cmd!(cargo, "metadata", "--format-version=1");
-            if let Some(manifest_path) = manifest_path {
-                cmd.arg("--manifest-path");
-                cmd.arg(manifest_path);
-            }
+            cmd = cmd!(cargo);
+            append_metadata_args(&mut cmd);
             cmd.read()?
         };
 

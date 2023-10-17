@@ -10,6 +10,7 @@ use std::{
 };
 
 use anyhow::{bail, Result};
+use cargo_config2::Config;
 
 use crate::{
     cargo,
@@ -47,10 +48,20 @@ impl Context {
             .map(|v| v.minor)
             .unwrap_or(0);
 
+        let config = Config::load()?;
+        let targets = config.build_target_for_cli(&args.target)?;
+        let host = config.host_triple()?;
+
         // if `--remove-dev-deps` flag is off, restore manifest file.
         let restore = restore::Manager::new(!args.remove_dev_deps);
-        let metadata =
-            Metadata::new(args.manifest_path.as_deref(), &cargo, cargo_version, &restore)?;
+        let metadata = Metadata::new(
+            args.manifest_path.as_deref(),
+            &cargo,
+            cargo_version,
+            &targets,
+            host,
+            &restore,
+        )?;
         if metadata.cargo_version < 41 && args.include_deps_features {
             bail!("--include-deps-features requires Cargo 1.41 or later");
         }
