@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix compatibility with old Cargo. This fixes a regression introduced in 0.6.9.
+
 ## [0.6.9] - 2023-10-17
 
 - Improve performance and reduce disc usage by passing `--filter-platform` to `cargo metadata`. ([#223](https://github.com/taiki-e/cargo-hack/pull/223))
