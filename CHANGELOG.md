@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Improve performance and reduce disc usage by passing `--filter-platform` to `cargo metadata`. ([#223](https://github.com/taiki-e/cargo-hack/pull/223))
+
 ## [0.6.8] - 2023-09-15
 
 - Disable log grouping on GitHub Actions by default if an option is passed in which stdout is assumed to be used, such as `--message-format`. ([#221](https://github.com/taiki-e/cargo-hack/pull/221))
