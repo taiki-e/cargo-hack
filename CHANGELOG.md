@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.9] - 2023-10-17
+
 - Improve performance and reduce disc usage by passing `--filter-platform` to `cargo metadata`. ([#223](https://github.com/taiki-e/cargo-hack/pull/223))
 
 ## [0.6.8] - 2023-09-15
@@ -421,7 +423,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.8...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.9...HEAD
+[0.6.9]: https://github.com/taiki-e/cargo-hack/compare/v0.6.8...v0.6.9
 [0.6.8]: https://github.com/taiki-e/cargo-hack/compare/v0.6.7...v0.6.8
 [0.6.7]: https://github.com/taiki-e/cargo-hack/compare/v0.6.6...v0.6.7
 [0.6.6]: https://github.com/taiki-e/cargo-hack/compare/v0.6.5...v0.6.6
