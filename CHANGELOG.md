@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix compatibility with old Cargo. This fixes a regression introduced in 0.6.11.
+
 ## [0.6.11] - 2023-10-18
 
 - Fix handling of weak dependency features when namespaced features is not used together.

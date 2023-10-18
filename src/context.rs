@@ -9,7 +9,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context as _, Result};
 
 use crate::{
     cargo,
@@ -67,18 +67,23 @@ impl Context {
             pkg_features.insert(id.clone(), features);
         }
 
-        let mut cmd = cmd!(&cargo, "locate-project", "--message-format", "plain");
+        let mut cmd = cmd!(&cargo, "locate-project");
         if let Some(manifest_path) = &args.manifest_path {
             cmd.arg("--manifest-path");
             cmd.arg(manifest_path);
         }
-        let locate_project = &cmd.read()?;
+        // Use json format because `--message-format plain` option of
+        // `cargo locate-project` has been added in Rust 1.48.
+        let locate_project: serde_json::Map<String, serde_json::Value> =
+            serde_json::from_str(&cmd.read()?)
+                .with_context(|| format!("failed to parse output from {cmd}"))?;
+        let locate_project = Path::new(locate_project["root"].as_str().unwrap());
         let mut current_package = None;
         for id in &metadata.workspace_members {
             let manifest_path = &metadata.packages[id].manifest_path;
             // no need to use same_file as cargo-metadata and cargo-locate-project
             // as they return absolute paths resolved in the same way.
-            if Path::new(locate_project) == manifest_path {
+            if locate_project == manifest_path {
                 current_package = Some(id.clone());
                 break;
             }
