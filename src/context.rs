@@ -10,7 +10,6 @@ use std::{
 };
 
 use anyhow::{bail, Result};
-use cargo_config2::Config;
 
 use crate::{
     cargo,
@@ -30,6 +29,7 @@ pub(crate) struct Context {
     pub(crate) cargo_version: u32,
     pub(crate) restore: restore::Manager,
     pub(crate) current_dir: PathBuf,
+    pub(crate) current_package: Option<PackageId>,
 }
 
 impl Context {
@@ -48,20 +48,10 @@ impl Context {
             .map(|v| v.minor)
             .unwrap_or(0);
 
-        let config = Config::load()?;
-        let targets = config.build_target_for_cli(&args.target)?;
-        let host = config.host_triple()?;
-
         // if `--remove-dev-deps` flag is off, restore manifest file.
         let restore = restore::Manager::new(!args.remove_dev_deps);
-        let metadata = Metadata::new(
-            args.manifest_path.as_deref(),
-            &cargo,
-            cargo_version,
-            &targets,
-            host,
-            &restore,
-        )?;
+        let metadata =
+            Metadata::new(args.manifest_path.as_deref(), &cargo, cargo_version, &args, &restore)?;
         if metadata.cargo_version < 41 && args.include_deps_features {
             bail!("--include-deps-features requires Cargo 1.41 or later");
         }
@@ -77,6 +67,23 @@ impl Context {
             pkg_features.insert(id.clone(), features);
         }
 
+        let mut cmd = cmd!(&cargo, "locate-project", "--message-format", "plain");
+        if let Some(manifest_path) = &args.manifest_path {
+            cmd.arg("--manifest-path");
+            cmd.arg(manifest_path);
+        }
+        let locate_project = &cmd.read()?;
+        let mut current_package = None;
+        for id in &metadata.workspace_members {
+            let manifest_path = &metadata.packages[id].manifest_path;
+            // no need to use same_file as cargo-metadata and cargo-locate-project
+            // as they return absolute paths resolved in the same way.
+            if Path::new(locate_project) == manifest_path {
+                current_package = Some(id.clone());
+                break;
+            }
+        }
+
         let this = Self {
             args,
             metadata,
@@ -86,6 +93,7 @@ impl Context {
             cargo_version,
             restore,
             current_dir: env::current_dir()?,
+            current_package,
         };
 
         // TODO: Ideally, we should do this, but for now, we allow it as cargo-hack
@@ -110,7 +118,7 @@ impl Context {
     }
 
     pub(crate) fn current_package(&self) -> Option<&PackageId> {
-        self.metadata.resolve.root.as_ref()
+        self.current_package.as_ref()
     }
 
     pub(crate) fn workspace_root(&self) -> &Path {

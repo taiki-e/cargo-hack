@@ -14,9 +14,10 @@ use std::{
 };
 
 use anyhow::{format_err, Context as _, Result};
+use cargo_config2::Config;
 use serde_json::{Map, Value};
 
-use crate::{cargo, fs, process::ProcessBuilder, restore, term};
+use crate::{cargo, cli::Args, fs, process::ProcessBuilder, restore, term};
 
 type Object = Map<String, Value>;
 type ParseResult<T> = Result<T, &'static str>;
@@ -52,12 +53,21 @@ impl Metadata {
         manifest_path: Option<&str>,
         cargo: &OsStr,
         mut cargo_version: u32,
-        targets: &[String],
-        host: &str,
+        args: &Args,
         restore: &restore::Manager,
     ) -> Result<Self> {
         let stable_cargo_version =
             cargo::version(cmd!("rustup", "run", "stable", "cargo")).map(|v| v.minor).unwrap_or(0);
+
+        let config;
+        let include_deps_features = if args.include_deps_features {
+            config = Config::load()?;
+            let targets = config.build_target_for_cli(&args.target)?;
+            let host = config.host_triple()?;
+            Some((targets, host))
+        } else {
+            None
+        };
 
         let mut cmd;
         let append_metadata_args = |cmd: &mut ProcessBuilder<'_>| {
@@ -67,14 +77,21 @@ impl Metadata {
                 cmd.arg("--manifest-path");
                 cmd.arg(manifest_path);
             }
-            if targets.is_empty() {
-                cmd.arg("--filter-platform");
-                cmd.arg(host);
-            } else {
-                for target in targets {
+            if let Some((targets, host)) = &include_deps_features {
+                if targets.is_empty() {
                     cmd.arg("--filter-platform");
-                    cmd.arg(target);
+                    cmd.arg(host);
+                } else {
+                    for target in targets {
+                        cmd.arg("--filter-platform");
+                        cmd.arg(target);
+                    }
                 }
+                // features-related flags are unneeded for --no-deps.
+                // TODO:
+                // cmd.arg("--all-features");
+            } else {
+                cmd.arg("--no-deps");
             }
         };
         let json = if stable_cargo_version > cargo_version {
@@ -83,7 +100,8 @@ impl Metadata {
                 cmd.arg("--manifest-path");
                 cmd.arg(manifest_path);
             }
-            let no_deps: Object = serde_json::from_str(&cmd.read()?)
+            let no_deps_raw = cmd.read()?;
+            let no_deps: Object = serde_json::from_str(&no_deps_raw)
                 .with_context(|| format!("failed to parse output from {cmd}"))?;
             let lockfile =
                 Path::new(no_deps["workspace_root"].as_str().unwrap()).join("Cargo.lock");
@@ -111,10 +129,14 @@ impl Metadata {
                     json
                 }
                 Err(_e) => {
-                    // If failed, try again with the version of cargo we will actually use.
-                    cmd = cmd!(cargo);
-                    append_metadata_args(&mut cmd);
-                    cmd.read()?
+                    if include_deps_features.is_some() {
+                        // If failed, try again with the version of cargo we will actually use.
+                        cmd = cmd!(cargo);
+                        append_metadata_args(&mut cmd);
+                        cmd.read()?
+                    } else {
+                        no_deps_raw
+                    }
                 }
             }
         } else {
@@ -143,7 +165,10 @@ impl Metadata {
                 .map(|v| Package::from_value(v, cargo_version))
                 .collect::<Result<_, _>>()?,
             workspace_members,
-            resolve: Resolve::from_obj(map.remove_object("resolve")?, cargo_version)?,
+            resolve: match map.remove_nullable("resolve", into_object)? {
+                Some(resolve) => Resolve::from_obj(resolve, cargo_version)?,
+                None => Resolve { nodes: HashMap::new() },
+            },
             workspace_root: map.remove_string("workspace_root")?,
         })
     }
@@ -152,10 +177,9 @@ impl Metadata {
 /// The resolved dependency graph for the entire workspace.
 pub(crate) struct Resolve {
     /// Nodes in a dependency graph.
+    ///
+    /// This is always empty if cargo-metadata is run with --no-deps.
     pub(crate) nodes: HashMap<PackageId, Node>,
-    /// The crate for which the metadata was read.
-    /// This is `None` if the metadata was read in a virtual workspace.
-    pub(crate) root: Option<PackageId>,
 }
 
 impl Resolve {
@@ -166,7 +190,6 @@ impl Resolve {
                 .into_iter()
                 .map(|v| Node::from_value(v, cargo_version))
                 .collect::<Result<_, _>>()?,
-            root: map.remove_nullable("root", into_string)?,
         })
     }
 }

@@ -1639,12 +1639,82 @@ fn keep_going() {
 
 #[test]
 fn namespaced_features() {
+    // Namespaced features requires Rust 1.60.
+    let require = Some(60);
+
     cargo_hack(["check", "--feature-powerset"])
-        .assert_success2("namespaced_features", Some(60))
+        .assert_success2("namespaced_features", require)
         .stderr_contains(
             "
             running `cargo check --no-default-features` on namespaced_features (1/2)
             running `cargo check --no-default-features --features easytime` on namespaced_features (2/2)
+            ",
+        );
+}
+
+#[test]
+fn weak_dep_features() {
+    // Weak dependency features requires Rust 1.60.
+    let require = Some(60);
+
+    cargo_hack(["check", "--feature-powerset"])
+        .assert_success2("weak_dep_features", require)
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on weak_dep_features (1/4)
+            running `cargo check --no-default-features --features default` on weak_dep_features (2/4)
+            running `cargo check --no-default-features --features easytime` on weak_dep_features (3/4)
+            running `cargo check --no-default-features --features default,easytime` on weak_dep_features (4/4)
+            ",
+        );
+    cargo_hack(["check", "--feature-powerset", "--optional-deps"])
+        .assert_success2("weak_dep_features", require)
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on weak_dep_features (1/4)
+            running `cargo check --no-default-features --features default` on weak_dep_features (2/4)
+            running `cargo check --no-default-features --features easytime` on weak_dep_features (3/4)
+            running `cargo check --no-default-features --features default,easytime` on weak_dep_features (4/4)
+            ",
+        );
+
+    cargo_hack(["check", "--feature-powerset"])
+        .assert_success2("weak_dep_features_namespaced", require)
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on weak_dep_features_namespaced (1/4)
+            running `cargo check --no-default-features --features default` on weak_dep_features_namespaced (2/4)
+            running `cargo check --no-default-features --features easytime` on weak_dep_features_namespaced (3/4)
+            running `cargo check --no-default-features --features default,easytime` on weak_dep_features_namespaced (4/4)
+            ",
+        );
+    cargo_hack(["check", "--feature-powerset", "--optional-deps"])
+        .assert_success2("weak_dep_features_namespaced", require)
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on weak_dep_features_namespaced (1/4)
+            running `cargo check --no-default-features --features default` on weak_dep_features_namespaced (2/4)
+            running `cargo check --no-default-features --features easytime` on weak_dep_features_namespaced (3/4)
+            running `cargo check --no-default-features --features default,easytime` on weak_dep_features_namespaced (4/4)
+            ",
+        );
+
+    cargo_hack(["check", "--feature-powerset"])
+        .assert_success2("weak_dep_features_implicit", require)
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on weak_dep_features_implicit (1/2)
+            running `cargo check --no-default-features --features default` on weak_dep_features_implicit (2/2)
+            ",
+        );
+    cargo_hack(["check", "--feature-powerset", "--optional-deps"])
+        .assert_success2("weak_dep_features_implicit", require)
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on weak_dep_features_implicit (1/4)
+            running `cargo check --no-default-features --features default` on weak_dep_features_implicit (2/4)
+            running `cargo check --no-default-features --features easytime` on weak_dep_features_implicit (3/4)
+            running `cargo check --no-default-features --features default,easytime` on weak_dep_features_implicit (4/4)
             ",
         );
 }

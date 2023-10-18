@@ -22,35 +22,31 @@ impl Features {
         include_deps_features: bool,
     ) -> Self {
         let package = &metadata.packages[id];
-        let node = &metadata.resolve.nodes[id];
 
-        let mut features = Vec::with_capacity(package.features.len());
-        let mut optional_deps = vec![];
-        let mut namespaced_features = vec![]; // features with `dep:` prefix
+        let mut features: BTreeSet<_> = manifest.features.keys().map(Feature::from).collect();
+        let mut has_namespaced_features = false; // features with `dep:` prefix
 
         // package.features.values() does not provide a way to determine the `dep:` specified by the user.
         for names in manifest.features.values() {
             for name in names {
-                if let Some(name) = name.strip_prefix("dep:") {
-                    namespaced_features.push(name);
+                if name.starts_with("dep:") {
+                    has_namespaced_features = true;
+                    break;
                 }
             }
         }
-        for name in package.optional_deps() {
-            if !namespaced_features.contains(&name) {
-                optional_deps.push(name);
-            }
-        }
-        for name in package.features.keys() {
-            if !optional_deps.contains(&&**name) {
-                features.push(name.into());
-            }
-        }
         let optional_deps_start = features.len();
-        features.extend(optional_deps.into_iter().map(Into::into));
+        // When namespace dependency is used, other optional dependencies are also not
+        // treated as implicit features.
+        if !has_namespaced_features {
+            for name in package.optional_deps() {
+                features.insert(name.into());
+            }
+        }
         let deps_features_start = features.len();
 
         if include_deps_features {
+            let node = &metadata.resolve.nodes[id];
             // TODO: Unpublished dependencies are not included in `node.deps`.
             for dep in node.deps.iter().filter(|dep| {
                 // ignore if `dep_kinds` is empty (i.e., not Rust 1.41+), target specific or not a normal dependency.
@@ -68,7 +64,7 @@ impl Features {
             }
         }
 
-        Self { features, optional_deps_start, deps_features_start }
+        Self { features: features.into_iter().collect(), optional_deps_start, deps_features_start }
     }
 
     pub(crate) fn normal(&self) -> &[Feature] {
@@ -89,6 +85,7 @@ impl Features {
 }
 
 /// The representation of Cargo feature.
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum Feature {
     /// A feature of the current crate.
     Normal {
