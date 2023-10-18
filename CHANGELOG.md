@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.12] - 2023-10-18
+
 - Fix compatibility with old Cargo. This fixes a regression introduced in 0.6.11.
 
 ## [0.6.11] - 2023-10-18
@@ -435,7 +437,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.11...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.12...HEAD
+[0.6.12]: https://github.com/taiki-e/cargo-hack/compare/v0.6.11...v0.6.12
 [0.6.11]: https://github.com/taiki-e/cargo-hack/compare/v0.6.10...v0.6.11
 [0.6.10]: https://github.com/taiki-e/cargo-hack/compare/v0.6.9...v0.6.10
 [0.6.9]: https://github.com/taiki-e/cargo-hack/compare/v0.6.8...v0.6.9
