@@ -13,7 +13,6 @@ use anyhow::{bail, Context as _, Result};
 pub use build_context::TARGET;
 use easy_ext::ext;
 use fs_err as fs;
-use tempfile::TempDir;
 
 pub fn fixtures_path() -> &'static Path {
     Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures"))
@@ -225,7 +224,7 @@ impl AssertOutput {
     }
 }
 
-fn test_project(model: &str) -> Result<(TempDir, PathBuf)> {
+fn test_project(model: &str) -> Result<(tempfile::TempDir, PathBuf)> {
     let tmpdir = tempfile::tempdir()?;
     let tmpdir_path = tmpdir.path();
 
