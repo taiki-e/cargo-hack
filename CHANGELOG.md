@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.13] - 2023-10-22
+
 - Fix handling of optional dependency as features when namespaced features are not used together. This fixes a regression introduced in 0.6.11.
 
 ## [0.6.12] - 2023-10-18
@@ -439,7 +441,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.12...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.13...HEAD
+[0.6.13]: https://github.com/taiki-e/cargo-hack/compare/v0.6.12...v0.6.13
 [0.6.12]: https://github.com/taiki-e/cargo-hack/compare/v0.6.11...v0.6.12
 [0.6.11]: https://github.com/taiki-e/cargo-hack/compare/v0.6.10...v0.6.11
 [0.6.10]: https://github.com/taiki-e/cargo-hack/compare/v0.6.9...v0.6.10
