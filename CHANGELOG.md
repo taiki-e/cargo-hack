@@ -10,13 +10,15 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix handling of optional dependency as features when namespaced features are not used together. This fixes a regression introduced in 0.6.11.
+
 ## [0.6.12] - 2023-10-18
 
 - Fix compatibility with old Cargo. This fixes a regression introduced in 0.6.11.
 
 ## [0.6.11] - 2023-10-18
 
-- Fix handling of weak dependency features when namespaced features is not used together.
+- Fix handling of weak dependency features when namespaced features are not used together.
 
 - Improve performance by passing `--no-deps` to `cargo metadata`  except when using `--include-deps-features`.
 

@@ -23,7 +23,7 @@ impl Features {
     ) -> Self {
         let package = &metadata.packages[id];
 
-        let mut features: BTreeSet<_> = manifest.features.keys().map(Feature::from).collect();
+        let mut features: Vec<_> = manifest.features.keys().map(Feature::from).collect();
         let mut has_namespaced_features = false; // features with `dep:` prefix
 
         // package.features.values() does not provide a way to determine the `dep:` specified by the user.
@@ -40,7 +40,10 @@ impl Features {
         // treated as implicit features.
         if !has_namespaced_features {
             for name in package.optional_deps() {
-                features.insert(name.into());
+                let feature = Feature::from(name);
+                if !features.contains(&feature) {
+                    features.push(feature);
+                }
             }
         }
         let deps_features_start = features.len();
@@ -64,7 +67,7 @@ impl Features {
             }
         }
 
-        Self { features: features.into_iter().collect(), optional_deps_start, deps_features_start }
+        Self { features, optional_deps_start, deps_features_start }
     }
 
     pub(crate) fn normal(&self) -> &[Feature] {
