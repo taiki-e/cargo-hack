@@ -3,12 +3,6 @@ name = "deduplication"
 version = "0.0.0"
 publish = false
 
-[workspace]
-members = [
-    "member1",
-    ".",
-]
-
 [features]
 a = []
 b = ["a"]
@@ -22,3 +16,9 @@ member1 = { path = "member1", optional = true }
 easytime = { version = "=0.2.5", default-features = false }
 
 [dev-dependencies]
+
+[workspace]
+members = [
+    "member1",
+    ".",
+]

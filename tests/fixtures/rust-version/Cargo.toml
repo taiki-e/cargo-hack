@@ -4,14 +4,6 @@ version = "0.0.0"
 publish = false
 rust-version = "1.65"
 
-[workspace]
-members = [
-    "member1",
-    "member2",
-    "member3",
-    ".",
-]
-
 [features]
 default = []
 a = []
@@ -22,3 +14,11 @@ c = []
 member1 = { path = "member1", optional = true }
 
 [dev-dependencies]
+
+[workspace]
+members = [
+    "member1",
+    "member2",
+    "member3",
+    ".",
+]

@@ -3,11 +3,11 @@ name = "keep_going"
 version = "0.0.0"
 publish = false
 
-[workspace]
-
 [features]
 a = []
 
 [dependencies]
 
 [dev-dependencies]
+
+[workspace]

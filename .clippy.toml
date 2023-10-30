@@ -3,8 +3,11 @@
 
 avoid-breaking-exported-api = false
 disallowed-names = []
-disallowed-methods = [
-    # https://internals.rust-lang.org/t/synchronized-ffi-access-to-posix-environment-variable-functions/15475
-    { path = "std::env::remove_var", reason = "this function should be considered `unsafe`" },
-    { path = "std::env::set_var", reason = "this function should be considered `unsafe`" },
+disallowed-macros = [
+    { path = "std::dbg", reason = "it is okay to use during development, but please do not include it in main branch" },
 ]
+disallowed-methods = [
+    { path = "std::env::remove_var", reason = "this is not thread-safe and inherently unsafe; see <https://github.com/rust-lang/rust/issues/27970> for more" },
+    { path = "std::env::set_var", reason = "this is not thread-safe and inherently unsafe; see <https://github.com/rust-lang/rust/issues/27970> for more" },
+]
+disallowed-types = []

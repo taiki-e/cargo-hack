@@ -10,15 +10,15 @@ use std::{
 };
 
 use anyhow::{bail, Context as _, Result};
-pub use build_context::TARGET;
+pub(crate) use build_context::TARGET;
 use easy_ext::ext;
 use fs_err as fs;
 
-pub fn fixtures_path() -> &'static Path {
+pub(crate) fn fixtures_path() -> &'static Path {
     Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures"))
 }
 
-pub fn cargo_bin_exe() -> Command {
+pub(crate) fn cargo_bin_exe() -> Command {
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_cargo-hack"));
     cmd.env("CARGO_HACK_DENY_WARNINGS", "true");
     cmd.env_remove("RUSTFLAGS");
@@ -27,7 +27,7 @@ pub fn cargo_bin_exe() -> Command {
     cmd
 }
 
-pub fn has_rustup() -> bool {
+pub(crate) fn has_rustup() -> bool {
     Command::new("rustup").arg("--version").output().is_ok()
 }
 
@@ -44,7 +44,7 @@ fn test_version() -> Option<u32> {
     })
 }
 
-pub fn has_stable_toolchain() -> bool {
+pub(crate) fn has_stable_toolchain() -> bool {
     static HAS_STABLE_TOOLCHAIN: OnceLock<Option<bool>> = OnceLock::new();
     HAS_STABLE_TOOLCHAIN
         .get_or_init(|| {
@@ -54,7 +54,7 @@ pub fn has_stable_toolchain() -> bool {
         .unwrap_or_default()
 }
 
-pub fn cargo_hack<O: AsRef<OsStr>>(args: impl AsRef<[O]>) -> Command {
+pub(crate) fn cargo_hack<O: AsRef<OsStr>>(args: impl AsRef<[O]>) -> Command {
     let args = args.as_ref();
     let mut cmd = cargo_bin_exe();
     cmd.arg("hack");
@@ -73,7 +73,7 @@ pub fn cargo_hack<O: AsRef<OsStr>>(args: impl AsRef<[O]>) -> Command {
 #[ext(CommandExt)]
 impl Command {
     #[track_caller]
-    pub fn assert_output(&mut self, test_model: &str, require: Option<u32>) -> AssertOutput {
+    pub(crate) fn assert_output(&mut self, test_model: &str, require: Option<u32>) -> AssertOutput {
         match (test_version(), require) {
             (Some(toolchain), Some(require)) if require > toolchain => {
                 return AssertOutput(None);
@@ -91,12 +91,16 @@ impl Command {
     }
 
     #[track_caller]
-    pub fn assert_success(&mut self, test_model: &str) -> AssertOutput {
+    pub(crate) fn assert_success(&mut self, test_model: &str) -> AssertOutput {
         self.assert_success2(test_model, None)
     }
 
     #[track_caller]
-    pub fn assert_success2(&mut self, test_model: &str, require: Option<u32>) -> AssertOutput {
+    pub(crate) fn assert_success2(
+        &mut self,
+        test_model: &str,
+        require: Option<u32>,
+    ) -> AssertOutput {
         let output = self.assert_output(test_model, require);
         if let Some(output) = &output.0 {
             if !output.status.success() {
@@ -112,12 +116,16 @@ impl Command {
     }
 
     #[track_caller]
-    pub fn assert_failure(&mut self, test_model: &str) -> AssertOutput {
+    pub(crate) fn assert_failure(&mut self, test_model: &str) -> AssertOutput {
         self.assert_failure2(test_model, None)
     }
 
     #[track_caller]
-    pub fn assert_failure2(&mut self, test_model: &str, require: Option<u32>) -> AssertOutput {
+    pub(crate) fn assert_failure2(
+        &mut self,
+        test_model: &str,
+        require: Option<u32>,
+    ) -> AssertOutput {
         let output = self.assert_output(test_model, require);
         if let Some(output) = &output.0 {
             if output.status.success() {
@@ -133,7 +141,7 @@ impl Command {
     }
 }
 
-pub struct AssertOutput(Option<AssertOutputInner>);
+pub(crate) struct AssertOutput(Option<AssertOutputInner>);
 
 struct AssertOutputInner {
     stdout: String,
@@ -157,7 +165,7 @@ fn line_separated(lines: &str) -> impl Iterator<Item = &'_ str> {
 impl AssertOutput {
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stderr contains each pattern.
     #[track_caller]
-    pub fn stderr_contains(&self, pats: impl AsRef<str>) -> &Self {
+    pub(crate) fn stderr_contains(&self, pats: impl AsRef<str>) -> &Self {
         if let Some(output) = &self.0 {
             for pat in line_separated(&replace_command(pats.as_ref())) {
                 if !output.stderr.contains(pat) {
@@ -174,7 +182,7 @@ impl AssertOutput {
 
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stdout contains each pattern.
     #[track_caller]
-    pub fn stderr_not_contains(&self, pats: impl AsRef<str>) -> &Self {
+    pub(crate) fn stderr_not_contains(&self, pats: impl AsRef<str>) -> &Self {
         if let Some(output) = &self.0 {
             for pat in line_separated(&replace_command(pats.as_ref())) {
                 if output.stderr.contains(pat) {
@@ -191,7 +199,7 @@ impl AssertOutput {
 
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stdout contains each pattern.
     #[track_caller]
-    pub fn stdout_contains(&self, pats: impl AsRef<str>) -> &Self {
+    pub(crate) fn stdout_contains(&self, pats: impl AsRef<str>) -> &Self {
         if let Some(output) = &self.0 {
             for pat in line_separated(&replace_command(pats.as_ref())) {
                 if !output.stdout.contains(pat) {
@@ -208,7 +216,7 @@ impl AssertOutput {
 
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stdout contains each pattern.
     #[track_caller]
-    pub fn stdout_not_contains(&self, pats: impl AsRef<str>) -> &Self {
+    pub(crate) fn stdout_not_contains(&self, pats: impl AsRef<str>) -> &Self {
         if let Some(output) = &self.0 {
             for pat in line_separated(&replace_command(pats.as_ref())) {
                 if output.stdout.contains(pat) {

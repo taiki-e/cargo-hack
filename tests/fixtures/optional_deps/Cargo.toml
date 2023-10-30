@@ -3,6 +3,13 @@ name = "optional_deps"
 version = "0.0.0"
 publish = false
 
+[features]
+
+[dependencies]
+real = { path = "real", optional = true }
+member2 = { path = "member2" }
+renamed = { path = "member3", package = "member3", optional = true }
+
 [workspace]
 members = [
     "real",
@@ -10,10 +17,3 @@ members = [
     "member3",
     ".",
 ]
-
-[features]
-
-[dependencies]
-real = { path = "real", optional = true }
-member2 = { path = "member2" }
-renamed = { path = "member3", package = "member3", optional = true }

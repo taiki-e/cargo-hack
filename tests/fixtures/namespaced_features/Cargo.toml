@@ -4,9 +4,6 @@ version = "0.0.0"
 edition = "2021"
 publish = false
 
-[workspace]
-resolver = "2"
-
 [features]
 easytime = ["dep:easytime"]
 
@@ -18,3 +15,6 @@ easytime = { version = "=0.2.5", optional = true, default-features = false }
 portable-atomic = { version = "1", optional = true }
 
 [dev-dependencies]
+
+[workspace]
+resolver = "2"

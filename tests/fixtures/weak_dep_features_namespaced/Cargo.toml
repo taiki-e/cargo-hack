@@ -4,9 +4,6 @@ version = "0.0.0"
 edition = "2021"
 publish = false
 
-[workspace]
-resolver = "2"
-
 [features]
 easytime = ["dep:easytime", "easytime/std"]
 default = ["easytime?/default"]
@@ -16,3 +13,6 @@ default = ["easytime?/default"]
 easytime = { version = "=0.2.5", optional = true, default-features = false }
 
 [dev-dependencies]
+
+[workspace]
+resolver = "2"
