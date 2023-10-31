@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #![forbid(unsafe_code)]
-#![allow(clippy::cast_lossless, clippy::struct_field_names)]
+#![allow(clippy::struct_field_names)]
 
 #[macro_use]
 mod term;
@@ -233,10 +233,11 @@ fn determine_kind<'a>(
             Some(PackageRuns { id, kind, feature_count })
         } else {
             let feature_count = features.len()
-                + !cx.exclude_no_default_features as usize
-                + (!cx.exclude_all_features
-                    && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1)
-                    as usize;
+                + usize::from(!cx.exclude_no_default_features)
+                + usize::from(
+                    !cx.exclude_all_features
+                        && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1,
+                );
             let kind = Kind::Each { features };
             Some(PackageRuns { id, kind, feature_count })
         }
@@ -253,10 +254,11 @@ fn determine_kind<'a>(
             Some(PackageRuns { id, kind, feature_count })
         } else {
             let feature_count = features.len()
-                + !cx.exclude_no_default_features as usize
-                + (!cx.exclude_all_features
-                    && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1)
-                    as usize;
+                + usize::from(!cx.exclude_no_default_features)
+                + usize::from(
+                    !cx.exclude_all_features
+                        && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1,
+                );
             let kind = Kind::Powerset { features };
             Some(PackageRuns { id, kind, feature_count })
         }
