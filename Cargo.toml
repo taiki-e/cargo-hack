@@ -33,7 +33,7 @@ same-file = "1.0.1"
 serde_json = "1"
 slab = "0.4.4"
 termcolor = "1.1"
-toml_edit = "0.20"
+toml_edit = "0.21"
 
 [dev-dependencies]
 build-context = "0.1"
