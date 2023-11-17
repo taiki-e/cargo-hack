@@ -25,8 +25,6 @@ type ParseResult<T> = Result<T, &'static str>;
 /// An opaque unique identifier for referring to the package.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct PackageId {
-    /// The underlying string representation of id.
-    /// The precise format is an implementation detail and is subject to change.
     repr: Rc<str>,
 }
 
@@ -39,6 +37,8 @@ impl From<String> for PackageId {
 pub(crate) struct Metadata {
     pub(crate) cargo_version: u32,
     /// List of all packages in the workspace and all feature-enabled dependencies.
+    //
+    /// This doesn't contain dependencies if cargo-metadata is run with --no-deps.
     pub(crate) packages: HashMap<PackageId, Package>,
     /// List of members of the workspace.
     pub(crate) workspace_members: Vec<PackageId>,
@@ -87,7 +87,7 @@ impl Metadata {
                         cmd.arg(target);
                     }
                 }
-                // features-related flags are unneeded for --no-deps.
+                // features-related flags are unneeded when --no-deps is used.
                 // TODO:
                 // cmd.arg("--all-features");
             } else {
@@ -394,7 +394,6 @@ fn into_string<S: From<String>>(value: Value) -> Option<S> {
         None
     }
 }
-
 fn into_array(value: Value) -> Option<Vec<Value>> {
     if let Value::Array(array) = value {
         Some(array)
@@ -402,7 +401,6 @@ fn into_array(value: Value) -> Option<Vec<Value>> {
         None
     }
 }
-
 fn into_object(value: Value) -> Option<Object> {
     if let Value::Object(object) = value {
         Some(object)
