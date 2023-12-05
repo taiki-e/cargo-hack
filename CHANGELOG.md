@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Update `toml_edit` to 0.21.
+
 ## [0.6.13] - 2023-10-22
 
 - Fix handling of optional dependency as features when namespaced features are not used together. This fixes a regression introduced in 0.6.11.
