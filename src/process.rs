@@ -56,8 +56,8 @@ impl<'a> ProcessBuilder<'a> {
             program: program.into().into(),
             propagated_leading_args: &[],
             trailing_args: &[],
-            leading_args: Vec::new(),
-            args: Vec::new(),
+            leading_args: vec![],
+            args: vec![],
             features: String::new(),
             strip_program_path: false,
         }

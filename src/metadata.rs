@@ -215,7 +215,7 @@ impl Node {
                     .map(|v| NodeDep::from_value(v, cargo_version))
                     .collect::<Result<_, _>>()?
             } else {
-                Vec::new()
+                vec![]
             },
         }))
     }
@@ -244,7 +244,7 @@ impl NodeDep {
                     .map(DepKindInfo::from_value)
                     .collect::<Result<_, _>>()?
             } else {
-                Vec::new()
+                vec![]
             },
         })
     }
