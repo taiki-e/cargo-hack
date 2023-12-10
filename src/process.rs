@@ -185,12 +185,12 @@ impl<'a> ProcessBuilder<'a> {
 
 impl fmt::Display for ProcessBuilder<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "`")?;
+        f.write_str("`")?;
 
         if !self.strip_program_path && (f.alternate() || term::verbose()) {
-            write!(f, "{}", self.program.to_string_lossy())?;
+            f.write_str(&self.program.to_string_lossy())?;
         } else {
-            write!(f, "{}", Path::new(&*self.program).file_stem().unwrap().to_string_lossy())?;
+            f.write_str(&Path::new(&*self.program).file_stem().unwrap().to_string_lossy())?;
         }
 
         for arg in &self.leading_args {
@@ -211,9 +211,7 @@ impl fmt::Display for ProcessBuilder<'_> {
                         .ok()
                         .and_then(|cwd| path.strip_prefix(cwd).ok())
                         .unwrap_or(path);
-
-                    write!(f, " --manifest-path")?;
-                    write!(f, " {}", path.display())?;
+                    write!(f, " --manifest-path {}", path.display())?;
                 }
             } else {
                 write!(f, " {}", arg.to_string_lossy())?;
@@ -225,13 +223,13 @@ impl fmt::Display for ProcessBuilder<'_> {
         }
 
         if !self.trailing_args.is_empty() {
-            write!(f, " --")?;
+            f.write_str(" --")?;
             for arg in self.trailing_args {
                 write!(f, " {arg}")?;
             }
         }
 
-        write!(f, "`")
+        f.write_str("`")
     }
 }
 

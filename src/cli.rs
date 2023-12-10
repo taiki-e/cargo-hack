@@ -848,18 +848,18 @@ impl fmt::Display for Help {
             desc: &str,
         ) -> fmt::Result {
             if require_first_indent {
-                (0..indent).try_for_each(|_| write!(f, " "))?;
+                (0..indent).try_for_each(|_| f.write_str(" "))?;
             }
             let mut written = 0;
             let size = term_size - indent;
             for s in desc.split(' ') {
                 if written + s.len() + 1 >= size {
                     writeln!(f)?;
-                    (0..indent).try_for_each(|_| write!(f, " "))?;
-                    write!(f, "{s}")?;
+                    (0..indent).try_for_each(|_| f.write_str(" "))?;
+                    f.write_str(s)?;
                     written = s.len();
                 } else if written == 0 {
-                    write!(f, "{s}")?;
+                    f.write_str(s)?;
                     written += s.len();
                 } else {
                     write!(f, " {s}")?;
