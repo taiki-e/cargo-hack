@@ -15,22 +15,21 @@ multiple-versions = "warn"
 wildcards = "allow" # https://github.com/EmbarkStudios/cargo-deny/issues/488
 build.allow-build-scripts = [
     { name = "anyhow" },
-    { name = "libc" },                         # via ctrlc & is-terminal
+    { name = "libc" },                         # via ctrlc
     { name = "proc-macro2" },
-    { name = "rustix" },                       # via is-terminal
     { name = "serde_json" },
     { name = "serde" },
     { name = "slab" },
     { name = "winapi-i686-pc-windows-gnu" },   # via same-file & termcolor
     { name = "winapi-x86_64-pc-windows-gnu" }, # via same-file & termcolor
     { name = "winapi" },                       # via same-file & termcolor
-    { name = "windows_aarch64_gnullvm" },      # via ctrlc & is-terminal
-    { name = "windows_aarch64_msvc" },         # via ctrlc & is-terminal
-    { name = "windows_i686_gnu" },             # via ctrlc & is-terminal
-    { name = "windows_i686_msvc" },            # via ctrlc & is-terminal
-    { name = "windows_x86_64_gnu" },           # via ctrlc & is-terminal
-    { name = "windows_x86_64_gnullvm" },       # via ctrlc & is-terminal
-    { name = "windows_x86_64_msvc" },          # via ctrlc & is-terminal
+    { name = "windows_aarch64_gnullvm" },      # via ctrlc
+    { name = "windows_aarch64_msvc" },         # via ctrlc
+    { name = "windows_i686_gnu" },             # via ctrlc
+    { name = "windows_i686_msvc" },            # via ctrlc
+    { name = "windows_x86_64_gnu" },           # via ctrlc
+    { name = "windows_x86_64_gnullvm" },       # via ctrlc
+    { name = "windows_x86_64_msvc" },          # via ctrlc
 ]
 
 # https://embarkstudios.github.io/cargo-deny/checks/licenses/cfg.html

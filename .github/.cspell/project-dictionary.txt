@@ -2,7 +2,6 @@ binstall
 compat
 endgroup
 qpmember
-rustix
 subcrate
 vvpmember
 winapi
