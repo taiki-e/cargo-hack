@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Remove dependency on `is-terminal`.
+
 ## [0.6.14] - 2023-12-05
 
 - Update `toml_edit` to 0.21.
