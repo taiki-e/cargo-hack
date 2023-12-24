@@ -1,5 +1,4 @@
 binstall
-compat
 endgroup
 qpmember
 subcrate
