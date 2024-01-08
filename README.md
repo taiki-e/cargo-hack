@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/cargo-hack?style=flat-square&logo=rust)](https://crates.io/crates/cargo-hack)
 [![license](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue?style=flat-square)](#license)
-[![build status](https://img.shields.io/github/actions/workflow/status/taiki-e/cargo-hack/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/taiki-e/cargo-hack/actions)
+[![github actions](https://img.shields.io/github/actions/workflow/status/taiki-e/cargo-hack/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/taiki-e/cargo-hack/actions)
 
 Cargo subcommand to provide various options useful for testing and continuous
 integration.
