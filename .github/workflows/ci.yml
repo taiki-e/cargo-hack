@@ -58,9 +58,7 @@ jobs:
     runs-on: ${{ matrix.os || 'ubuntu-20.04' }}
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+      - uses: taiki-e/github-actions/checkout@main
       - name: Install Rust
         run: rustup toolchain add ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
       - run: rustup toolchain add nightly --no-self-update
@@ -99,9 +97,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+      - uses: taiki-e/github-actions/checkout@main
       - name: Install Rust
         run: rustup toolchain add nightly --no-self-update && rustup default nightly
       - run: CARGO_HACK_TEST_TOOLCHAIN=${{ matrix.rust }} cargo test --workspace --all-features
@@ -118,10 +114,7 @@ jobs:
       - name: Install Rust
         run: apk --no-cache add bash cargo git
         shell: sh
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - run: git config --system --add safe.directory '*' # Workaround for https://github.com/actions/runner/issues/2033
+      - uses: taiki-e/github-actions/checkout@main
       - run: cargo test --workspace --all-features
       - run: |
           set -eEuxo pipefail
@@ -134,9 +127,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+      - uses: taiki-e/github-actions/checkout@main
       - name: Install Rust
         run: rustup toolchain add nightly --no-self-update --component miri && rustup default nightly
       - run: cargo miri test --workspace --all-features
