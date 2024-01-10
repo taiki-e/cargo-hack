@@ -115,7 +115,7 @@ jobs:
     container: alpine
     steps:
       - name: Install Rust
-        run: apk --no-cache add bash cargo git
+        run: apk --no-cache add bash cargo
         shell: sh
       - uses: taiki-e/github-actions/checkout@main
       - run: cargo test --workspace --all-features
