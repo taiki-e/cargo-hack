@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.16] - 2024-01-24
+
 - Fix "No such file or directory" error when `--no-private` flag is used with the workspace that the members field contains glob. ([#228](https://github.com/taiki-e/cargo-hack/pull/228))
 
 ## [0.6.15] - 2023-12-16
@@ -451,7 +453,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.15...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.16...HEAD
+[0.6.16]: https://github.com/taiki-e/cargo-hack/compare/v0.6.15...v0.6.16
 [0.6.15]: https://github.com/taiki-e/cargo-hack/compare/v0.6.14...v0.6.15
 [0.6.14]: https://github.com/taiki-e/cargo-hack/compare/v0.6.13...v0.6.14
 [0.6.13]: https://github.com/taiki-e/cargo-hack/compare/v0.6.12...v0.6.13
