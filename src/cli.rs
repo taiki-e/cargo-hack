@@ -561,9 +561,16 @@ impl Args {
             None => LogGroup::auto(),
         };
 
-        if no_dev_deps {
+        if no_dev_deps || no_private {
+            let flag = if no_dev_deps && no_private {
+                "--no-dev-deps and --no-private modify"
+            } else if no_dev_deps {
+                "--no-dev-deps modifies"
+            } else {
+                "--no-private modifies"
+            };
             info!(
-                "--no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is running and restores it when finished"
+                "{flag} real `Cargo.toml` while cargo-hack is running and restores it when finished"
             );
         }
 

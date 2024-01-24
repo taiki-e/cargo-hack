@@ -348,16 +348,16 @@ fn no_dev_deps() {
     cargo_hack(["check", "--no-dev-deps"]).assert_success("real").stderr_contains(
         "
         running `cargo check` on real
-        --no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is \
-        running and restores it when finished
+        --no-dev-deps modifies real `Cargo.toml` while cargo-hack is running and \
+        restores it when finished
         ",
     );
 
     // with --all
     cargo_hack(["check", "--no-dev-deps", "--all"]).assert_success("real").stderr_contains(
         "
-        --no-dev-deps removes dev-dependencies from real `Cargo.toml` while cargo-hack is \
-        running and restores it when finished
+        --no-dev-deps modifies real `Cargo.toml` while cargo-hack is running and \
+        restores it when finished
         ",
     );
 }
