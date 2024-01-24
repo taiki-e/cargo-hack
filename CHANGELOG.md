@@ -12,7 +12,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.6.16] - 2024-01-24
 
-- Fix "No such file or directory" error when `--no-private` flag is used with the workspace that the members field contains glob. ([#228](https://github.com/taiki-e/cargo-hack/pull/228))
+- Fix "No such file or directory" error when `--no-private` flag is used with the workspace that the `members` field contains glob. ([#228](https://github.com/taiki-e/cargo-hack/pull/228))
 
 ## [0.6.15] - 2023-12-16
 
