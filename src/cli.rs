@@ -748,6 +748,7 @@ const HELP: &[HelpText<'_>] = &[
         ],
     ),
     ("", "--group-features", "<FEATURES>...", "Space or comma separated list of features to group", &[
+        "This treats the specified features as if it were a single feature.",
         "To specify multiple groups, use this option multiple times: `--group-features a,b \
          --group-features c,d`",
         "This flag can only be used together with --feature-powerset flag.",

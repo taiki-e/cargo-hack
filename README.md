@@ -122,6 +122,8 @@ OPTIONS:
         --group-features <FEATURES>...
             Space or comma separated list of features to group.
 
+            This treats the specified features as if it were a single feature.
+
             To specify multiple groups, use this option multiple times: `--group-features a,b
             --group-features c,d`
 
@@ -320,6 +322,8 @@ If the number is set to 1, `--feature-powerset` is equivalent to
 #### --group-features
 
 Space or comma separated list of features to group.
+
+This treats the specified features as if it were a single feature.
 
 To specify multiple groups, use this option multiple times:
 `--group-features a,b --group-features c,d`
