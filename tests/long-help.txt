@@ -97,6 +97,14 @@ OPTIONS:
 
             This flag can only be used together with --feature-powerset flag.
 
+        --mutually-exclusive-features <FEATURES>...
+            Space or comma separated list of features to not use together.
+
+            To specify multiple groups, use this option multiple times:
+            `--mutually-exclusive-features a,b --mutually-exclusive-features c,d`
+
+            This flag can only be used together with --feature-powerset flag.
+
         --at-least-one-of <FEATURES>...
             Space or comma separated list of features. Skips sets of features that don't enable any
             of the features listed.
