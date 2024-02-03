@@ -82,6 +82,8 @@ pub(crate) struct Args {
     pub(crate) depth: Option<usize>,
     /// --group-features <FEATURES>...
     pub(crate) group_features: Vec<Feature>,
+    /// `--mutually-exclusive-features <FEATURES>`
+    pub(crate) mutually_exclusive_features: Vec<Feature>,
     /// --at-least-one-of <FEATURES>...
     /// Implies --exclude-no-default-features. Can be specified multiple times.
     pub(crate) at_least_one_of: Vec<Feature>,
@@ -169,6 +171,7 @@ impl Args {
         let mut exclude_all_features = false;
 
         let mut group_features: Vec<String> = vec![];
+        let mut mutually_exclusive_features: Vec<String> = vec![];
         let mut depth = None;
 
         let mut verbose = 0;
@@ -251,6 +254,9 @@ impl Args {
                 Short('p') | Long("package") => package.push(parser.value()?.parse()?),
                 Long("exclude") => exclude.push(parser.value()?.parse()?),
                 Long("group-features") => group_features.push(parser.value()?.parse()?),
+                Long("mutually-exclusive-features") => {
+                    mutually_exclusive_features.push(parser.value()?.parse()?);
+                }
 
                 Short('F') | Long("features") => parse_multi_opt!(features),
                 Long("skip" | "exclude-features") => parse_multi_opt!(exclude_features),
@@ -422,6 +428,8 @@ impl Args {
                 requires("--depth", &["--feature-powerset"])?;
             } else if !group_features.is_empty() {
                 requires("--group-features", &["--feature-powerset"])?;
+            } else if !mutually_exclusive_features.is_empty() {
+                requires("--mutually-exclusive-features", &["--feature-powerset"])?;
             } else if !at_least_one_of.is_empty() {
                 requires("--at-least-one-of", &["--feature-powerset"])?;
             }
@@ -429,6 +437,8 @@ impl Args {
 
         let depth = depth.as_deref().map(str::parse::<usize>).transpose()?;
         let group_features = parse_grouped_features(&group_features, "group-features")?;
+        let mutually_exclusive_features =
+            parse_grouped_features(&mutually_exclusive_features, "mutually-exclusive-features")?;
         let at_least_one_of = parse_grouped_features(&at_least_one_of, "at-least-one-of")?;
 
         if let Some(subcommand) = subcommand.as_deref() {
@@ -504,6 +514,9 @@ impl Args {
             }
             if group_features.iter().any(|v| v.matches(f)) {
                 bail!("feature `{f}` specified by both --exclude-features and --group-features");
+            }
+            if mutually_exclusive_features.iter().any(|v| v.matches(f)) {
+                bail!("feature `{f}` specified by both --exclude-features and --mutually-exclusive-features");
             }
             if include_features.contains(f) {
                 bail!("feature `{f}` specified by both --exclude-features and --include-features");
@@ -621,6 +634,7 @@ impl Args {
 
             depth,
             group_features,
+            mutually_exclusive_features,
 
             exclude_features,
             exclude_no_default_features,
@@ -736,6 +750,11 @@ const HELP: &[HelpText<'_>] = &[
     ("", "--group-features", "<FEATURES>...", "Space or comma separated list of features to group", &[
         "To specify multiple groups, use this option multiple times: `--group-features a,b \
          --group-features c,d`",
+        "This flag can only be used together with --feature-powerset flag.",
+    ]),
+    ("", "--mutually-exclusive-features", "<FEATURES>...", "Space or comma separated list of features to not use together", &[
+        "To specify multiple groups, use this option multiple times: `--mutually-exclusive-features \
+         a,b --mutually-exclusive-features c,d`",
         "This flag can only be used together with --feature-powerset flag.",
     ]),
     ("", "--at-least-one-of", "<FEATURES>...", "Space or comma separated list of features. Skips sets of features that don't enable any of the features listed", &[

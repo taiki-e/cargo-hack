@@ -241,8 +241,13 @@ fn determine_kind<'a>(
             Some(PackageRuns { id, kind, feature_count })
         }
     } else if cx.feature_powerset {
-        let features =
-            features::feature_powerset(features, cx.depth, &cx.at_least_one_of, &package.features);
+        let features = features::feature_powerset(
+            features,
+            cx.depth,
+            &cx.at_least_one_of,
+            &cx.mutually_exclusive_features,
+            &package.features,
+        );
 
         if (pkg_features.normal().is_empty() && pkg_features.optional_deps().is_empty()
             || !cx.include_features.is_empty())
