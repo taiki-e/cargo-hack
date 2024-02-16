@@ -209,9 +209,9 @@ pub(crate) fn feature_powerset<'a>(
         .filter(move |fs| {
             // Filter any feature set containing more than one feature from the same mutually
             // exclusive group.
-            let mut count = 0;
-            for f in fs.iter().flat_map(|f| f.as_group()) {
-                for group in mutually_exclusive_features {
+            for group in mutually_exclusive_features {
+                let mut count = 0;
+                for f in fs.iter().flat_map(|f| f.as_group()) {
                     if group.matches(f) {
                         count += 1;
                         if count > 1 {
@@ -353,13 +353,26 @@ mod tests {
 
         let map = map![("tokio", v![]), ("async-std", v![]), ("a", v![]), ("b", v!["a"])];
         let list = v!["a", "b", "tokio", "async-std"];
-        let filtered =
-            feature_powerset(&list, None, &[], &["tokio".into(), "async-std".into()], &map);
+        let mutually_exclusive_features = [Feature::group(["tokio", "async-std"])];
+        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &map);
         assert_eq!(filtered, vec![
             vec!["a"],
             vec!["b"],
             vec!["tokio"],
             vec!["a", "tokio"],
+            vec!["b", "tokio"],
+            vec!["async-std"],
+            vec!["a", "async-std"],
+            vec!["b", "async-std"]
+        ]);
+
+        let mutually_exclusive_features =
+            [Feature::group(["tokio", "a"]), Feature::group(["tokio", "async-std"])];
+        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &map);
+        assert_eq!(filtered, vec![
+            vec!["a"],
+            vec!["b"],
+            vec!["tokio"],
             vec!["b", "tokio"],
             vec!["async-std"],
             vec!["a", "async-std"],
