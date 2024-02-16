@@ -881,17 +881,16 @@ impl fmt::Display for Help {
             let size = term_size - indent;
             for s in desc.split(' ') {
                 if written + s.len() + 1 >= size {
-                    writeln!(f)?;
+                    f.write_str("\n")?;
                     (0..indent).try_for_each(|_| f.write_str(" "))?;
-                    f.write_str(s)?;
-                    written = s.len();
+                    written = 0;
                 } else if written == 0 {
-                    f.write_str(s)?;
-                    written += s.len();
                 } else {
-                    write!(f, " {s}")?;
-                    written += s.len() + 1;
+                    f.write_str(" ")?;
+                    written += 1;
                 }
+                f.write_str(s)?;
+                written += s.len();
             }
             Ok(())
         }
@@ -912,16 +911,16 @@ OPTIONS:",
         for &(short, long, value_name, desc, additional) in HELP {
             write!(f, "    {short:2}{} ", if short.is_empty() { " " } else { "," })?;
             if self.long {
-                if value_name.is_empty() {
-                    writeln!(f, "{long}")?;
-                } else {
-                    writeln!(f, "{long} {value_name}")?;
+                f.write_str(long)?;
+                if !value_name.is_empty() {
+                    write!(f, " {value_name}")?;
                 }
+                f.write_str("\n")?;
                 write(f, 12, true, self.term_size, desc)?;
-                writeln!(f, ".\n")?;
+                f.write_str(".\n\n")?;
                 for desc in additional {
                     write(f, 12, true, self.term_size, desc)?;
-                    writeln!(f, "\n")?;
+                    f.write_str("\n\n")?;
                 }
             } else {
                 if value_name.is_empty() {
@@ -931,21 +930,21 @@ OPTIONS:",
                     write!(f, "{long:32} ")?;
                 }
                 write(f, 41, false, self.term_size, desc)?;
-                writeln!(f)?;
+                f.write_str("\n")?;
             }
         }
         if !self.long {
-            writeln!(f)?;
+            f.write_str("\n")?;
         }
 
-        writeln!(
-            f,
+        f.write_str(
             "\
 Some common cargo commands are (see all commands with --list):
     build       Compile the current package
     check       Analyze the current package and report errors, but don't build object files
     run         Run a binary or example of the local package
-    test        Run the tests"
+    test        Run the tests
+",
         )
     }
 }

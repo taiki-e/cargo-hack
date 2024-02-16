@@ -66,7 +66,7 @@ impl fmt::Display for VersionRange {
         if let MaybeVersion::Version(start) = self.start_inclusive {
             write!(f, "{start}")?;
         }
-        write!(f, "..")?;
+        f.write_str("..")?;
         if let MaybeVersion::Version(end) = self.end_inclusive {
             write!(f, "={end}")?;
         }

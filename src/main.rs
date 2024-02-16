@@ -503,8 +503,7 @@ struct KeepGoing {
 
 impl fmt::Display for KeepGoing {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "failed to run {} commands", self.count)?;
-        writeln!(f)?;
+        writeln!(f, "failed to run {} commands\n", self.count)?;
         writeln!(f, "failed commands:")?;
         for (pkg, commands) in &self.failed_commands {
             writeln!(f, "    {pkg}:")?;
