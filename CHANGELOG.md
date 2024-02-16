@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.19] - 2024-02-16
+
 - Fix bug in `--mutually-exclusive-features` option. ([#235](https://github.com/taiki-e/cargo-hack/pull/235), thanks @sunmy2019)
 
 ## [0.6.18] - 2024-02-10
@@ -463,7 +465,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.18...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.19...HEAD
+[0.6.19]: https://github.com/taiki-e/cargo-hack/compare/v0.6.18...v0.6.19
 [0.6.18]: https://github.com/taiki-e/cargo-hack/compare/v0.6.17...v0.6.18
 [0.6.17]: https://github.com/taiki-e/cargo-hack/compare/v0.6.16...v0.6.17
 [0.6.16]: https://github.com/taiki-e/cargo-hack/compare/v0.6.15...v0.6.16
