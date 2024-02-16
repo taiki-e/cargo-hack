@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix bug in `--mutually-exclusive-features` option. ([#235](https://github.com/taiki-e/cargo-hack/pull/235), thanks @sunmy2019)
+
 ## [0.6.18] - 2024-02-10
 
 - Update `toml_edit` to 0.22.
