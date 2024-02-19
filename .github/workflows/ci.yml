@@ -75,7 +75,7 @@ jobs:
           cargo hack check --feature-powerset --workspace --message-format=json
           cd ../rust-version
           rustup toolchain remove 1.63 1.64 1.65
-          cargo hack check --rust-version --workspace
+          cargo hack check --rust-version --workspace --locked
           cargo uninstall cargo-hack
       - uses: taiki-e/install-action@cargo-hack
       - uses: taiki-e/install-action@cargo-minimal-versions

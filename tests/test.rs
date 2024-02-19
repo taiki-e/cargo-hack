@@ -1466,7 +1466,7 @@ fn version_range() {
         "--workspace",
         "--locked",
     ])
-    .assert_failure("rust-version")
+    .assert_success("rust-version")
     .stderr_contains(
         "
             running `rustup run 1.63 cargo check --locked` on member1 (1/7)
@@ -1496,7 +1496,7 @@ fn rust_version() {
             ",
         );
     cargo_hack(["check", "--rust-version", "--workspace", "--locked"])
-        .assert_failure("rust-version")
+        .assert_success("rust-version")
         .stderr_contains(
             "
             running `rustup run 1.63 cargo check --locked` on member1 (1/4)

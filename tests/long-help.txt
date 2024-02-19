@@ -24,6 +24,9 @@ OPTIONS:
         --manifest-path <PATH>
             Path to Cargo.toml.
 
+        --locked
+            Require Cargo.lock is up to date.
+
     -F, --features <FEATURES>...
             Space or comma separated list of features to activate.
 
