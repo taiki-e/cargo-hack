@@ -25,6 +25,8 @@ pub(crate) struct Args {
     pub(crate) manifest_path: Option<String>,
     /// --no-manifest-path
     pub(crate) no_manifest_path: bool,
+    /// --locked
+    pub(crate) locked: bool,
     /// -p, --package <SPEC>...
     pub(crate) package: Vec<String>,
     /// --exclude <SPEC>...
@@ -155,6 +157,7 @@ impl Args {
         let mut keep_going = false;
         let mut print_command_list = false;
         let mut no_manifest_path = false;
+        let mut locked = false;
         let mut rust_version = false;
         let mut version_range = None;
         let mut version_step = None;
@@ -307,6 +310,7 @@ impl Args {
                 Long("keep-going") => parse_flag!(keep_going),
                 Long("print-command-list") => parse_flag!(print_command_list),
                 Long("no-manifest-path") => parse_flag!(no_manifest_path),
+                Long("locked") => parse_flag!(locked),
                 Long("ignore-unknown-features") => parse_flag!(ignore_unknown_features),
                 Short('v') | Long("verbose") => verbose += 1,
 
@@ -609,6 +613,7 @@ impl Args {
             subcommand,
 
             manifest_path,
+            locked,
             package,
             exclude,
             workspace,
@@ -700,6 +705,7 @@ const HELP: &[HelpText<'_>] = &[
         "This flag can only be used together with --workspace",
     ]),
     ("", "--manifest-path", "<PATH>", "Path to Cargo.toml", &[]),
+    ("", "--locked", "", "Require Cargo.lock is up to date", &[]),
     ("-F", "--features", "<FEATURES>...", "Space or comma separated list of features to activate", &[]),
     ("", "--each-feature", "", "Perform for each feature of the package", &[
         "This also includes runs with just --no-default-features flag, and default features.",

@@ -114,7 +114,7 @@ fn try_main() -> Result<()> {
 
             // First, generate the lockfile using the oldest cargo specified.
             // https://github.com/taiki-e/cargo-hack/issues/105
-            let mut generate_lockfile = true;
+            let mut generate_lockfile = !cx.locked;
             // Workaround for spurious "failed to select a version" error.
             // (This does not work around the underlying cargo bug: https://github.com/rust-lang/cargo/issues/10623)
             let mut regenerate_lockfile_on_51_or_up = false;
@@ -392,6 +392,9 @@ fn exec_on_packages(
     keep_going: &mut KeepGoing,
     cargo_version: u32,
 ) -> Result<()> {
+    if cx.locked {
+        line.arg("--locked");
+    }
     if cx.target.is_empty() || cargo_version >= 64 {
         // TODO: We should test that cargo's multi-target build does not break the resolver behavior required for a correct check.
         for target in &cx.target {
@@ -625,6 +628,9 @@ fn exec_cargo_inner(
 fn cargo_clean(cx: &Context, id: Option<&PackageId>) -> Result<()> {
     let mut line = cx.cargo();
     line.arg("clean");
+    if cx.locked {
+        line.arg("--locked");
+    }
     if let Some(id) = id {
         line.arg("--package");
         line.arg(&cx.packages(id).name);
