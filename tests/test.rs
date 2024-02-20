@@ -1458,7 +1458,7 @@ fn version_range() {
             ",
         );
     cargo_hack(["check", "--version-range", "..=1.66", "--version-step", "2", "--workspace"])
-        .assert_success("rust-version")
+        .assert_failure("rust-version")
         .stderr_contains(
             "
             running `rustup run 1.63 cargo check` on member1 (1/7)
@@ -1488,7 +1488,7 @@ fn rust_version() {
             ",
         );
     cargo_hack(["check", "--rust-version", "--workspace"])
-        .assert_success("rust-version")
+        .assert_failure("rust-version")
         .stderr_contains(
             "
             running `rustup run 1.63 cargo check` on member1 (1/4)
