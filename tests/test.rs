@@ -1457,19 +1457,27 @@ fn version_range() {
             running `rustup run 1.64 cargo check` on member3 (5/5)
             ",
         );
-    cargo_hack(["check", "--version-range", "..=1.66", "--version-step", "2", "--workspace"])
-        .assert_failure("rust-version")
-        .stderr_contains(
-            "
-            running `rustup run 1.63 cargo check` on member1 (1/7)
-            running `rustup run 1.63 cargo check` on member2 (2/7)
-            running `rustup run 1.64 cargo check` on member3 (3/7)
-            running `rustup run 1.65 cargo check` on member1 (4/7)
-            running `rustup run 1.65 cargo check` on member2 (5/7)
-            running `rustup run 1.65 cargo check` on member3 (6/7)
-            running `rustup run 1.65 cargo check` on real (7/7)
+    cargo_hack([
+        "check",
+        "--version-range",
+        "..=1.66",
+        "--version-step",
+        "2",
+        "--workspace",
+        "--locked",
+    ])
+    .assert_failure("rust-version")
+    .stderr_contains(
+        "
+            running `rustup run 1.63 cargo check --locked` on member1 (1/7)
+            running `rustup run 1.63 cargo check --locked` on member2 (2/7)
+            running `rustup run 1.64 cargo check --locked` on member3 (3/7)
+            running `rustup run 1.65 cargo check --locked` on member1 (4/7)
+            running `rustup run 1.65 cargo check --locked` on member2 (5/7)
+            running `rustup run 1.65 cargo check --locked` on member3 (6/7)
+            running `rustup run 1.65 cargo check --locked` on real (7/7)
             ",
-        );
+    );
 }
 
 #[test]
@@ -1487,14 +1495,14 @@ fn rust_version() {
             running `rustup run 1.63 cargo check` on member2 (2/2)
             ",
         );
-    cargo_hack(["check", "--rust-version", "--workspace"])
+    cargo_hack(["check", "--rust-version", "--workspace", "--locked"])
         .assert_failure("rust-version")
         .stderr_contains(
             "
-            running `rustup run 1.63 cargo check` on member1 (1/4)
-            running `rustup run 1.63 cargo check` on member2 (2/4)
-            running `rustup run 1.64 cargo check` on member3 (3/4)
-            running `rustup run 1.65 cargo check` on real (4/4)
+            running `rustup run 1.63 cargo check --locked` on member1 (1/4)
+            running `rustup run 1.63 cargo check --locked` on member2 (2/4)
+            running `rustup run 1.64 cargo check --locked` on member3 (3/4)
+            running `rustup run 1.65 cargo check --locked` on real (4/4)
             ",
         );
 }
