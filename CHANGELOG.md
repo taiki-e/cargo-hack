@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Respect `--locked` flag. ([#236](https://github.com/taiki-e/cargo-hack/pull/236), thanks @epage)
+
 ## [0.6.19] - 2024-02-16
 
 - Fix bug in `--mutually-exclusive-features` option. ([#235](https://github.com/taiki-e/cargo-hack/pull/235), thanks @sunmy2019)
