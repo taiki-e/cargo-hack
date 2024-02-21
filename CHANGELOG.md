@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.20] - 2024-02-21
+
 - Respect `--locked` flag. ([#236](https://github.com/taiki-e/cargo-hack/pull/236), thanks @epage)
 
 ## [0.6.19] - 2024-02-16
@@ -467,7 +469,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.19...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.20...HEAD
+[0.6.20]: https://github.com/taiki-e/cargo-hack/compare/v0.6.19...v0.6.20
 [0.6.19]: https://github.com/taiki-e/cargo-hack/compare/v0.6.18...v0.6.19
 [0.6.18]: https://github.com/taiki-e/cargo-hack/compare/v0.6.17...v0.6.18
 [0.6.17]: https://github.com/taiki-e/cargo-hack/compare/v0.6.16...v0.6.17
