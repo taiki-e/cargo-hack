@@ -64,7 +64,7 @@ pub(crate) struct Args {
 
     // options for --each-feature and --feature-powerset
     /// --optional-deps [DEPS]...
-    pub(crate) optional_deps: Option<Vec<String>>,
+    pub(crate) optional_deps: Vec<String>,
     /// --include-features <FEATURES>...
     pub(crate) include_features: Vec<Feature>,
     /// --include-deps-features
@@ -292,6 +292,9 @@ impl Args {
                     } else {
                         optional_deps.extend(val.split(' ').map(str::to_owned));
                     }
+
+                    // Remove an edge case of "--optional-deps="
+                    optional_deps.retain(|dep| !dep.is_empty());
                 }
 
                 Long("workspace" | "all") => parse_flag!(workspace),
@@ -624,7 +627,7 @@ impl Args {
             no_private,
             ignore_private: ignore_private | no_private,
             ignore_unknown_features,
-            optional_deps,
+            optional_deps: optional_deps.unwrap_or_default(),
             clean_per_run,
             clean_per_version,
             keep_going,

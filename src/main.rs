@@ -189,12 +189,10 @@ fn determine_kind<'a>(
 
         let mut features: Vec<_> = pkg_features.normal().iter().filter(filter).collect();
 
-        if let Some(opt_deps) = &cx.optional_deps {
-            if opt_deps.len() == 1 && opt_deps[0].is_empty() {
-                // --optional-deps=
-            } else if !multiple_packages {
+        if !cx.optional_deps.is_empty() {
+            if !multiple_packages {
                 // TODO
-                for d in opt_deps {
+                for d in &cx.optional_deps {
                     if !pkg_features.optional_deps().iter().any(|f| f == d) {
                         warn!(
                             "specified optional dependency `{d}` not found in package `{}`",
@@ -204,9 +202,13 @@ fn determine_kind<'a>(
                 }
             }
 
-            features.extend(pkg_features.optional_deps().iter().filter(|f| {
-                filter(f) && (opt_deps.is_empty() || opt_deps.iter().any(|x| *f == x))
-            }));
+            features.extend(
+                pkg_features
+                    .optional_deps()
+                    .iter()
+                    .filter(filter)
+                    .filter(|&f| cx.optional_deps.iter().any(|x| f == x)),
+            );
         }
 
         if cx.include_deps_features {
