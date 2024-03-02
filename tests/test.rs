@@ -7,7 +7,11 @@ mod auxiliary;
 use std::{
     env::{self, consts::EXE_SUFFIX},
     path::MAIN_SEPARATOR,
+    sync::Mutex,
 };
+
+/// Multiple tests may download a new toolchain at the same time
+static RUSTUP_TOOLCHAIN_CHANGES: Mutex<()> = Mutex::new(());
 
 use auxiliary::{cargo_bin_exe, cargo_hack, has_rustup, has_stable_toolchain, CommandExt, TARGET};
 
@@ -1407,6 +1411,7 @@ fn version_range() {
     if !has_rustup() {
         return;
     }
+    let _r = RUSTUP_TOOLCHAIN_CHANGES.lock().unwrap();
 
     cargo_hack(["check", "--version-range", "1.63..=1.64"]).assert_success("real").stderr_contains(
         "
@@ -1486,6 +1491,7 @@ fn rust_version() {
     if !has_rustup() {
         return;
     }
+    let _r = RUSTUP_TOOLCHAIN_CHANGES.lock().unwrap();
 
     cargo_hack(["check", "--rust-version", "--package=member1", "--package=member2"])
         .assert_success("rust-version")
@@ -1513,6 +1519,7 @@ fn multi_target() {
     if !has_rustup() {
         return;
     }
+    let _r = RUSTUP_TOOLCHAIN_CHANGES.lock().unwrap();
 
     let target_suffix = String::from("-") + TARGET.split_once('-').unwrap().1;
 
