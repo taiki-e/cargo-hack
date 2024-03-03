@@ -85,7 +85,14 @@ impl Command {
             self.current_dir(cur_dir).output().context("could not execute process").unwrap();
         AssertOutput(Some(AssertOutputInner {
             stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
-            stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+            stderr: String::from_utf8_lossy(&output.stderr)
+                .lines()
+                .filter(|l| {
+                    // https://github.com/taiki-e/cargo-hack/issues/239
+                    !(l.starts_with("warning:")
+                        && l.contains(": no edition set: defaulting to the 2015 edition"))
+                })
+                .collect(),
             status: output.status,
         }))
     }
