@@ -20,7 +20,7 @@ mod rustup;
 mod version;
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashSet},
     env,
     fmt::{self, Write},
     str::FromStr,
@@ -214,7 +214,20 @@ fn determine_kind<'a>(
         }
 
         if !cx.group_features.is_empty() {
-            features.extend(cx.group_features.iter());
+            if cx.ignore_unknown_features {
+                let all_valid_features: HashSet<_> = pkg_features
+                    .normal()
+                    .iter()
+                    .chain(pkg_features.optional_deps())
+                    .flat_map(|f| f.as_group())
+                    .map(|f| f.as_str())
+                    .collect();
+                features.extend(cx.group_features.iter().filter(|f| {
+                    f.as_group().iter().all(|f| all_valid_features.contains(f.as_str()))
+                }));
+            } else {
+                features.extend(cx.group_features.iter());
+            }
         }
 
         features

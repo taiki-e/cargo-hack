@@ -395,13 +395,6 @@ impl Args {
                     "--ignore-unknown-features for --include-features is not fully implemented and may not work as intended"
                 );
             }
-            if !group_features.is_empty() {
-                let _guard = term::warn::scoped(false);
-                // TODO: implement
-                warn!(
-                    "--ignore-unknown-features for --group-features is not fully implemented and may not work as intended"
-                );
-            }
         }
         if !each_feature && !feature_powerset {
             if optional_deps.is_some() {
@@ -799,7 +792,7 @@ const HELP: &[HelpText<'_>] = &[
         "--ignore-unknown-features",
         "",
         "Skip passing --features flag to `cargo` if that feature does not exist in the package",
-        &["This flag can only be used together with either --features or --include-features."],
+        &["This flag can be used with --features, --include-features, or --group-features."],
     ),
     (
         "",

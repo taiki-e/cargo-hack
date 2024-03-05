@@ -175,7 +175,7 @@ OPTIONS:
         --ignore-unknown-features
             Skip passing --features flag to `cargo` if that feature does not exist in the package.
 
-            This flag can only be used together with either --features or --include-features.
+            This flag can be used with --features, --include-features, or --group-features.
 
         --rust-version
             Perform commands on `package.rust-version`.
