@@ -155,6 +155,7 @@ enum Kind<'a> {
     Powerset { features: Vec<Vec<&'a Feature>> },
 }
 
+#[allow(clippy::redundant_closure_for_method_calls)]
 fn determine_kind<'a>(
     cx: &'a Context,
     id: &'a PackageId,
