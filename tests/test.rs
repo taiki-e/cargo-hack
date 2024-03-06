@@ -431,9 +431,9 @@ fn ignore_unknown_features() {
     .assert_success("virtual")
     .stderr_contains(
         "
-            skipped applying group `a,missing` to member1
-            skipped applying group `a,missing` to member2
-            ",
+        skipped applying group `a,missing` to member1
+        skipped applying group `a,missing` to member2
+        ",
     )
     .stderr_not_contains("skipped applying unknown `missing` feature to member2");
 }
@@ -661,20 +661,20 @@ fn powerset_deduplication() {
     .assert_success2("powerset_deduplication", require)
     .stderr_contains(
         "
-            info: skipped applying group `b,d,not_found` to deduplication
-            info: running `cargo check --no-default-features` on deduplication (1/5)
-            info: running `cargo check --no-default-features --features a` on deduplication (2/5)
-            info: running `cargo check --no-default-features --features c` on deduplication (3/5)
-            info: running `cargo check --no-default-features --features e` on deduplication (4/5)
-            info: running `cargo check --no-default-features --features c,e` on deduplication (5/5)
-            ",
+        info: skipped applying group `b,d,not_found` to deduplication
+        info: running `cargo check --no-default-features` on deduplication (1/5)
+        info: running `cargo check --no-default-features --features a` on deduplication (2/5)
+        info: running `cargo check --no-default-features --features c` on deduplication (3/5)
+        info: running `cargo check --no-default-features --features e` on deduplication (4/5)
+        info: running `cargo check --no-default-features --features c,e` on deduplication (5/5)
+        ",
     )
     .stderr_not_contains(
         "
-            a,b,d
-            e,b,d
-            features b,d
-            ",
+        a,b,d
+        e,b,d
+        features b,d
+        ",
     );
 
     // with --group-features + --optional-deps
@@ -962,8 +962,10 @@ fn each_feature_skip_success() {
             ",
         )
         .stderr_not_contains(
-            "--features a
-             --features b",
+            "
+            --features a
+            --features b
+            ",
         );
 
     cargo_hack(["check", "--each-feature", "--exclude-features", "a", "--exclude-features", "b"])
