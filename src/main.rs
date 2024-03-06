@@ -20,7 +20,7 @@ mod rustup;
 mod version;
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashSet},
     env,
     fmt::{self, Write},
     str::FromStr,
@@ -155,6 +155,7 @@ enum Kind<'a> {
     Powerset { features: Vec<Vec<&'a Feature>> },
 }
 
+#[allow(clippy::redundant_closure_for_method_calls)]
 fn determine_kind<'a>(
     cx: &'a Context,
     id: &'a PackageId,
@@ -214,7 +215,29 @@ fn determine_kind<'a>(
         }
 
         if !cx.group_features.is_empty() {
-            features.extend(cx.group_features.iter());
+            if cx.ignore_unknown_features {
+                let all_valid_features: HashSet<_> = pkg_features
+                    .normal()
+                    .iter()
+                    .chain(pkg_features.optional_deps())
+                    .flat_map(|f| f.as_group())
+                    .map(|f| f.as_str())
+                    .collect();
+                features.extend(cx.group_features.iter().filter(|&f| {
+                    let all_valid =
+                        f.as_group().iter().all(|f| all_valid_features.contains(f.as_str()));
+                    if !all_valid {
+                        info!(
+                            "skipped applying group `{}` to {}",
+                            f.as_group().join(","),
+                            package.name
+                        );
+                    }
+                    all_valid
+                }));
+            } else {
+                features.extend(cx.group_features.iter());
+            }
         }
 
         features
