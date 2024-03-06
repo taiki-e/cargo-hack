@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support combining `--ignore-unknown-features` and `--group-features`. ([#240](https://github.com/taiki-e/cargo-hack/pull/240), thanks @kornelski)
+
 ## [0.6.20] - 2024-02-21
 
 - Respect `--locked` flag. ([#236](https://github.com/taiki-e/cargo-hack/pull/236), thanks @epage)
