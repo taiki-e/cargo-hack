@@ -222,8 +222,17 @@ fn determine_kind<'a>(
                     .flat_map(|f| f.as_group())
                     .map(|f| f.as_str())
                     .collect();
-                features.extend(cx.group_features.iter().filter(|f| {
-                    f.as_group().iter().all(|f| all_valid_features.contains(f.as_str()))
+                features.extend(cx.group_features.iter().filter(|&f| {
+                    let all_valid =
+                        f.as_group().iter().all(|f| all_valid_features.contains(f.as_str()));
+                    if !all_valid {
+                        info!(
+                            "skipped applying group `{}` to {}",
+                            f.as_group().join(","),
+                            package.name
+                        );
+                    }
+                    all_valid
                 }));
             } else {
                 features.extend(cx.group_features.iter());
