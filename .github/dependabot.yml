@@ -6,6 +6,8 @@ updates:
       interval: daily
     commit-message:
       prefix: ''
+    ignore:
+      - dependency-name: ctrlc # https://github.com/Detegr/rust-ctrlc/pull/116
     labels: []
   - package-ecosystem: github-actions
     directory: /

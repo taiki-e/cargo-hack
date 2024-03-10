@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Pin `ctrlc` to fix [build error on macOS](https://github.com/Detegr/rust-ctrlc/pull/116).
+
 ## [0.6.21] - 2024-03-06
 
 - Support combining `--ignore-unknown-features` and `--group-features`. ([#240](https://github.com/taiki-e/cargo-hack/pull/240), thanks @kornelski)
