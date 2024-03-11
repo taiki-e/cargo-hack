@@ -17,6 +17,7 @@ allow-wildcard-paths = true
 build.allow-build-scripts = [
     { name = "anyhow" },
     { name = "libc" }, # via ctrlc
+    { name = "nix" }, # via ctrlc
     { name = "proc-macro2" },
     { name = "serde_json" },
     { name = "serde" },
