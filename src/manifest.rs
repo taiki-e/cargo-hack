@@ -15,7 +15,7 @@ type ParseResult<T> = Result<T, &'static str>;
 // https://doc.rust-lang.org/nightly/cargo/reference/manifest.html
 pub(crate) struct Manifest {
     raw: String,
-    doc: toml_edit::Document,
+    doc: toml_edit::DocumentMut,
     pub(crate) package: Package,
     pub(crate) features: BTreeMap<String, Vec<String>>,
 }
@@ -23,7 +23,7 @@ pub(crate) struct Manifest {
 impl Manifest {
     pub(crate) fn new(path: &Path, metadata_cargo_version: u32) -> Result<Self> {
         let raw = fs::read_to_string(path)?;
-        let doc: toml_edit::Document = raw
+        let doc: toml_edit::DocumentMut = raw
             .parse()
             .with_context(|| format!("failed to parse manifest `{}` as toml", path.display()))?;
         let package = Package::from_table(&doc, metadata_cargo_version).map_err(|s| {
@@ -45,7 +45,7 @@ pub(crate) struct Package {
 }
 
 impl Package {
-    fn from_table(doc: &toml_edit::Document, metadata_cargo_version: u32) -> ParseResult<Self> {
+    fn from_table(doc: &toml_edit::DocumentMut, metadata_cargo_version: u32) -> ParseResult<Self> {
         let package = doc.get("package").and_then(toml_edit::Item::as_table).ok_or("package")?;
 
         Ok(Self {
@@ -77,7 +77,7 @@ impl Package {
 struct Features {}
 
 impl Features {
-    fn from_table(doc: &toml_edit::Document) -> ParseResult<BTreeMap<String, Vec<String>>> {
+    fn from_table(doc: &toml_edit::DocumentMut) -> ParseResult<BTreeMap<String, Vec<String>>> {
         let features = match doc.get("features") {
             Some(features) => features.as_table().ok_or("features")?,
             None => return Ok(BTreeMap::new()),
@@ -192,7 +192,7 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
     Ok(())
 }
 
-fn remove_dev_deps(doc: &mut toml_edit::Document) {
+fn remove_dev_deps(doc: &mut toml_edit::DocumentMut) {
     const KEY: &str = "dev-dependencies";
     let table = doc.as_table_mut();
     table.remove(KEY);
@@ -206,7 +206,7 @@ fn remove_dev_deps(doc: &mut toml_edit::Document) {
 }
 
 fn remove_private_crates(
-    doc: &mut toml_edit::Document,
+    doc: &mut toml_edit::DocumentMut,
     workspace_root: &Path,
     mut private_crates: BTreeSet<&Path>,
 ) {
@@ -272,7 +272,7 @@ mod tests {
         ($name:ident, $input:expr, $expected:expr) => {
             #[test]
             fn $name() {
-                let mut doc: toml_edit::Document = $input.parse().unwrap();
+                let mut doc: toml_edit::DocumentMut = $input.parse().unwrap();
                 remove_dev_deps(&mut doc);
                 assert_eq!($expected, doc.to_string());
             }
