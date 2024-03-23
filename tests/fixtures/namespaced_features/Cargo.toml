@@ -5,16 +5,24 @@ edition = "2021"
 publish = false
 
 [features]
-easytime = ["dep:easytime"]
+explicit = ["dep:explicit"]
+combo = ["dep:member2", "dep:member3"]
 
 [dependencies]
-# easytime 0.2.6 requires Rust 1.58
-easytime = { version = "=0.2.5", optional = true, default-features = false }
-# When namespace dependency is used, other optional dependencies are also not
-# treated as implicit features.
-portable-atomic = { version = "1", optional = true }
-
-[dev-dependencies]
+explicit = { path = "explicit", optional = true } # Explicitly defined as a feature with dep:
+implicit = { path = "implicit", optional = true } # Implicit feature as an optional dependency
+member1 = { path = "member1" } # Regular dependency to be ignored
+member2 = { path = "member2", optional = true } # Available only through the combo feature
+member3 = { path = "member3", optional = true } # Available only through the combo feature
+renamed = { path = "member4", package = "member4", optional = true } # Renamed implicit feature
 
 [workspace]
 resolver = "2"
+members = [
+    "explicit",
+    "implicit",
+    "member1",
+    "member2",
+    "member3",
+    "member4",
+]

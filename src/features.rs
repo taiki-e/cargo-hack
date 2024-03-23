@@ -24,26 +24,25 @@ impl Features {
         let package = &metadata.packages[id];
 
         let mut features: Vec<_> = manifest.features.keys().map(Feature::from).collect();
-        let mut has_namespaced_features = false; // features with `dep:` prefix
+        let mut referenced_deps = BTreeSet::new(); // referenced in features with `dep:` prefix
 
         // package.features.values() does not provide a way to determine the `dep:` specified by the user.
         for names in manifest.features.values() {
             for name in names {
-                if name.starts_with("dep:") {
-                    has_namespaced_features = true;
-                    break;
+                if let Some(dep) = name.strip_prefix("dep:") {
+                    referenced_deps.insert(dep);
                 }
             }
         }
         let optional_deps_start = features.len();
-        // When namespace dependency is used, other optional dependencies are also not
-        // treated as implicit features.
-        if !has_namespaced_features {
-            for name in package.optional_deps() {
-                let feature = Feature::from(name);
-                if !features.contains(&feature) {
-                    features.push(feature);
-                }
+        for name in package.optional_deps() {
+            // Dependencies explicitly referenced with dep: are no longer implicit features.
+            if referenced_deps.contains(name) {
+                continue;
+            }
+            let feature = Feature::from(name);
+            if !features.contains(&feature) {
+                features.push(feature);
             }
         }
         let deps_features_start = features.len();

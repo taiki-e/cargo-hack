@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix ignoring optional dependencies when namespaced dependencies are used. ([#241](https://github.com/taiki-e/cargo-hack/pull/241), thanks @xStrom)
+
 ## [0.6.22] - 2024-03-10
 
 - Pin `ctrlc` to fix [build error on macOS](https://github.com/Detegr/rust-ctrlc/pull/116).
