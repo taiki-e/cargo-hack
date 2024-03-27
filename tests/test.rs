@@ -1685,12 +1685,111 @@ fn namespaced_features() {
     // Namespaced features requires Rust 1.60.
     let require = Some(60);
 
+    cargo_hack([
+        "run",
+        "--features=explicit,implicit,combo,renamed,member1,member2,member3",
+        "--ignore-unknown-features",
+    ])
+    .assert_success2("namespaced_features", require)
+    .stderr_contains(
+        "
+            skipped applying unknown `member1` feature to namespaced_features
+            skipped applying unknown `member2` feature to namespaced_features
+            skipped applying unknown `member3` feature to namespaced_features
+            running `cargo run --features explicit,implicit,combo,renamed` on namespaced_features
+            ",
+    )
+    .stdout_contains(
+        "
+            explicit
+            implicit
+            combo
+            renamed
+            ",
+    )
+    .stdout_not_contains(
+        "
+            member1
+            member2
+            member3
+            ",
+    );
+
+    cargo_hack(["check", "--each-feature"])
+        .assert_success2("namespaced_features", require)
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on namespaced_features (1/4)
+            running `cargo check --no-default-features --features combo` on namespaced_features (2/4)
+            running `cargo check --no-default-features --features explicit` on namespaced_features (3/4)
+            running `cargo check --no-default-features --all-features` on namespaced_features (4/4)
+            ",
+        )
+        .stderr_not_contains(
+            "
+            --features implicit
+            --features renamed
+            ",
+        );
+
+    cargo_hack(["check", "--each-feature", "--optional-deps"])
+        .assert_success2("namespaced_features", require)
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on namespaced_features (1/6)
+            running `cargo check --no-default-features --features combo` on namespaced_features (2/6)
+            running `cargo check --no-default-features --features explicit` on namespaced_features (3/6)
+            running `cargo check --no-default-features --features implicit` on namespaced_features (4/6)
+            running `cargo check --no-default-features --features renamed` on namespaced_features (5/6)
+            running `cargo check --no-default-features --all-features` on namespaced_features (6/6)
+            ",
+        );
+
+    cargo_hack(["check", "--each-feature", "--optional-deps", "implicit"])
+        .assert_success2("namespaced_features", require)
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on namespaced_features (1/5)
+            running `cargo check --no-default-features --features combo` on namespaced_features (2/5)
+            running `cargo check --no-default-features --features explicit` on namespaced_features (3/5)
+            running `cargo check --no-default-features --features implicit` on namespaced_features (4/5)
+            running `cargo check --no-default-features --all-features` on namespaced_features (5/5)
+            ",
+        )
+        .stderr_not_contains("--features renamed");
+
+    cargo_hack(["check", "--each-feature", "--optional-deps=renamed"])
+        .assert_success2("namespaced_features", require)
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on namespaced_features (1/5)
+            running `cargo check --no-default-features --features combo` on namespaced_features (2/5)
+            running `cargo check --no-default-features --features explicit` on namespaced_features (3/5)
+            running `cargo check --no-default-features --features renamed` on namespaced_features (4/5)
+            running `cargo check --no-default-features --all-features` on namespaced_features (5/5)
+            ",
+        )
+        .stderr_not_contains("--features implicit");
+
+    cargo_hack(["check", "--each-feature", "--optional-deps="])
+        .assert_success2("namespaced_features", require)
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on namespaced_features (1/4)
+            running `cargo check --no-default-features --features combo` on namespaced_features (2/4)
+            running `cargo check --no-default-features --features explicit` on namespaced_features (3/4)
+            running `cargo check --no-default-features --all-features` on namespaced_features (4/4)
+            ",
+        );
+
     cargo_hack(["check", "--feature-powerset"])
         .assert_success2("namespaced_features", require)
         .stderr_contains(
             "
-            running `cargo check --no-default-features` on namespaced_features (1/2)
-            running `cargo check --no-default-features --features easytime` on namespaced_features (2/2)
+            running `cargo check --no-default-features` on namespaced_features (1/4)
+            running `cargo check --no-default-features --features combo` on namespaced_features (2/4)
+            running `cargo check --no-default-features --features explicit` on namespaced_features (3/4)
+            running `cargo check --no-default-features --features combo,explicit` on namespaced_features (4/4)
             ",
         );
 }
