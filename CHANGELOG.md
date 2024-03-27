@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.23] - 2024-03-27
+
 - Fix ignoring optional dependencies when namespaced dependencies are used. ([#241](https://github.com/taiki-e/cargo-hack/pull/241), thanks @xStrom)
 
 ## [0.6.22] - 2024-03-10
@@ -479,7 +481,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.22...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.23...HEAD
+[0.6.23]: https://github.com/taiki-e/cargo-hack/compare/v0.6.22...v0.6.23
 [0.6.22]: https://github.com/taiki-e/cargo-hack/compare/v0.6.21...v0.6.22
 [0.6.21]: https://github.com/taiki-e/cargo-hack/compare/v0.6.20...v0.6.21
 [0.6.20]: https://github.com/taiki-e/cargo-hack/compare/v0.6.19...v0.6.20
