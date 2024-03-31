@@ -10,6 +10,9 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Respect the existing `Cargo.lock` with `--version-range`/`--rust-version` except when necessary to work around old cargo bugs. ([#242](https://github.com/taiki-e/cargo-hack/pull/242))
+  If you want to ensure that the existing `Cargo.lock` is respected in all cases, please use `--locked`.
+
 ## [0.6.23] - 2024-03-27
 
 - Fix ignoring optional dependencies when namespaced dependencies are used. ([#241](https://github.com/taiki-e/cargo-hack/pull/241), thanks @xStrom)

@@ -101,6 +101,11 @@ fn try_main() -> Result<()> {
                     }
                 }
             }
+            let versions = versions; // make immutable
+            if versions.is_empty() {
+                // TODO: emit warning
+                return Ok(());
+            }
 
             for (cargo_version, packages) in &versions {
                 for package in packages {
@@ -114,7 +119,12 @@ fn try_main() -> Result<()> {
 
             // First, generate the lockfile using the oldest cargo specified.
             // https://github.com/taiki-e/cargo-hack/issues/105
-            let mut generate_lockfile = !cx.locked;
+            // For now, only generate lockfile if min version is pre-1.60.
+            // (If future cargo introduces compatibility issues, the number of
+            // versions requiring generate-lockfile will probably increase.)
+            // https://github.com/taiki-e/cargo-hack/issues/234#issuecomment-2028517197
+            let mut generate_lockfile =
+                !cx.locked && versions.first_key_value().unwrap().0.minor < 60;
             // Workaround for spurious "failed to select a version" error.
             // (This does not work around the underlying cargo bug: https://github.com/rust-lang/cargo/issues/10623)
             let mut regenerate_lockfile_on_51_or_up = false;
@@ -381,7 +391,7 @@ fn versioned_cargo_exec_on_packages(
         *generate_lockfile = false;
         *regenerate_lockfile_on_51_or_up = false;
     }
-    if cargo_version < 51 {
+    if !cx.locked && cargo_version < 51 {
         *regenerate_lockfile_on_51_or_up = true;
     }
 
