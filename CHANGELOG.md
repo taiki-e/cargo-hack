@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.24] - 2024-04-01
+
 - Respect the existing `Cargo.lock` with `--version-range`/`--rust-version` except when necessary to work around old cargo bugs. ([#242](https://github.com/taiki-e/cargo-hack/pull/242))
   If you want to ensure that the existing `Cargo.lock` is respected in all cases, please use `--locked`.
 
@@ -484,7 +486,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.23...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.24...HEAD
+[0.6.24]: https://github.com/taiki-e/cargo-hack/compare/v0.6.23...v0.6.24
 [0.6.23]: https://github.com/taiki-e/cargo-hack/compare/v0.6.22...v0.6.23
 [0.6.22]: https://github.com/taiki-e/cargo-hack/compare/v0.6.21...v0.6.22
 [0.6.21]: https://github.com/taiki-e/cargo-hack/compare/v0.6.20...v0.6.21
