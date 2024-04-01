@@ -150,6 +150,31 @@ impl Feature {
     pub(crate) fn matches(&self, s: &str) -> bool {
         self.as_group().iter().any(|n| **n == *s)
     }
+
+    pub(crate) fn matches_recursive(&self, s: &str, map: &BTreeMap<String, Vec<String>>) -> bool {
+        fn rec(
+            group: &Feature,
+            map: &BTreeMap<String, Vec<String>>,
+            cur: &str,
+            root: &str,
+        ) -> bool {
+            if let Some(v) = map.get(cur) {
+                for cur in v {
+                    if group.matches(cur) {
+                        return true;
+                    }
+                    if cur != root && rec(group, map, cur, root) {
+                        return true;
+                    }
+                }
+            }
+            false
+        }
+        if self.matches(s) {
+            return true;
+        }
+        rec(self, map, s, s)
+    }
 }
 
 impl PartialEq<str> for Feature {
@@ -211,7 +236,7 @@ pub(crate) fn feature_powerset<'a>(
             for group in mutually_exclusive_features {
                 let mut count = 0;
                 for f in fs.iter().flat_map(|f| f.as_group()) {
-                    if group.matches(f) {
+                    if group.matches_recursive(f, package_features) {
                         count += 1;
                         if count > 1 {
                             return false;
@@ -225,20 +250,20 @@ pub(crate) fn feature_powerset<'a>(
 }
 
 fn feature_deps(map: &BTreeMap<String, Vec<String>>) -> BTreeMap<&str, BTreeSet<&str>> {
-    fn f<'a>(
+    fn rec<'a>(
         map: &'a BTreeMap<String, Vec<String>>,
         set: &mut BTreeSet<&'a str>,
         cur: &str,
         root: &str,
     ) {
         if let Some(v) = map.get(cur) {
-            for x in v {
+            for cur in v {
                 // dep: actions aren't features, and can't enable other features in the same crate
-                if x.starts_with("dep:") {
+                if cur.starts_with("dep:") {
                     continue;
                 }
-                if x != root && set.insert(x) {
-                    f(map, set, x, root);
+                if cur != root && set.insert(cur) {
+                    rec(map, set, cur, root);
                 }
             }
         }
@@ -246,7 +271,7 @@ fn feature_deps(map: &BTreeMap<String, Vec<String>>) -> BTreeMap<&str, BTreeSet<
     let mut feat_deps = BTreeMap::new();
     for feat in map.keys() {
         let mut set = BTreeSet::new();
-        f(map, &mut set, feat, feat);
+        rec(map, &mut set, feat, feat);
         feat_deps.insert(&**feat, set);
     }
     feat_deps
@@ -372,11 +397,16 @@ mod tests {
             vec!["a"],
             vec!["b"],
             vec!["tokio"],
-            vec!["b", "tokio"],
             vec!["async-std"],
             vec!["a", "async-std"],
             vec!["b", "async-std"]
         ]);
+
+        let map = map![("a", v![]), ("b", v!["a"]), ("c", v![]), ("d", v!["b"])];
+        let list = v!["a", "b", "c", "d"];
+        let mutually_exclusive_features = [Feature::group(["a", "c"])];
+        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &map);
+        assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"]]);
     }
 
     #[test]
