@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix bug in `--mutually-exclusive-features` option. ([#245](https://github.com/taiki-e/cargo-hack/pull/245))
+
 ## [0.6.24] - 2024-04-01
 
 - Respect the existing `Cargo.lock` with `--version-range`/`--rust-version` except when necessary to work around old cargo bugs. ([#242](https://github.com/taiki-e/cargo-hack/pull/242))
