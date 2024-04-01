@@ -160,20 +160,14 @@ impl Feature {
         ) -> bool {
             if let Some(v) = map.get(cur) {
                 for cur in v {
-                    if group.matches(cur) {
-                        return true;
-                    }
-                    if cur != root && rec(group, map, cur, root) {
+                    if cur != root && (group.matches(cur) || rec(group, map, cur, root)) {
                         return true;
                     }
                 }
             }
             false
         }
-        if self.matches(s) {
-            return true;
-        }
-        rec(self, map, s, s)
+        self.matches(s) || rec(self, map, s, s)
     }
 }
 

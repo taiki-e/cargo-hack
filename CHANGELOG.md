@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Minor performance improvement to `--mutually-exclusive-features` option.
+
 ## [0.6.25] - 2024-04-01
 
 - Fix bug in `--mutually-exclusive-features` option. ([#245](https://github.com/taiki-e/cargo-hack/pull/245))
