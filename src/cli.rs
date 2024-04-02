@@ -586,11 +586,8 @@ impl Args {
 
         // https://github.com/taiki-e/cargo-hack/issues/42
         // https://github.com/rust-lang/cargo/pull/8799
-        let namespaced_features = has_z_flag(&cargo_args, "namespaced-features");
         exclude_no_default_features |= !include_features.is_empty();
-        exclude_all_features |= !include_features.is_empty()
-            || !exclude_features.is_empty()
-            || (feature_powerset && !namespaced_features && depth.is_none());
+        exclude_all_features |= !include_features.is_empty() || !exclude_features.is_empty();
         exclude_features.extend_from_slice(&features);
 
         term::verbose::set(verbose != 0);
@@ -666,25 +663,6 @@ fn parse_grouped_features(
             Ok(v)
         })?;
     Ok(group_features)
-}
-
-fn has_z_flag(args: &[String], name: &str) -> bool {
-    let mut iter = args.iter().map(String::as_str);
-    while let Some(mut arg) = iter.next() {
-        if arg == "-Z" {
-            arg = iter.next().unwrap();
-        } else if let Some(a) = arg.strip_prefix("-Z") {
-            arg = a;
-        } else {
-            continue;
-        }
-        if let Some(rest) = arg.strip_prefix(name) {
-            if rest.is_empty() || rest.starts_with('=') {
-                return true;
-            }
-        }
-    }
-    false
 }
 
 // (short flag, long flag, value name, short descriptions, additional descriptions)

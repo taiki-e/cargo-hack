@@ -264,11 +264,13 @@ fn determine_kind<'a>(
             let kind = Kind::Normal;
             Some(PackageRuns { id, kind, feature_count })
         } else {
+            // See exec_on_package
             let feature_count = features.len()
                 + usize::from(!cx.exclude_no_default_features)
                 + usize::from(
-                    !cx.exclude_all_features
-                        && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1,
+                    !(cx.exclude_all_features
+                        || pkg_features.optional_deps().is_empty()
+                            && pkg_features.normal().len() <= 1),
                 );
             let kind = Kind::Each { features };
             Some(PackageRuns { id, kind, feature_count })
@@ -290,11 +292,17 @@ fn determine_kind<'a>(
             let kind = Kind::Normal;
             Some(PackageRuns { id, kind, feature_count })
         } else {
+            // See exec_on_package
             let feature_count = features.len()
                 + usize::from(!cx.exclude_no_default_features)
                 + usize::from(
-                    !cx.exclude_all_features
-                        && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1,
+                    !(cx.exclude_all_features
+                        || (pkg_features.optional_deps().is_empty()
+                            || match &cx.optional_deps {
+                                // Skip when all optional deps are already included in powerset
+                                Some(opt_deps) => opt_deps.is_empty(),
+                                None => false,
+                            })),
                 );
             let kind = Kind::Powerset { features };
             Some(PackageRuns { id, kind, feature_count })
@@ -478,10 +486,26 @@ fn exec_on_package(
     }
 
     // Run with --all-features first: https://github.com/taiki-e/cargo-hack/issues/246
+    // https://github.com/taiki-e/cargo-hack/issues/42
+    // https://github.com/rust-lang/cargo/pull/8799
+    // > --all-features will now enable features for inactive optional dependencies.
     let pkg_features = cx.pkg_features(id);
-    if !cx.exclude_all_features
-        && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1
-    {
+    let exclude_all_features = cx.exclude_all_features
+        || match kind {
+            Kind::Each { .. } => {
+                pkg_features.optional_deps().is_empty() && pkg_features.normal().len() <= 1
+            }
+            Kind::Powerset { .. } => {
+                pkg_features.optional_deps().is_empty()
+                    || match &cx.optional_deps {
+                        // Skip when all optional deps are already included in powerset
+                        Some(opt_deps) => opt_deps.is_empty() && cx.depth.is_none(),
+                        None => false,
+                    }
+            }
+            Kind::Normal => unreachable!(),
+        };
+    if !exclude_all_features {
         let mut line = line.clone();
         // run with all features
         // https://github.com/taiki-e/cargo-hack/issues/42
