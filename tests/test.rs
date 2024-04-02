@@ -469,12 +469,12 @@ fn ignore_unknown_features_failure() {
 fn each_feature() {
     cargo_hack(["check", "--each-feature"]).assert_success("real").stderr_contains(
         "
-        running `cargo check --no-default-features` on real (1/6)
-        running `cargo check --no-default-features --features a` on real (2/6)
-        running `cargo check --no-default-features --features b` on real (3/6)
-        running `cargo check --no-default-features --features c` on real (4/6)
-        running `cargo check --no-default-features --features default` on real (5/6)
-        running `cargo check --no-default-features --all-features` on real (6/6)
+        running `cargo check --all-features` on real (1/6)
+        running `cargo check --no-default-features` on real (2/6)
+        running `cargo check --no-default-features --features a` on real (3/6)
+        running `cargo check --no-default-features --features b` on real (4/6)
+        running `cargo check --no-default-features --features c` on real (5/6)
+        running `cargo check --no-default-features --features default` on real (6/6)
         ",
     );
 
@@ -483,11 +483,11 @@ fn each_feature() {
         .assert_success("real")
         .stderr_contains(
             "
-            running `cargo check --no-default-features --features a` on real (1/5)
-            running `cargo check --no-default-features --features a,b` on real (2/5)
-            running `cargo check --no-default-features --features a,c` on real (3/5)
-            running `cargo check --no-default-features --features a,default` on real (4/5)
-            running `cargo check --no-default-features --all-features --features a` on real (5/5)
+            running `cargo check --all-features --features a` on real (1/5)
+            running `cargo check --no-default-features --features a` on real (2/5)
+            running `cargo check --no-default-features --features a,b` on real (3/5)
+            running `cargo check --no-default-features --features a,c` on real (4/5)
+            running `cargo check --no-default-features --features a,default` on real (5/5)
             ",
         )
         .stderr_not_contains("--features a,a");
@@ -764,18 +764,18 @@ fn feature_powerset_depth() {
         .assert_success("real")
         .stderr_contains(
             "
-            running `cargo check --no-default-features` on real (1/12)
-            running `cargo check --no-default-features --features a` on real (2/12)
-            running `cargo check --no-default-features --features b` on real (3/12)
-            running `cargo check --no-default-features --features a,b` on real (4/12)
-            running `cargo check --no-default-features --features c` on real (5/12)
-            running `cargo check --no-default-features --features a,c` on real (6/12)
-            running `cargo check --no-default-features --features b,c` on real (7/12)
-            running `cargo check --no-default-features --features default` on real (8/12)
-            running `cargo check --no-default-features --features a,default` on real (9/12)
-            running `cargo check --no-default-features --features b,default` on real (10/12)
-            running `cargo check --no-default-features --features c,default` on real (11/12)
-            running `cargo check --no-default-features --all-features` on real (12/12)
+            running `cargo check --all-features` on real (1/12)
+            running `cargo check --no-default-features` on real (2/12)
+            running `cargo check --no-default-features --features a` on real (3/12)
+            running `cargo check --no-default-features --features b` on real (4/12)
+            running `cargo check --no-default-features --features a,b` on real (5/12)
+            running `cargo check --no-default-features --features c` on real (6/12)
+            running `cargo check --no-default-features --features a,c` on real (7/12)
+            running `cargo check --no-default-features --features b,c` on real (8/12)
+            running `cargo check --no-default-features --features default` on real (9/12)
+            running `cargo check --no-default-features --features a,default` on real (10/12)
+            running `cargo check --no-default-features --features b,default` on real (11/12)
+            running `cargo check --no-default-features --features c,default` on real (12/12)
             ",
         )
         .stderr_not_contains("--features a,b,c");
@@ -1032,11 +1032,11 @@ fn exclude_no_default_features() {
         .assert_success("real")
         .stderr_contains(
             "
-            running `cargo check --no-default-features --features a` on real (1/5)
-            running `cargo check --no-default-features --features b` on real (2/5)
-            running `cargo check --no-default-features --features c` on real (3/5)
-            running `cargo check --no-default-features --features default` on real (4/5)
-            running `cargo check --no-default-features --all-features` on real (5/5)
+            running `cargo check --all-features` on real (1/5)
+            running `cargo check --no-default-features --features a` on real (2/5)
+            running `cargo check --no-default-features --features b` on real (3/5)
+            running `cargo check --no-default-features --features c` on real (4/5)
+            running `cargo check --no-default-features --features default` on real (5/5)
             ",
         )
         .stderr_not_contains("running `cargo check --no-default-features` on real");
@@ -1064,7 +1064,7 @@ fn exclude_all_features() {
             running `cargo check --no-default-features --features default` on real (5/5)
             ",
         )
-        .stderr_not_contains("running `cargo check --no-default-features --all-features` on real");
+        .stderr_not_contains("--all-features");
 }
 
 #[test]
@@ -1080,30 +1080,30 @@ fn exclude_all_features_failure() {
 fn each_feature_all() {
     cargo_hack(["check", "--each-feature", "--workspace"]).assert_success("real").stderr_contains(
         "
-        running `cargo check --no-default-features` on member1 (1/24)
-        running `cargo check --no-default-features --features a` on member1 (2/24)
-        running `cargo check --no-default-features --features b` on member1 (3/24)
-        running `cargo check --no-default-features --features c` on member1 (4/24)
-        running `cargo check --no-default-features --features default` on member1 (5/24)
-        running `cargo check --no-default-features --all-features` on member1 (6/24)
-        running `cargo check --no-default-features` on member2 (7/24)
-        running `cargo check --no-default-features --features a` on member2 (8/24)
-        running `cargo check --no-default-features --features b` on member2 (9/24)
-        running `cargo check --no-default-features --features c` on member2 (10/24)
-        running `cargo check --no-default-features --features default` on member2 (11/24)
-        running `cargo check --no-default-features --all-features` on member2 (12/24)
-        running `cargo check --no-default-features` on member3 (13/24)
-        running `cargo check --no-default-features --features a` on member3 (14/24)
-        running `cargo check --no-default-features --features b` on member3 (15/24)
-        running `cargo check --no-default-features --features c` on member3 (16/24)
-        running `cargo check --no-default-features --features default` on member3 (17/24)
-        running `cargo check --no-default-features --all-features` on member3 (18/24)
-        running `cargo check --no-default-features` on real (19/24)
-        running `cargo check --no-default-features --features a` on real (20/24)
-        running `cargo check --no-default-features --features b` on real (21/24)
-        running `cargo check --no-default-features --features c` on real (22/24)
-        running `cargo check --no-default-features --features default` on real (23/24)
-        running `cargo check --no-default-features --all-features` on real (24/24)
+        running `cargo check --all-features` on member1 (1/24)
+        running `cargo check --no-default-features` on member1 (2/24)
+        running `cargo check --no-default-features --features a` on member1 (3/24)
+        running `cargo check --no-default-features --features b` on member1 (4/24)
+        running `cargo check --no-default-features --features c` on member1 (5/24)
+        running `cargo check --no-default-features --features default` on member1 (6/24)
+        running `cargo check --all-features` on member2 (7/24)
+        running `cargo check --no-default-features` on member2 (8/24)
+        running `cargo check --no-default-features --features a` on member2 (9/24)
+        running `cargo check --no-default-features --features b` on member2 (10/24)
+        running `cargo check --no-default-features --features c` on member2 (11/24)
+        running `cargo check --no-default-features --features default` on member2 (12/24)
+        running `cargo check --all-features` on member3 (13/24)
+        running `cargo check --no-default-features` on member3 (14/24)
+        running `cargo check --no-default-features --features a` on member3 (15/24)
+        running `cargo check --no-default-features --features b` on member3 (16/24)
+        running `cargo check --no-default-features --features c` on member3 (17/24)
+        running `cargo check --no-default-features --features default` on member3 (18/24)
+        running `cargo check --all-features` on real (19/24)
+        running `cargo check --no-default-features` on real (20/24)
+        running `cargo check --no-default-features --features a` on real (21/24)
+        running `cargo check --no-default-features --features b` on real (22/24)
+        running `cargo check --no-default-features --features c` on real (23/24)
+        running `cargo check --no-default-features --features default` on real (24/24)
         ",
     );
 }
@@ -1114,15 +1114,15 @@ fn include_deps_features() {
         .assert_success2("powerset_deduplication",  Some(if has_stable_toolchain() { 34 } else { 41 }))
         .stderr_contains(
             "
-            running `cargo check --no-default-features` on deduplication (1/9)
-            running `cargo check --no-default-features --features a` on deduplication (2/9)
-            running `cargo check --no-default-features --features b` on deduplication (3/9)
-            running `cargo check --no-default-features --features c` on deduplication (4/9)
-            running `cargo check --no-default-features --features d` on deduplication (5/9)
-            running `cargo check --no-default-features --features e` on deduplication (6/9)
-            running `cargo check --no-default-features --features easytime/default` on deduplication (7/9)
-            running `cargo check --no-default-features --features easytime/std` on deduplication (8/9)
-            running `cargo check --no-default-features --all-features` on deduplication (9/9)
+            running `cargo check --all-features` on deduplication (1/9)
+            running `cargo check --no-default-features` on deduplication (2/9)
+            running `cargo check --no-default-features --features a` on deduplication (3/9)
+            running `cargo check --no-default-features --features b` on deduplication (4/9)
+            running `cargo check --no-default-features --features c` on deduplication (5/9)
+            running `cargo check --no-default-features --features d` on deduplication (6/9)
+            running `cargo check --no-default-features --features e` on deduplication (7/9)
+            running `cargo check --no-default-features --features easytime/default` on deduplication (8/9)
+            running `cargo check --no-default-features --features easytime/std` on deduplication (9/9)
             ",
         );
 }
@@ -1221,8 +1221,8 @@ fn optional_deps() {
         .assert_success2("optional_deps", require)
         .stderr_contains(
             "
-            running `cargo check --no-default-features` on optional_deps (1/2)
-            running `cargo check --no-default-features --all-features` on optional_deps (2/2)
+            running `cargo check --all-features` on optional_deps (1/2)
+            running `cargo check --no-default-features` on optional_deps (2/2)
             ",
         )
         .stderr_not_contains(
@@ -1236,10 +1236,10 @@ fn optional_deps() {
         .assert_success2("optional_deps", require)
         .stderr_contains(
             "
-            running `cargo check --no-default-features` on optional_deps (1/4)
-            running `cargo check --no-default-features --features real` on optional_deps (2/4)
-            running `cargo check --no-default-features --features renamed` on optional_deps (3/4)
-            running `cargo check --no-default-features --all-features` on optional_deps (4/4)
+            running `cargo check --all-features` on optional_deps (1/4)
+            running `cargo check --no-default-features` on optional_deps (2/4)
+            running `cargo check --no-default-features --features real` on optional_deps (3/4)
+            running `cargo check --no-default-features --features renamed` on optional_deps (4/4)
             ",
         );
 
@@ -1247,9 +1247,9 @@ fn optional_deps() {
         .assert_success2("optional_deps", require)
         .stderr_contains(
             "
-            running `cargo check --no-default-features` on optional_deps (1/3)
-            running `cargo check --no-default-features --features real` on optional_deps (2/3)
-            running `cargo check --no-default-features --all-features` on optional_deps (3/3)
+            running `cargo check --all-features` on optional_deps (1/3)
+            running `cargo check --no-default-features` on optional_deps (2/3)
+            running `cargo check --no-default-features --features real` on optional_deps (3/3)
             ",
         )
         .stderr_not_contains("--features renamed");
@@ -1258,9 +1258,9 @@ fn optional_deps() {
         .assert_success2("optional_deps", require)
         .stderr_contains(
             "
-            running `cargo check --no-default-features` on optional_deps (1/3)
-            running `cargo check --no-default-features --features renamed` on optional_deps (2/3)
-            running `cargo check --no-default-features --all-features` on optional_deps (3/3)
+            running `cargo check --all-features` on optional_deps (1/3)
+            running `cargo check --no-default-features` on optional_deps (2/3)
+            running `cargo check --no-default-features --features renamed` on optional_deps (3/3)
             ",
         )
         .stderr_not_contains("--features real");
@@ -1269,8 +1269,8 @@ fn optional_deps() {
         .assert_success2("optional_deps", require)
         .stderr_contains(
             "
-            running `cargo check --no-default-features` on optional_deps (1/2)
-            running `cargo check --no-default-features --all-features` on optional_deps (2/2)
+            running `cargo check --all-features` on optional_deps (1/2)
+            running `cargo check --no-default-features` on optional_deps (2/2)
             ",
         );
 }
@@ -1719,10 +1719,10 @@ fn namespaced_features() {
         .assert_success2("namespaced_features", require)
         .stderr_contains(
             "
-            running `cargo check --no-default-features` on namespaced_features (1/4)
-            running `cargo check --no-default-features --features combo` on namespaced_features (2/4)
-            running `cargo check --no-default-features --features explicit` on namespaced_features (3/4)
-            running `cargo check --no-default-features --all-features` on namespaced_features (4/4)
+            running `cargo check --all-features` on namespaced_features (1/4)
+            running `cargo check --no-default-features` on namespaced_features (2/4)
+            running `cargo check --no-default-features --features combo` on namespaced_features (3/4)
+            running `cargo check --no-default-features --features explicit` on namespaced_features (4/4)
             ",
         )
         .stderr_not_contains(
@@ -1736,12 +1736,12 @@ fn namespaced_features() {
         .assert_success2("namespaced_features", require)
         .stderr_contains(
             "
-            running `cargo check --no-default-features` on namespaced_features (1/6)
-            running `cargo check --no-default-features --features combo` on namespaced_features (2/6)
-            running `cargo check --no-default-features --features explicit` on namespaced_features (3/6)
-            running `cargo check --no-default-features --features implicit` on namespaced_features (4/6)
-            running `cargo check --no-default-features --features renamed` on namespaced_features (5/6)
-            running `cargo check --no-default-features --all-features` on namespaced_features (6/6)
+            running `cargo check --all-features` on namespaced_features (1/6)
+            running `cargo check --no-default-features` on namespaced_features (2/6)
+            running `cargo check --no-default-features --features combo` on namespaced_features (3/6)
+            running `cargo check --no-default-features --features explicit` on namespaced_features (4/6)
+            running `cargo check --no-default-features --features implicit` on namespaced_features (5/6)
+            running `cargo check --no-default-features --features renamed` on namespaced_features (6/6)
             ",
         );
 
@@ -1749,11 +1749,11 @@ fn namespaced_features() {
         .assert_success2("namespaced_features", require)
         .stderr_contains(
             "
-            running `cargo check --no-default-features` on namespaced_features (1/5)
-            running `cargo check --no-default-features --features combo` on namespaced_features (2/5)
-            running `cargo check --no-default-features --features explicit` on namespaced_features (3/5)
-            running `cargo check --no-default-features --features implicit` on namespaced_features (4/5)
-            running `cargo check --no-default-features --all-features` on namespaced_features (5/5)
+            running `cargo check --all-features` on namespaced_features (1/5)
+            running `cargo check --no-default-features` on namespaced_features (2/5)
+            running `cargo check --no-default-features --features combo` on namespaced_features (3/5)
+            running `cargo check --no-default-features --features explicit` on namespaced_features (4/5)
+            running `cargo check --no-default-features --features implicit` on namespaced_features (5/5)
             ",
         )
         .stderr_not_contains("--features renamed");
@@ -1762,11 +1762,11 @@ fn namespaced_features() {
         .assert_success2("namespaced_features", require)
         .stderr_contains(
             "
-            running `cargo check --no-default-features` on namespaced_features (1/5)
-            running `cargo check --no-default-features --features combo` on namespaced_features (2/5)
-            running `cargo check --no-default-features --features explicit` on namespaced_features (3/5)
-            running `cargo check --no-default-features --features renamed` on namespaced_features (4/5)
-            running `cargo check --no-default-features --all-features` on namespaced_features (5/5)
+            running `cargo check --all-features` on namespaced_features (1/5)
+            running `cargo check --no-default-features` on namespaced_features (2/5)
+            running `cargo check --no-default-features --features combo` on namespaced_features (3/5)
+            running `cargo check --no-default-features --features explicit` on namespaced_features (4/5)
+            running `cargo check --no-default-features --features renamed` on namespaced_features (5/5)
             ",
         )
         .stderr_not_contains("--features implicit");
@@ -1775,10 +1775,10 @@ fn namespaced_features() {
         .assert_success2("namespaced_features", require)
         .stderr_contains(
             "
-            running `cargo check --no-default-features` on namespaced_features (1/4)
-            running `cargo check --no-default-features --features combo` on namespaced_features (2/4)
-            running `cargo check --no-default-features --features explicit` on namespaced_features (3/4)
-            running `cargo check --no-default-features --all-features` on namespaced_features (4/4)
+            running `cargo check --all-features` on namespaced_features (1/4)
+            running `cargo check --no-default-features` on namespaced_features (2/4)
+            running `cargo check --no-default-features --features combo` on namespaced_features (3/4)
+            running `cargo check --no-default-features --features explicit` on namespaced_features (4/4)
             ",
         );
 
@@ -1874,12 +1874,12 @@ fn print_command_list() {
         .assert_success("real")
         .stdout_contains(
             "
+            cargo check --manifest-path Cargo.toml --all-features
             cargo check --manifest-path Cargo.toml --no-default-features
             cargo check --manifest-path Cargo.toml --no-default-features --features a
             cargo check --manifest-path Cargo.toml --no-default-features --features b
             cargo check --manifest-path Cargo.toml --no-default-features --features c
             cargo check --manifest-path Cargo.toml --no-default-features --features default
-            cargo check --manifest-path Cargo.toml --no-default-features --all-features
             ",
         )
         .stdout_not_contains("`");

@@ -477,6 +477,18 @@ fn exec_on_package(
         Kind::Each { .. } | Kind::Powerset { .. } => {}
     }
 
+    // Run with --all-features first: https://github.com/taiki-e/cargo-hack/issues/246
+    let pkg_features = cx.pkg_features(id);
+    if !cx.exclude_all_features
+        && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1
+    {
+        let mut line = line.clone();
+        // run with all features
+        // https://github.com/taiki-e/cargo-hack/issues/42
+        line.arg("--all-features");
+        exec_cargo(cx, id, &mut line, progress, keep_going)?;
+    }
+
     if !cx.no_default_features {
         line.arg("--no-default-features");
     }
@@ -503,16 +515,6 @@ fn exec_on_package(
             }
         }
         Kind::Normal => unreachable!(),
-    }
-
-    let pkg_features = cx.pkg_features(id);
-    if !cx.exclude_all_features
-        && pkg_features.normal().len() + pkg_features.optional_deps().len() > 1
-    {
-        // run with all features
-        // https://github.com/taiki-e/cargo-hack/issues/42
-        line.arg("--all-features");
-        exec_cargo(cx, id, &mut line, progress, keep_going)?;
     }
 
     Ok(())
