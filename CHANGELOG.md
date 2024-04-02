@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Adjust command order of `--each-feature`/`--feature-powerset` to early run a case that is likely to find a problem. ([#247](https://github.com/taiki-e/cargo-hack/pull/247))
+
 ## [0.6.26] - 2024-04-01
 
 - Minor performance improvement to `--mutually-exclusive-features` option.
