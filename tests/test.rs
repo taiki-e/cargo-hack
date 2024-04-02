@@ -603,22 +603,23 @@ fn powerset_deduplication() {
     // with --optional-deps
     cargo_hack(["check", "--feature-powerset", "--optional-deps"])
         .assert_success2("powerset_deduplication", require)
+        // TODO: c,e is actual biggest feature combination here
         .stderr_contains(
             "
             running `cargo check --no-default-features` on deduplication (1/14)
-            running `cargo check --no-default-features --features a` on deduplication (2/14)
-            running `cargo check --no-default-features --features b` on deduplication (3/14)
-            running `cargo check --no-default-features --features c` on deduplication (4/14)
-            running `cargo check --no-default-features --features d` on deduplication (5/14)
-            running `cargo check --no-default-features --features a,d` on deduplication (6/14)
-            running `cargo check --no-default-features --features b,d` on deduplication (7/14)
-            running `cargo check --no-default-features --features c,d` on deduplication (8/14)
-            running `cargo check --no-default-features --features e` on deduplication (9/14)
-            running `cargo check --no-default-features --features c,e` on deduplication (10/14)
-            running `cargo check --no-default-features --features member1` on deduplication (11/14)
-            running `cargo check --no-default-features --features a,member1` on deduplication (12/14)
-            running `cargo check --no-default-features --features b,member1` on deduplication (13/14)
-            running `cargo check --no-default-features --features c,member1` on deduplication (14/14)
+            running `cargo check --no-default-features --features c,member1` on deduplication (2/14)
+            running `cargo check --no-default-features --features a` on deduplication (3/14)
+            running `cargo check --no-default-features --features b` on deduplication (4/14)
+            running `cargo check --no-default-features --features c` on deduplication (5/14)
+            running `cargo check --no-default-features --features d` on deduplication (6/14)
+            running `cargo check --no-default-features --features a,d` on deduplication (7/14)
+            running `cargo check --no-default-features --features b,d` on deduplication (8/14)
+            running `cargo check --no-default-features --features c,d` on deduplication (9/14)
+            running `cargo check --no-default-features --features e` on deduplication (10/14)
+            running `cargo check --no-default-features --features c,e` on deduplication (11/14)
+            running `cargo check --no-default-features --features member1` on deduplication (12/14)
+            running `cargo check --no-default-features --features a,member1` on deduplication (13/14)
+            running `cargo check --no-default-features --features b,member1` on deduplication (14/14)
             ",
         )
         .stderr_not_contains(
@@ -688,15 +689,15 @@ fn powerset_deduplication() {
         .stderr_contains(
             "
             running `cargo check --no-default-features` on deduplication (1/10)
-            running `cargo check --no-default-features --features a` on deduplication (2/10)
-            running `cargo check --no-default-features --features c` on deduplication (3/10)
-            running `cargo check --no-default-features --features e` on deduplication (4/10)
-            running `cargo check --no-default-features --features c,e` on deduplication (5/10)
-            running `cargo check --no-default-features --features member1` on deduplication (6/10)
-            running `cargo check --no-default-features --features a,member1` on deduplication (7/10)
-            running `cargo check --no-default-features --features c,member1` on deduplication (8/10)
-            running `cargo check --no-default-features --features b,d` on deduplication (9/10)
-            running `cargo check --no-default-features --features c,b,d` on deduplication (10/10)
+            running `cargo check --no-default-features --features c,b,d` on deduplication (2/10)
+            running `cargo check --no-default-features --features a` on deduplication (3/10)
+            running `cargo check --no-default-features --features c` on deduplication (4/10)
+            running `cargo check --no-default-features --features e` on deduplication (5/10)
+            running `cargo check --no-default-features --features c,e` on deduplication (6/10)
+            running `cargo check --no-default-features --features member1` on deduplication (7/10)
+            running `cargo check --no-default-features --features a,member1` on deduplication (8/10)
+            running `cargo check --no-default-features --features c,member1` on deduplication (9/10)
+            running `cargo check --no-default-features --features b,d` on deduplication (10/10)
             ",
         )
         .stderr_not_contains(
@@ -899,9 +900,9 @@ fn include_features() {
         .assert_success("real")
         .stderr_contains(
             "
-            running `cargo check --no-default-features --features a` on real (1/3)
-            running `cargo check --no-default-features --features b` on real (2/3)
-            running `cargo check --no-default-features --features a,b` on real (3/3)
+            running `cargo check --no-default-features --features a,b` on real (1/3)
+            running `cargo check --no-default-features --features a` on real (2/3)
+            running `cargo check --no-default-features --features b` on real (3/3)
             ",
         );
 }
@@ -1001,13 +1002,13 @@ fn powerset_skip_success() {
         .stderr_contains(
             "
             running `cargo check --no-default-features` on real (1/8)
-            running `cargo check --no-default-features --features b` on real (2/8)
-            running `cargo check --no-default-features --features c` on real (3/8)
-            running `cargo check --no-default-features --features b,c` on real (4/8)
-            running `cargo check --no-default-features --features default` on real (5/8)
-            running `cargo check --no-default-features --features b,default` on real (6/8)
-            running `cargo check --no-default-features --features c,default` on real (7/8)
-            running `cargo check --no-default-features --features b,c,default` on real (8/8)
+            running `cargo check --no-default-features --features b,c,default` on real (2/8)
+            running `cargo check --no-default-features --features b` on real (3/8)
+            running `cargo check --no-default-features --features c` on real (4/8)
+            running `cargo check --no-default-features --features b,c` on real (5/8)
+            running `cargo check --no-default-features --features default` on real (6/8)
+            running `cargo check --no-default-features --features b,default` on real (7/8)
+            running `cargo check --no-default-features --features c,default` on real (8/8)
             ",
         )
         .stderr_not_contains(
@@ -1814,9 +1815,9 @@ fn weak_dep_features() {
         .stderr_contains(
             "
             running `cargo check --no-default-features` on weak_dep_features (1/4)
-            running `cargo check --no-default-features --features default` on weak_dep_features (2/4)
-            running `cargo check --no-default-features --features easytime` on weak_dep_features (3/4)
-            running `cargo check --no-default-features --features default,easytime` on weak_dep_features (4/4)
+            running `cargo check --no-default-features --features default,easytime` on weak_dep_features (2/4)
+            running `cargo check --no-default-features --features default` on weak_dep_features (3/4)
+            running `cargo check --no-default-features --features easytime` on weak_dep_features (4/4)
             ",
         );
     cargo_hack(["check", "--feature-powerset", "--optional-deps"])
@@ -1824,9 +1825,9 @@ fn weak_dep_features() {
         .stderr_contains(
             "
             running `cargo check --no-default-features` on weak_dep_features (1/4)
-            running `cargo check --no-default-features --features default` on weak_dep_features (2/4)
-            running `cargo check --no-default-features --features easytime` on weak_dep_features (3/4)
-            running `cargo check --no-default-features --features default,easytime` on weak_dep_features (4/4)
+            running `cargo check --no-default-features --features default,easytime` on weak_dep_features (2/4)
+            running `cargo check --no-default-features --features default` on weak_dep_features (3/4)
+            running `cargo check --no-default-features --features easytime` on weak_dep_features (4/4)
             ",
         );
 
@@ -1835,9 +1836,9 @@ fn weak_dep_features() {
         .stderr_contains(
             "
             running `cargo check --no-default-features` on weak_dep_features_namespaced (1/4)
-            running `cargo check --no-default-features --features default` on weak_dep_features_namespaced (2/4)
-            running `cargo check --no-default-features --features easytime` on weak_dep_features_namespaced (3/4)
-            running `cargo check --no-default-features --features default,easytime` on weak_dep_features_namespaced (4/4)
+            running `cargo check --no-default-features --features default,easytime` on weak_dep_features_namespaced (2/4)
+            running `cargo check --no-default-features --features default` on weak_dep_features_namespaced (3/4)
+            running `cargo check --no-default-features --features easytime` on weak_dep_features_namespaced (4/4)
             ",
         );
     cargo_hack(["check", "--feature-powerset", "--optional-deps"])
@@ -1845,9 +1846,9 @@ fn weak_dep_features() {
         .stderr_contains(
             "
             running `cargo check --no-default-features` on weak_dep_features_namespaced (1/4)
-            running `cargo check --no-default-features --features default` on weak_dep_features_namespaced (2/4)
-            running `cargo check --no-default-features --features easytime` on weak_dep_features_namespaced (3/4)
-            running `cargo check --no-default-features --features default,easytime` on weak_dep_features_namespaced (4/4)
+            running `cargo check --no-default-features --features default,easytime` on weak_dep_features_namespaced (2/4)
+            running `cargo check --no-default-features --features default` on weak_dep_features_namespaced (3/4)
+            running `cargo check --no-default-features --features easytime` on weak_dep_features_namespaced (4/4)
             ",
         );
 
@@ -1865,9 +1866,9 @@ fn weak_dep_features() {
         .stderr_contains(
             "
             running `cargo check --no-default-features` on weak_dep_features_implicit (1/4)
-            running `cargo check --no-default-features --features default` on weak_dep_features_implicit (2/4)
-            running `cargo check --no-default-features --features easytime` on weak_dep_features_implicit (3/4)
-            running `cargo check --no-default-features --features default,easytime` on weak_dep_features_implicit (4/4)
+            running `cargo check --no-default-features --features default,easytime` on weak_dep_features_implicit (2/4)
+            running `cargo check --no-default-features --features default` on weak_dep_features_implicit (3/4)
+            running `cargo check --no-default-features --features easytime` on weak_dep_features_implicit (4/4)
             ",
         );
 }
