@@ -24,9 +24,12 @@ use std::{
     env,
     fmt::{self, Write},
     str::FromStr,
+    sync,
+    sync::{Arc, Mutex},
 };
 
 use anyhow::{bail, format_err, Error, Result};
+use rayon::prelude::*;
 
 use crate::{
     context::Context,
@@ -57,9 +60,10 @@ fn try_main() -> Result<()> {
             return Ok(());
         }
 
+        let progress = sync::Arc::new(sync::Mutex::new(Progress::default()));
         let packages = determine_package_list(cx)?;
-        let mut progress = Progress::default();
-        let mut keep_going = KeepGoing::default();
+        let keep_going = sync::Arc::new(sync::Mutex::new(KeepGoing::default()));
+
         if let Some(range) = cx.version_range {
             let mut versions = BTreeMap::new();
             let steps = rustup::version_range(range, cx.version_step, &packages, cx)?;
@@ -109,6 +113,7 @@ fn try_main() -> Result<()> {
 
             for (cargo_version, packages) in &versions {
                 for package in packages {
+                    let progress = &mut *progress.lock().unwrap();
                     if cx.target.is_empty() || cargo_version.minor >= 64 {
                         progress.total += package.feature_count;
                     } else {
@@ -133,17 +138,21 @@ fn try_main() -> Result<()> {
                     cx,
                     &packages,
                     cargo_version.minor,
-                    &mut progress,
-                    &mut keep_going,
+                    &progress,
+                    &keep_going,
                     &mut generate_lockfile,
                     &mut regenerate_lockfile_on_51_or_up,
                 )?;
             }
         } else {
             let total = packages.iter().map(|p| p.feature_count).sum();
-            progress.total = total;
-            default_cargo_exec_on_packages(cx, &packages, &mut progress, &mut keep_going)?;
+            {
+                let mut progress = progress.lock().unwrap();
+                progress.total = total;
+            }
+            default_cargo_exec_on_packages(cx, &packages, &progress, &keep_going)?;
         }
+        let keep_going = keep_going.lock().unwrap();
         if keep_going.count > 0 {
             eprintln!();
             error!("{keep_going}");
@@ -366,8 +375,8 @@ fn versioned_cargo_exec_on_packages(
     cx: &Context,
     packages: &[PackageRuns<'_>],
     cargo_version: u32,
-    progress: &mut Progress,
-    keep_going: &mut KeepGoing,
+    progress: &Arc<Mutex<Progress>>,
+    keep_going: &Arc<Mutex<KeepGoing>>,
     generate_lockfile: &mut bool,
     regenerate_lockfile_on_51_or_up: &mut bool,
 ) -> Result<()> {
@@ -417,8 +426,8 @@ fn versioned_cargo_exec_on_packages(
 fn default_cargo_exec_on_packages(
     cx: &Context,
     packages: &[PackageRuns<'_>],
-    progress: &mut Progress,
-    keep_going: &mut KeepGoing,
+    progress: &Arc<Mutex<Progress>>,
+    keep_going: &Arc<Mutex<KeepGoing>>,
 ) -> Result<()> {
     let mut line = cx.cargo();
     line.apply_context(cx);
@@ -429,8 +438,8 @@ fn exec_on_packages(
     cx: &Context,
     packages: &[PackageRuns<'_>],
     mut line: ProcessBuilder<'_>,
-    progress: &mut Progress,
-    keep_going: &mut KeepGoing,
+    progress: &Arc<Mutex<Progress>>,
+    keep_going: &Arc<Mutex<KeepGoing>>,
     cargo_version: u32,
 ) -> Result<()> {
     if cx.locked {
@@ -442,9 +451,25 @@ fn exec_on_packages(
             line.arg("--target");
             line.arg(target);
         }
-        packages
-            .iter()
-            .try_for_each(|pkg| exec_on_package(cx, pkg.id, &pkg.kind, &line, progress, keep_going))
+
+        if cx.parallel {
+            packages.par_iter().try_for_each(|pkg| {
+                exec_on_package(cx, pkg.id, &pkg.kind, &line, progress, keep_going)
+            })
+        } else {
+            packages.iter().try_for_each(|pkg| {
+                exec_on_package(cx, pkg.id, &pkg.kind, &line, progress, keep_going)
+            })
+        }
+    } else if cx.parallel {
+        cx.target.par_iter().try_for_each(|target| {
+            let mut line = line.clone();
+            line.arg("--target");
+            line.arg(target);
+            packages.iter().try_for_each(|pkg| {
+                exec_on_package(cx, pkg.id, &pkg.kind, &line, progress, keep_going)
+            })
+        })
     } else {
         cx.target.iter().try_for_each(|target| {
             let mut line = line.clone();
@@ -462,8 +487,8 @@ fn exec_on_package(
     id: &PackageId,
     kind: &Kind<'_>,
     line: &ProcessBuilder<'_>,
-    progress: &mut Progress,
-    keep_going: &mut KeepGoing,
+    progress: &Arc<Mutex<Progress>>,
+    keep_going: &Arc<Mutex<KeepGoing>>,
 ) -> Result<()> {
     let package = cx.packages(id);
 
@@ -561,8 +586,8 @@ fn exec_cargo_with_features(
     cx: &Context,
     id: &PackageId,
     line: &ProcessBuilder<'_>,
-    progress: &mut Progress,
-    keep_going: &mut KeepGoing,
+    progress: &Arc<Mutex<Progress>>,
+    keep_going: &Arc<Mutex<KeepGoing>>,
     features: &[&Feature],
 ) -> Result<()> {
     let mut line = line.clone();
@@ -644,12 +669,13 @@ fn exec_cargo(
     cx: &Context,
     id: &PackageId,
     line: &ProcessBuilder<'_>,
-    progress: &mut Progress,
-    keep_going: &mut KeepGoing,
+    progress: &Arc<Mutex<Progress>>,
+    keep_going: &Arc<Mutex<KeepGoing>>,
 ) -> Result<()> {
     let res = exec_cargo_inner(cx, id, line, progress);
     if cx.keep_going {
         if let Err(e) = res {
+            let mut keep_going = keep_going.lock().unwrap();
             error!("{e:#}");
             keep_going.count = keep_going.count.saturating_add(1);
             let name = cx.packages(id).name.clone();
@@ -668,8 +694,9 @@ fn exec_cargo_inner(
     cx: &Context,
     id: &PackageId,
     line: &ProcessBuilder<'_>,
-    progress: &mut Progress,
+    progress: &Arc<Mutex<Progress>>,
 ) -> Result<()> {
+    let mut progress = progress.lock().unwrap();
     if progress.count != 0 && !cx.print_command_list && cx.log_group == LogGroup::None {
         eprintln!();
     }
@@ -694,6 +721,7 @@ fn exec_cargo_inner(
     write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
     let _guard = cx.log_group.print(&msg);
 
+    // TODO: do we want to use run_with_env here?
     line.run()
 }
 
