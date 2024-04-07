@@ -697,11 +697,10 @@ fn exec_cargo_inner(
     progress: &Arc<Mutex<Progress>>,
 ) -> Result<()> {
     {
-        let mut progress = progress.lock().unwrap();
+        let progress = progress.lock().unwrap();
         if progress.count != 0 && !cx.print_command_list && cx.log_group == LogGroup::None {
             eprintln!();
         }
-        progress.count += 1;
     }
 
     if cx.clean_per_run {
@@ -721,7 +720,8 @@ fn exec_cargo_inner(
         write!(msg, "running {line} on {}", cx.packages(id).name).unwrap();
     }
     {
-        let progress = progress.lock().unwrap();
+        let mut progress = progress.lock().unwrap();
+        progress.count += 1;
         write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
     }
     let _guard = cx.log_group.print(&msg);
