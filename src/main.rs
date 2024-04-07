@@ -696,11 +696,13 @@ fn exec_cargo_inner(
     line: &ProcessBuilder<'_>,
     progress: &Arc<Mutex<Progress>>,
 ) -> Result<()> {
-    let mut progress = progress.lock().unwrap();
-    if progress.count != 0 && !cx.print_command_list && cx.log_group == LogGroup::None {
-        eprintln!();
+    {
+        let mut progress = progress.lock().unwrap();
+        if progress.count != 0 && !cx.print_command_list && cx.log_group == LogGroup::None {
+            eprintln!();
+        }
+        progress.count += 1;
     }
-    progress.count += 1;
 
     if cx.clean_per_run {
         cargo_clean(cx, Some(id))?;
@@ -718,7 +720,10 @@ fn exec_cargo_inner(
     } else {
         write!(msg, "running {line} on {}", cx.packages(id).name).unwrap();
     }
-    write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
+    {
+        let progress = progress.lock().unwrap();
+        write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
+    }
     let _guard = cx.log_group.print(&msg);
 
     // TODO: do we want to use run_with_env here?
