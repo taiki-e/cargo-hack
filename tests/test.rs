@@ -1578,7 +1578,7 @@ fn multi_target() {
     ));
 
     // do not bump the versions in this test
-    // this test tests for specific behaviour changes between 1.63 and 1.64
+    // this test tests for specific behavior changes between 1.63 and 1.64
     cargo_hack([
         "check",
         "--version-range",
