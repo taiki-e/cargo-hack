@@ -1452,59 +1452,59 @@ fn version_range() {
     }
     let _r = RUSTUP_TOOLCHAIN_CHANGES.lock().unwrap();
 
-    cargo_hack(["check", "--version-range", "1.63..=1.64"]).assert_success("real").stderr_contains(
+    cargo_hack(["check", "--version-range", "1.74..=1.75"]).assert_success("real").stderr_contains(
         "
-        running `rustup run 1.63 cargo check` on real (1/2)
-        running `rustup run 1.64 cargo check` on real (2/2)
+        running `rustup run 1.74 cargo check` on real (1/2)
+        running `rustup run 1.75 cargo check` on real (2/2)
         ",
     );
 
-    cargo_hack(["check", "--version-range", "1.63..1.64"])
+    cargo_hack(["check", "--version-range", "1.74..1.75"])
         .assert_failure("real") // warn
         .stderr_contains(
             "
-            warning: using `..` for inclusive range is deprecated; consider using `1.63..=1.64`
-            running `rustup run 1.63 cargo check` on real (1/2)
-            running `rustup run 1.64 cargo check` on real (2/2)
+            warning: using `..` for inclusive range is deprecated; consider using `1.74..=1.75`
+            running `rustup run 1.74 cargo check` on real (1/2)
+            running `rustup run 1.75 cargo check` on real (2/2)
             ",
         );
 
-    cargo_hack(["check", "--version-range", "1.63..=1.64", "--target", TARGET])
+    cargo_hack(["check", "--version-range", "1.74..=1.75", "--target", TARGET])
         .assert_success("real")
         .stderr_contains(format!(
             "
-            running `rustup run 1.63 cargo check --target {TARGET}` on real (1/2)
-            running `rustup run 1.64 cargo check --target {TARGET}` on real (2/2)
+            running `rustup run 1.74 cargo check --target {TARGET}` on real (1/2)
+            running `rustup run 1.75 cargo check --target {TARGET}` on real (2/2)
             ",
         ));
 
-    cargo_hack(["check", "--version-range", "..=1.64", "--package=member1", "--package=member2"])
+    cargo_hack(["check", "--version-range", "..=1.75", "--package=member1", "--package=member2"])
         .assert_success("rust-version")
         .stderr_contains(
             "
-            running `rustup run 1.63 cargo check` on member1 (1/4)
-            running `rustup run 1.63 cargo check` on member2 (2/4)
-            running `rustup run 1.64 cargo check` on member1 (3/4)
-            running `rustup run 1.64 cargo check` on member2 (4/4)
+            running `rustup run 1.74 cargo check` on member1 (1/4)
+            running `rustup run 1.74 cargo check` on member2 (2/4)
+            running `rustup run 1.75 cargo check` on member1 (3/4)
+            running `rustup run 1.75 cargo check` on member2 (4/4)
             ",
         );
     // Skips `real` because it isn't in range
-    cargo_hack(["check", "--version-range", "..=1.64", "--workspace"])
+    cargo_hack(["check", "--version-range", "..=1.75", "--workspace"])
         .assert_failure("rust-version") // warn
         .stderr_contains(
             "
-            warning: skipping real, rust-version (1.65) is not in specified range (..=1.64)
-            running `rustup run 1.63 cargo check` on member1 (1/5)
-            running `rustup run 1.63 cargo check` on member2 (2/5)
-            running `rustup run 1.64 cargo check` on member1 (3/5)
-            running `rustup run 1.64 cargo check` on member2 (4/5)
-            running `rustup run 1.64 cargo check` on member3 (5/5)
+            warning: skipping real, rust-version (1.76) is not in specified range (..=1.75)
+            running `rustup run 1.74 cargo check` on member1 (1/5)
+            running `rustup run 1.74 cargo check` on member2 (2/5)
+            running `rustup run 1.75 cargo check` on member1 (3/5)
+            running `rustup run 1.75 cargo check` on member2 (4/5)
+            running `rustup run 1.75 cargo check` on member3 (5/5)
             ",
         );
     cargo_hack([
         "check",
         "--version-range",
-        "..=1.66",
+        "..=1.77",
         "--version-step",
         "2",
         "--workspace",
@@ -1513,13 +1513,13 @@ fn version_range() {
     .assert_success("rust-version")
     .stderr_contains(
         "
-            running `rustup run 1.63 cargo check --locked` on member1 (1/7)
-            running `rustup run 1.63 cargo check --locked` on member2 (2/7)
-            running `rustup run 1.64 cargo check --locked` on member3 (3/7)
-            running `rustup run 1.65 cargo check --locked` on member1 (4/7)
-            running `rustup run 1.65 cargo check --locked` on member2 (5/7)
-            running `rustup run 1.65 cargo check --locked` on member3 (6/7)
-            running `rustup run 1.65 cargo check --locked` on real (7/7)
+            running `rustup run 1.74 cargo check --locked` on member1 (1/7)
+            running `rustup run 1.74 cargo check --locked` on member2 (2/7)
+            running `rustup run 1.75 cargo check --locked` on member3 (3/7)
+            running `rustup run 1.76 cargo check --locked` on member1 (4/7)
+            running `rustup run 1.76 cargo check --locked` on member2 (5/7)
+            running `rustup run 1.76 cargo check --locked` on member3 (6/7)
+            running `rustup run 1.76 cargo check --locked` on real (7/7)
             ",
     );
 }
@@ -1536,18 +1536,18 @@ fn rust_version() {
         .assert_success("rust-version")
         .stderr_contains(
             "
-            running `rustup run 1.63 cargo check` on member1 (1/2)
-            running `rustup run 1.63 cargo check` on member2 (2/2)
+            running `rustup run 1.74 cargo check` on member1 (1/2)
+            running `rustup run 1.74 cargo check` on member2 (2/2)
             ",
         );
     cargo_hack(["check", "--rust-version", "--workspace", "--locked"])
         .assert_success("rust-version")
         .stderr_contains(
             "
-            running `rustup run 1.63 cargo check --locked` on member1 (1/4)
-            running `rustup run 1.63 cargo check --locked` on member2 (2/4)
-            running `rustup run 1.64 cargo check --locked` on member3 (3/4)
-            running `rustup run 1.65 cargo check --locked` on real (4/4)
+            running `rustup run 1.74 cargo check --locked` on member1 (1/4)
+            running `rustup run 1.74 cargo check --locked` on member2 (2/4)
+            running `rustup run 1.75 cargo check --locked` on member3 (3/4)
+            running `rustup run 1.76 cargo check --locked` on real (4/4)
             ",
         );
 }
@@ -1565,18 +1565,20 @@ fn multi_target() {
     cargo_hack([
         "check",
         "--version-range",
-        "1.63..=1.64",
+        "1.74..=1.75",
         "--target",
         &format!("aarch64{target_suffix}"),
     ])
     .assert_success("real")
     .stderr_contains(format!(
         "
-        running `rustup run 1.63 cargo check --target aarch64{target_suffix}` on real (1/2)
-        running `rustup run 1.64 cargo check --target aarch64{target_suffix}` on real (2/2)
+        running `rustup run 1.74 cargo check --target aarch64{target_suffix}` on real (1/2)
+        running `rustup run 1.75 cargo check --target aarch64{target_suffix}` on real (2/2)
         "
     ));
 
+    // do not bump the versions in this test
+    // this test tests for specific behaviour changes between 1.63 and 1.64
     cargo_hack([
         "check",
         "--version-range",
@@ -1598,7 +1600,7 @@ fn multi_target() {
     cargo_hack([
         "check",
         "--version-range",
-        "1.63..=1.64",
+        "1.74..=1.75",
         "--target",
         &format!("x86_64{target_suffix}"),
         "--target",
@@ -1607,8 +1609,8 @@ fn multi_target() {
     .assert_success("real")
     .stderr_contains(format!(
         "
-        running `rustup run 1.63 cargo check --target x86_64{target_suffix}` on real (1/2)
-        running `rustup run 1.64 cargo check --target x86_64{target_suffix}` on real (2/2)
+        running `rustup run 1.74 cargo check --target x86_64{target_suffix}` on real (1/2)
+        running `rustup run 1.75 cargo check --target x86_64{target_suffix}` on real (2/2)
         ",
     ));
 }
@@ -1616,17 +1618,17 @@ fn multi_target() {
 #[test]
 fn version_range_failure() {
     // zero step
-    cargo_hack(["check", "--version-range", "1.45..", "--version-step", "0"])
+    cargo_hack(["check", "--version-range", "1.77..", "--version-step", "0"])
         .assert_failure("real")
         .stderr_contains("--version-step cannot be zero");
 
     // empty
-    cargo_hack(["check", "--version-range", "1.45..1.44"])
+    cargo_hack(["check", "--version-range", "1.77..1.76"])
         .assert_failure("real")
-        .stderr_contains("specified version range `1.45..=1.44` is empty");
-    cargo_hack(["check", "--version-range", "1.45..=1.44"])
+        .stderr_contains("specified version range `1.77..=1.76` is empty");
+    cargo_hack(["check", "--version-range", "1.77..=1.76"])
         .assert_failure("real")
-        .stderr_contains("specified version range `1.45..=1.44` is empty");
+        .stderr_contains("specified version range `1.77..=1.76` is empty");
 
     // v0
     cargo_hack(["check", "--version-range", "0.45.."])
@@ -1637,22 +1639,22 @@ fn version_range_failure() {
     cargo_hack(["check", "--version-range", "..="]).assert_failure("real").stderr_contains(
         "inclusive range `..=` must have end expression; consider using `..` or `..=<end>`",
     );
-    cargo_hack(["check", "--version-range", "1.45..="]).assert_failure("real").stderr_contains(
-        "inclusive range `1.45..=` must have end expression; consider using `1.45..` or `1.45..=<end>`",
+    cargo_hack(["check", "--version-range", "1.77..="]).assert_failure("real").stderr_contains(
+        "inclusive range `1.77..=` must have end expression; consider using `1.77..` or `1.77..=<end>`",
     );
 
     // patch version
-    cargo_hack(["check", "--version-range", "1.45.2.."])
+    cargo_hack(["check", "--version-range", "1.77.1.."])
         .assert_failure("real") // warn
         .stderr_contains(
             "
             --version-range always selects the latest patch release per minor release, \
-            not the specified patch release `2`
+            not the specified patch release `1`
             ",
         );
 
     // No rust-version
-    cargo_hack(["check", "--version-range", "..=1.64"]).assert_failure("real").stderr_contains(
+    cargo_hack(["check", "--version-range", "..=1.75"]).assert_failure("real").stderr_contains(
         "
         no rust-version field in selected Cargo.toml's is specified
         ",
