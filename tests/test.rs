@@ -520,19 +520,20 @@ fn each_feature() {
 
 #[test]
 fn each_feature_parallel() {
-    cargo_hack(["check", "--parallel", "--each-feature"]).assert_success("real")
-    .stderr_contains("running `cargo check --all-features` on real")
-    .stderr_contains("running `cargo check --no-default-features` on real")
-    .stderr_contains("running `cargo check --no-default-features --features a` on real")
-    .stderr_contains("running `cargo check --no-default-features --features b` on real")
-    .stderr_contains("running `cargo check --no-default-features --features c` on real")
-    .stderr_contains("running `cargo check --no-default-features --features default` on real")
-    .stderr_contains("(1/6)")
-    .stderr_contains("(2/6)")
-    .stderr_contains("(3/6)")
-    .stderr_contains("(4/6)")
-    .stderr_contains("(5/6)")
-    .stderr_contains("(6/6)");
+    cargo_hack(["check", "--parallel", "--each-feature"])
+        .assert_success("real")
+        .stderr_contains("running `cargo check --all-features` on real")
+        .stderr_contains("running `cargo check --no-default-features` on real")
+        .stderr_contains("running `cargo check --no-default-features --features a` on real")
+        .stderr_contains("running `cargo check --no-default-features --features b` on real")
+        .stderr_contains("running `cargo check --no-default-features --features c` on real")
+        .stderr_contains("running `cargo check --no-default-features --features default` on real")
+        .stderr_contains("(1/6)")
+        .stderr_contains("(2/6)")
+        .stderr_contains("(3/6)")
+        .stderr_contains("(4/6)")
+        .stderr_contains("(5/6)")
+        .stderr_contains("(6/6)");
 
     // with other feature
     cargo_hack(["check", "--parallel", "--each-feature", "--features", "a"])
