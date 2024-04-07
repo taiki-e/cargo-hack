@@ -2,7 +2,7 @@
 name = "member3"
 version = "0.0.0"
 publish = true
-rust-version = "1.64"
+rust-version = "1.75"
 
 [features]
 default = ["a"]
