@@ -117,7 +117,7 @@ pub(crate) fn version_range(
     };
 
     let versions: Vec<_> = (start_inclusive.minor..=end_inclusive.minor)
-        .step_by(step as _)
+        .step_by(step as usize)
         .map(|minor| Version { major: 1, minor, patch: None })
         .collect();
     if versions.is_empty() {
