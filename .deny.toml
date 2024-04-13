@@ -33,6 +33,7 @@ build.allow-build-scripts = [
     { name = "windows_aarch64_gnullvm" }, # via ctrlc
     { name = "windows_aarch64_msvc" }, # via ctrlc
     { name = "windows_i686_gnu" }, # via ctrlc
+    { name = "windows_i686_gnullvm" }, # via ctrlc
     { name = "windows_i686_msvc" }, # via ctrlc
     { name = "windows_x86_64_gnu" }, # via ctrlc
     { name = "windows_x86_64_gnullvm" }, # via ctrlc
@@ -45,6 +46,7 @@ build.bypass = [
     { name = "windows_aarch64_gnullvm", allow-globs = ["lib/*.a"] }, # via ctrlc
     { name = "windows_aarch64_msvc", allow-globs = ["lib/*.lib"] }, # via ctrlc
     { name = "windows_i686_gnu", allow-globs = ["lib/*.a"] }, # via ctrlc
+    { name = "windows_i686_gnullvm", allow-globs = ["lib/*.a"] }, # via ctrlc
     { name = "windows_i686_msvc", allow-globs = ["lib/*.lib"] }, # via ctrlc
     { name = "windows_x86_64_gnu", allow-globs = ["lib/*.a"] }, # via ctrlc
     { name = "windows_x86_64_gnullvm", allow-globs = ["lib/*.a"] }, # via ctrlc
