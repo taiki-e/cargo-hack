@@ -587,7 +587,9 @@ impl Args {
         // https://github.com/taiki-e/cargo-hack/issues/42
         // https://github.com/rust-lang/cargo/pull/8799
         exclude_no_default_features |= !include_features.is_empty();
-        exclude_all_features |= !include_features.is_empty() || !exclude_features.is_empty();
+        exclude_all_features |= !include_features.is_empty()
+            || !exclude_features.is_empty()
+            || !mutually_exclusive_features.is_empty();
         exclude_features.extend_from_slice(&features);
 
         term::verbose::set(verbose != 0);
