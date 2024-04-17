@@ -333,13 +333,13 @@ mod tests {
 
     macro_rules! map {
         ($(($key:expr, $value:expr)),* $(,)?) => {
-            BTreeMap::from_iter(vec![$(($key.into(), $value)),*])
+            BTreeMap::from_iter([$(($key.into(), $value)),*])
         };
     }
 
     macro_rules! set {
         ($($expr:expr),* $(,)?) => {
-            BTreeSet::from_iter(vec![$($expr),*])
+            BTreeSet::from_iter([$($expr),*])
         };
     }
 
