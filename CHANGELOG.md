@@ -10,7 +10,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
-- Fix bug in `--mutually-exclusive-features` option. ([#250](https://github.com/taiki-e/cargo-hack/issue/250))
+- Fix bug in `--mutually-exclusive-features` option. ([#250](https://github.com/taiki-e/cargo-hack/issues/250))
 
 ## [0.6.27] - 2024-04-02
 
