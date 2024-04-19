@@ -456,7 +456,7 @@ fields of [`cargo metadata`][cargo-metadata].*
 cargo +stable install cargo-hack --locked
 ```
 
-*Compiler support: requires rustc 1.70+*
+Currently, installing cargo-hack requires rustc 1.70+.
 
 cargo-hack is usually runnable with Cargo versions older than the Rust version
 required for installation (e.g., `cargo +1.31 hack check`). Currently, to run
@@ -493,7 +493,7 @@ This makes the installation faster and may avoid the impact of [problems caused 
 <!-- omit in toc -->
 ### Via Homebrew
 
-You can install [cargo-hack using Homebrew tap on macOS and Linux](https://github.com/taiki-e/homebrew-tap/blob/HEAD/Formula/cargo-hack.rb):
+You can install cargo-hack from the [Homebrew tap maintained by us](https://github.com/taiki-e/homebrew-tap/blob/HEAD/Formula/cargo-hack.rb) (x86_64/aarch64 macOS, x86_64/aarch64 Linux):
 
 ```sh
 brew install taiki-e/tap/cargo-hack
@@ -502,7 +502,7 @@ brew install taiki-e/tap/cargo-hack
 <!-- omit in toc -->
 ### Via Scoop (Windows)
 
-You can install [cargo-hack using Scoop](https://github.com/taiki-e/scoop-bucket/blob/HEAD/bucket/cargo-hack.json):
+You can install cargo-hack from the [Scoop bucket maintained by us](https://github.com/taiki-e/scoop-bucket/blob/HEAD/bucket/cargo-hack.json):
 
 ```sh
 scoop bucket add taiki-e https://github.com/taiki-e/scoop-bucket
@@ -519,9 +519,9 @@ cargo binstall cargo-hack
 ```
 
 <!-- omit in toc -->
-### On Arch Linux
+### Via pacman (Arch Linux)
 
-You can install cargo-hack from the [extra repository](https://archlinux.org/packages/extra/x86_64/cargo-hack/) with [pacman](https://wiki.archlinux.org/title/Pacman):
+You can install cargo-hack from the [extra repository](https://archlinux.org/packages/extra/x86_64/cargo-hack):
 
 ```sh
 pacman -S cargo-hack
