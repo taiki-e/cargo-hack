@@ -6,7 +6,7 @@ use crate::{version::Version, ProcessBuilder};
 
 pub(crate) fn version(mut cmd: ProcessBuilder<'_>) -> Result<Version> {
     // Use verbose version output because the packagers add extra strings to the normal version output.
-    cmd.args(["--version", "--verbose"]);
+    cmd.arg("-vV");
     let verbose_version = cmd.read()?;
     let release = verbose_version
         .lines()
