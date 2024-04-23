@@ -20,7 +20,7 @@ pub(crate) fn fixtures_path() -> &'static Path {
 
 pub(crate) fn cargo_bin_exe() -> Command {
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_cargo-hack"));
-    cmd.env("CARGO_HACK_DENY_WARNINGS", "true");
+    cmd.env("CARGO_HACK_DENY_WARNINGS", "1");
     cmd.env_remove("RUSTFLAGS");
     cmd.env_remove("CARGO_TERM_COLOR");
     cmd.env_remove("GITHUB_ACTIONS");
