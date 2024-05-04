@@ -1,3 +1,4 @@
+autocfg
 binstall
 endgroup
 qpmember
