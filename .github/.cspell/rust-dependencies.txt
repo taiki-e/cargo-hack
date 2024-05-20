@@ -4,5 +4,4 @@
 argfile
 easytime
 lexopt
-tempfile
 termcolor
