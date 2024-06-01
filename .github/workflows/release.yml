@@ -39,18 +39,18 @@ jobs:
           - target: aarch64-unknown-linux-gnu
           - target: aarch64-unknown-linux-musl
           - target: aarch64-apple-darwin
-            os: macos-11
+            os: macos-12
           - target: aarch64-pc-windows-msvc
             os: windows-2019
           - target: x86_64-unknown-linux-gnu
           - target: x86_64-unknown-linux-musl
           - target: x86_64-apple-darwin
-            os: macos-11
+            os: macos-12
           - target: x86_64-pc-windows-msvc
             os: windows-2019
           - target: x86_64-unknown-freebsd
           - target: universal-apple-darwin
-            os: macos-11
+            os: macos-12
     runs-on: ${{ matrix.os || 'ubuntu-20.04' }}
     timeout-minutes: 60
     permissions:

@@ -55,18 +55,16 @@ jobs:
           - rust: beta
           - rust: nightly
           - rust: nightly
-            os: macos-11
+            os: macos-latest
           - rust: nightly
-            os: windows-2019
-    runs-on: ${{ matrix.os || 'ubuntu-20.04' }}
+            os: windows-latest
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     timeout-minutes: 60
     steps:
       - uses: taiki-e/checkout-action@v1
       - name: Install Rust
         run: rustup toolchain add ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
       - run: rustup toolchain add nightly --no-self-update
-      - run: echo "RUSTFLAGS=${RUSTFLAGS} -C target-feature=+crt-static" >>"${GITHUB_ENV}"
-        if: startsWith(matrix.os, 'windows')
       - run: cargo test --workspace --all-features
       - run: |
           set -eEuxo pipefail
@@ -98,7 +96,7 @@ jobs:
           - 36
           - 39
           - 41
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: taiki-e/checkout-action@v1
