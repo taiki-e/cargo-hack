@@ -480,7 +480,7 @@ fn exec_on_package(
     match kind {
         Kind::Normal => {
             // only run with default features
-            return exec_cargo(cx, id, &mut line, progress, keep_going);
+            return exec_cargo(cx, id, &line, progress, keep_going);
         }
         Kind::Each { .. } | Kind::Powerset { .. } => {}
     }
@@ -510,7 +510,7 @@ fn exec_on_package(
         // run with all features
         // https://github.com/taiki-e/cargo-hack/issues/42
         line.arg("--all-features");
-        exec_cargo(cx, id, &mut line, progress, keep_going)?;
+        exec_cargo(cx, id, &line, progress, keep_going)?;
     }
 
     if !cx.no_default_features {
@@ -524,7 +524,7 @@ fn exec_on_package(
 
     if !cx.exclude_no_default_features {
         // run with no default features if the package has other features
-        exec_cargo(cx, id, &mut line, progress, keep_going)?;
+        exec_cargo(cx, id, &line, progress, keep_going)?;
     }
 
     match kind {
@@ -567,7 +567,7 @@ fn exec_cargo_with_features(
 ) -> Result<()> {
     let mut line = line.clone();
     line.append_features(features);
-    exec_cargo(cx, id, &mut line, progress, keep_going)
+    exec_cargo(cx, id, &line, progress, keep_going)
 }
 
 #[derive(Default)]
@@ -643,7 +643,7 @@ impl FromStr for LogGroup {
 fn exec_cargo(
     cx: &Context,
     id: &PackageId,
-    line: &mut ProcessBuilder<'_>,
+    line: &ProcessBuilder<'_>,
     progress: &mut Progress,
     keep_going: &mut KeepGoing,
 ) -> Result<()> {
@@ -667,7 +667,7 @@ fn exec_cargo(
 fn exec_cargo_inner(
     cx: &Context,
     id: &PackageId,
-    line: &mut ProcessBuilder<'_>,
+    line: &ProcessBuilder<'_>,
     progress: &mut Progress,
 ) -> Result<()> {
     if progress.count != 0 && !cx.print_command_list && cx.log_group == LogGroup::None {

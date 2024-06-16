@@ -160,7 +160,7 @@ pub(crate) fn install_toolchain(
 }
 
 fn minor_version() -> Result<u32> {
-    let mut cmd = cmd!("rustup", "--version");
+    let cmd = cmd!("rustup", "--version");
     let output = cmd.read()?;
 
     let version = (|| {
