@@ -10,7 +10,7 @@ use std::{
     collections::{BTreeMap, HashMap},
     ffi::OsStr,
     path::{Path, PathBuf},
-    rc::Rc,
+    sync::Arc,
 };
 
 use anyhow::{format_err, Context as _, Result};
@@ -25,7 +25,7 @@ type ParseResult<T> = Result<T, &'static str>;
 /// An opaque unique identifier for referring to the package.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct PackageId {
-    repr: Rc<str>,
+    repr: Arc<str>,
 }
 
 impl From<String> for PackageId {

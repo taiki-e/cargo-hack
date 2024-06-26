@@ -37,6 +37,8 @@ pub(crate) struct Args {
     pub(crate) each_feature: bool,
     /// --feature-powerset
     pub(crate) feature_powerset: bool,
+    /// --parallel
+    pub(crate) parallel: bool,
     /// --no-dev-deps
     pub(crate) no_dev_deps: bool,
     /// --remove-dev-deps
@@ -149,6 +151,7 @@ impl Args {
         let mut remove_dev_deps = false;
         let mut each_feature = false;
         let mut feature_powerset = false;
+        let mut parallel = false;
         let mut no_private = false;
         let mut ignore_private = false;
         let mut ignore_unknown_features = false;
@@ -299,6 +302,7 @@ impl Args {
                 Long("remove-dev-deps") => parse_flag!(remove_dev_deps),
                 Long("each-feature") => parse_flag!(each_feature),
                 Long("feature-powerset") => parse_flag!(feature_powerset),
+                Long("parallel") => parse_flag!(parallel),
                 Long("at-least-one-of") => at_least_one_of.push(parser.value()?.parse()?),
                 Long("no-private") => parse_flag!(no_private),
                 Long("ignore-private") => parse_flag!(ignore_private),
@@ -611,6 +615,7 @@ impl Args {
             workspace,
             each_feature,
             feature_powerset,
+            parallel,
             no_dev_deps,
             remove_dev_deps,
             no_private,

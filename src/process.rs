@@ -6,8 +6,8 @@ use std::{
     fmt,
     path::Path,
     process::{Command, ExitStatus, Output},
-    rc::Rc,
     str,
+    sync::Arc,
 };
 
 use anyhow::{Context as _, Error, Result};
@@ -32,7 +32,7 @@ macro_rules! cmd {
 #[must_use]
 pub(crate) struct ProcessBuilder<'a> {
     /// The program to execute.
-    program: Rc<OsStr>,
+    program: Arc<OsStr>,
     /// A list of arguments to pass to the program (until '--').
     propagated_leading_args: &'a [String],
     /// A list of arguments to pass to the program (after '--').

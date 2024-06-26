@@ -24,9 +24,12 @@ use std::{
     env,
     fmt::{self, Write},
     str::FromStr,
+    sync,
+    sync::{Arc, Mutex},
 };
 
 use anyhow::{bail, format_err, Error, Result};
+use rayon::prelude::*;
 
 use crate::{
     context::Context,
@@ -57,9 +60,10 @@ fn try_main() -> Result<()> {
             return Ok(());
         }
 
+        let progress = sync::Arc::new(sync::Mutex::new(Progress::default()));
         let packages = determine_package_list(cx)?;
-        let mut progress = Progress::default();
-        let mut keep_going = KeepGoing::default();
+        let keep_going = sync::Arc::new(sync::Mutex::new(KeepGoing::default()));
+
         if let Some(range) = cx.version_range {
             let mut versions = BTreeMap::new();
             let steps = rustup::version_range(range, cx.version_step, &packages, cx)?;
@@ -109,6 +113,7 @@ fn try_main() -> Result<()> {
 
             for (cargo_version, packages) in &versions {
                 for package in packages {
+                    let progress = &mut *progress.lock().unwrap();
                     if cx.target.is_empty() || cargo_version.minor >= 64 {
                         progress.total += package.feature_count;
                     } else {
@@ -133,17 +138,21 @@ fn try_main() -> Result<()> {
                     cx,
                     &packages,
                     cargo_version.minor,
-                    &mut progress,
-                    &mut keep_going,
+                    progress.clone(),
+                    keep_going.clone(),
                     &mut generate_lockfile,
                     &mut regenerate_lockfile_on_51_or_up,
                 )?;
             }
         } else {
             let total = packages.iter().map(|p| p.feature_count).sum();
-            progress.total = total;
-            default_cargo_exec_on_packages(cx, &packages, &mut progress, &mut keep_going)?;
+            {
+                let mut progress = progress.lock().unwrap();
+                progress.total = total;
+            }
+            default_cargo_exec_on_packages(cx, &packages, progress, keep_going.clone())?;
         }
+        let keep_going = keep_going.lock().unwrap();
         if keep_going.count > 0 {
             eprintln!();
             error!("{keep_going}");
@@ -366,8 +375,8 @@ fn versioned_cargo_exec_on_packages(
     cx: &Context,
     packages: &[PackageRuns<'_>],
     cargo_version: u32,
-    progress: &mut Progress,
-    keep_going: &mut KeepGoing,
+    progress: Arc<Mutex<Progress>>,
+    keep_going: Arc<Mutex<KeepGoing>>,
     generate_lockfile: &mut bool,
     regenerate_lockfile_on_51_or_up: &mut bool,
 ) -> Result<()> {
@@ -417,8 +426,8 @@ fn versioned_cargo_exec_on_packages(
 fn default_cargo_exec_on_packages(
     cx: &Context,
     packages: &[PackageRuns<'_>],
-    progress: &mut Progress,
-    keep_going: &mut KeepGoing,
+    progress: Arc<Mutex<Progress>>,
+    keep_going: Arc<Mutex<KeepGoing>>,
 ) -> Result<()> {
     let mut line = cx.cargo();
     line.apply_context(cx);
@@ -429,8 +438,8 @@ fn exec_on_packages(
     cx: &Context,
     packages: &[PackageRuns<'_>],
     mut line: ProcessBuilder<'_>,
-    progress: &mut Progress,
-    keep_going: &mut KeepGoing,
+    progress: Arc<Mutex<Progress>>,
+    keep_going: Arc<Mutex<KeepGoing>>,
     cargo_version: u32,
 ) -> Result<()> {
     if cx.locked {
@@ -442,16 +451,32 @@ fn exec_on_packages(
             line.arg("--target");
             line.arg(target);
         }
-        packages
-            .iter()
-            .try_for_each(|pkg| exec_on_package(cx, pkg.id, &pkg.kind, &line, progress, keep_going))
+
+        if cx.parallel {
+            packages.par_iter().try_for_each(|pkg| {
+                exec_on_package(cx, pkg.id, &pkg.kind, &line, progress.clone(), keep_going.clone())
+            })
+        } else {
+            packages.iter().try_for_each(|pkg| {
+                exec_on_package(cx, pkg.id, &pkg.kind, &line, progress.clone(), keep_going.clone())
+            })
+        }
+    } else if cx.parallel {
+        cx.target.par_iter().try_for_each(|target| {
+            let mut line = line.clone();
+            line.arg("--target");
+            line.arg(target);
+            packages.iter().try_for_each(|pkg| {
+                exec_on_package(cx, pkg.id, &pkg.kind, &line, progress.clone(), keep_going.clone())
+            })
+        })
     } else {
         cx.target.iter().try_for_each(|target| {
             let mut line = line.clone();
             line.arg("--target");
             line.arg(target);
             packages.iter().try_for_each(|pkg| {
-                exec_on_package(cx, pkg.id, &pkg.kind, &line, progress, keep_going)
+                exec_on_package(cx, pkg.id, &pkg.kind, &line, progress.clone(), keep_going.clone())
             })
         })
     }
@@ -462,8 +487,8 @@ fn exec_on_package(
     id: &PackageId,
     kind: &Kind<'_>,
     line: &ProcessBuilder<'_>,
-    progress: &mut Progress,
-    keep_going: &mut KeepGoing,
+    progress: Arc<Mutex<Progress>>,
+    keep_going: Arc<Mutex<KeepGoing>>,
 ) -> Result<()> {
     let package = cx.packages(id);
 
@@ -510,7 +535,7 @@ fn exec_on_package(
         // run with all features
         // https://github.com/taiki-e/cargo-hack/issues/42
         line.arg("--all-features");
-        exec_cargo(cx, id, &line, progress, keep_going)?;
+        exec_cargo(cx, id, &line, progress.clone(), keep_going.clone())?;
     }
 
     if !cx.no_default_features {
@@ -524,13 +549,20 @@ fn exec_on_package(
 
     if !cx.exclude_no_default_features {
         // run with no default features if the package has other features
-        exec_cargo(cx, id, &line, progress, keep_going)?;
+        exec_cargo(cx, id, &line, progress.clone(), keep_going.clone())?;
     }
 
     match kind {
         Kind::Each { features } => {
             for &f in features {
-                exec_cargo_with_features(cx, id, &line, progress, keep_going, &[f])?;
+                exec_cargo_with_features(
+                    cx,
+                    id,
+                    &line,
+                    progress.clone(),
+                    keep_going.clone(),
+                    &[f],
+                )?;
             }
         }
         Kind::Powerset { features } => {
@@ -542,13 +574,20 @@ fn exec_on_package(
                     //       in some cases this is not the case due to deduplication of the powerset.
                     //       See todo comment in powerset_deduplication test for example.
                     let last = features.last().unwrap();
-                    exec_cargo_with_features(cx, id, &line, progress, keep_going, last)?;
+                    exec_cargo_with_features(
+                        cx,
+                        id,
+                        &line,
+                        progress.clone(),
+                        keep_going.clone(),
+                        last,
+                    )?;
                     &features[..features.len() - 1]
                 } else {
                     features
                 };
             for f in features {
-                exec_cargo_with_features(cx, id, &line, progress, keep_going, f)?;
+                exec_cargo_with_features(cx, id, &line, progress.clone(), keep_going.clone(), f)?;
             }
         }
         Kind::Normal => unreachable!(),
@@ -561,8 +600,8 @@ fn exec_cargo_with_features(
     cx: &Context,
     id: &PackageId,
     line: &ProcessBuilder<'_>,
-    progress: &mut Progress,
-    keep_going: &mut KeepGoing,
+    progress: Arc<Mutex<Progress>>,
+    keep_going: Arc<Mutex<KeepGoing>>,
     features: &[&Feature],
 ) -> Result<()> {
     let mut line = line.clone();
@@ -644,12 +683,13 @@ fn exec_cargo(
     cx: &Context,
     id: &PackageId,
     line: &ProcessBuilder<'_>,
-    progress: &mut Progress,
-    keep_going: &mut KeepGoing,
+    progress: Arc<Mutex<Progress>>,
+    keep_going: Arc<Mutex<KeepGoing>>,
 ) -> Result<()> {
     let res = exec_cargo_inner(cx, id, line, progress);
     if cx.keep_going {
         if let Err(e) = res {
+            let mut keep_going = keep_going.lock().unwrap();
             error!("{e:#}");
             keep_going.count = keep_going.count.saturating_add(1);
             let name = cx.packages(id).name.clone();
@@ -668,12 +708,14 @@ fn exec_cargo_inner(
     cx: &Context,
     id: &PackageId,
     line: &ProcessBuilder<'_>,
-    progress: &mut Progress,
+    progress: Arc<Mutex<Progress>>,
 ) -> Result<()> {
-    if progress.count != 0 && !cx.print_command_list && cx.log_group == LogGroup::None {
-        eprintln!();
+    {
+        let progress = progress.lock().unwrap();
+        if progress.count != 0 && !cx.print_command_list && cx.log_group == LogGroup::None {
+            eprintln!();
+        }
     }
-    progress.count += 1;
 
     if cx.clean_per_run {
         cargo_clean(cx, Some(id))?;
@@ -691,9 +733,14 @@ fn exec_cargo_inner(
     } else {
         write!(msg, "running {line} on {}", cx.packages(id).name).unwrap();
     }
-    write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
+    {
+        let mut progress = progress.lock().unwrap();
+        progress.count += 1;
+        write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
+    }
     let _guard = cx.log_group.print(&msg);
 
+    // TODO: do we want to use run_with_env here?
     line.run()
 }
 
