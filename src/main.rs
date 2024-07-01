@@ -165,7 +165,6 @@ enum Kind<'a> {
     Powerset { features: Vec<Vec<&'a Feature>> },
 }
 
-#[allow(clippy::redundant_closure_for_method_calls)]
 fn determine_kind<'a>(
     cx: &'a Context,
     id: &'a PackageId,
@@ -230,8 +229,8 @@ fn determine_kind<'a>(
                     .normal()
                     .iter()
                     .chain(pkg_features.optional_deps())
-                    .flat_map(|f| f.as_group())
-                    .map(|f| f.as_str())
+                    .flat_map(Feature::as_group)
+                    .map(String::as_str)
                     .collect();
                 features.extend(cx.group_features.iter().filter(|&f| {
                     let all_valid =
