@@ -1,6 +1,5 @@
 autocfg
 binstall
-endgroup
 qpmember
 subcrate
 vvpmember
