@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.29] - 2024-07-12
+
 - Distribute prebuilt binary for x86_64 illumos. ([#252](https://github.com/taiki-e/cargo-hack/pull/252), thanks @zeeshanlakhani)
 
 ## [0.6.28] - 2024-04-17
@@ -504,7 +506,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.28...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.29...HEAD
+[0.6.29]: https://github.com/taiki-e/cargo-hack/compare/v0.6.28...v0.6.29
 [0.6.28]: https://github.com/taiki-e/cargo-hack/compare/v0.6.27...v0.6.28
 [0.6.27]: https://github.com/taiki-e/cargo-hack/compare/v0.6.26...v0.6.27
 [0.6.26]: https://github.com/taiki-e/cargo-hack/compare/v0.6.25...v0.6.26
