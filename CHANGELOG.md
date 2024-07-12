@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Distribute prebuilt binary for x86_64 illumos. ([#252](https://github.com/taiki-e/cargo-hack/pull/252), thanks @zeeshanlakhani)
+
 ## [0.6.28] - 2024-04-17
 
 - Fix bug in `--mutually-exclusive-features` option. ([#250](https://github.com/taiki-e/cargo-hack/issues/250))
