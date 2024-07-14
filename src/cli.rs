@@ -13,7 +13,7 @@ use lexopt::{
     ValueExt,
 };
 
-use crate::{term, version::VersionRange, Feature, LogGroup, Rustup};
+use crate::{term, version::VersionRange, Feature, LogGroup, Partition, Rustup};
 
 pub(crate) struct Args {
     pub(crate) leading_args: Vec<String>,
@@ -53,6 +53,8 @@ pub(crate) struct Args {
     pub(crate) clean_per_version: bool,
     /// --keep-going
     pub(crate) keep_going: bool,
+    /// --partition
+    pub(crate) partition: Option<Partition>,
     /// --print-command-list
     pub(crate) print_command_list: bool,
     /// --version-range/--rust-version
@@ -155,6 +157,7 @@ impl Args {
         let mut clean_per_run = false;
         let mut clean_per_version = false;
         let mut keep_going = false;
+        let mut partition = None;
         let mut print_command_list = false;
         let mut no_manifest_path = false;
         let mut locked = false;
@@ -308,6 +311,7 @@ impl Args {
                 Long("clean-per-run") => parse_flag!(clean_per_run),
                 Long("clean-per-version") => parse_flag!(clean_per_version),
                 Long("keep-going") => parse_flag!(keep_going),
+                Long("partition") => parse_opt!(partition, false),
                 Long("print-command-list") => parse_flag!(print_command_list),
                 Long("no-manifest-path") => parse_flag!(no_manifest_path),
                 Long("locked") => parse_flag!(locked),
@@ -571,6 +575,8 @@ impl Args {
             None => LogGroup::auto(),
         };
 
+        let partition = partition.as_deref().map(str::parse).transpose()?;
+
         if no_dev_deps || no_private {
             let flag = if no_dev_deps && no_private {
                 "--no-dev-deps and --no-private modify"
@@ -620,6 +626,7 @@ impl Args {
             clean_per_run,
             clean_per_version,
             keep_going,
+            partition,
             print_command_list,
             no_manifest_path,
             include_features: include_features.into_iter().map(Into::into).collect(),
@@ -813,6 +820,7 @@ const HELP: &[HelpText<'_>] = &[
         "This flag can only be used together with --version-range flag.",
     ]),
     ("", "--keep-going", "", "Keep going on failure", &[]),
+    ("", "--partition", "<M/N>", "Partition runs and execute only its subset according to M/N", &[]),
     ("", "--log-group", "<KIND>", "Log grouping: none, github-actions", &[
         "If this option is not used, the environment will be automatically detected."
     ]),

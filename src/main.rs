@@ -639,6 +639,22 @@ impl FromStr for LogGroup {
     }
 }
 
+pub(crate) struct Partition {
+    index: usize,
+    count: usize,
+}
+
+impl FromStr for Partition {
+    type Err = Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.split('/').map(str::parse::<usize>).collect::<Vec<_>>()[..] {
+            [Ok(index), Ok(count)] if 0 < index && index <= count => Ok(Self { index, count }),
+            _ => bail!("bad or out-of-range partition: {s}"),
+        }
+    }
+}
+
 fn exec_cargo(
     cx: &Context,
     id: &PackageId,
@@ -672,7 +688,26 @@ fn exec_cargo_inner(
     if progress.count != 0 && !cx.print_command_list && cx.log_group == LogGroup::None {
         eprintln!();
     }
-    progress.count += 1;
+
+    let new_count = progress.count + 1;
+    let mut skip = false;
+    if let Some(partition) = &cx.partition {
+        if progress.count % partition.count != partition.index - 1 {
+            let mut msg = String::new();
+            if term::verbose() {
+                write!(msg, "skipping {line}").unwrap();
+            } else {
+                write!(msg, "skipping {line} on {}", cx.packages(id).name).unwrap();
+            }
+            write!(msg, " ({}/{})", new_count, progress.total).unwrap();
+            let _guard = cx.log_group.print(&msg);
+            skip = true;
+        }
+    }
+    progress.count = new_count;
+    if skip {
+        return Ok(());
+    }
 
     if cx.clean_per_run {
         cargo_clean(cx, Some(id))?;
@@ -690,7 +725,7 @@ fn exec_cargo_inner(
     } else {
         write!(msg, "running {line} on {}", cx.packages(id).name).unwrap();
     }
-    write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
+    write!(msg, " ({}/{})", new_count, progress.total).unwrap();
     let _guard = cx.log_group.print(&msg);
 
     line.run()

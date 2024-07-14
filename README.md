@@ -216,6 +216,9 @@ OPTIONS:
         --keep-going
             Keep going on failure.
 
+        --partition <M/N>
+            Partition runs and execute only its subset according to M/N.
+
         --log-group <KIND>
             Log grouping: none, github-actions.
 
