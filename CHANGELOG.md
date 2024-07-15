@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Always exit with 1 on SIGINT/SIGTERM/SIGHUP. Previously, it sometimes exited with 0, but this sometimes worked badly with CI systems that attempted to terminate processes in SIGINT during resource usage problems.
+
 ## [0.6.29] - 2024-07-12
 
 - Distribute prebuilt binary for x86_64 illumos. ([#252](https://github.com/taiki-e/cargo-hack/pull/252), thanks @zeeshanlakhani)
