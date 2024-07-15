@@ -24,6 +24,7 @@ build.allow-build-scripts = [
     { name = "libc" }, # via ctrlc
     { name = "nix" }, # via ctrlc
     { name = "proc-macro2" }, # via serde_derive via cargo-config2
+    { name = "rustix" }, # via tempfile
     { name = "serde_json" },
     { name = "serde" },
     { name = "slab" },

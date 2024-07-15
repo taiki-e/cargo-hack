@@ -135,7 +135,7 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
                 }
                 remove_dev_deps(&mut doc);
                 restore_handles.push(cx.restore.register(&manifest.raw, manifest_path));
-                fs::write(manifest_path, doc.to_string())?;
+                fs::write_atomic(manifest_path, doc.to_string())?;
             }
         }
         if no_private && (no_dev_deps && root_id.is_some() || !private_crates.is_empty()) {
@@ -171,7 +171,7 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
                 remove_private_crates(&mut doc, workspace_root, private_crates);
             }
             restore_handles.push(cx.restore.register(orig, manifest_path));
-            fs::write(manifest_path, doc.to_string())?;
+            fs::write_atomic(manifest_path, doc.to_string())?;
         }
         if restore_lockfile {
             let lockfile = &workspace_root.join("Cargo.lock");

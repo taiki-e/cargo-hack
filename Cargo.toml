@@ -31,14 +31,17 @@ lexopt = "0.3"
 same-file = "1.0.1"
 serde_json = "1"
 slab = "0.4.4"
+tempfile = "3"
 termcolor = "1.1"
 toml_edit = "0.22.7"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
 
 [dev-dependencies]
 build-context = "0.1"
 easy-ext = "1"
 fs-err = "2"
-tempfile = "3"
 
 [lints]
 workspace = true
