@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.30] - 2024-07-15
+
 - Always exit with 1 on SIGINT/SIGTERM/SIGHUP. Previously, it sometimes exited with 0, but this sometimes worked badly with CI systems that attempted to terminate processes in SIGINT during resource usage problems.
 
 ## [0.6.29] - 2024-07-12
@@ -508,7 +510,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.29...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.30...HEAD
+[0.6.30]: https://github.com/taiki-e/cargo-hack/compare/v0.6.29...v0.6.30
 [0.6.29]: https://github.com/taiki-e/cargo-hack/compare/v0.6.28...v0.6.29
 [0.6.28]: https://github.com/taiki-e/cargo-hack/compare/v0.6.27...v0.6.28
 [0.6.27]: https://github.com/taiki-e/cargo-hack/compare/v0.6.26...v0.6.27
