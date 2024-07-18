@@ -786,6 +786,34 @@ fn feature_powerset_depth() {
             ",
         )
         .stderr_not_contains("a,b,c");
+
+    // --feature-powerset --depth=1 is equivalent to --each-feature
+    cargo_hack(["check", "--feature-powerset", "--depth", "1"])
+        .assert_success("real")
+        .stderr_contains(
+            "
+            running `cargo check --all-features` on real (1/6)
+            running `cargo check --no-default-features` on real (2/6)
+            running `cargo check --no-default-features --features a` on real (3/6)
+            running `cargo check --no-default-features --features b` on real (4/6)
+            running `cargo check --no-default-features --features c` on real (5/6)
+            running `cargo check --no-default-features --features default` on real (6/6)
+            ",
+        )
+        .stderr_not_contains(",");
+    cargo_hack(["check", "--each-feature"])
+        .assert_success("real")
+        .stderr_contains(
+            "
+            running `cargo check --all-features` on real (1/6)
+            running `cargo check --no-default-features` on real (2/6)
+            running `cargo check --no-default-features --features a` on real (3/6)
+            running `cargo check --no-default-features --features b` on real (4/6)
+            running `cargo check --no-default-features --features c` on real (5/6)
+            running `cargo check --no-default-features --features default` on real (6/6)
+            ",
+        )
+        .stderr_not_contains(",");
 }
 
 #[test]
@@ -869,6 +897,24 @@ fn powerset_group_features() {
         --features c`
         ",
     );
+
+    cargo_hack(["check", "--feature-powerset", "--group-features", "a,b", "--depth", "1"])
+        .assert_success("real")
+        .stderr_contains(
+            "
+            running `cargo check --all-features` on real (1/5)
+            running `cargo check --no-default-features` on real (2/5)
+            running `cargo check --no-default-features --features c` on real (3/5)
+            running `cargo check --no-default-features --features default` on real (4/5)
+            running `cargo check --no-default-features --features a,b` on real (5/5)
+            ",
+        )
+        .stderr_not_contains(
+            "
+            --features a`
+            --features b`
+            ",
+        );
 }
 
 #[test]
