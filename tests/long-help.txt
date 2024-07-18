@@ -92,6 +92,11 @@ OPTIONS:
 
             This flag can only be used together with --feature-powerset flag.
 
+        --random <NUM_SAMPLES>
+            Performs with random feature combinations up to the number specified per crate.
+
+            This flag can only be used together with --feature-powerset flag.
+
         --group-features <FEATURES>...
             Space or comma separated list of features to group.
 

@@ -82,6 +82,8 @@ pub(crate) struct Args {
     // options for --feature-powerset
     /// --depth <NUM>
     pub(crate) depth: Option<usize>,
+    /// --random <NUM_SAMPLES>
+    pub(crate) random: Option<usize>,
     /// --group-features <FEATURES>...
     pub(crate) group_features: Vec<Feature>,
     /// `--mutually-exclusive-features <FEATURES>`
@@ -176,6 +178,7 @@ impl Args {
         let mut group_features: Vec<String> = vec![];
         let mut mutually_exclusive_features: Vec<String> = vec![];
         let mut depth = None;
+        let mut random = None;
 
         let mut verbose = 0;
         let mut no_default_features = false;
@@ -249,6 +252,7 @@ impl Args {
 
                 Long("manifest-path") => parse_opt!(manifest_path, false),
                 Long("depth") => parse_opt!(depth, false),
+                Long("random") => parse_opt!(random, false),
                 Long("rust-version") => parse_flag!(rust_version),
                 Long("version-range") => parse_opt!(version_range, false),
                 Long("version-step") => parse_opt!(version_step, false),
@@ -423,6 +427,8 @@ impl Args {
         if !feature_powerset {
             if depth.is_some() {
                 requires("--depth", &["--feature-powerset"])?;
+            } else if random.is_some() {
+                requires("--random", &["--feature-powerset"])?;
             } else if !group_features.is_empty() {
                 requires("--group-features", &["--feature-powerset"])?;
             } else if !mutually_exclusive_features.is_empty() {
@@ -431,8 +437,22 @@ impl Args {
                 requires("--at-least-one-of", &["--feature-powerset"])?;
             }
         }
+        if random.is_some() {
+            if depth.is_some() {
+                conflicts("--random", "--depth")?;
+            }
+            // TODO: unimplemented
+            if exclude_all_features {
+                conflicts("--random", "--exclude-all-features")?;
+            }
+            // TODO: unimplemented
+            if exclude_no_default_features {
+                conflicts("--random", "--exclude-no-default-features")?;
+            }
+        }
 
         let depth = depth.as_deref().map(str::parse::<usize>).transpose()?;
+        let random = random.as_deref().map(str::parse::<usize>).transpose()?;
         let group_features = parse_grouped_features(&group_features, "group-features")?;
         let mutually_exclusive_features =
             parse_grouped_features(&mutually_exclusive_features, "mutually-exclusive-features")?;
@@ -586,10 +606,12 @@ impl Args {
 
         // https://github.com/taiki-e/cargo-hack/issues/42
         // https://github.com/rust-lang/cargo/pull/8799
-        exclude_no_default_features |= !include_features.is_empty();
+        // TODO: random
+        exclude_no_default_features |= !include_features.is_empty() || random.is_some();
         exclude_all_features |= !include_features.is_empty()
             || !exclude_features.is_empty()
-            || !mutually_exclusive_features.is_empty();
+            || !mutually_exclusive_features.is_empty()
+            || random.is_some();
         exclude_features.extend_from_slice(&features);
 
         term::verbose::set(verbose != 0);
@@ -630,6 +652,7 @@ impl Args {
             log_group,
 
             depth,
+            random,
             group_features,
             mutually_exclusive_features,
 
@@ -723,6 +746,15 @@ const HELP: &[HelpText<'_>] = &[
         "Specify a max number of simultaneous feature flags of --feature-powerset",
         &[
             "If NUM is set to 1, --feature-powerset is equivalent to --each-feature.",
+            "This flag can only be used together with --feature-powerset flag.",
+        ],
+    ),
+    (
+        "",
+        "--random",
+        "<NUM_SAMPLES>",
+        "Performs with random feature combinations up to the number specified per crate",
+        &[
             "This flag can only be used together with --feature-powerset flag.",
         ],
     ),
