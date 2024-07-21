@@ -702,23 +702,11 @@ fn exec_cargo_inner(
     }
 
     let new_count = progress.count + 1;
-    let mut skip = false;
     if let Some(partition) = &cx.partition {
         if !progress.in_partition(partition) {
-            let mut msg = String::new();
-            if term::verbose() {
-                write!(msg, "skipping {line}").unwrap();
-            } else {
-                write!(msg, "skipping {line} on {}", cx.packages(id).name).unwrap();
-            }
-            write!(msg, " ({}/{})", new_count, progress.total).unwrap();
-            let _guard = cx.log_group.print(&msg);
-            skip = true;
+            let _guard = log_and_update_progress(cx, id, line, progress, new_count, "skipping");
+            return Ok(());
         }
-    }
-    progress.count = new_count;
-    if skip {
-        return Ok(());
     }
 
     if cx.clean_per_run {
@@ -730,15 +718,7 @@ fn exec_cargo_inner(
         return Ok(());
     }
 
-    // running `<command>` (on <package>) (<count>/<total>)
-    let mut msg = String::new();
-    if term::verbose() {
-        write!(msg, "running {line}").unwrap();
-    } else {
-        write!(msg, "running {line} on {}", cx.packages(id).name).unwrap();
-    }
-    write!(msg, " ({}/{})", new_count, progress.total).unwrap();
-    let _guard = cx.log_group.print(&msg);
+    let _guard = log_and_update_progress(cx, id, line, progress, new_count, "running");
 
     line.run()
 }
@@ -772,4 +752,24 @@ fn print_command(mut line: ProcessBuilder<'_>) {
     line.strip_program_path = true;
     let l = line.to_string();
     println!("{}", &l[1..l.len() - 1]);
+}
+
+fn log_and_update_progress(
+    cx: &Context,
+    id: &PackageId,
+    line: &ProcessBuilder<'_>,
+    progress: &mut Progress,
+    new_count: usize,
+    action: &str,
+) -> Option<LogGroupGuard> {
+    // running/skipping `<command>` (on <package>) (<count>/<total>)
+    let mut msg = String::new();
+    if term::verbose() {
+        write!(msg, "{action} {line}").unwrap();
+    } else {
+        write!(msg, "{action} {line} on {}", cx.packages(id).name).unwrap();
+    }
+    write!(msg, " ({}/{})", new_count, progress.total).unwrap();
+    progress.count = new_count;
+    cx.log_group.print(&msg)
 }
