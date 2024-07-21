@@ -158,6 +158,13 @@ struct Progress {
     count: usize,
 }
 
+impl Progress {
+    fn in_partition(&self, partition: &Partition) -> bool {
+        let current_index = self.count / self.total.div_ceil(partition.count);
+        current_index == partition.index
+    }
+}
+
 #[derive(Clone)]
 enum Kind<'a> {
     Normal,
@@ -649,7 +656,7 @@ impl FromStr for Partition {
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s.split('/').map(str::parse::<usize>).collect::<Vec<_>>()[..] {
-            [Ok(index), Ok(count)] if 0 < index && index <= count => Ok(Self { index, count }),
+            [Ok(m), Ok(n)] if 0 < m && m <= n => Ok(Self { index: m - 1, count: n }),
             _ => bail!("bad or out-of-range partition: {s}"),
         }
     }
@@ -692,7 +699,7 @@ fn exec_cargo_inner(
     let new_count = progress.count + 1;
     let mut skip = false;
     if let Some(partition) = &cx.partition {
-        if progress.count % partition.count != partition.index - 1 {
+        if !progress.in_partition(partition) {
             let mut msg = String::new();
             if term::verbose() {
                 write!(msg, "skipping {line}").unwrap();
