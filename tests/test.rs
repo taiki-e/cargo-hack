@@ -1980,6 +1980,10 @@ fn partition_bad() {
         .assert_failure("real")
         .stderr_contains("bad or out-of-range partition: foo/bar");
 
+    cargo_hack(["check", "--each-feature", "--partition", "2/0"])
+        .assert_failure("real")
+        .stderr_contains("bad or out-of-range partition: 2/0");
+
     cargo_hack(["check", "--each-feature", "--partition", "0/3"])
         .assert_failure("real")
         .stderr_contains("bad or out-of-range partition: 0/3");
