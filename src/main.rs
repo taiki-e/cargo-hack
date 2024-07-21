@@ -701,10 +701,9 @@ fn exec_cargo_inner(
         eprintln!();
     }
 
-    let new_count = progress.count + 1;
     if let Some(partition) = &cx.partition {
         if !progress.in_partition(partition) {
-            let _guard = log_and_update_progress(cx, id, line, progress, new_count, "skipping");
+            let _guard = log_and_update_progress(cx, id, line, progress, "skipping");
             return Ok(());
         }
     }
@@ -718,7 +717,7 @@ fn exec_cargo_inner(
         return Ok(());
     }
 
-    let _guard = log_and_update_progress(cx, id, line, progress, new_count, "running");
+    let _guard = log_and_update_progress(cx, id, line, progress, "running");
 
     line.run()
 }
@@ -759,7 +758,6 @@ fn log_and_update_progress(
     id: &PackageId,
     line: &ProcessBuilder<'_>,
     progress: &mut Progress,
-    new_count: usize,
     action: &str,
 ) -> Option<LogGroupGuard> {
     // running/skipping `<command>` (on <package>) (<count>/<total>)
@@ -769,7 +767,7 @@ fn log_and_update_progress(
     } else {
         write!(msg, "{action} {line} on {}", cx.packages(id).name).unwrap();
     }
-    write!(msg, " ({}/{})", new_count, progress.total).unwrap();
-    progress.count = new_count;
+    progress.count += 1;
+    write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
     cx.log_group.print(&msg)
 }
