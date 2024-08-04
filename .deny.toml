@@ -1,10 +1,6 @@
 # https://embarkstudios.github.io/cargo-deny/checks/advisories/cfg.html
 [advisories]
-vulnerability = "deny"
-unmaintained = "deny"
-unsound = "deny"
 yanked = "deny"
-notice = "deny"
 git-fetch-with-cli = true
 ignore = [
 ]
@@ -51,7 +47,6 @@ build.bypass = [
 
 # https://embarkstudios.github.io/cargo-deny/checks/licenses/cfg.html
 [licenses]
-version = 2
 unused-allowed-license = "deny"
 private.ignore = true
 allow = [
