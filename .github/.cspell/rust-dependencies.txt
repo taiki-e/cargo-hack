@@ -3,5 +3,6 @@
 
 argfile
 easytime
+fastrand
 lexopt
 termcolor
