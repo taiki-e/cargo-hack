@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Add `--partition` option. ([#253](https://github.com/taiki-e/cargo-hack/pull/253), thanks @ryoqun)
+
 ## [0.6.30] - 2024-07-15
 
 - Always exit with 1 on SIGINT/SIGTERM/SIGHUP. Previously, it sometimes exited with 0, but this sometimes worked badly with CI systems that attempted to terminate processes in SIGINT during resource usage problems.
