@@ -158,6 +158,18 @@ struct Progress {
     count: usize,
 }
 
+impl Progress {
+    fn in_partition(&self, partition: &Partition) -> bool {
+        // div_ceil (stabilized at 1.73) can't be used due to MSRV = 1.70...
+        let mut chunk_count = self.total / partition.count;
+        if self.total % partition.count != 0 {
+            chunk_count += 1;
+        }
+        let current_index = self.count / chunk_count;
+        current_index == partition.index
+    }
+}
+
 #[derive(Clone)]
 enum Kind<'a> {
     Normal,
@@ -639,6 +651,22 @@ impl FromStr for LogGroup {
     }
 }
 
+pub(crate) struct Partition {
+    index: usize,
+    count: usize,
+}
+
+impl FromStr for Partition {
+    type Err = Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.split('/').map(str::parse::<usize>).collect::<Vec<_>>()[..] {
+            [Ok(m), Ok(n)] if 0 < m && m <= n => Ok(Self { index: m - 1, count: n }),
+            _ => bail!("bad or out-of-range partition: {s}"),
+        }
+    }
+}
+
 fn exec_cargo(
     cx: &Context,
     id: &PackageId,
@@ -672,7 +700,13 @@ fn exec_cargo_inner(
     if progress.count != 0 && !cx.print_command_list && cx.log_group == LogGroup::None {
         eprintln!();
     }
-    progress.count += 1;
+
+    if let Some(partition) = &cx.partition {
+        if !progress.in_partition(partition) {
+            let _guard = log_and_update_progress(cx, id, line, progress, "skipping");
+            return Ok(());
+        }
+    }
 
     if cx.clean_per_run {
         cargo_clean(cx, Some(id))?;
@@ -683,15 +717,7 @@ fn exec_cargo_inner(
         return Ok(());
     }
 
-    // running `<command>` (on <package>) (<count>/<total>)
-    let mut msg = String::new();
-    if term::verbose() {
-        write!(msg, "running {line}").unwrap();
-    } else {
-        write!(msg, "running {line} on {}", cx.packages(id).name).unwrap();
-    }
-    write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
-    let _guard = cx.log_group.print(&msg);
+    let _guard = log_and_update_progress(cx, id, line, progress, "running");
 
     line.run()
 }
@@ -725,4 +751,23 @@ fn print_command(mut line: ProcessBuilder<'_>) {
     line.strip_program_path = true;
     let l = line.to_string();
     println!("{}", &l[1..l.len() - 1]);
+}
+
+fn log_and_update_progress(
+    cx: &Context,
+    id: &PackageId,
+    line: &ProcessBuilder<'_>,
+    progress: &mut Progress,
+    action: &str,
+) -> Option<LogGroupGuard> {
+    // running/skipping `<command>` (on <package>) (<count>/<total>)
+    let mut msg = String::new();
+    if term::verbose() {
+        write!(msg, "{action} {line}").unwrap();
+    } else {
+        write!(msg, "{action} {line} on {}", cx.packages(id).name).unwrap();
+    }
+    progress.count += 1;
+    write!(msg, " ({}/{})", progress.count, progress.total).unwrap();
+    cx.log_group.print(&msg)
 }
