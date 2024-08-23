@@ -277,12 +277,10 @@ fn determine_kind<'a>(
         } else {
             // See exec_on_package
             let feature_count = features.len()
-                + usize::from(!cx.exclude_no_default_features)
-                + usize::from(
-                    !(cx.exclude_all_features
-                        || pkg_features.optional_deps().is_empty()
-                            && pkg_features.normal().len() <= 1),
-                );
+                + (!cx.exclude_no_default_features) as usize
+                + (!(cx.exclude_all_features
+                    || pkg_features.optional_deps().is_empty() && pkg_features.normal().len() <= 1))
+                    as usize;
             let kind = Kind::Each { features };
             Some(PackageRuns { id, kind, feature_count })
         }
@@ -305,16 +303,14 @@ fn determine_kind<'a>(
         } else {
             // See exec_on_package
             let feature_count = features.len()
-                + usize::from(!cx.exclude_no_default_features)
-                + usize::from(
-                    !(cx.exclude_all_features
-                        || (pkg_features.optional_deps().is_empty()
-                            || match &cx.optional_deps {
-                                // Skip when all optional deps are already included in powerset
-                                Some(opt_deps) => opt_deps.is_empty(),
-                                None => false,
-                            })),
-                );
+                + (!cx.exclude_no_default_features) as usize
+                + (!(cx.exclude_all_features
+                    || (pkg_features.optional_deps().is_empty()
+                        || match &cx.optional_deps {
+                            // Skip when all optional deps are already included in powerset
+                            Some(opt_deps) => opt_deps.is_empty(),
+                            None => false,
+                        }))) as usize;
             let kind = Kind::Powerset { features };
             Some(PackageRuns { id, kind, feature_count })
         }
