@@ -288,6 +288,7 @@ fn determine_kind<'a>(
         let features = features::feature_powerset(
             features,
             cx.depth,
+            cx.random,
             &cx.at_least_one_of,
             &cx.mutually_exclusive_features,
             &package.features,

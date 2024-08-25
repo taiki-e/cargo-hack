@@ -195,9 +195,32 @@ impl AsRef<str> for Feature {
     }
 }
 
+// main.rs passes Vec<&Feature> and tests in this module passes &Vec<Feature>.
+pub(crate) trait RefVecOrVecRef<'a, T: 'a>: IntoIterator<Item = &'a T> {
+    fn get_(&self, i: usize) -> Option<&'a T>;
+    fn len_(&self) -> usize;
+}
+impl<'a, T> RefVecOrVecRef<'a, T> for Vec<&'a T> {
+    fn get_(&self, i: usize) -> Option<&'a T> {
+        self.get(i).copied()
+    }
+    fn len_(&self) -> usize {
+        self.len()
+    }
+}
+impl<'a, T> RefVecOrVecRef<'a, T> for &'a Vec<T> {
+    fn get_(&self, i: usize) -> Option<&'a T> {
+        self.get(i)
+    }
+    fn len_(&self) -> usize {
+        self.len()
+    }
+}
+
 pub(crate) fn feature_powerset<'a>(
-    features: impl IntoIterator<Item = &'a Feature>,
+    features: impl RefVecOrVecRef<'a, Feature>,
     depth: Option<usize>,
+    random: Option<usize>,
     at_least_one_of: &[Feature],
     mutually_exclusive_features: &[Feature],
     package_features: &BTreeMap<String, Vec<String>>,
@@ -205,42 +228,87 @@ pub(crate) fn feature_powerset<'a>(
     let deps_map = feature_deps(package_features);
     let at_least_one_of = at_least_one_of_for_package(at_least_one_of, &deps_map);
 
-    powerset(features, depth)
-        .into_iter()
-        .skip(1) // The first element of a powerset is `[]` so it should be skipped.
-        .filter(|fs| {
-            !fs.iter().any(|f| {
-                f.as_group().iter().filter_map(|f| deps_map.get(&&**f)).any(|deps| {
-                    fs.iter().any(|f| f.as_group().iter().all(|f| deps.contains(&&**f)))
-                })
-            })
-        })
-        .filter(move |fs| {
-            // all() returns true if at_least_one_of is empty
-            at_least_one_of.iter().all(|required_set| {
-                fs
-                    .iter()
-                    .flat_map(|f| f.as_group())
-                    .any(|f| required_set.contains(f.as_str()))
-            })
-        })
-        .filter(move |fs| {
-            // Filter any feature set containing more than one feature from the same mutually
-            // exclusive group.
-            for group in mutually_exclusive_features {
-                let mut count = 0;
-                for f in fs.iter().flat_map(|f| f.as_group()) {
-                    if group.matches_recursive(f, package_features) {
-                        count += 1;
-                        if count > 1 {
-                            return false;
+    if let Some(num_samples) = random {
+        // TODO:
+        // - If duplicates are found, they should be de-duplicated and regenerated.
+        //   - Same for filtered case.
+        // - If the total number of possible combinations is less than num_samples,
+        //   then we should use normal powerset().
+        filter_powerset(
+            at_least_one_of,
+            mutually_exclusive_features,
+            package_features,
+            &deps_map,
+            (0..)
+                .map(|_| {
+                    let mut n = fastrand::u64(..);
+                    let mut v = vec![];
+                    let mut i = 0;
+                    while i < features.len_() {
+                        if n & 0b1 == 1 {
+                            v.push(features.get_(i).unwrap());
                         }
+                        i += 1;
+                        if i % 64 == 0 {
+                            n = fastrand::u64(..);
+                        } else {
+                            n >>= 1;
+                        }
+                    }
+                    v
+                })
+                .take(num_samples),
+        )
+    } else {
+        filter_powerset(
+            at_least_one_of,
+            mutually_exclusive_features,
+            package_features,
+            &deps_map,
+            // The first element of a powerset is `[]` so it should be skipped.
+            powerset(features, depth).into_iter().skip(1),
+        )
+    }
+}
+
+fn filter_powerset<'a>(
+    at_least_one_of: Vec<BTreeSet<&str>>,
+    mutually_exclusive_features: &[Feature],
+    package_features: &BTreeMap<String, Vec<String>>,
+    deps_map: &BTreeMap<&str, BTreeSet<&str>>,
+    iter: impl Iterator<Item = Vec<&'a Feature>>,
+) -> Vec<Vec<&'a Feature>> {
+    iter.filter(|fs| {
+        !fs.iter().any(|&f| {
+            f.as_group()
+                .iter()
+                .filter_map(|f| deps_map.get(&&**f))
+                .any(|deps| fs.iter().any(|f| f.as_group().iter().all(|f| deps.contains(&&**f))))
+        })
+    })
+    .filter(move |fs| {
+        // all() returns true if at_least_one_of is empty
+        at_least_one_of.iter().all(|required_set| {
+            fs.iter().flat_map(|&f| f.as_group()).any(|f| required_set.contains(f.as_str()))
+        })
+    })
+    .filter(move |fs| {
+        // Filter any feature set containing more than one feature from the same mutually
+        // exclusive group.
+        for group in mutually_exclusive_features {
+            let mut count = 0;
+            for f in fs.iter().flat_map(|f| f.as_group()) {
+                if group.matches_recursive(f, package_features) {
+                    count += 1;
+                    if count > 1 {
+                        return false;
                     }
                 }
             }
-            true
-        })
-        .collect()
+        }
+        true
+    })
+    .collect()
 }
 
 fn feature_deps(map: &BTreeMap<String, Vec<String>>) -> BTreeMap<&str, BTreeSet<&str>> {
@@ -357,22 +425,22 @@ mod tests {
         let map = map![("a", v![]), ("b", v!["a"]), ("c", v!["b"]), ("d", v!["a", "b"])];
 
         let list = v!["a", "b", "c", "d"];
-        let filtered = feature_powerset(&list, None, &[], &[], &map);
+        let filtered = feature_powerset(&list, None, None, &[], &[], &map);
         assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"], vec!["c", "d"]]);
 
-        let filtered = feature_powerset(&list, None, &["a".into()], &[], &map);
+        let filtered = feature_powerset(&list, None, None, &["a".into()], &[], &map);
         assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"], vec!["c", "d"]]);
 
-        let filtered = feature_powerset(&list, None, &["c".into()], &[], &map);
+        let filtered = feature_powerset(&list, None, None, &["c".into()], &[], &map);
         assert_eq!(filtered, vec![vec!["c"], vec!["c", "d"]]);
 
-        let filtered = feature_powerset(&list, None, &["a".into(), "c".into()], &[], &map);
+        let filtered = feature_powerset(&list, None, None, &["a".into(), "c".into()], &[], &map);
         assert_eq!(filtered, vec![vec!["c"], vec!["c", "d"]]);
 
         let map = map![("tokio", v![]), ("async-std", v![]), ("a", v![]), ("b", v!["a"])];
         let list = v!["a", "b", "tokio", "async-std"];
         let mutually_exclusive_features = [Feature::group(["tokio", "async-std"])];
-        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &map);
+        let filtered = feature_powerset(&list, None, None, &[], &mutually_exclusive_features, &map);
         assert_eq!(filtered, vec![
             vec!["a"],
             vec!["b"],
@@ -386,7 +454,7 @@ mod tests {
 
         let mutually_exclusive_features =
             [Feature::group(["tokio", "a"]), Feature::group(["tokio", "async-std"])];
-        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &map);
+        let filtered = feature_powerset(&list, None, None, &[], &mutually_exclusive_features, &map);
         assert_eq!(filtered, vec![
             vec!["a"],
             vec!["b"],
@@ -399,7 +467,7 @@ mod tests {
         let map = map![("a", v![]), ("b", v!["a"]), ("c", v![]), ("d", v!["b"])];
         let list = v!["a", "b", "c", "d"];
         let mutually_exclusive_features = [Feature::group(["a", "c"])];
-        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &map);
+        let filtered = feature_powerset(&list, None, None, &[], &mutually_exclusive_features, &map);
         assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"]]);
     }
 
@@ -433,7 +501,7 @@ mod tests {
             vec!["b", "c", "d"],
             vec!["a", "b", "c", "d"],
         ]);
-        let filtered = feature_powerset(&list, None, &[], &[], &map);
+        let filtered = feature_powerset(&list, None, None, &[], &[], &map);
         assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"], vec!["c", "d"]]);
     }
 
