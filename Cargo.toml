@@ -19,6 +19,7 @@ authors = ["Taiki Endo <te316e89@gmail.com>", "cargo-hack Contributors"]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [package.metadata.binstall]
+disabled-strategies = ["quick-install"]
 pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }.tar.gz"
 bin-dir = "{ bin }{ binary-ext }"
 pkg-fmt = "tgz"
