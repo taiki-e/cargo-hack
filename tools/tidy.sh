@@ -53,6 +53,16 @@ check_install() {
         fi
     done
 }
+retry() {
+    for i in {1..10}; do
+        if "$@"; then
+            return 0
+        else
+            sleep "${i}"
+        fi
+    done
+    "$@"
+}
 error() {
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
         printf '::error::%s\n' "$*"
@@ -184,21 +194,21 @@ ls_files() {
 if [[ -n "$(ls_files '*.rs')" ]]; then
     info "checking Rust code style"
     check_config .rustfmt.toml
-    if [[ "${ostype}" == "solaris" ]] && [[ -n "${CI:-}" ]] && ! type -P cargo >/dev/null; then
-        warn "this check is skipped on Solaris due to installing cargo from upstream package manager is broken"
-    elif check_install cargo jq python3; then
+    if check_install cargo jq python3; then
         # `cargo fmt` cannot recognize files not included in the current workspace and modules
         # defined inside macros, so run rustfmt directly.
         # We need to use nightly rustfmt because we use the unstable formatting options of rustfmt.
         rustc_version=$(rustc -vV | grep -E '^release:' | cut -d' ' -f2)
         if [[ "${rustc_version}" =~ nightly|dev ]] || ! type -P rustup >/dev/null; then
             if type -P rustup >/dev/null; then
-                rustup component add rustfmt &>/dev/null
+                retry rustup component add rustfmt &>/dev/null
             fi
             info "running \`rustfmt \$(git ls-files '*.rs')\`"
             rustfmt $(ls_files '*.rs')
         else
-            rustup component add rustfmt --toolchain nightly &>/dev/null || true
+            if type -P rustup >/dev/null; then
+                retry rustup component add rustfmt --toolchain nightly &>/dev/null
+            fi
             info "running \`rustfmt +nightly \$(git ls-files '*.rs')\`"
             rustfmt +nightly $(ls_files '*.rs')
         fi
