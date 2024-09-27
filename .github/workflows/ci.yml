@@ -62,9 +62,9 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: taiki-e/checkout-action@v1
-      - name: Install Rust
-        run: rustup toolchain add "${{ matrix.rust }}" --no-self-update && rustup default "${{ matrix.rust }}"
-      - run: rustup toolchain add nightly --no-self-update
+      - uses: taiki-e/github-actions/install-rust@main
+        with:
+          toolchain: ${{ matrix.rust }}
       - run: cargo test --workspace --all-features
       - run: |
           cargo install --path . --debug
@@ -99,8 +99,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: taiki-e/checkout-action@v1
-      - name: Install Rust
-        run: rustup toolchain add nightly --no-self-update && rustup default nightly
+      - uses: taiki-e/github-actions/install-rust@nightly
       - run: CARGO_HACK_TEST_TOOLCHAIN=${{ matrix.rust }} cargo test --workspace --all-features
       # Remove stable toolchain to disable https://github.com/taiki-e/cargo-hack/pull/138's behavior.
       - run: rustup toolchain remove stable
