@@ -38,7 +38,7 @@ toml_edit = "0.22.7"
 [dev-dependencies]
 build-context = "0.1"
 easy-ext = "1"
-fs-err = "2"
+fs-err = "3"
 tempfile = "3"
 
 [lints]
