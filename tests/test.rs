@@ -10,10 +10,12 @@ use std::{
     sync::Mutex,
 };
 
+use self::auxiliary::{
+    cargo_bin_exe, cargo_hack, has_rustup, has_stable_toolchain, CommandExt, TARGET,
+};
+
 /// Multiple tests may download a new toolchain at the same time
 static RUSTUP_TOOLCHAIN_CHANGES: Mutex<()> = Mutex::new(());
-
-use auxiliary::{cargo_bin_exe, cargo_hack, has_rustup, has_stable_toolchain, CommandExt, TARGET};
 
 #[test]
 fn failures() {
