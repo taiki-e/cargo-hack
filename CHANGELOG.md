@@ -4,11 +4,15 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org).
 
+Releases may yanked if there is a security bug, a soundness bug, or a regression.
+
 <!--
 Note: In this file, do not use the hard wrap in the middle of a sentence for compatibility with GitHub comment style markdown rendering.
 -->
 
 ## [Unreleased]
+
+- Disable quick-install fallback of cargo-binstall.
 
 ## [0.6.31] - 2024-08-08
 
@@ -227,7 +231,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 - Allow empty strings in `--features` (`-F`), `--exclude-features` (`--skip`), `--include-features`.
   Passing an empty string to them is now considered the same as not passing the flag. See [#163](https://github.com/taiki-e/cargo-hack/pull/163) for more.
 
-- Distribute prebuilt binaries for aarch64 Windows.
+- Distribute prebuilt binaries for AArch64 Windows.
 
 ## [0.5.17] - 2022-08-12
 
@@ -252,7 +256,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.5.14] - 2022-06-02
 
-- Distribute prebuilt binaries for aarch64 macOS. ([#151](https://github.com/taiki-e/cargo-hack/pull/151))
+- Distribute prebuilt binaries for AArch64 macOS. ([#151](https://github.com/taiki-e/cargo-hack/pull/151))
 
 ## [0.5.13] - 2022-05-12
 
@@ -260,7 +264,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.5.12] - 2022-01-21
 
-- Distribute prebuilt binaries for aarch64 Linux (gnu and musl).
+- Distribute prebuilt binaries for AArch64 Linux (gnu and musl).
 
 ## [0.5.11] - 2022-01-21
 

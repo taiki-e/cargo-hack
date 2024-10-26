@@ -496,7 +496,7 @@ This makes the installation faster and may avoid the impact of [problems caused 
 <!-- omit in toc -->
 ### Via Homebrew
 
-You can install cargo-hack from the [Homebrew tap maintained by us](https://github.com/taiki-e/homebrew-tap/blob/HEAD/Formula/cargo-hack.rb) (x86_64/aarch64 macOS, x86_64/aarch64 Linux):
+You can install cargo-hack from the [Homebrew tap maintained by us](https://github.com/taiki-e/homebrew-tap/blob/HEAD/Formula/cargo-hack.rb) (x86_64/AArch64 macOS, x86_64/AArch64 Linux):
 
 ```sh
 brew install taiki-e/tap/cargo-hack
