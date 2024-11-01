@@ -380,11 +380,6 @@ impl Args {
 
         term::set_coloring(color.as_deref())?;
 
-        if !exclude.is_empty() && !workspace {
-            // TODO: This is the same behavior as cargo, but should we allow it to be used
-            // in the root of a virtual workspace as well?
-            requires("--exclude", &["--workspace"])?;
-        }
         if ignore_unknown_features {
             if features.is_empty() && include_features.is_empty() && group_features.is_empty() {
                 requires("--ignore-unknown-features", &[
@@ -682,9 +677,7 @@ const HELP: &[HelpText<'_>] = &[
     ("-p", "--package", "<SPEC>...", "Package(s) to check", &[]),
     ("", "--all", "", "Alias for --workspace", &[]),
     ("", "--workspace", "", "Perform command for all packages in the workspace", &[]),
-    ("", "--exclude", "<SPEC>...", "Exclude packages from the check", &[
-        "This flag can only be used together with --workspace",
-    ]),
+    ("", "--exclude", "<SPEC>...", "Exclude packages from the check", &[]),
     ("", "--manifest-path", "<PATH>", "Path to Cargo.toml", &[]),
     ("", "--locked", "", "Require Cargo.lock is up to date", &[]),
     ("-F", "--features", "<FEATURES>...", "Space or comma separated list of features to activate", &[]),

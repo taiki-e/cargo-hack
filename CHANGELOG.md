@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Allow using `--exclude` without also specifying `--workspace`. ([#258](https://github.com/taiki-e/cargo-hack/pull/258), thanks @xStrom)
+
 ## [0.6.32] - 2024-10-26
 
 - Disable quick-install fallback of cargo-binstall.

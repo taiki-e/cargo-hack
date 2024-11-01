@@ -49,8 +49,6 @@ OPTIONS:
         --exclude <SPEC>...
             Exclude packages from the check.
 
-            This flag can only be used together with --workspace
-
         --manifest-path <PATH>
             Path to Cargo.toml.
 

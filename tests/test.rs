@@ -288,6 +288,16 @@ fn exclude() {
         .stderr_not_contains("running `cargo check` on member1")
         .stderr_contains("running `cargo check` on member2");
 
+    cargo_hack(["check", "--package", "member1", "--package", "member2", "--exclude", "member1"])
+        .assert_success("virtual")
+        .stderr_not_contains("running `cargo check` on member1")
+        .stderr_contains("running `cargo check` on member2");
+
+    cargo_hack(["check", "--exclude", "member1"])
+        .assert_success("virtual")
+        .stderr_not_contains("running `cargo check` on member1")
+        .stderr_contains("running `cargo check` on member2");
+
     // not_found is warning
     cargo_hack(["check", "--all", "--exclude", "foo"]).assert_failure("virtual").stderr_contains(
         "
@@ -296,14 +306,6 @@ fn exclude() {
         running `cargo check` on member2
         ",
     );
-}
-
-#[test]
-fn exclude_failure() {
-    // not with --workspace
-    cargo_hack(["check", "--exclude", "member1"])
-        .assert_failure("virtual")
-        .stderr_contains("--exclude can only be used together with --workspace");
 }
 
 #[test]
