@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.33] - 2024-11-02
+
 - Allow using `--exclude` without also specifying `--workspace`. ([#258](https://github.com/taiki-e/cargo-hack/pull/258), thanks @xStrom)
 
 ## [0.6.32] - 2024-10-26
@@ -522,7 +524,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.32...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.33...HEAD
+[0.6.33]: https://github.com/taiki-e/cargo-hack/compare/v0.6.32...v0.6.33
 [0.6.32]: https://github.com/taiki-e/cargo-hack/compare/v0.6.31...v0.6.32
 [0.6.31]: https://github.com/taiki-e/cargo-hack/compare/v0.6.30...v0.6.31
 [0.6.30]: https://github.com/taiki-e/cargo-hack/compare/v0.6.29...v0.6.30
