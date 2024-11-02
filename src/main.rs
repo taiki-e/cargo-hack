@@ -325,21 +325,21 @@ struct PackageRuns<'a> {
 }
 
 fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
-    Ok(if cx.workspace {
-        for spec in &cx.exclude {
-            if !cx.workspace_members().any(|id| cx.packages(id).name == *spec) {
-                warn!(
-                    "excluded package(s) `{spec}` not found in workspace `{}`",
-                    cx.workspace_root().display()
-                );
-            }
+    for spec in &cx.exclude {
+        if !cx.workspace_members().any(|id| cx.packages(id).name == *spec) {
+            warn!(
+                "excluded package(s) `{spec}` not found in workspace `{}`",
+                cx.workspace_root().display()
+            );
         }
-
-        let multiple_packages = cx.workspace_members().len().saturating_sub(cx.exclude.len()) > 1;
-        cx.workspace_members()
+    }
+    Ok(if cx.workspace {
+        let ids: Vec<_> = cx
+            .workspace_members()
             .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
-            .filter_map(|id| determine_kind(cx, id, multiple_packages))
-            .collect()
+            .collect();
+        let multiple_packages = ids.len() > 1;
+        ids.iter().filter_map(|id| determine_kind(cx, id, multiple_packages)).collect()
     } else if !cx.package.is_empty() {
         if let Some(spec) = cx
             .package
@@ -349,19 +349,26 @@ fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
             bail!("package ID specification `{spec}` matched no packages")
         }
 
-        let multiple_packages = cx.package.len() > 1;
-        cx.workspace_members()
+        let ids: Vec<_> = cx
+            .workspace_members()
             .filter(|id| cx.package.contains(&cx.packages(id).name))
-            .filter_map(|id| determine_kind(cx, id, multiple_packages))
-            .collect()
+            .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
+            .collect();
+        let multiple_packages = ids.len() > 1;
+        ids.iter().filter_map(|id| determine_kind(cx, id, multiple_packages)).collect()
     } else if cx.current_package().is_none() {
-        let multiple_packages = cx.workspace_members().len() > 1;
-        cx.workspace_members().filter_map(|id| determine_kind(cx, id, multiple_packages)).collect()
+        let ids: Vec<_> = cx
+            .workspace_members()
+            .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
+            .collect();
+        let multiple_packages = ids.len() > 1;
+        ids.iter().filter_map(|id| determine_kind(cx, id, multiple_packages)).collect()
     } else {
         let current_package = &cx.packages(cx.current_package().unwrap()).name;
         let multiple_packages = false;
         cx.workspace_members()
             .find(|id| cx.packages(id).name == *current_package)
+            .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
             .and_then(|id| determine_kind(cx, id, multiple_packages).map(|p| vec![p]))
             .unwrap_or_default()
     })
