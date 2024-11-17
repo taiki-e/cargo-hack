@@ -506,7 +506,7 @@ impl Args {
             if features.contains(f) {
                 bail!("feature `{f}` specified by both --exclude-features and --features");
             }
-            if optional_deps.as_ref().map_or(false, |d| d.contains(f)) {
+            if optional_deps.as_ref().is_some_and(|d| d.contains(f)) {
                 bail!("feature `{f}` specified by both --exclude-features and --optional-deps");
             }
             if group_features.iter().any(|v| v.matches(f)) {
