@@ -1,4 +1,3 @@
-autocfg
 binstall
 qpmember
 subcrate

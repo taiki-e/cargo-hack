@@ -104,8 +104,7 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
     let restore_lockfile = true;
     let no_dev_deps = cx.no_dev_deps | cx.remove_dev_deps;
     let no_private = cx.no_private;
-    let restore_handles = if no_dev_deps || no_private {
-        let mut restore_handles = Vec::with_capacity(cx.metadata.workspace_members.len());
+    if no_dev_deps || no_private {
         let workspace_root = &cx.metadata.workspace_root;
         let root_manifest = &workspace_root.join("Cargo.toml");
         let mut root_id = None;
@@ -134,7 +133,7 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
                     info!("removing dev-dependencies from {}", manifest_path.display());
                 }
                 remove_dev_deps(&mut doc);
-                restore_handles.push(cx.restore.register(&manifest.raw, manifest_path));
+                cx.restore.register(&manifest.raw, manifest_path);
                 fs::write(manifest_path, doc.to_string())?;
             }
         }
@@ -170,24 +169,21 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
                 }
                 remove_private_crates(&mut doc, workspace_root, private_crates);
             }
-            restore_handles.push(cx.restore.register(orig, manifest_path));
+            cx.restore.register(orig, manifest_path);
             fs::write(manifest_path, doc.to_string())?;
         }
         if restore_lockfile {
             let lockfile = &workspace_root.join("Cargo.lock");
             if lockfile.exists() {
-                restore_handles.push(cx.restore.register(fs::read_to_string(lockfile)?, lockfile));
+                cx.restore.register(fs::read_to_string(lockfile)?, lockfile);
             }
         }
-        restore_handles
-    } else {
-        vec![]
-    };
+    }
 
     f()?;
 
     // Restore original Cargo.toml and Cargo.lock.
-    drop(restore_handles);
+    cx.restore.restore_all();
 
     Ok(())
 }

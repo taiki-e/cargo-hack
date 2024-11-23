@@ -7,7 +7,6 @@ use std::{
 };
 
 use anyhow::Result;
-use slab::Slab;
 
 use crate::{fs, term};
 
@@ -16,12 +15,12 @@ pub(crate) struct Manager {
     // A flag that indicates restore is needed.
     needs_restore: bool,
     /// Information on files that need to be restored.
-    files: Arc<Mutex<Slab<File>>>,
+    files: Arc<Mutex<Vec<File>>>,
 }
 
 impl Manager {
     pub(crate) fn new(needs_restore: bool) -> Self {
-        let this = Self { needs_restore, files: Arc::new(Mutex::new(Slab::new())) };
+        let this = Self { needs_restore, files: Arc::new(Mutex::new(vec![])) };
 
         let cloned = this.clone();
         ctrlc::set_handler(move || {
@@ -34,45 +33,44 @@ impl Manager {
     }
 
     /// Registers the given path if `needs_restore` is `true`.
-    pub(crate) fn register(&self, text: impl Into<String>, path: impl Into<PathBuf>) -> Handle<'_> {
+    pub(crate) fn register(&self, text: impl Into<String>, path: impl Into<PathBuf>) {
         if !self.needs_restore {
-            return Handle(None);
+            return;
         }
 
-        self.register_always(text.into(), path.into())
+        self.register_always(text.into(), path.into());
     }
 
     /// Registers the given path regardless of the value of `needs_restore`.
-    pub(crate) fn register_always(
-        &self,
-        text: impl Into<String>,
-        path: impl Into<PathBuf>,
-    ) -> Handle<'_> {
+    pub(crate) fn register_always(&self, text: impl Into<String>, path: impl Into<PathBuf>) {
         let mut files = self.files.lock().unwrap();
-        let entry = files.vacant_entry();
-        let key = entry.key();
-        entry.insert(File { text: text.into(), path: path.into() });
-
-        Handle(Some((self, key)))
+        files.push(File { text: text.into(), path: path.into() });
     }
 
-    fn restore(&self, key: usize) -> Result<()> {
+    // This takes `&mut self` instead of `&self` to prevent misuse in multi-thread contexts.
+    pub(crate) fn restore_last(&mut self) -> Result<()> {
         let mut files = self.files.lock().unwrap();
-        if let Some(file) = files.try_remove(key) {
+        if let Some(file) = files.pop() {
             file.restore()?;
         }
         Ok(())
     }
 
-    fn restore_all(&self) {
+    pub(crate) fn restore_all(&self) {
         let mut files = self.files.lock().unwrap();
         if !files.is_empty() {
-            for (_, file) in mem::take(&mut *files) {
+            for file in mem::take(&mut *files) {
                 if let Err(e) = file.restore() {
                     error!("{e:#}");
                 }
             }
         }
+    }
+}
+
+impl Drop for Manager {
+    fn drop(&mut self) {
+        self.restore_all();
     }
 }
 
@@ -89,25 +87,5 @@ impl File {
             info!("restoring {}", self.path.display());
         }
         fs::write(&self.path, &self.text)
-    }
-}
-
-#[must_use]
-pub(crate) struct Handle<'a>(Option<(&'a Manager, usize)>);
-
-impl Handle<'_> {
-    pub(crate) fn close(&mut self) -> Result<()> {
-        if let Some((manager, key)) = self.0.take() {
-            manager.restore(key)?;
-        }
-        Ok(())
-    }
-}
-
-impl Drop for Handle<'_> {
-    fn drop(&mut self) {
-        if let Err(e) = self.close() {
-            error!("{e:#}");
-        }
     }
 }

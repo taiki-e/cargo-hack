@@ -49,9 +49,14 @@ impl Context {
             .unwrap_or(0);
 
         // if `--remove-dev-deps` flag is off, restore manifest file.
-        let restore = restore::Manager::new(!args.remove_dev_deps);
-        let metadata =
-            Metadata::new(args.manifest_path.as_deref(), &cargo, cargo_version, &args, &restore)?;
+        let mut restore = restore::Manager::new(!args.remove_dev_deps);
+        let metadata = Metadata::new(
+            args.manifest_path.as_deref(),
+            &cargo,
+            cargo_version,
+            &args,
+            &mut restore,
+        )?;
         if metadata.cargo_version < 41 && args.include_deps_features {
             bail!("--include-deps-features requires Cargo 1.41 or later");
         }

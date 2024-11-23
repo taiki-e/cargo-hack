@@ -54,7 +54,7 @@ impl Metadata {
         cargo: &OsStr,
         mut cargo_version: u32,
         args: &Args,
-        restore: &restore::Manager,
+        restore: &mut restore::Manager,
     ) -> Result<Self> {
         let stable_cargo_version =
             cargo::version(cmd!("rustup", "run", "stable", "cargo")).map(|v| v.minor).unwrap_or(0);
@@ -114,14 +114,14 @@ impl Metadata {
                 cmd.run_with_output()?;
             }
             let guard = term::verbose::scoped(false);
-            let mut handle = restore.register_always(fs::read_to_string(&lockfile)?, lockfile);
+            restore.register_always(fs::read_to_string(&lockfile)?, lockfile);
             // Try with stable cargo because if workspace member has
             // a dependency that requires newer cargo features, `cargo metadata`
             // with older cargo may fail.
             cmd = cmd!("rustup", "run", "stable", "cargo");
             append_metadata_args(&mut cmd);
             let json = cmd.read();
-            handle.close()?;
+            restore.restore_last()?;
             drop(guard);
             match json {
                 Ok(json) => {
