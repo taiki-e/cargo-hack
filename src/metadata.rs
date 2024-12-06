@@ -167,7 +167,7 @@ impl Metadata {
             workspace_members,
             resolve: match map.remove_nullable("resolve", into_object)? {
                 Some(resolve) => Resolve::from_obj(resolve, cargo_version)?,
-                None => Resolve { nodes: HashMap::new() },
+                None => Resolve { nodes: HashMap::default() },
             },
             workspace_root: map.remove_string("workspace_root")?,
         })
