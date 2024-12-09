@@ -30,6 +30,7 @@ OPTIONS:
                                          features that don't enable any of the features listed
         --include-features <FEATURES>... Include only the specified features in the feature
                                          combinations instead of package features
+        --must-have-and-exclude-feature <FEATURE> Require the specified feature to be present but excluded
         --no-dev-deps                    Perform without dev-dependencies
         --remove-dev-deps                Equivalent to --no-dev-deps flag except for does not
                                          restore the original `Cargo.toml` after performed

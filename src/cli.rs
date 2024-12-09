@@ -37,6 +37,8 @@ pub(crate) struct Args {
     pub(crate) each_feature: bool,
     /// --feature-powerset
     pub(crate) feature_powerset: bool,
+    /// --must-have-and-exclude-feature <FEATURE>
+    pub(crate) must_have_and_exclude_feature: Option<String>,
     /// --no-dev-deps
     pub(crate) no_dev_deps: bool,
     /// --remove-dev-deps
@@ -152,6 +154,7 @@ impl Args {
         let mut remove_dev_deps = false;
         let mut each_feature = false;
         let mut feature_powerset = false;
+        let mut must_have_and_exclude_feature = None;
         let mut no_private = false;
         let mut ignore_private = false;
         let mut ignore_unknown_features = false;
@@ -303,6 +306,9 @@ impl Args {
                 Long("remove-dev-deps") => parse_flag!(remove_dev_deps),
                 Long("each-feature") => parse_flag!(each_feature),
                 Long("feature-powerset") => parse_flag!(feature_powerset),
+                Long("must-have-and-exclude-feature") => {
+                    parse_opt!(must_have_and_exclude_feature, false);
+                }
                 Long("at-least-one-of") => at_least_one_of.push(parser.value()?.parse()?),
                 Long("no-private") => parse_flag!(no_private),
                 Long("ignore-private") => parse_flag!(ignore_private),
@@ -492,6 +498,8 @@ impl Args {
                 conflicts("--all-features", "--each-feature")?;
             } else if feature_powerset {
                 conflicts("--all-features", "--feature-powerset")?;
+            } else if must_have_and_exclude_feature.is_some() {
+                conflicts("--all-features", "--must-have-and-exclude-feature")?;
             }
         }
         if no_default_features {
@@ -517,6 +525,21 @@ impl Args {
             }
             if include_features.contains(f) {
                 bail!("feature `{f}` specified by both --exclude-features and --include-features");
+            }
+        }
+
+        if let Some(f) = must_have_and_exclude_feature.as_ref() {
+            if features.contains(f) {
+                bail!("feature `{f}` specified by both --must-have-and-exclude-feature and --features");
+            }
+            if optional_deps.as_ref().is_some_and(|d| d.contains(f)) {
+                bail!("feature `{f}` specified by both --must-have-and-exclude-feature and --optional-deps");
+            }
+            if group_features.iter().any(|v| v.matches(f)) {
+                bail!("feature `{f}` specified by both --must-have-and-exclude-feature and --group-features");
+            }
+            if include_features.contains(f) {
+                bail!("feature `{f}` specified by both --must-have-and-exclude-feature and --include-features");
             }
         }
 
@@ -591,7 +614,8 @@ impl Args {
         exclude_no_default_features |= !include_features.is_empty();
         exclude_all_features |= !include_features.is_empty()
             || !exclude_features.is_empty()
-            || !mutually_exclusive_features.is_empty();
+            || !mutually_exclusive_features.is_empty()
+            || must_have_and_exclude_feature.is_some();
         exclude_features.extend_from_slice(&features);
 
         term::verbose::set(verbose != 0);
@@ -613,6 +637,7 @@ impl Args {
             workspace,
             each_feature,
             feature_powerset,
+            must_have_and_exclude_feature,
             no_dev_deps,
             remove_dev_deps,
             no_private,
@@ -754,6 +779,11 @@ const HELP: &[HelpText<'_>] = &[
              --feature-powerset flag.",
         ],
     ),
+    ("", "--must-have-and-exclude-feature", "<FEATURE>", "Require the specified feature to be present but excluded", &[
+        "Exclude the specified feature and all other features which depend on it.",
+        "Exclude packages which don't have the specified feature.",
+        "This is useful for doing no_std testing with --must-have-and-exclude-feature std.",
+    ]),
     ("", "--no-dev-deps", "", "Perform without dev-dependencies", &[
         "Note that this flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is \
          running and restores it when finished.",

@@ -1091,6 +1091,143 @@ fn exclude_all_features_failure() {
 }
 
 #[test]
+fn must_have_and_exclude_feature() {
+    cargo_hack(["check", "--feature-powerset", "--must-have-and-exclude-feature", "b"])
+        .assert_success("must_have_and_exclude_feature")
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on member1 (1/5)
+            running `cargo check --no-default-features --features a` on member1 (2/5)
+            running `cargo check --no-default-features` on member2 (3/5)
+            running `cargo check --no-default-features --features default` on member2 (4/5)
+            running `cargo check --no-default-features --features a` on member2 (5/5)
+            ",
+        )
+        .stderr_not_contains(
+            "
+            --all-features
+            --features b`
+            --features c`
+            --features default` on member1
+            on member3
+            ",
+        );
+
+    cargo_hack(["check", "--each-feature", "--must-have-and-exclude-feature", "b"])
+        .assert_success("must_have_and_exclude_feature")
+        .stderr_contains(
+            "
+            running `cargo check --no-default-features` on member1 (1/5)
+            running `cargo check --no-default-features --features a` on member1 (2/5)
+            running `cargo check --no-default-features` on member2 (3/5)
+            running `cargo check --no-default-features --features a` on member2 (4/5)
+            running `cargo check --no-default-features --features default` on member2 (5/5)
+            ",
+        )
+        .stderr_not_contains(
+            "
+            --all-features
+            --features b`
+            --features c`
+            --features default` on member1
+            on member3
+            ",
+        );
+
+    cargo_hack([
+            "check",
+            "--each-feature",
+            "--must-have-and-exclude-feature",
+            "b",
+            "--features",
+            "default",
+        ])
+        .assert_success("must_have_and_exclude_feature")
+        .stderr_contains(
+            "
+            skipped applying `default` feature to member1 because it would enable excluded feature `b`
+            running `cargo check --no-default-features` on member1 (1/4)
+            running `cargo check --no-default-features --features a` on member1 (2/4)
+            running `cargo check --no-default-features --features default` on member2 (3/4)
+            running `cargo check --no-default-features --features default,a` on member2 (4/4)
+            ",
+        )
+        .stderr_not_contains(
+            "
+            --all-features
+            --features b`
+            --features c`
+            --features default` on member1
+            on member3
+            "
+        );
+
+    cargo_hack([
+            "check",
+            "--each-feature",
+            "--must-have-and-exclude-feature",
+            "b",
+            "--features",
+            "default",
+            "--ignore-unknown-features",
+        ])
+        .assert_success("must_have_and_exclude_feature")
+        .stderr_contains(
+            "
+            skipped applying `default` feature to member1 because it would enable excluded feature `b`
+            running `cargo check --no-default-features` on member1 (1/4)
+            running `cargo check --no-default-features --features a` on member1 (2/4)
+            running `cargo check --no-default-features --features default` on member2 (3/4)
+            running `cargo check --no-default-features --features default,a` on member2 (4/4)
+            ",
+        )
+        .stderr_not_contains(
+            "
+            --all-features
+            --features b`
+            --features c`
+            --features default` on member1
+            on member3
+            "
+        );
+}
+
+#[test]
+fn must_have_and_exclude_feature_failure() {
+    cargo_hack([
+        "check",
+        "--each-feature",
+        "--must-have-and-exclude-feature",
+        "b",
+        "--features",
+        "b",
+    ])
+    .assert_failure("must_have_and_exclude_feature")
+    .stderr_contains(
+        "feature `b` specified by both --must-have-and-exclude-feature and --features",
+    );
+
+    cargo_hack([
+        "check",
+        "--each-feature",
+        "--must-have-and-exclude-feature",
+        "b",
+        "--include-features",
+        "b",
+    ])
+    .assert_failure("must_have_and_exclude_feature")
+    .stderr_contains(
+        "feature `b` specified by both --must-have-and-exclude-feature and --include-features",
+    );
+
+    cargo_hack(["check", "--must-have-and-exclude-feature", "b", "--all-features"])
+        .assert_failure("must_have_and_exclude_feature")
+        .stderr_contains(
+            "--all-features may not be used together with --must-have-and-exclude-feature",
+        );
+}
+
+#[test]
 fn each_feature_all() {
     cargo_hack(["check", "--each-feature", "--workspace"]).assert_success("real").stderr_contains(
         "

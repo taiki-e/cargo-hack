@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Add `--must-have-and-exclude-feature` option. ([#262](https://github.com/taiki-e/cargo-hack/pull/262), thanks @xStrom)
+
 - Fix `--mutually-exclusive-features` interacting with optional dependencies. ([#261](https://github.com/taiki-e/cargo-hack/pull/261), thanks @xStrom)
 
 ## [0.6.33] - 2024-11-02
