@@ -160,7 +160,7 @@ impl Feature {
         ) -> bool {
             if let Some(v) = map.get(cur) {
                 for cur in v {
-                    let fname = if let Some(slash_idx) = cur.find("/") {
+                    let fname = if let Some(slash_idx) = cur.find('/') {
                         // The fname may still have a '?' suffix, which is fine.
                         // Because in that case it doesn't activate that dependency, so it can be ignored.
                         let (fname, _) = cur.split_at(slash_idx);
