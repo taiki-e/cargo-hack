@@ -1,0 +1,12 @@
+[package]
+name = "member3"
+version = "0.0.0"
+
+[features]
+default = ["c"]
+a = []
+c = ["a"]
+
+[dependencies]
+
+[dev-dependencies]
