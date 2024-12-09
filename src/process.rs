@@ -98,19 +98,28 @@ impl<'a> ProcessBuilder<'a> {
     }
 
     pub(crate) fn append_features_from_args(&mut self, cx: &Context, id: &PackageId) {
-        if cx.ignore_unknown_features {
-            self.append_features(cx.features.iter().filter(|&f| {
-                if cx.pkg_features(id).contains(f) {
-                    true
-                } else {
-                    // ignored
-                    info!("skipped applying unknown `{f}` feature to {}", cx.packages(id).name);
-                    false
-                }
-            }));
-        } else if !cx.features.is_empty() {
-            self.append_features(&cx.features);
-        }
+        let package = cx.packages(id);
+        let pkg_features = cx.pkg_features(id);
+        let recursively_exclude_feature =
+            cx.must_have_and_exclude_feature.as_ref().and_then(|s| pkg_features.get(s));
+
+        self.append_features(cx.features.iter().filter(|&f| {
+            if recursively_exclude_feature
+                .is_some_and(|rf| rf.matches_recursive(f, &package.features))
+            {
+                info!(
+                    "skipped applying `{f}` feature to {} because it would enable excluded feature `{}`",
+                    package.name,
+                    recursively_exclude_feature.unwrap().name()
+                );
+                false
+            } else if cx.ignore_unknown_features && !pkg_features.contains(f) {
+                info!("skipped applying unknown `{f}` feature to {}", package.name);
+                false
+            } else {
+                true
+            }
+        }));
     }
 
     /// Gets the comma-separated features list
