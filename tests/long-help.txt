@@ -124,6 +124,15 @@ OPTIONS:
             This flag can only be used together with either --each-feature flag or
             --feature-powerset flag.
 
+        --must-have-and-exclude-feature <FEATURE>
+            Require the specified feature to be present but excluded.
+
+            Exclude the specified feature and all other features which depend on it.
+
+            Exclude packages which don't have the specified feature.
+
+            This is useful for doing no_std testing with --must-have-and-exclude-feature std.
+
         --no-dev-deps
             Perform without dev-dependencies.
 
