@@ -338,7 +338,7 @@ fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
         }
     }
     let has_required_features = |id: &&PackageId| {
-        cx.must_have_and_exclude_feature.as_ref().is_none_or(|s| cx.pkg_features(id).contains(s))
+        !cx.must_have_and_exclude_feature.as_ref().is_some_and(|s| !cx.pkg_features(id).contains(s))
     };
     Ok(if cx.workspace {
         let ids: Vec<_> = cx
