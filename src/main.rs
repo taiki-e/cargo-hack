@@ -289,6 +289,7 @@ fn determine_kind<'a>(
             &cx.at_least_one_of,
             &cx.mutually_exclusive_features,
             &package.features,
+            cx.randomize_powerset,
         );
 
         if (pkg_features.normal().is_empty() && pkg_features.optional_deps().is_empty()

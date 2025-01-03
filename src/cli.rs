@@ -101,6 +101,9 @@ pub(crate) struct Args {
     // propagated to cargo (as a part of leading_args)
     /// --no-default-features
     pub(crate) no_default_features: bool,
+
+    /// --randomize-powerset
+    pub(crate) randomize_powerset: Option<u64>,
 }
 
 impl Args {
@@ -176,6 +179,8 @@ impl Args {
         let mut exclude_features = vec![];
         let mut exclude_no_default_features = false;
         let mut exclude_all_features = false;
+
+        let mut randomize_powerset = None;
 
         let mut group_features: Vec<String> = vec![];
         let mut mutually_exclusive_features: Vec<String> = vec![];
@@ -303,6 +308,7 @@ impl Args {
                 Long("remove-dev-deps") => parse_flag!(remove_dev_deps),
                 Long("each-feature") => parse_flag!(each_feature),
                 Long("feature-powerset") => parse_flag!(feature_powerset),
+                Long("randomize-powerset") => parse_opt!(randomize_powerset, false),
                 Long("at-least-one-of") => at_least_one_of.push(parser.value()?.parse()?),
                 Long("no-private") => parse_flag!(no_private),
                 Long("ignore-private") => parse_flag!(ignore_private),
@@ -487,6 +493,9 @@ impl Args {
         if each_feature && feature_powerset {
             conflicts("--each-feature", "--feature-powerset")?;
         }
+
+        let randomize_powerset = randomize_powerset.as_deref().map(str::parse::<u64>).transpose()?;
+
         if all_features {
             if each_feature {
                 conflicts("--all-features", "--each-feature")?;
@@ -644,6 +653,8 @@ impl Args {
 
             no_default_features,
             target: target.into_iter().collect(),
+
+            randomize_powerset,
         })
     }
 }
@@ -694,6 +705,8 @@ const HELP: &[HelpText<'_>] = &[
          (-Z namespaced-features) and not used together with --exclude-features (--skip) and \
          --include-features and there are multiple features, this also includes runs with just \
          --all-features flag."
+    ]),
+    ("", "--randomize-powerset", "<seed>", "Run feature powerset in random order with the specified seed", &[
     ]),
     ("", "--optional-deps", "[DEPS]...", "Use optional dependencies as features", &[
         "If DEPS are not specified, all optional dependencies are considered as features.",

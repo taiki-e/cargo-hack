@@ -47,6 +47,9 @@ OPTIONS:
             --include-features and there are multiple features, this also includes runs with just
             --all-features flag.
 
+        --randomize-powerset <seed>
+            Run feature powerset in random order with the specified seed.
+
         --optional-deps [DEPS]...
             Use optional dependencies as features.
 
