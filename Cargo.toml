@@ -38,7 +38,7 @@ toml_edit = "0.22.7"
 build-context = "0.1"
 easy-ext = "1"
 fs-err = "3"
-tempfile = "3"
+tempfile = { version = "3", default-features = false }
 
 [lints]
 workspace = true
