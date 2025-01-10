@@ -11,7 +11,7 @@ use std::{
 };
 
 use self::auxiliary::{
-    cargo_bin_exe, cargo_hack, has_rustup, has_stable_toolchain, CommandExt, TARGET,
+    cargo_bin_exe, cargo_hack, has_rustup, CommandExt, HAS_STABLE_TOOLCHAIN, TARGET,
 };
 
 /// Multiple tests may download a new toolchain at the same time
@@ -721,7 +721,7 @@ fn powerset_deduplication_include_deps_features() {
     // TODO: Since easytime/default depends on easytime/std, their combination should be excluded,
     // but it's not working yet because include-deps-features itself isn't fully implemented.
     cargo_hack(["check", "--feature-powerset", "--include-deps-features"])
-        .assert_success2("powerset_deduplication",  Some(if has_stable_toolchain() { 34 } else { 41 }))
+        .assert_success2("powerset_deduplication",  Some(if *HAS_STABLE_TOOLCHAIN { 34 } else { 41 }))
         .stderr_contains(
             "
             running `cargo check --all-features` on deduplication (1/41)
@@ -1125,7 +1125,7 @@ fn each_feature_all() {
 #[test]
 fn include_deps_features() {
     cargo_hack(["check", "--each-feature", "--include-deps-features"])
-        .assert_success2("powerset_deduplication",  Some(if has_stable_toolchain() { 34 } else { 41 }))
+        .assert_success2("powerset_deduplication",  Some(if *HAS_STABLE_TOOLCHAIN { 34 } else { 41 }))
         .stderr_contains(
             "
             running `cargo check --all-features` on deduplication (1/9)

@@ -6,7 +6,7 @@ use std::{
     path::{Path, PathBuf},
     process::{Command, ExitStatus},
     str,
-    sync::OnceLock,
+    sync::LazyLock,
 };
 
 use anyhow::Context as _;
@@ -31,34 +31,27 @@ pub(crate) fn has_rustup() -> bool {
     Command::new("rustup").arg("--version").output().is_ok()
 }
 
-fn test_version() -> Option<u32> {
-    static TEST_VERSION: OnceLock<Option<u32>> = OnceLock::new();
-    *TEST_VERSION.get_or_init(|| {
-        let toolchain =
-            env::var_os("CARGO_HACK_TEST_TOOLCHAIN")?.to_string_lossy().parse().unwrap();
-        // Install toolchain first to avoid toolchain installation conflicts.
-        let _ = Command::new("rustup")
-            .args(["toolchain", "add", &format!("1.{toolchain}"), "--no-self-update"])
-            .output();
-        Some(toolchain)
-    })
-}
+static TEST_VERSION: LazyLock<Option<u32>> = LazyLock::new(|| {
+    let toolchain = env::var_os("CARGO_HACK_TEST_TOOLCHAIN")?.to_string_lossy().parse().unwrap();
+    // Install toolchain first to avoid toolchain installation conflicts.
+    let _ = Command::new("rustup")
+        .args(["toolchain", "add", &format!("1.{toolchain}"), "--no-self-update"])
+        .output();
+    Some(toolchain)
+});
 
-pub(crate) fn has_stable_toolchain() -> bool {
-    static HAS_STABLE_TOOLCHAIN: OnceLock<Option<bool>> = OnceLock::new();
-    HAS_STABLE_TOOLCHAIN
-        .get_or_init(|| {
-            let output = Command::new("rustup").args(["toolchain", "list"]).output().ok()?;
-            Some(String::from_utf8(output.stdout).ok()?.contains("stable"))
-        })
-        .unwrap_or_default()
-}
+pub(crate) static HAS_STABLE_TOOLCHAIN: LazyLock<bool> = LazyLock::new(|| {
+    let Ok(output) = Command::new("rustup").args(["toolchain", "list"]).output() else {
+        return false;
+    };
+    String::from_utf8(output.stdout).unwrap_or_default().contains("stable")
+});
 
 pub(crate) fn cargo_hack<O: AsRef<OsStr>>(args: impl AsRef<[O]>) -> Command {
     let args = args.as_ref();
     let mut cmd = cargo_bin_exe();
     cmd.arg("hack");
-    if let Some(toolchain) = test_version() {
+    if let Some(toolchain) = *TEST_VERSION {
         if !args.iter().any(|a| {
             let s = a.as_ref().to_str().unwrap();
             s.starts_with("--version-range") || s.starts_with("--rust-version")
@@ -74,7 +67,7 @@ pub(crate) fn cargo_hack<O: AsRef<OsStr>>(args: impl AsRef<[O]>) -> Command {
 impl Command {
     #[track_caller]
     pub(crate) fn assert_output(&mut self, test_model: &str, require: Option<u32>) -> AssertOutput {
-        match (test_version(), require) {
+        match (*TEST_VERSION, require) {
             (Some(toolchain), Some(require)) if require > toolchain => {
                 return AssertOutput(None);
             }
@@ -159,7 +152,7 @@ struct AssertOutputInner {
 fn replace_command(lines: &str) -> String {
     if lines.contains("rustup run") {
         lines.to_owned()
-    } else if let Some(minor) = test_version() {
+    } else if let Some(minor) = *TEST_VERSION {
         lines.replace("cargo ", &format!("rustup run 1.{minor} cargo "))
     } else {
         lines.to_owned()
