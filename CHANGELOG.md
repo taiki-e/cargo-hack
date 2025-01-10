@@ -14,6 +14,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Fix `--mutually-exclusive-features` interacting with optional dependencies. ([#261](https://github.com/taiki-e/cargo-hack/pull/261), thanks @xStrom)
 
+- Remove dependency on `slab` crate.
+
 ## [0.6.33] - 2024-11-02
 
 - Allow using `--exclude` without also specifying `--workspace`. ([#258](https://github.com/taiki-e/cargo-hack/pull/258), thanks @xStrom)
