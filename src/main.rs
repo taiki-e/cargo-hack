@@ -22,7 +22,7 @@ mod version;
 use std::{
     collections::{BTreeMap, HashSet},
     env,
-    fmt::{self, Write},
+    fmt::{self, Write as _},
     str::FromStr,
 };
 

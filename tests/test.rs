@@ -11,7 +11,7 @@ use std::{
 };
 
 use self::auxiliary::{
-    cargo_bin_exe, cargo_hack, has_rustup, CommandExt, HAS_STABLE_TOOLCHAIN, TARGET,
+    cargo_bin_exe, cargo_hack, has_rustup, CommandExt as _, HAS_STABLE_TOOLCHAIN, TARGET,
 };
 
 /// Multiple tests may download a new toolchain at the same time

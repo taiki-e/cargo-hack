@@ -10,7 +10,7 @@ use std::{
 use anyhow::{bail, format_err, Result};
 use lexopt::{
     Arg::{Long, Short, Value},
-    ValueExt,
+    ValueExt as _,
 };
 
 use crate::{term, version::VersionRange, Feature, LogGroup, Partition, Rustup};
@@ -1077,7 +1077,7 @@ fn conflicts(a: &str, b: &str) -> Result<()> {
 mod tests {
     use std::{
         env,
-        io::Write,
+        io::Write as _,
         panic,
         path::Path,
         process::{Command, Stdio},

@@ -2,13 +2,13 @@
 
 use std::{
     env,
-    io::Write,
+    io::Write as _,
     str::FromStr,
     sync::atomic::{AtomicBool, AtomicU8, Ordering},
 };
 
 use anyhow::{format_err, Result};
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor as _};
 
 #[derive(PartialEq)]
 #[repr(u8)]
@@ -114,7 +114,7 @@ pub(crate) fn print_status(status: &str, color: Option<Color>) -> StandardStream
 
 macro_rules! error {
     ($($msg:expr),* $(,)?) => {{
-        use std::io::Write;
+        use std::io::Write as _;
         crate::term::error::set(true);
         let mut stream = crate::term::print_status("error", Some(termcolor::Color::Red));
         let _ = writeln!(stream, $($msg),*);
@@ -123,7 +123,7 @@ macro_rules! error {
 
 macro_rules! warn {
     ($($msg:expr),* $(,)?) => {{
-        use std::io::Write;
+        use std::io::Write as _;
         crate::term::warn::set(true);
         let mut stream = crate::term::print_status("warning", Some(termcolor::Color::Yellow));
         let _ = writeln!(stream, $($msg),*);
@@ -132,7 +132,7 @@ macro_rules! warn {
 
 macro_rules! info {
     ($($msg:expr),* $(,)?) => {{
-        use std::io::Write;
+        use std::io::Write as _;
         let mut stream = crate::term::print_status("info", None);
         let _ = writeln!(stream, $($msg),*);
     }};
