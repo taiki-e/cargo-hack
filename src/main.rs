@@ -62,6 +62,9 @@ fn try_main() -> Result<()> {
             let mut versions = BTreeMap::new();
             let steps = rustup::version_range(range, cx.version_step, &packages, cx)?;
             for pkg in packages {
+                // TODO: when called --version-range 1.61 in workspace contains both msrv=1.59,1.61 crate, then +1.59 is called
+                // TODO: when called --all --version-range '1.56..=1.56' in workspace contains no msrv<=1.56 crate, then hanged
+                // TODO: when called --version-range '1.60..=1.60', then +msrv is called
                 let msrv = cx
                     .rust_version(pkg.id)
                     .map(str::parse::<Version>)

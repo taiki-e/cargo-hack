@@ -528,6 +528,24 @@ You can install cargo-hack from the [extra repository](https://archlinux.org/pac
 pacman -S cargo-hack
 ```
 
+<!-- omit in toc -->
+### Via nix-env (Nix)
+
+You can install cargo-hack from the [nixpkgs](https://github.com/NixOS/nixpkgs/blob/HEAD/pkgs/by-name/ca/cargo-hack/package.nix):
+
+```sh
+nix-env --install cargo-hack
+```
+
+<!-- omit in toc -->
+### Via Ports (FreeBSD)
+
+You can install cargo-hack from the [official ports](https://www.freshports.org/devel/cargo-hack):
+
+```sh
+pkg install cargo-hack
+```
+
 ## Related Projects
 
 - [cargo-llvm-cov]: Cargo subcommand to easily use LLVM source-based code coverage.
