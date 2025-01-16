@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.34] - 2025-01-16
+
 - Fix `--mutually-exclusive-features` interacting with optional dependencies. ([#261](https://github.com/taiki-e/cargo-hack/pull/261), thanks @xStrom)
 
 - Remove dependency on `slab` crate.
@@ -528,7 +530,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.33...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.34...HEAD
+[0.6.34]: https://github.com/taiki-e/cargo-hack/compare/v0.6.33...v0.6.34
 [0.6.33]: https://github.com/taiki-e/cargo-hack/compare/v0.6.32...v0.6.33
 [0.6.32]: https://github.com/taiki-e/cargo-hack/compare/v0.6.31...v0.6.32
 [0.6.31]: https://github.com/taiki-e/cargo-hack/compare/v0.6.30...v0.6.31
