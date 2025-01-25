@@ -494,7 +494,8 @@ impl Args {
             conflicts("--each-feature", "--feature-powerset")?;
         }
 
-        let randomize_powerset = randomize_powerset.as_deref().map(str::parse::<u64>).transpose()?;
+        let randomize_powerset =
+            randomize_powerset.as_deref().map(str::parse::<u64>).transpose()?;
 
         if all_features {
             if each_feature {

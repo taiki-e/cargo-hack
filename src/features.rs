@@ -215,7 +215,7 @@ pub(crate) fn feature_powerset<'a>(
     let deps_map = feature_deps(package_features);
     let at_least_one_of = at_least_one_of_for_package(at_least_one_of, &deps_map);
 
-    let mut result : Vec<Vec<&'a Feature>> = powerset(features, depth)
+    let mut result: Vec<Vec<&'a Feature>> = powerset(features, depth)
         .into_iter()
         .skip(1) // The first element of a powerset is `[]` so it should be skipped.
         .filter(|fs| {
@@ -252,9 +252,10 @@ pub(crate) fn feature_powerset<'a>(
         })
         .collect();
     if let Some(seed) = randomize {
-        use rand::SeedableRng;
-        use rand::seq::SliceRandom;
-        result.shuffle(&mut rand::rngs::SmallRng::seed_from_u64(seed));
+        if seed != 0 {
+            fastrand::seed(seed);
+        }
+        fastrand::shuffle(&mut result);
     }
     result
 }
