@@ -24,6 +24,7 @@ OPTIONS:
         --depth <NUM>                    Specify a max number of simultaneous feature flags of
                                          --feature-powerset
         --group-features <FEATURES>...   Space or comma separated list of features to group
+        --target <TRIPLE>                Build for specified target triple
         --mutually-exclusive-features <FEATURES>... Space or comma separated list of features to not use
                                          together
         --at-least-one-of <FEATURES>...  Space or comma separated list of features. Skips sets of
