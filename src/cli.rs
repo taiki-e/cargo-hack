@@ -733,6 +733,10 @@ const HELP: &[HelpText<'_>] = &[
          --group-features c,d`",
         "This flag can only be used together with --feature-powerset flag.",
     ]),
+    ("", "--target", "<TRIPLE>", "Build for specified target triple", &[
+        "Comma-separated lists of targets are not supported, but you can specify the whole --target option multiple times to do multiple targets.",
+        "This is actually not a cargo-hack option, it is interpreted by Cargo itself.",
+    ]),
     ("", "--mutually-exclusive-features", "<FEATURES>...", "Space or comma separated list of features to not use together", &[
         "To specify multiple groups, use this option multiple times: `--mutually-exclusive-features \
          a,b --mutually-exclusive-features c,d`",
