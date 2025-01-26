@@ -707,7 +707,7 @@ const HELP: &[HelpText<'_>] = &[
          --include-features and there are multiple features, this also includes runs with just \
          --all-features flag."
     ]),
-    ("", "--randomize-powerset", "<seed>", "Randomize order of powerset elements.", &[
+    ("", "--randomize-powerset", "<seed>", "Randomize order of powerset elements", &[
         "Run feature powerset in random order with the specified seed.",
         "Zero seed value means unseeded."
     ]),
