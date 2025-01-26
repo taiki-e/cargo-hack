@@ -16,7 +16,7 @@ OPTIONS:
     -F, --features <FEATURES>...         Space or comma separated list of features to activate
         --each-feature                   Perform for each feature of the package
         --feature-powerset               Perform for the feature powerset of the package
-        --randomize-powerset <seed>      Randomize order of powerset elements.
+        --randomize-powerset <seed>      Randomize order of powerset elements
         --optional-deps [DEPS]...        Use optional dependencies as features
         --skip <FEATURES>...             Alias for --exclude-features
         --exclude-features <FEATURES>... Space or comma separated list of features to exclude
