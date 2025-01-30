@@ -6,19 +6,20 @@ mod auxiliary;
 
 use std::{
     env::{self, consts::EXE_SUFFIX},
-    path::MAIN_SEPARATOR,
+    path::{Path, MAIN_SEPARATOR},
     sync::Mutex,
 };
 
-use self::auxiliary::{
-    cargo_bin_exe, cargo_hack, has_rustup, CommandExt as _, HAS_STABLE_TOOLCHAIN, TARGET,
-};
+use fs_err as fs;
+use test_helper::git::assert_diff;
+
+use self::auxiliary::*;
 
 /// Multiple tests may download a new toolchain at the same time
 static RUSTUP_TOOLCHAIN_CHANGES: Mutex<()> = Mutex::new(());
 
 #[test]
-fn failures() {
+fn failure() {
     cargo_bin_exe().assert_failure("real");
 
     cargo_bin_exe()
@@ -37,10 +38,8 @@ fn failures() {
     cargo_hack(["install"])
         .assert_failure("real")
         .stderr_contains("cargo-hack may not be used together with install subcommand");
-}
 
-#[test]
-fn multi_arg() {
+    // multiple arguments
     for flag in &[
         "--workspace",
         "--all",
@@ -2008,4 +2007,57 @@ fn partition_bad() {
     .stderr_contains(
         "The argument '--partition' was provided more than once, but cannot be used multiple times",
     );
+}
+
+#[test]
+fn help() {
+    let short = &*test_helper::cli::CommandExt::assert_success(&mut cargo_hack(["-h"])).stdout;
+    assert_diff(manifest_dir().join("tests/short-help.txt"), short);
+    let long = &*test_helper::cli::CommandExt::assert_success(&mut cargo_hack(["--help"])).stdout;
+    assert_diff(manifest_dir().join("tests/long-help.txt"), long);
+}
+
+#[test]
+fn version() {
+    let expected = &format!("cargo-hack {}", env!("CARGO_PKG_VERSION"));
+    test_helper::cli::CommandExt::assert_success(&mut cargo_hack(["-V"])).stdout_eq(expected);
+    test_helper::cli::CommandExt::assert_success(&mut cargo_hack(["--version"]))
+        .stdout_eq(expected);
+}
+
+#[test]
+fn update_readme() {
+    let new = &*test_helper::cli::CommandExt::assert_success(&mut cargo_hack(["--help"])).stdout;
+    let path = &Path::new(env!("CARGO_MANIFEST_DIR")).join("README.md");
+    let base = fs::read_to_string(path).unwrap();
+    let mut out = String::with_capacity(base.capacity());
+    let mut lines = base.lines();
+    let mut start = false;
+    let mut end = false;
+    while let Some(line) = lines.next() {
+        out.push_str(line);
+        out.push('\n');
+        if line == "<!-- readme-long-help:start -->" {
+            start = true;
+            out.push_str("```console\n");
+            out.push_str("$ cargo hack --help\n");
+            out.push_str(new);
+            for line in &mut lines {
+                if line == "<!-- readme-long-help:end -->" {
+                    out.push_str("```\n");
+                    out.push_str(line);
+                    out.push('\n');
+                    end = true;
+                    break;
+                }
+            }
+        }
+    }
+    if start && end {
+        assert_diff(path, out);
+    } else if start {
+        panic!("missing `<!-- readme-long-help:end -->` comment in README.md");
+    } else {
+        panic!("missing `<!-- readme-long-help:start -->` comment in README.md");
+    }
 }

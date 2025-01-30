@@ -330,11 +330,11 @@ impl Args {
                 }
 
                 Short('h') if subcommand.is_none() => {
-                    println!("{}", Help::short());
+                    print!("{}", Help::short());
                     std::process::exit(0);
                 }
                 Long("help") if subcommand.is_none() => {
-                    println!("{}", Help::long());
+                    print!("{}", Help::long());
                     std::process::exit(0);
                 }
                 Short('V') | Long("version") if subcommand.is_none() => {
@@ -835,18 +835,16 @@ const HELP: &[HelpText<'_>] = &[
 struct Help {
     long: bool,
     term_size: usize,
-    print_version: bool,
 }
 
 const MAX_TERM_WIDTH: usize = 100;
 
 impl Help {
     fn long() -> Self {
-        Self { long: true, term_size: MAX_TERM_WIDTH, print_version: true }
+        Self { long: true, term_size: MAX_TERM_WIDTH }
     }
-
     fn short() -> Self {
-        Self { long: false, term_size: MAX_TERM_WIDTH, print_version: true }
+        Self { long: false, term_size: MAX_TERM_WIDTH }
     }
 }
 
@@ -883,13 +881,12 @@ impl fmt::Display for Help {
         writeln!(
             f,
             "\
-{0}{1}\n{2}
+{}\n{}
 USAGE:
     cargo hack [OPTIONS] [SUBCOMMAND]\n
 Use -h for short descriptions and --help for more details.\n
 OPTIONS:",
             env!("CARGO_PKG_NAME"),
-            if self.print_version { concat!(" ", env!("CARGO_PKG_VERSION")) } else { "" },
             env!("CARGO_PKG_DESCRIPTION")
         )?;
 
@@ -1075,98 +1072,4 @@ fn requires(flag: &str, requires: &[&str]) -> Result<()> {
 #[inline(never)]
 fn conflicts(a: &str, b: &str) -> Result<()> {
     bail!("{a} may not be used together with {b}");
-}
-
-#[cfg(test)]
-mod tests {
-    use std::{
-        env,
-        io::Write as _,
-        panic,
-        path::Path,
-        process::{Command, Stdio},
-    };
-
-    use fs_err as fs;
-
-    use super::Help;
-
-    #[track_caller]
-    fn assert_diff(expected_path: impl AsRef<Path>, actual: impl AsRef<[u8]>) {
-        let actual = actual.as_ref();
-        let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-        let expected_path = &manifest_dir.join(expected_path);
-        if !expected_path.is_file() {
-            fs::create_dir_all(expected_path.parent().unwrap()).unwrap();
-            fs::write(expected_path, "").unwrap();
-        }
-        let expected = fs::read(expected_path).unwrap();
-        if expected != actual {
-            if env::var_os("CI").is_some() {
-                let mut child = Command::new("git")
-                    .args(["--no-pager", "diff", "--no-index", "--"])
-                    .arg(expected_path)
-                    .arg("-")
-                    .stdin(Stdio::piped())
-                    .spawn()
-                    .unwrap();
-                child.stdin.as_mut().unwrap().write_all(actual).unwrap();
-                assert!(!child.wait().unwrap().success());
-                // patch -p1 <<'EOF' ... EOF
-                panic!("assertion failed; please run test locally and commit resulting changes, or apply above diff as patch");
-            } else {
-                fs::write(expected_path, actual).unwrap();
-            }
-        }
-    }
-
-    #[test]
-    fn long_help() {
-        let actual = Help { print_version: false, ..Help::long() }.to_string();
-        assert_diff("tests/long-help.txt", actual);
-    }
-
-    #[test]
-    fn short_help() {
-        let actual = Help { print_version: false, ..Help::short() }.to_string();
-        assert_diff("tests/short-help.txt", actual);
-    }
-
-    // TODO: get help message from actual --help output.
-    #[test]
-    fn update_readme() {
-        let new = Help { print_version: false, ..Help::long() }.to_string();
-        let path = &Path::new(env!("CARGO_MANIFEST_DIR")).join("README.md");
-        let base = fs::read_to_string(path).unwrap();
-        let mut out = String::with_capacity(base.capacity());
-        let mut lines = base.lines();
-        let mut start = false;
-        let mut end = false;
-        while let Some(line) = lines.next() {
-            out.push_str(line);
-            out.push('\n');
-            if line == "<!-- readme-long-help:start -->" {
-                start = true;
-                out.push_str("```console\n");
-                out.push_str("$ cargo hack --help\n");
-                out.push_str(&new);
-                for line in &mut lines {
-                    if line == "<!-- readme-long-help:end -->" {
-                        out.push_str("```\n");
-                        out.push_str(line);
-                        out.push('\n');
-                        end = true;
-                        break;
-                    }
-                }
-            }
-        }
-        if start && end {
-            assert_diff(path, out);
-        } else if start {
-            panic!("missing `<!-- readme-long-help:end -->` comment in README.md");
-        } else {
-            panic!("missing `<!-- readme-long-help:start -->` comment in README.md");
-        }
-    }
 }
