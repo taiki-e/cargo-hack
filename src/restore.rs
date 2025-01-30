@@ -33,18 +33,18 @@ impl Manager {
     }
 
     /// Registers the given path if `needs_restore` is `true`.
-    pub(crate) fn register(&self, text: impl Into<String>, path: impl Into<PathBuf>) {
+    pub(crate) fn register(&self, contents: impl Into<Vec<u8>>, path: impl Into<PathBuf>) {
         if !self.needs_restore {
             return;
         }
 
-        self.register_always(text.into(), path.into());
+        self.register_always(contents.into(), path.into());
     }
 
     /// Registers the given path regardless of the value of `needs_restore`.
-    pub(crate) fn register_always(&self, text: impl Into<String>, path: impl Into<PathBuf>) {
+    pub(crate) fn register_always(&self, contents: impl Into<Vec<u8>>, path: impl Into<PathBuf>) {
         let mut files = self.files.lock().unwrap();
-        files.push(File { text: text.into(), path: path.into() });
+        files.push(File { contents: contents.into(), path: path.into() });
     }
 
     // This takes `&mut self` instead of `&self` to prevent misuse in multi-thread contexts.
@@ -75,8 +75,8 @@ impl Drop for Manager {
 }
 
 struct File {
-    /// The original text of this file.
-    text: String,
+    /// The original contents of this file.
+    contents: Vec<u8>,
     /// Path to this file.
     path: PathBuf,
 }
@@ -86,6 +86,6 @@ impl File {
         if term::verbose() {
             info!("restoring {}", self.path.display());
         }
-        fs::write(&self.path, &self.text)
+        fs::write(&self.path, &self.contents)
     }
 }

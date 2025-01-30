@@ -133,7 +133,7 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
                     info!("removing dev-dependencies from {}", manifest_path.display());
                 }
                 remove_dev_deps(&mut doc);
-                cx.restore.register(&manifest.raw, manifest_path);
+                cx.restore.register(manifest.raw.clone(), manifest_path);
                 fs::write(manifest_path, doc.to_string())?;
             }
         }
@@ -175,7 +175,7 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
         if restore_lockfile {
             let lockfile = &workspace_root.join("Cargo.lock");
             if lockfile.exists() {
-                cx.restore.register(fs::read_to_string(lockfile)?, lockfile);
+                cx.restore.register(fs::read(lockfile)?, lockfile);
             }
         }
     }
