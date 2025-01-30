@@ -4,7 +4,7 @@ use std::{
     env,
     ffi::OsStr,
     path::{Path, PathBuf},
-    process::{Command, ExitStatus},
+    process::Command,
     str,
     sync::LazyLock,
 };
@@ -76,7 +76,7 @@ impl Command {
         let (_test_project, cur_dir) = test_project(test_model);
         let output =
             self.current_dir(cur_dir).output().context("could not execute process").unwrap();
-        AssertOutput(Some(AssertOutputInner {
+        AssertOutput(Some(test_helper::cli::AssertOutput {
             stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
             stderr: String::from_utf8_lossy(&output.stderr)
                 .lines()
@@ -141,13 +141,7 @@ impl Command {
     }
 }
 
-pub(crate) struct AssertOutput(Option<AssertOutputInner>);
-
-struct AssertOutputInner {
-    stdout: String,
-    stderr: String,
-    status: ExitStatus,
-}
+pub(crate) struct AssertOutput(Option<test_helper::cli::AssertOutput>);
 
 fn replace_command(lines: &str) -> String {
     if lines.contains("rustup run") {
@@ -158,75 +152,38 @@ fn replace_command(lines: &str) -> String {
         lines.to_owned()
     }
 }
-fn line_separated(lines: &str) -> impl Iterator<Item = &'_ str> {
-    lines.lines().map(str::trim).filter(|line| !line.is_empty())
-}
 
 impl AssertOutput {
-    /// Receives a line(`\n`)-separated list of patterns and asserts whether stderr contains each pattern.
-    #[track_caller]
-    pub(crate) fn stderr_contains(&self, pats: impl AsRef<str>) -> &Self {
-        if let Some(output) = &self.0 {
-            for pat in line_separated(&replace_command(pats.as_ref())) {
-                if !output.stderr.contains(pat) {
-                    panic!(
-                        "assertion failed: `self.stderr.contains(..)`:\n\nEXPECTED:\n{0}\n{pat}\n{0}\n\nACTUAL:\n{0}\n{1}\n{0}\n",
-                        "-".repeat(60),
-                        output.stderr
-                    );
-                }
-            }
-        }
-        self
-    }
-
-    /// Receives a line(`\n`)-separated list of patterns and asserts whether stdout contains each pattern.
-    #[track_caller]
-    pub(crate) fn stderr_not_contains(&self, pats: impl AsRef<str>) -> &Self {
-        if let Some(output) = &self.0 {
-            for pat in line_separated(&replace_command(pats.as_ref())) {
-                if output.stderr.contains(pat) {
-                    panic!(
-                        "assertion failed: `!self.stderr.contains(..)`:\n\nEXPECTED:\n{0}\n{pat}\n{0}\n\nACTUAL:\n{0}\n{1}\n{0}\n",
-                        "-".repeat(60),
-                        output.stderr
-                    );
-                }
-            }
-        }
-        self
-    }
-
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stdout contains each pattern.
     #[track_caller]
     pub(crate) fn stdout_contains(&self, pats: impl AsRef<str>) -> &Self {
         if let Some(output) = &self.0 {
-            for pat in line_separated(&replace_command(pats.as_ref())) {
-                if !output.stdout.contains(pat) {
-                    panic!(
-                        "assertion failed: `self.stdout.contains(..)`:\n\nEXPECTED:\n{0}\n{pat}\n{0}\n\nACTUAL:\n{0}\n{1}\n{0}\n",
-                        "-".repeat(60),
-                        output.stdout
-                    );
-                }
-            }
+            output.stdout_contains(replace_command(pats.as_ref()));
         }
         self
     }
-
     /// Receives a line(`\n`)-separated list of patterns and asserts whether stdout contains each pattern.
     #[track_caller]
     pub(crate) fn stdout_not_contains(&self, pats: impl AsRef<str>) -> &Self {
         if let Some(output) = &self.0 {
-            for pat in line_separated(&replace_command(pats.as_ref())) {
-                if output.stdout.contains(pat) {
-                    panic!(
-                        "assertion failed: `!self.stdout.contains(..)`:\n\nEXPECTED:\n{0}\n{pat}\n{0}\n\nACTUAL:\n{0}\n{1}\n{0}\n",
-                        "-".repeat(60),
-                        output.stdout
-                    );
-                }
-            }
+            output.stdout_not_contains(replace_command(pats.as_ref()));
+        }
+        self
+    }
+
+    /// Receives a line(`\n`)-separated list of patterns and asserts whether stderr contains each pattern.
+    #[track_caller]
+    pub(crate) fn stderr_contains(&self, pats: impl AsRef<str>) -> &Self {
+        if let Some(output) = &self.0 {
+            output.stderr_contains(replace_command(pats.as_ref()));
+        }
+        self
+    }
+    /// Receives a line(`\n`)-separated list of patterns and asserts whether stderr contains each pattern.
+    #[track_caller]
+    pub(crate) fn stderr_not_contains(&self, pats: impl AsRef<str>) -> &Self {
+        if let Some(output) = &self.0 {
+            output.stderr_not_contains(replace_command(pats.as_ref()));
         }
         self
     }
