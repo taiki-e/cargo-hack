@@ -104,7 +104,7 @@ pub(crate) struct Args {
 }
 
 impl Args {
-    pub(crate) fn parse(cargo: &OsStr) -> Result<Self> {
+    pub(crate) fn parse(cargo: &OsStr) -> Result<Option<Self>> {
         const SUBCMD: &str = "hack";
 
         // rustc/cargo args must be valid Unicode
@@ -331,15 +331,15 @@ impl Args {
 
                 Short('h') if subcommand.is_none() => {
                     print!("{}", Help::short());
-                    std::process::exit(0);
+                    return Ok(None);
                 }
                 Long("help") if subcommand.is_none() => {
                     print!("{}", Help::long());
-                    std::process::exit(0);
+                    return Ok(None);
                 }
                 Short('V') | Long("version") if subcommand.is_none() => {
                     println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
-                    std::process::exit(0);
+                    return Ok(None);
                 }
 
                 // passthrough
@@ -523,7 +523,7 @@ impl Args {
         if subcommand.is_none() {
             if cargo_args.iter().any(|a| a == "--list") {
                 cmd!(cargo, "--list").run()?;
-                std::process::exit(0);
+                return Ok(None);
             } else if !remove_dev_deps {
                 // TODO: improve this
                 mini_usage("no subcommand or valid flag specified")?;
@@ -600,7 +600,7 @@ impl Args {
             cargo_args.push(format!("-{}", "v".repeat(verbose - 1)));
         }
 
-        Ok(Self {
+        Ok(Some(Self {
             leading_args: cargo_args,
             trailing_args: rest,
 
@@ -644,7 +644,7 @@ impl Args {
 
             no_default_features,
             target: target.into_iter().collect(),
-        })
+        }))
     }
 }
 

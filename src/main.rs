@@ -22,7 +22,9 @@ mod version;
 use std::{
     collections::{BTreeMap, HashSet},
     env,
+    ffi::OsString,
     fmt::{self, Write as _},
+    process::ExitCode,
     str::FromStr,
 };
 
@@ -37,18 +39,23 @@ use crate::{
     version::{Version, VersionRange},
 };
 
-fn main() {
+fn main() -> ExitCode {
     term::init_coloring();
     if let Err(e) = try_main() {
         error!("{e:#}");
     }
     if term::error() || term::warn() && env::var_os("CARGO_HACK_DENY_WARNINGS").is_some() {
-        std::process::exit(1)
+        ExitCode::FAILURE
+    } else {
+        ExitCode::SUCCESS
     }
 }
 
 fn try_main() -> Result<()> {
-    let cx = &Context::new()?;
+    let cargo = env::var_os("CARGO_HACK_CARGO_SRC")
+        .unwrap_or_else(|| env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo")));
+    let Some(args) = cli::Args::parse(&cargo)? else { return Ok(()) };
+    let cx = &Context::new(args, cargo)?;
 
     manifest::with(cx, || {
         if cx.subcommand.is_none() {

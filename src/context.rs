@@ -33,10 +33,7 @@ pub(crate) struct Context {
 }
 
 impl Context {
-    pub(crate) fn new() -> Result<Self> {
-        let cargo = env::var_os("CARGO_HACK_CARGO_SRC")
-            .unwrap_or_else(|| env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo")));
-        let args = Args::parse(&cargo)?;
+    pub(crate) fn new(args: Args, cargo: OsString) -> Result<Self> {
         assert!(
             args.subcommand.is_some() || args.remove_dev_deps,
             "no subcommand or valid flag specified"
