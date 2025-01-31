@@ -386,6 +386,7 @@ cargo hack publish --no-dev-deps --dry-run --allow-dirty
 > [!NOTE]
 > Currently, using `--no-dev-deps` flag removes dev-dependencies from
 > real manifest while cargo-hack is running and restores it when finished.
+> Any changes you made to those files during running will not be preserved.
 > See [cargo#4242] for why this is necessary.
 > Also, this behavior may change in the future on some subcommands. See also
 > [#15].
@@ -412,7 +413,7 @@ Skip to perform on `publish = false` crates.
 Perform without `publish = false` crates. This is similar to `--ignore-private`, but is more powerful because this also prevents private crates from affecting lockfile and metadata.
 
 > [!NOTE]
-> `--no-private` flag modifies `Cargo.toml` while cargo-hack is running and restores it when finished.
+> `--no-private` flag modifies `Cargo.toml` while cargo-hack is running and restores it when finished. Any changes you made to those files during running will not be preserved.
 
 <!-- omit in toc -->
 ### --ignore-unknown-features
