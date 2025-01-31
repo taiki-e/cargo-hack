@@ -294,7 +294,8 @@ cargo hack check --feature-powerset --no-dev-deps
 
 cargo-hack deduplicate any fully equivalent feature combinations based on how the cargo features work. Therefore, it may be more efficient than checking all feature combinations in other ways.
 
-When using this flag results in a very large number of feature combinations, consider using [`--depth`](#--depth) option.
+> [!TIP]
+> When using this flag results in a very large number of feature combinations, consider using [`--depth`](#--depth) option.
 
 See also [Options for adjusting the behavior of --each-feature and --feature-powerset](#options-for-adjusting-the-behavior-of---each-feature-and---feature-powerset) section.
 
@@ -382,11 +383,12 @@ allow publishing a package with cyclic dev-dependencies. ([cargo#4242])
 cargo hack publish --no-dev-deps --dry-run --allow-dirty
 ```
 
-Note: Currently, using `--no-dev-deps` flag removes dev-dependencies from
-real manifest while cargo-hack is running and restores it when finished.
-See [cargo#4242] for why this is necessary.
-Also, this behavior may change in the future on some subcommands. See also
-[#15].
+> [!NOTE]
+> Currently, using `--no-dev-deps` flag removes dev-dependencies from
+> real manifest while cargo-hack is running and restores it when finished.
+> See [cargo#4242] for why this is necessary.
+> Also, this behavior may change in the future on some subcommands. See also
+> [#15].
 
 <!-- omit in toc -->
 ### --remove-dev-deps
@@ -409,7 +411,8 @@ Skip to perform on `publish = false` crates.
 
 Perform without `publish = false` crates. This is similar to `--ignore-private`, but is more powerful because this also prevents private crates from affecting lockfile and metadata.
 
-Note: `--no-private` flag modifies `Cargo.toml` while cargo-hack is running and restores it when finished.
+> [!NOTE]
+> `--no-private` flag modifies `Cargo.toml` while cargo-hack is running and restores it when finished.
 
 <!-- omit in toc -->
 ### --ignore-unknown-features
