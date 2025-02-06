@@ -540,6 +540,11 @@ You can install cargo-hack from the [extra repository](https://archlinux.org/pac
 pacman -S cargo-hack
 ```
 
+<!-- omit in toc -->
+### Via other package managers
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/cargo-hack.svg?columns=4)](https://repology.org/project/cargo-hack/versions)
+
 ## Related Projects
 
 - [cargo-llvm-cov]: Cargo subcommand to easily use LLVM source-based code coverage.
