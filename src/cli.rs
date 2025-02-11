@@ -33,7 +33,7 @@ pub(crate) struct Args {
     pub(crate) exclude: Vec<String>,
     /// --workspace, (--all)
     pub(crate) workspace: bool,
-    /// --each-feature
+    /// --each-feature / --feature-powerset --depth 1
     pub(crate) each_feature: bool,
     /// --feature-powerset
     pub(crate) feature_powerset: bool,
@@ -432,7 +432,10 @@ impl Args {
             }
         }
 
-        let depth = depth.as_deref().map(str::parse::<usize>).transpose()?;
+        let mut depth = depth.as_deref().map(str::parse::<usize>).transpose()?;
+        if let Some(0) = depth {
+            bail!("--depth cannot be zero");
+        }
         let group_features = parse_grouped_features(&group_features, "group-features")?;
         let mutually_exclusive_features =
             parse_grouped_features(&mutually_exclusive_features, "mutually-exclusive-features")?;
@@ -596,6 +599,17 @@ impl Args {
         // If `-vv` is passed, propagate `-v` to cargo.
         if verbose > 1 {
             cargo_args.push(format!("-{}", "v".repeat(verbose - 1)));
+        }
+
+        if let Some(1) = depth {
+            info!("--feature-powerset --depth 1 is equivalent to --each-feature");
+            if !mutually_exclusive_features.is_empty() {
+                warn!("--mutually-exclusive-features is useless on --depth 1");
+            }
+            // TODO: at_least_one_of
+            each_feature = true;
+            feature_powerset = false;
+            depth = None;
         }
 
         Ok(Self {

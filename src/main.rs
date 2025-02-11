@@ -533,19 +533,17 @@ fn exec_on_package(
             }
         }
         Kind::Powerset { features } => {
-            let features =
-                if exclude_all_features && features.len() > 1 && cx.depth.unwrap_or(usize::MAX) > 1
-                {
-                    // If --all-features case is skipped, run with the biggest feature combination early (first or second): https://github.com/taiki-e/cargo-hack/issues/246
-                    // TODO: The last combination is usually the biggest feature combination, but
-                    //       in some cases this is not the case due to deduplication of the powerset.
-                    //       See todo comment in powerset_deduplication test for example.
-                    let last = features.last().unwrap();
-                    exec_cargo_with_features(cx, id, &line, progress, keep_going, last)?;
-                    &features[..features.len() - 1]
-                } else {
-                    features
-                };
+            let features = if exclude_all_features && features.len() > 1 {
+                // If --all-features case is skipped, run with the biggest feature combination early (first or second): https://github.com/taiki-e/cargo-hack/issues/246
+                // TODO: The last combination is usually the biggest feature combination, but
+                //       in some cases this is not the case due to deduplication of the powerset.
+                //       See todo comment in powerset_deduplication test for example.
+                let last = features.last().unwrap();
+                exec_cargo_with_features(cx, id, &line, progress, keep_going, last)?;
+                &features[..features.len() - 1]
+            } else {
+                features
+            };
             for f in features {
                 exec_cargo_with_features(cx, id, &line, progress, keep_going, f)?;
             }
