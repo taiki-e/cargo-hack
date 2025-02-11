@@ -103,6 +103,7 @@ impl<'a> ProcessBuilder<'a> {
                 if cx.pkg_features(id).contains(f) {
                     true
                 } else {
+                    // TODO: merge warnings if there is multiple unknown features
                     // ignored
                     info!("skipped applying unknown `{f}` feature to {}", cx.packages(id).name);
                     false

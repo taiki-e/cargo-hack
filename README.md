@@ -548,6 +548,15 @@ pacman -S cargo-hack
 ```
 
 <!-- omit in toc -->
+### Via nix-env (Nix)
+
+You can install cargo-hack from the [nixpkgs](https://github.com/NixOS/nixpkgs/blob/HEAD/pkgs/by-name/ca/cargo-hack/package.nix):
+
+```sh
+nix-env --install cargo-hack
+```
+
+<!-- omit in toc -->
 ### Via ports (FreeBSD)
 
 You can install cargo-hack from the [official ports](https://www.freshports.org/devel/cargo-hack):

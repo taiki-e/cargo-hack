@@ -1,4 +1,5 @@
 binstall
+nixpkgs
 qpmember
 subcrate
 vvpmember
