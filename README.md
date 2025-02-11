@@ -548,6 +548,15 @@ pacman -S cargo-hack
 ```
 
 <!-- omit in toc -->
+### Via ports (FreeBSD)
+
+You can install cargo-hack from the [official ports](https://www.freshports.org/devel/cargo-hack):
+
+```sh
+pkg install cargo-hack
+```
+
+<!-- omit in toc -->
 ### Via other package managers
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/cargo-hack.svg?columns=4)](https://repology.org/project/cargo-hack/versions)
