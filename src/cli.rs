@@ -412,6 +412,8 @@ impl Args {
                 requires("--include-features", &["--each-feature", "--feature-powerset"])?;
             } else if include_deps_features {
                 requires("--include-deps-features", &["--each-feature", "--feature-powerset"])?;
+            } else if !group_features.is_empty() {
+                requires("--group-features", &["--each-feature", "--feature-powerset"])?;
             }
         }
 
@@ -423,8 +425,6 @@ impl Args {
         if !feature_powerset {
             if depth.is_some() {
                 requires("--depth", &["--feature-powerset"])?;
-            } else if !group_features.is_empty() {
-                requires("--group-features", &["--feature-powerset"])?;
             } else if !mutually_exclusive_features.is_empty() {
                 requires("--mutually-exclusive-features", &["--feature-powerset"])?;
             } else if !at_least_one_of.is_empty() {
