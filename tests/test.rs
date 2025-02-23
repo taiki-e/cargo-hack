@@ -6,7 +6,7 @@ mod auxiliary;
 
 use std::{
     env::{self, consts::EXE_SUFFIX},
-    path::{Path, MAIN_SEPARATOR},
+    path::{MAIN_SEPARATOR, Path},
     sync::Mutex,
 };
 

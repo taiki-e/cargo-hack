@@ -13,7 +13,7 @@ use std::{
     rc::Rc,
 };
 
-use anyhow::{format_err, Context as _, Result};
+use anyhow::{Context as _, Result, format_err};
 use cargo_config2::Config;
 use serde_json::{Map, Value};
 
@@ -370,43 +370,23 @@ impl Dependency {
     }
 
     pub(crate) fn as_feature(&self) -> Option<&str> {
-        if self.optional {
-            Some(self.rename.as_ref().unwrap_or(&self.name))
-        } else {
-            None
-        }
+        if self.optional { Some(self.rename.as_ref().unwrap_or(&self.name)) } else { None }
     }
 }
 
 #[allow(clippy::option_option)]
 fn allow_null<T>(value: Value, f: impl FnOnce(Value) -> Option<T>) -> Option<Option<T>> {
-    if value.is_null() {
-        Some(None)
-    } else {
-        f(value).map(Some)
-    }
+    if value.is_null() { Some(None) } else { f(value).map(Some) }
 }
 
 fn into_string<S: From<String>>(value: Value) -> Option<S> {
-    if let Value::String(string) = value {
-        Some(string.into())
-    } else {
-        None
-    }
+    if let Value::String(string) = value { Some(string.into()) } else { None }
 }
 fn into_array(value: Value) -> Option<Vec<Value>> {
-    if let Value::Array(array) = value {
-        Some(array)
-    } else {
-        None
-    }
+    if let Value::Array(array) = value { Some(array) } else { None }
 }
 fn into_object(value: Value) -> Option<Object> {
-    if let Value::Object(object) = value {
-        Some(object)
-    } else {
-        None
-    }
+    if let Value::Object(object) = value { Some(object) } else { None }
 }
 
 trait ObjectExt {

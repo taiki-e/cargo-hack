@@ -7,13 +7,13 @@ use std::{
     fmt, mem,
 };
 
-use anyhow::{bail, format_err, Result};
+use anyhow::{Result, bail, format_err};
 use lexopt::{
     Arg::{Long, Short, Value},
     ValueExt as _,
 };
 
-use crate::{term, version::VersionRange, Feature, LogGroup, Partition, Rustup};
+use crate::{Feature, LogGroup, Partition, Rustup, term, version::VersionRange};
 
 pub(crate) struct Args {
     pub(crate) leading_args: Vec<String>,
@@ -513,7 +513,9 @@ impl Args {
                 bail!("feature `{f}` specified by both --exclude-features and --group-features");
             }
             if mutually_exclusive_features.iter().any(|v| v.matches(f)) {
-                bail!("feature `{f}` specified by both --exclude-features and --mutually-exclusive-features");
+                bail!(
+                    "feature `{f}` specified by both --exclude-features and --mutually-exclusive-features"
+                );
             }
             if include_features.contains(f) {
                 bail!("feature `{f}` specified by both --exclude-features and --include-features");
@@ -680,12 +682,18 @@ const HELP: &[HelpText<'_>] = &[
     ("", "--exclude", "<SPEC>...", "Exclude packages from the check", &[]),
     ("", "--manifest-path", "<PATH>", "Path to Cargo.toml", &[]),
     ("", "--locked", "", "Require Cargo.lock is up to date", &[]),
-    ("-F", "--features", "<FEATURES>...", "Space or comma separated list of features to activate", &[]),
+    (
+        "-F",
+        "--features",
+        "<FEATURES>...",
+        "Space or comma separated list of features to activate",
+        &[],
+    ),
     ("", "--each-feature", "", "Perform for each feature of the package", &[
         "This also includes runs with just --no-default-features flag, and default features.",
         "When this flag is not used together with --exclude-features (--skip) and \
          --include-features and there are multiple features, this also includes runs with \
-         just --all-features flag."
+         just --all-features flag.",
     ]),
     ("", "--feature-powerset", "", "Perform for the feature powerset of the package", &[
         "This also includes runs with just --no-default-features flag, and default features.",
@@ -693,7 +701,7 @@ const HELP: &[HelpText<'_>] = &[
         "When this flag is used together with --depth or namespaced features \
          (-Z namespaced-features) and not used together with --exclude-features (--skip) and \
          --include-features and there are multiple features, this also includes runs with just \
-         --all-features flag."
+         --all-features flag.",
     ]),
     ("", "--optional-deps", "[DEPS]...", "Use optional dependencies as features", &[
         "If DEPS are not specified, all optional dependencies are considered as features.",
@@ -701,14 +709,20 @@ const HELP: &[HelpText<'_>] = &[
          flag.",
     ]),
     ("", "--skip", "<FEATURES>...", "Alias for --exclude-features", &[]),
-    ("", "--exclude-features", "<FEATURES>...", "Space or comma separated list of features to exclude", &[
-        "To exclude run of default feature, using value `--exclude-features default`.",
-        "To exclude run of just --no-default-features flag, using --exclude-no-default-features \
+    (
+        "",
+        "--exclude-features",
+        "<FEATURES>...",
+        "Space or comma separated list of features to exclude",
+        &[
+            "To exclude run of default feature, using value `--exclude-features default`.",
+            "To exclude run of just --no-default-features flag, using --exclude-no-default-features \
          flag.",
-        "To exclude run of just --all-features flag, using --exclude-all-features flag.",
-        "This flag can only be used together with either --each-feature flag or --feature-powerset \
+            "To exclude run of just --all-features flag, using --exclude-all-features flag.",
+            "This flag can only be used together with either --each-feature flag or --feature-powerset \
          flag.",
-    ]),
+        ],
+    ),
     ("", "--exclude-no-default-features", "", "Exclude run of just --no-default-features flag", &[
         "This flag can only be used together with either --each-feature flag or --feature-powerset \
          flag.",
@@ -727,36 +741,52 @@ const HELP: &[HelpText<'_>] = &[
             "This flag can only be used together with --feature-powerset flag.",
         ],
     ),
-    ("", "--group-features", "<FEATURES>...", "Space or comma separated list of features to group", &[
-        "This treats the specified features as if it were a single feature.",
-        "To specify multiple groups, use this option multiple times: `--group-features a,b \
+    (
+        "",
+        "--group-features",
+        "<FEATURES>...",
+        "Space or comma separated list of features to group",
+        &[
+            "This treats the specified features as if it were a single feature.",
+            "To specify multiple groups, use this option multiple times: `--group-features a,b \
          --group-features c,d`",
-        "This flag can only be used together with --feature-powerset flag.",
-    ]),
+            "This flag can only be used together with --feature-powerset flag.",
+        ],
+    ),
     ("", "--target", "<TRIPLE>", "Build for specified target triple", &[
         "Comma-separated lists of targets are not supported, but you can specify the whole --target option multiple times to do multiple targets.",
         "This is actually not a cargo-hack option, it is interpreted by Cargo itself.",
     ]),
-    ("", "--mutually-exclusive-features", "<FEATURES>...", "Space or comma separated list of features to not use together", &[
-        "To specify multiple groups, use this option multiple times: `--mutually-exclusive-features \
+    (
+        "",
+        "--mutually-exclusive-features",
+        "<FEATURES>...",
+        "Space or comma separated list of features to not use together",
+        &[
+            "To specify multiple groups, use this option multiple times: `--mutually-exclusive-features \
          a,b --mutually-exclusive-features c,d`",
-        "This flag can only be used together with --feature-powerset flag.",
-    ]),
-    ("", "--at-least-one-of", "<FEATURES>...", "Space or comma separated list of features. Skips sets of features that don't enable any of the features listed", &[
-        "To specify multiple groups, use this option multiple times: `--at-least-one-of a,b \
+            "This flag can only be used together with --feature-powerset flag.",
+        ],
+    ),
+    (
+        "",
+        "--at-least-one-of",
+        "<FEATURES>...",
+        "Space or comma separated list of features. Skips sets of features that don't enable any of the features listed",
+        &[
+            "To specify multiple groups, use this option multiple times: `--at-least-one-of a,b \
          --at-least-one-of c,d`",
-        "This flag can only be used together with --feature-powerset flag.",
-    ]),
+            "This flag can only be used together with --feature-powerset flag.",
+        ],
+    ),
     (
         "",
         "--include-features",
         "<FEATURES>...",
         "Include only the specified features in the feature combinations instead of package \
          features",
-        &[
-            "This flag can only be used together with either --each-feature flag or \
-             --feature-powerset flag.",
-        ],
+        &["This flag can only be used together with either --each-feature flag or \
+             --feature-powerset flag."],
     ),
     ("", "--no-dev-deps", "", "Perform without dev-dependencies", &[
         "Note that this flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is \
@@ -779,15 +809,9 @@ const HELP: &[HelpText<'_>] = &[
         "Skip passing --features flag to `cargo` if that feature does not exist in the package",
         &["This flag can be used with --features, --include-features, or --group-features."],
     ),
-    (
-        "",
-        "--rust-version",
-        "",
-        "Perform commands on `package.rust-version`",
-        &[
-            "This cannot be used with --version-range.",
-        ],
-    ),
+    ("", "--rust-version", "", "Perform commands on `package.rust-version`", &[
+        "This cannot be used with --version-range.",
+    ]),
     (
         "",
         "--version-range",
@@ -818,9 +842,10 @@ const HELP: &[HelpText<'_>] = &[
         "This flag can only be used together with --version-range flag.",
     ]),
     ("", "--keep-going", "", "Keep going on failure", &[]),
-    ("", "--partition", "<M/N>", "Partition runs and execute only its subset according to M/N", &[]),
+    ("", "--partition", "<M/N>", "Partition runs and execute only its subset according to M/N", &[
+    ]),
     ("", "--log-group", "<KIND>", "Log grouping: none, github-actions", &[
-        "If this option is not used, the environment will be automatically detected."
+        "If this option is not used, the environment will be automatically detected.",
     ]),
     ("", "--print-command-list", "", "Print commands without run (Unstable)", &[]),
     ("", "--no-manifest-path", "", "Do not pass --manifest-path option to cargo (Unstable)", &[]),

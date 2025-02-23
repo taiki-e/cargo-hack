@@ -2,13 +2,12 @@
 
 use std::str;
 
-use anyhow::{bail, format_err, Result};
+use anyhow::{Result, bail, format_err};
 
 use crate::{
-    cargo,
+    LogGroup, PackageRuns, cargo,
     context::Context,
     version::{MaybeVersion, Version, VersionRange},
-    LogGroup, PackageRuns,
 };
 
 pub(crate) struct Rustup {

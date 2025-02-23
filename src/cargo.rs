@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use anyhow::{bail, format_err, Result};
+use anyhow::{Result, bail, format_err};
 
-use crate::{version::Version, ProcessBuilder};
+use crate::{ProcessBuilder, version::Version};
 
 pub(crate) fn version(mut cmd: ProcessBuilder<'_>) -> Result<Version> {
     // Use verbose version output because the packagers add extra strings to the normal version output.

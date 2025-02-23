@@ -12,7 +12,7 @@ use std::{
 
 use anyhow::{Context as _, Error, Result};
 
-use crate::{term, Context, PackageId};
+use crate::{Context, PackageId, term};
 
 macro_rules! cmd {
     ($program:expr $(, $arg:expr)* $(,)?) => {{

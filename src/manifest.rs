@@ -5,7 +5,7 @@ use std::{
     path::Path,
 };
 
-use anyhow::{bail, format_err, Context as _, Result};
+use anyhow::{Context as _, Result, bail, format_err};
 
 use crate::{context::Context, fs, term};
 
@@ -216,13 +216,9 @@ fn remove_private_crates(
                 if let Some(member) = members.get(i).and_then(toml_edit::Value::as_str) {
                     let manifest_path = workspace_root.join(member).join("Cargo.toml");
                     if let Some(p) = private_crates.iter().find_map(|p| {
-                        same_file::is_same_file(p, &manifest_path).ok().and_then(|v| {
-                            if v {
-                                Some(*p)
-                            } else {
-                                None
-                            }
-                        })
+                        same_file::is_same_file(p, &manifest_path)
+                            .ok()
+                            .and_then(|v| if v { Some(*p) } else { None })
                     }) {
                         members.remove(i);
                         private_crates.remove(p);

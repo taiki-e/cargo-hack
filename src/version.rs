@@ -2,7 +2,7 @@
 
 use std::{fmt, str::FromStr};
 
-use anyhow::{bail, Context as _, Error, Result};
+use anyhow::{Context as _, Error, Result, bail};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Version {
@@ -112,9 +112,5 @@ impl FromStr for VersionRange {
 }
 
 fn maybe_version(s: &str) -> Result<Option<MaybeVersion>, Error> {
-    if s.is_empty() {
-        Ok(None)
-    } else {
-        s.parse().map(MaybeVersion::Version).map(Some)
-    }
+    if s.is_empty() { Ok(None) } else { s.parse().map(MaybeVersion::Version).map(Some) }
 }

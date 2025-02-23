@@ -28,7 +28,7 @@ use std::{
     str::FromStr,
 };
 
-use anyhow::{bail, format_err, Error, Result};
+use anyhow::{Error, Result, bail, format_err};
 
 use crate::{
     context::Context,
@@ -102,7 +102,9 @@ fn try_main() -> Result<()> {
                         let package = cx.packages(pkg.id);
                         let name = &package.name;
                         let msrv = msrv.expect("always `seen` if no msrv");
-                        warn!("skipping {name}, rust-version ({msrv}) is not in specified range ({range})");
+                        warn!(
+                            "skipping {name}, rust-version ({msrv}) is not in specified range ({range})"
+                        );
                     }
                 }
             }
@@ -617,11 +619,7 @@ enum LogGroup {
 
 impl LogGroup {
     fn auto() -> Self {
-        if env::var_os("GITHUB_ACTIONS").is_some() {
-            Self::GithubActions
-        } else {
-            Self::None
-        }
+        if env::var_os("GITHUB_ACTIONS").is_some() { Self::GithubActions } else { Self::None }
     }
 
     fn print(self, msg: &str) -> Option<LogGroupGuard> {

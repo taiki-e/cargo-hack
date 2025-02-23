@@ -5,7 +5,7 @@ use std::{
     fmt, slice,
 };
 
-use crate::{manifest::Manifest, metadata::Metadata, PackageId};
+use crate::{PackageId, manifest::Manifest, metadata::Metadata};
 
 #[derive(Debug)]
 pub(crate) struct Features {
@@ -332,7 +332,7 @@ pub(crate) fn at_least_one_of_for_package<'a>(
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use super::{at_least_one_of_for_package, feature_deps, feature_powerset, powerset, Feature};
+    use super::{Feature, at_least_one_of_for_package, feature_deps, feature_powerset, powerset};
 
     macro_rules! v {
         ($($expr:expr),* $(,)?) => {
