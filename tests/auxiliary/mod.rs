@@ -12,7 +12,6 @@ use std::{
 use anyhow::Context as _;
 pub(crate) use build_context::TARGET;
 use easy_ext::ext;
-use fs_err as fs;
 
 pub(crate) fn manifest_dir() -> &'static Path {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -209,13 +208,6 @@ fn test_project(model: &str) -> (tempfile::TempDir, PathBuf) {
         workspace_root = tmpdir_path.to_path_buf();
     }
 
-    for (file_name, from) in test_helper::git::ls_files(model_path, &[]) {
-        let to = &tmpdir_path.join(file_name);
-        if !to.parent().unwrap().is_dir() {
-            fs::create_dir_all(to.parent().unwrap()).unwrap();
-        }
-        fs::copy(from, to).unwrap();
-    }
-
+    test_helper::git::copy_tracked_files(model_path, tmpdir_path);
     (tmpdir, workspace_root)
 }
