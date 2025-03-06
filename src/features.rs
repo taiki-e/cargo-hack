@@ -84,6 +84,10 @@ impl Features {
     pub(crate) fn contains(&self, name: &str) -> bool {
         self.features.iter().any(|f| f == name)
     }
+
+    pub(crate) fn get(&self, name: &str) -> Option<&Feature> {
+        self.features.iter().find(|f| *f == name)
+    }
 }
 
 /// The representation of Cargo feature.
