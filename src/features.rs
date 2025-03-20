@@ -160,16 +160,7 @@ impl Feature {
         ) -> bool {
             if let Some(v) = map.get(cur) {
                 for cur in v {
-                    let fname = if let Some(slash_idx) = cur.find('/') {
-                        // The fname may still have a '?' suffix, which is fine.
-                        // Because in that case it doesn't activate that dependency, so it can be ignored.
-                        let (fname, _) = cur.split_at(slash_idx);
-                        fname
-                    } else {
-                        // Could be 'dep:something', which is fine because it's not a feature.
-                        cur
-                    };
-                    if fname != root && (group.matches(fname) || rec(group, map, fname, root)) {
+                    if cur != root && (group.matches(cur) || rec(group, map, cur, root)) {
                         return true;
                     }
                 }
@@ -402,25 +393,6 @@ mod tests {
             vec!["tokio"],
             vec!["async-std"],
             vec!["a", "async-std"],
-            vec!["b", "async-std"]
-        ]);
-
-        let map = map![
-            ("tokio", v![]),
-            ("async-std", v![]),
-            ("a", v!["tokio/full"]),
-            ("b", v!["async-std?/alloc"])
-        ];
-        let list = v!["a", "b", "tokio", "async-std"];
-        let mutually_exclusive_features = [Feature::group(["tokio", "async-std"])];
-        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &map);
-        assert_eq!(filtered, vec![
-            vec!["a"],
-            vec!["b"],
-            vec!["a", "b"],
-            vec!["tokio"],
-            vec!["b", "tokio"],
-            vec!["async-std"],
             vec!["b", "async-std"]
         ]);
 
