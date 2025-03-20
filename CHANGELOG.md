@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix a regression introduced in 0.6.34 that caused a stack overflow. ([#272](https://github.com/taiki-e/cargo-hack/pull/272))
+
 ## [0.6.35] - 2025-02-11
 
 - Performance improvements.
