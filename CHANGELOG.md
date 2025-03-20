@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.36] - 2025-03-20
+
 - Fix a regression introduced in 0.6.34 that caused a stack overflow. ([#272](https://github.com/taiki-e/cargo-hack/pull/272))
 
 ## [0.6.35] - 2025-02-11
@@ -538,7 +540,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.35...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.36...HEAD
+[0.6.36]: https://github.com/taiki-e/cargo-hack/compare/v0.6.35...v0.6.36
 [0.6.35]: https://github.com/taiki-e/cargo-hack/compare/v0.6.34...v0.6.35
 [0.6.34]: https://github.com/taiki-e/cargo-hack/compare/v0.6.33...v0.6.34
 [0.6.33]: https://github.com/taiki-e/cargo-hack/compare/v0.6.32...v0.6.33
