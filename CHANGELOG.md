@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix infinite recursion when cyclical features interact with `--mutually-exclusive-features`. ([#276](https://github.com/taiki-e/cargo-hack/pull/276), thanks @xStrom)
+
 ## [0.6.36] - 2025-03-20
 
 - Fix a regression introduced in 0.6.34 that caused a stack overflow. ([#272](https://github.com/taiki-e/cargo-hack/pull/272))
