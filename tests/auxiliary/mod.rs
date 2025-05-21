@@ -6,10 +6,10 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
     str,
-    sync::LazyLock,
 };
 
 use anyhow::Context as _;
+use once_cell::sync::Lazy;
 pub(crate) use build_context::TARGET;
 use easy_ext::ext;
 
@@ -33,7 +33,7 @@ pub(crate) fn has_rustup() -> bool {
     Command::new("rustup").arg("--version").output().is_ok()
 }
 
-static TEST_VERSION: LazyLock<Option<u32>> = LazyLock::new(|| {
+static TEST_VERSION: Lazy<Option<u32>> = Lazy::new(|| {
     let toolchain = env::var_os("CARGO_HACK_TEST_TOOLCHAIN")?.to_string_lossy().parse().unwrap();
     // Install toolchain first to avoid toolchain installation conflicts.
     let _ = Command::new("rustup")
@@ -42,7 +42,7 @@ static TEST_VERSION: LazyLock<Option<u32>> = LazyLock::new(|| {
     Some(toolchain)
 });
 
-pub(crate) static HAS_STABLE_TOOLCHAIN: LazyLock<bool> = LazyLock::new(|| {
+pub(crate) static HAS_STABLE_TOOLCHAIN: Lazy<bool> = Lazy::new(|| {
     let Ok(output) = Command::new("rustup").args(["toolchain", "list"]).output() else {
         return false;
     };

@@ -29,6 +29,7 @@ use std::{
 };
 
 use anyhow::{Error, Result, bail, format_err};
+use glob::Pattern;
 
 use crate::{
     context::Context,
@@ -350,17 +351,57 @@ fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
         let multiple_packages = ids.len() > 1;
         ids.iter().filter_map(|id| determine_kind(cx, id, multiple_packages)).collect()
     } else if !cx.package.is_empty() {
-        if let Some(spec) = cx
-            .package
-            .iter()
-            .find(|&spec| !cx.workspace_members().any(|id| cx.packages(id).name == *spec))
-        {
-            bail!("package ID specification `{spec}` matched no packages")
+        let mut matched_ids = HashSet::new();
+        let mut any_spec_matched = false;
+        let mut unmatched_specs = Vec::new();
+
+        for spec in &cx.package {
+            let pattern = match Pattern::new(spec) {
+                Ok(p) => p,
+                Err(e) => {
+                    warn!("invalid glob pattern \"{spec}\": {e}");
+                    unmatched_specs.push(spec.as_str());
+                    continue;
+                }
+            };
+            let mut spec_matched_at_least_one_package = false;
+            for id in cx.workspace_members() {
+                let package_name = &cx.packages(id).name;
+                if pattern.matches(package_name) {
+                    matched_ids.insert(id);
+                    spec_matched_at_least_one_package = true;
+                    any_spec_matched = true;
+                }
+            }
+            if !spec_matched_at_least_one_package {
+                unmatched_specs.push(spec.as_str());
+            }
         }
 
-        let ids: Vec<_> = cx
-            .workspace_members()
-            .filter(|id| cx.package.contains(&cx.packages(id).name))
+        if !any_spec_matched && !unmatched_specs.is_empty() {
+            // If no specs matched anything, and there was at least one spec attempt.
+            // The original code bails on the first spec not matching anything.
+            // We collect all specs that didn't match and report.
+            // If all specs were invalid patterns, unmatched_specs could contain all of them.
+            // If some were valid but didn't match, they'd also be in unmatched_specs.
+            // We prioritize reporting the first originally provided spec that didn't match,
+            // or was invalid, to maintain some consistency with the old error reporting,
+            // though the condition is now stricter (no matches at all for any spec).
+            let spec_to_report: &str;
+            let first_spec_in_error = cx.package.iter()
+                .find(|s_val| unmatched_specs.contains(&s_val.as_str()))
+                .map(|s_val| s_val.as_str());
+
+            if let Some(spec_str) = first_spec_in_error {
+                spec_to_report = spec_str;
+            } else {
+                spec_to_report = cx.package.first().map(|s| s.as_str()).unwrap_or("");
+            }
+            bail!("package ID specification `{spec_to_report}` matched no packages")
+        }
+
+        let ids: Vec<_> = matched_ids
+            .into_iter()
             .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
             .collect();
         let multiple_packages = ids.len() > 1;

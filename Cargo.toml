@@ -33,12 +33,14 @@ same-file = "1.0.1"
 serde_json = "1"
 termcolor = "1"
 toml_edit = "0.22.7"
+glob = "0.3.1"
 
 [dev-dependencies]
 build-context = "0.1"
 easy-ext = "1"
 tempfile = { version = "3", default-features = false }
 test-helper = { features = ["cli", "doc", "git"], git = "https://github.com/taiki-e/test-helper.git", rev = "f38a7f5" }
+once_cell = "1.19.0"
 
 [lints]
 workspace = true
