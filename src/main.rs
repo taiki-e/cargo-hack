@@ -388,14 +388,16 @@ fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
             // or was invalid, to maintain some consistency with the old error reporting,
             // though the condition is now stricter (no matches at all for any spec).
             let spec_to_report: &str;
-            let first_spec_in_error = cx.package.iter()
+            let first_spec_in_error = cx
+                .package
+                .iter()
                 .find(|s_val| unmatched_specs.contains(&s_val.as_str()))
-                .map(|s_val| s_val.as_str());
+                .map(String::as_str);
 
             if let Some(spec_str) = first_spec_in_error {
                 spec_to_report = spec_str;
             } else {
-                spec_to_report = cx.package.first().map(|s| s.as_str()).unwrap_or("");
+                spec_to_report = cx.package.first().map_or("", String::as_str);
             }
             bail!("package ID specification `{spec_to_report}` matched no packages")
         }
