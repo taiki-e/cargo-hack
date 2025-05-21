@@ -30,6 +30,7 @@ use std::{
 
 use anyhow::{Error, Result, bail, format_err};
 use glob::Pattern;
+use indexmap::IndexSet;
 
 use crate::{
     context::Context,
@@ -351,7 +352,7 @@ fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
         let multiple_packages = ids.len() > 1;
         ids.iter().filter_map(|id| determine_kind(cx, id, multiple_packages)).collect()
     } else if !cx.package.is_empty() {
-        let mut matched_ids = HashSet::new();
+        let mut matched_ids = IndexSet::new();
         let mut any_spec_matched = false;
         let mut unmatched_specs = Vec::new();
 
