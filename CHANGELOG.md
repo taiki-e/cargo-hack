@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.37] - 2025-07-11
+
 - Fix `--mutually-exclusive-features` interacting with optional dependencies. ([#276](https://github.com/taiki-e/cargo-hack/pull/276), thanks @xStrom)
 
   This is a re-land of the change added in 0.6.34 but reverted in 0.6.36 due to infinite recursion bug, with the infinite recursion bug fixed.
@@ -546,7 +548,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.36...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.37...HEAD
+[0.6.37]: https://github.com/taiki-e/cargo-hack/compare/v0.6.36...v0.6.37
 [0.6.36]: https://github.com/taiki-e/cargo-hack/compare/v0.6.35...v0.6.36
 [0.6.35]: https://github.com/taiki-e/cargo-hack/compare/v0.6.34...v0.6.35
 [0.6.34]: https://github.com/taiki-e/cargo-hack/compare/v0.6.33...v0.6.34
