@@ -1017,7 +1017,7 @@ For more information try --help",
     )
 }
 
-fn get_help(flag: &str) -> Option<&HelpText<'_>> {
+fn get_help(flag: &str) -> Option<&'static HelpText<'static>> {
     HELP.iter().find(|&(s, l, ..)| *s == flag || *l == flag)
 }
 
@@ -1057,7 +1057,7 @@ fn format_flag(flag: &lexopt::Arg<'_>) -> String {
 #[inline(never)]
 fn multi_arg(flag: &lexopt::Arg<'_>, subcommand: Option<&str>) -> Result<()> {
     let flag = &format_flag(flag);
-    let arg = get_help(flag).map_or_else(|| flag.to_string(), |arg| format!("{} {}", arg.1, arg.2));
+    let arg = get_help(flag).map_or_else(|| flag.clone(), |arg| format!("{} {}", arg.1, arg.2));
     bail!(
         "\
 The argument '{flag}' was provided more than once, but cannot be used multiple times
