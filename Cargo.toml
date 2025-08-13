@@ -1,6 +1,6 @@
 [package]
 name = "cargo-hack"
-version = "0.6.36" #publish:version
+version = "0.6.37" #publish:version
 edition = "2021"
 rust-version = "1.70" # For cargo-config2
 license = "Apache-2.0 OR MIT"
@@ -32,7 +32,7 @@ lexopt = "0.3"
 same-file = "1.0.1"
 serde_json = "1"
 termcolor = "1"
-toml_edit = "0.22.7"
+toml_edit = "0.23"
 glob = "0.3.1"
 indexmap = "2.9.0"
 

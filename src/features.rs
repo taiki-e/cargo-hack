@@ -152,22 +152,34 @@ impl Feature {
     }
 
     pub(crate) fn matches_recursive(&self, s: &str, map: &BTreeMap<String, Vec<String>>) -> bool {
-        fn rec(
+        fn rec<'a>(
             group: &Feature,
-            map: &BTreeMap<String, Vec<String>>,
-            cur: &str,
-            root: &str,
+            map: &'a BTreeMap<String, Vec<String>>,
+            cur: &'a str,
+            traversed: &mut BTreeSet<&'a str>,
         ) -> bool {
+            traversed.insert(cur);
             if let Some(v) = map.get(cur) {
                 for cur in v {
-                    if cur != root && (group.matches(cur) || rec(group, map, cur, root)) {
+                    let fname = if let Some(slash_idx) = cur.find('/') {
+                        // The fname may still have a '?' suffix, which is fine.
+                        // Because in that case it doesn't activate that dependency, so it can be ignored.
+                        let (fname, _) = cur.split_at(slash_idx);
+                        fname
+                    } else {
+                        // Could be 'dep:something', which is fine because it's not a feature.
+                        cur
+                    };
+                    if !traversed.contains(fname)
+                        && (group.matches(fname) || rec(group, map, fname, traversed))
+                    {
                         return true;
                     }
                 }
             }
             false
         }
-        self.matches(s) || rec(self, map, s, s)
+        self.matches(s) || rec(self, map, s, &mut BTreeSet::new())
     }
 }
 
@@ -394,6 +406,52 @@ mod tests {
             vec!["async-std"],
             vec!["a", "async-std"],
             vec!["b", "async-std"]
+        ]);
+
+        let map = map![
+            ("tokio", v![]),
+            ("async-std", v![]),
+            ("a", v!["tokio/full"]),
+            ("b", v!["async-std?/alloc"])
+        ];
+        let list = v!["a", "b", "tokio", "async-std"];
+        let mutually_exclusive_features = [Feature::group(["tokio", "async-std"])];
+        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &map);
+        assert_eq!(filtered, vec![
+            vec!["a"],
+            vec!["b"],
+            vec!["a", "b"],
+            vec!["tokio"],
+            vec!["b", "tokio"],
+            vec!["async-std"],
+            vec!["b", "async-std"]
+        ]);
+
+        let map = map![
+            ("actual", v!["alias"]),
+            ("alias", v!["dep:actual", "actual/feat"]),
+            ("entry", v!["alias"]),
+            ("dummy_a", v![]),
+            ("dummy_b", v![])
+        ];
+        let list = v!["actual", "alias", "entry", "dummy_a", "dummy_b"];
+        let mutually_exclusive_features = [Feature::group(["dummy_a", "dummy_b"])];
+        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &map);
+        assert_eq!(filtered, vec![
+            vec!["actual"],
+            vec!["alias"],
+            vec!["entry"],
+            vec!["actual", "entry"],
+            vec!["dummy_a"],
+            vec!["actual", "dummy_a"],
+            vec!["alias", "dummy_a"],
+            vec!["entry", "dummy_a"],
+            vec!["actual", "entry", "dummy_a"],
+            vec!["dummy_b"],
+            vec!["actual", "dummy_b"],
+            vec!["alias", "dummy_b"],
+            vec!["entry", "dummy_b"],
+            vec!["actual", "entry", "dummy_b"]
         ]);
 
         let map = map![("a", v![]), ("b", v!["a"]), ("c", v![]), ("d", v!["b"])];
