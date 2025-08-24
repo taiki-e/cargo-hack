@@ -4,7 +4,7 @@ use std::{fmt, str::FromStr};
 
 use anyhow::{Context as _, Error, Result, bail};
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Version {
     pub(crate) major: u32,
     pub(crate) minor: u32,
@@ -42,14 +42,14 @@ impl FromStr for Version {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum MaybeVersion {
     Version(Version),
     Msrv,
     Stable,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) struct VersionRange {
     pub(crate) start_inclusive: MaybeVersion,
     pub(crate) end_inclusive: MaybeVersion,
