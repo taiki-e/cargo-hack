@@ -469,7 +469,7 @@ fields of [`cargo metadata`][cargo-metadata].*
 cargo +stable install cargo-hack --locked
 ```
 
-Currently, installing cargo-hack requires rustc 1.70+.
+Currently, installing cargo-hack requires rustc 1.71+.
 
 cargo-hack is usually runnable with Cargo versions older than the Rust version
 required for installation (e.g., `cargo +1.31 hack check`). Currently, to run

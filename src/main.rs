@@ -167,7 +167,7 @@ struct Progress {
 
 impl Progress {
     fn in_partition(&self, partition: &Partition) -> bool {
-        // div_ceil (stabilized at 1.73) can't be used due to MSRV = 1.70...
+        // div_ceil requires Rust 1.73
         let mut chunk_count = self.total / partition.count;
         if self.total % partition.count != 0 {
             chunk_count += 1;
