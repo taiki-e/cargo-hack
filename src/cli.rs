@@ -748,8 +748,8 @@ const HELP: &[HelpText<'_>] = &[
         "Space or comma separated list of features to group",
         &[
             "This treats the specified features as if it were a single feature.",
-            "To specify multiple groups, use this option multiple times: `--group-features a,b \
-         --group-features c,d`",
+            "To specify multiple groups, use this option multiple times: \
+             `--group-features a,b --group-features c,d`",
             "This flag can only be used together with --feature-powerset flag.",
         ],
     ),
@@ -763,8 +763,8 @@ const HELP: &[HelpText<'_>] = &[
         "<FEATURES>...",
         "Space or comma separated list of features to not use together",
         &[
-            "To specify multiple groups, use this option multiple times: `--mutually-exclusive-features \
-         a,b --mutually-exclusive-features c,d`",
+            "To specify multiple groups, use this option multiple times: \
+             `--mutually-exclusive-features a,b --mutually-exclusive-features c,d`",
             "This flag can only be used together with --feature-powerset flag.",
         ],
     ),
@@ -774,8 +774,8 @@ const HELP: &[HelpText<'_>] = &[
         "<FEATURES>...",
         "Space or comma separated list of features. Skips sets of features that don't enable any of the features listed",
         &[
-            "To specify multiple groups, use this option multiple times: `--at-least-one-of a,b \
-         --at-least-one-of c,d`",
+            "To specify multiple groups, use this option multiple times: \
+             `--at-least-one-of a,b --at-least-one-of c,d`",
             "This flag can only be used together with --feature-powerset flag.",
         ],
     ),
