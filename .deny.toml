@@ -22,25 +22,8 @@ build.allow-build-scripts = [
     { name = "proc-macro2" }, # via serde_derive via cargo-config2
     { name = "serde_json" },
     { name = "serde" },
-    { name = "windows_aarch64_gnullvm" }, # via ctrlc & same-file & termcolor
-    { name = "windows_aarch64_msvc" }, # via ctrlc & same-file & termcolor
-    { name = "windows_i686_gnu" }, # via ctrlc & same-file & termcolor
-    { name = "windows_i686_gnullvm" }, # via ctrlc & same-file & termcolor
-    { name = "windows_i686_msvc" }, # via ctrlc & same-file & termcolor
-    { name = "windows_x86_64_gnu" }, # via ctrlc & same-file & termcolor
-    { name = "windows_x86_64_gnullvm" }, # via ctrlc & same-file & termcolor
-    { name = "windows_x86_64_msvc" }, # via ctrlc & same-file & termcolor
 ]
 build.bypass = [
-    # Import libraries are necessary because raw-dylib (requires 1.71+ for x86, 1.65+ for others) is not available on MSRV of them.
-    { name = "windows_aarch64_gnullvm", allow-globs = ["lib/*.a"] }, # via ctrlc & same-file & termcolor
-    { name = "windows_aarch64_msvc", allow-globs = ["lib/*.lib"] }, # via ctrlc & same-file & termcolor
-    { name = "windows_i686_gnu", allow-globs = ["lib/*.a"] }, # via ctrlc & same-file & termcolor
-    { name = "windows_i686_gnullvm", allow-globs = ["lib/*.a"] }, # via ctrlc & same-file & termcolor
-    { name = "windows_i686_msvc", allow-globs = ["lib/*.lib"] }, # via ctrlc & same-file & termcolor
-    { name = "windows_x86_64_gnu", allow-globs = ["lib/*.a"] }, # via ctrlc & same-file & termcolor
-    { name = "windows_x86_64_gnullvm", allow-globs = ["lib/*.a"] }, # via ctrlc & same-file & termcolor
-    { name = "windows_x86_64_msvc", allow-globs = ["lib/*.lib"] }, # via ctrlc & same-file & termcolor
 ]
 
 # https://embarkstudios.github.io/cargo-deny/checks/licenses/cfg.html
