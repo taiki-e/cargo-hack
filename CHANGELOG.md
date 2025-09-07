@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Distribute prebuilt binaries for powerpc64le/riscv64gc/s390x Linux.
+
 ## [0.6.37] - 2025-07-11
 
 - Fix `--mutually-exclusive-features` interacting with optional dependencies. ([#276](https://github.com/taiki-e/cargo-hack/pull/276), thanks @xStrom)
