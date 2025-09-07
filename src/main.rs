@@ -167,12 +167,7 @@ struct Progress {
 
 impl Progress {
     fn in_partition(&self, partition: &Partition) -> bool {
-        // div_ceil requires Rust 1.73
-        let mut chunk_count = self.total / partition.count;
-        if self.total % partition.count != 0 {
-            chunk_count += 1;
-        }
-        let current_index = self.count / chunk_count;
+        let current_index = self.count / self.total.div_ceil(partition.count);
         current_index == partition.index
     }
 }
