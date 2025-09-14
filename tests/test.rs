@@ -2031,3 +2031,37 @@ fn update_readme() {
     let command = "cargo hack --help";
     test_helper::doc::sync_command_output_to_markdown(path, "readme-long-help", command, new);
 }
+
+#[test]
+fn glob_match_specific_packages() {
+    cargo_hack(["build", "--package", "test_*"])
+        .assert_success("glob_matching")
+        .stderr_contains("Compiling test_a v0.1.0")
+        .stderr_contains("Compiling test_b v0.1.0")
+        .stderr_not_contains("Compiling other_c v0.1.0");
+}
+
+#[test]
+fn glob_match_no_packages() {
+    cargo_hack(["build", "--package", "nonexistent_*"])
+        .assert_failure("glob_matching")
+        .stderr_contains("error: package ID specification `nonexistent_*` matched no packages");
+}
+
+#[test]
+fn exact_match_single_package() {
+    cargo_hack(["build", "--package", "test_a"])
+        .assert_success("glob_matching")
+        .stderr_contains("Compiling test_a v0.1.0")
+        .stderr_not_contains("Compiling test_b v0.1.0")
+        .stderr_not_contains("Compiling other_c v0.1.0");
+}
+
+#[test]
+fn glob_match_multiple_patterns() {
+    cargo_hack(["build", "--package", "test_a", "--package", "other_*"])
+        .assert_success("glob_matching")
+        .stderr_contains("Compiling test_a v0.1.0")
+        .stderr_contains("Compiling other_c v0.1.0")
+        .stderr_not_contains("Compiling test_b v0.1.0");
+}
