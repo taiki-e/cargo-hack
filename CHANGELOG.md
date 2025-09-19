@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.39] - 2025-09-19
+
 - Fix bug casing ["feature `...` includes `..`, but `..` is not a dependency" error](https://github.com/taiki-e/cargo-minimal-versions/issues/34).
 
 ## [0.6.38] - 2025-09-07
@@ -554,7 +556,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.38...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.39...HEAD
+[0.6.39]: https://github.com/taiki-e/cargo-hack/compare/v0.6.38...v0.6.39
 [0.6.38]: https://github.com/taiki-e/cargo-hack/compare/v0.6.37...v0.6.38
 [0.6.37]: https://github.com/taiki-e/cargo-hack/compare/v0.6.36...v0.6.37
 [0.6.36]: https://github.com/taiki-e/cargo-hack/compare/v0.6.35...v0.6.36

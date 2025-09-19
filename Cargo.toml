@@ -1,6 +1,6 @@
 [package]
 name = "cargo-hack"
-version = "0.6.38" #publish:version
+version = "0.6.39" #publish:version
 edition = "2021"
 # NB: Sync with the MSRV in "From source" section in README.md.
 rust-version = "1.76" # For toml
