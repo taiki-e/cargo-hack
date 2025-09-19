@@ -3,7 +3,7 @@ name = "cargo-hack"
 version = "0.6.38" #publish:version
 edition = "2021"
 # NB: Sync with the MSRV in "From source" section in README.md.
-rust-version = "1.75" # For ctrlc
+rust-version = "1.76" # For toml
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/taiki-e/cargo-hack"
 keywords = ["cargo", "subcommand", "testing"]
