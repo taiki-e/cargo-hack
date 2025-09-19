@@ -507,7 +507,7 @@ This makes the installation faster and may avoid the impact of [problems caused 
 <!-- omit in toc -->
 ### Via Homebrew
 
-You can install cargo-hack from [homebrew-core](https://formulae.brew.sh/formula/cargo-hack) (x86_64/AArch64 macOS, x86_64 Linux):
+You can install cargo-hack from [homebrew-core](https://formulae.brew.sh/formula/cargo-hack) (x86_64/AArch64 macOS, x86_64/AArch64 Linux):
 
 ```sh
 brew install cargo-hack
