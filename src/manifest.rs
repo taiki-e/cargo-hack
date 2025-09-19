@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     path::Path,
 };
 
@@ -189,13 +189,68 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
 }
 
 fn remove_dev_deps(doc: &mut toml_edit::DocumentMut) {
-    const KEY: &str = "dev-dependencies";
+    // Collect dependency names from [dependencies], [build-dependencies], [target.'...'.dependencies], and [target.'...'.build-dependencies].
+    let mut keeping_features = HashSet::new();
+    let mut collect_features = |table: &dyn toml_edit::TableLike| {
+        for key in ["dependencies", "build-dependencies"] {
+            if let Some(table) = table.get(key).and_then(toml_edit::Item::as_table_like) {
+                keeping_features.reserve(table.len());
+                for (name, _) in table.iter() {
+                    keeping_features.insert(name.to_owned());
+                }
+            }
+        }
+    };
+    let table = doc.as_table();
+    collect_features(table);
+    if let Some(table) = table.get("target").and_then(toml_edit::Item::as_table_like) {
+        for (_, val) in table.iter() {
+            if let Some(table) = val.as_table_like() {
+                collect_features(table);
+            }
+        }
+    }
+
+    // Remove [dev-dependencies] and [target.'...'.dev-dependencies], and collect dependency names from it.
     let table = doc.as_table_mut();
-    table.remove(KEY);
+    let mut removing_features = HashSet::new();
+    let mut remove_dev_deps = |table: &mut dyn toml_edit::TableLike| {
+        let removed = table.remove("dev-dependencies");
+        if let Some(table) = removed.as_ref().and_then(toml_edit::Item::as_table_like) {
+            for (name, _) in table.iter() {
+                if !keeping_features.contains(name) {
+                    removing_features.insert(name.to_owned());
+                }
+            }
+        }
+    };
+    remove_dev_deps(table);
     if let Some(table) = table.get_mut("target").and_then(toml_edit::Item::as_table_like_mut) {
         for (_, val) in table.iter_mut() {
             if let Some(table) = val.as_table_like_mut() {
-                table.remove(KEY);
+                remove_dev_deps(table);
+            }
+        }
+    }
+    drop(keeping_features);
+
+    // Remove dev-dependency-only dependency names from [features].
+    if let Some(table) = table.get_mut("features").and_then(toml_edit::Item::as_table_like_mut) {
+        let mut indices = vec![];
+        for (_, val) in table.iter_mut() {
+            if let Some(array) = val.as_array_mut() {
+                for (i, v) in array.iter().enumerate() {
+                    if let Some(v) = v.as_str() {
+                        if let Some((name, _)) = v.split_once('/') {
+                            if removing_features.contains(name) {
+                                indices.push(i);
+                            }
+                        }
+                    }
+                }
+                for i in indices.drain(..).rev() {
+                    array.remove(i);
+                }
             }
         }
     }
@@ -430,5 +485,36 @@ foo = [
     [\"dev-dependencies\"]
 ]
 "
+    );
+
+    test!(
+        dep_future,
+        r#"
+[features]
+f1 = ["d1/f", "d2/f", "d4/f"]
+f2 = ["d3/f", "d2/f", "d1/f"]
+f3 = ["d2/f"]
+
+[dependencies]
+d1 = "1"
+[target.'cfg(unix)'.dependencies]
+d3 = "1"
+[dev-dependencies]
+d1 = "1"
+d2 = "1"
+[target.'cfg(unix)'.dev-dependencies]
+d4 = "1"
+"#,
+        r#"
+[features]
+f1 = ["d1/f"]
+f2 = ["d3/f", "d1/f"]
+f3 = []
+
+[dependencies]
+d1 = "1"
+[target.'cfg(unix)'.dependencies]
+d3 = "1"
+"#
     );
 }

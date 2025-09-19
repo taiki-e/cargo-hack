@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix bug casing ["feature `...` includes `..`, but `..` is not a dependency" error](https://github.com/taiki-e/cargo-minimal-versions/issues/34).
+
 ## [0.6.38] - 2025-09-07
 
 - Distribute prebuilt binaries for powerpc64le/riscv64gc/s390x Linux.
