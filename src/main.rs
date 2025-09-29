@@ -169,12 +169,7 @@ struct Progress {
 
 impl Progress {
     fn in_partition(&self, partition: &Partition) -> bool {
-        // div_ceil (stabilized at 1.73) can't be used due to MSRV = 1.70...
-        let mut chunk_count = self.total / partition.count;
-        if self.total % partition.count != 0 {
-            chunk_count += 1;
-        }
-        let current_index = self.count / chunk_count;
+        let current_index = self.count / self.total.div_ceil(partition.count);
         current_index == partition.index
     }
 }

@@ -3,7 +3,7 @@
 use std::{
     mem,
     path::PathBuf,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, PoisonError},
 };
 
 use anyhow::Result;
@@ -43,13 +43,13 @@ impl Manager {
 
     /// Registers the given path regardless of the value of `needs_restore`.
     pub(crate) fn register_always(&self, contents: impl Into<Vec<u8>>, path: impl Into<PathBuf>) {
-        let mut files = self.files.lock().unwrap();
+        let mut files = self.files.lock().unwrap_or_else(PoisonError::into_inner);
         files.push(File { contents: contents.into(), path: path.into() });
     }
 
     // This takes `&mut self` instead of `&self` to prevent misuse in multi-thread contexts.
     pub(crate) fn restore_last(&mut self) -> Result<()> {
-        let mut files = self.files.lock().unwrap();
+        let mut files = self.files.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(file) = files.pop() {
             file.restore()?;
         }
@@ -57,7 +57,7 @@ impl Manager {
     }
 
     pub(crate) fn restore_all(&self) {
-        let mut files = self.files.lock().unwrap();
+        let mut files = self.files.lock().unwrap_or_else(PoisonError::into_inner);
         if !files.is_empty() {
             for file in mem::take(&mut *files) {
                 if let Err(e) = file.restore() {

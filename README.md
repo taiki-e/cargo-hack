@@ -469,7 +469,7 @@ fields of [`cargo metadata`][cargo-metadata].*
 cargo +stable install cargo-hack --locked
 ```
 
-Currently, installing cargo-hack requires rustc 1.70+.
+Currently, installing cargo-hack requires rustc 1.76+.
 
 cargo-hack is usually runnable with Cargo versions older than the Rust version
 required for installation (e.g., `cargo +1.31 hack check`). Currently, to run
@@ -479,7 +479,7 @@ cargo-hack requires Cargo 1.26+.
 ### From prebuilt binaries
 
 You can download prebuilt binaries from the [Release page](https://github.com/taiki-e/cargo-hack/releases).
-Prebuilt binaries are available for macOS, Linux (gnu and musl), Windows (static executable), FreeBSD, and illumos.
+Prebuilt binaries are available for Linux (x86_64 gnu/musl, aarch64 gnu/musl, powerpc64le gnu/musl, riscv64gc gnu/musl, and s390x gnu, musl binaries are static executable), macOS (x86_64, aarch64, and universal), Windows (x86_64 and aarch64, static executable), FreeBSD (x86_64), and illumos (x86_64).
 
 <details>
 <summary>Example of script to install from the Release page (click to show)</summary>
@@ -507,7 +507,7 @@ This makes the installation faster and may avoid the impact of [problems caused 
 <!-- omit in toc -->
 ### Via Homebrew
 
-You can install cargo-hack from [homebrew-core](https://formulae.brew.sh/formula/cargo-hack) (x86_64/AArch64 macOS, x86_64 Linux):
+You can install cargo-hack from [homebrew-core](https://formulae.brew.sh/formula/cargo-hack) (x86_64/AArch64 macOS, x86_64/AArch64 Linux):
 
 ```sh
 brew install cargo-hack

@@ -1,8 +1,9 @@
 [package]
 name = "cargo-hack"
-version = "0.6.37" #publish:version
+version = "0.6.39" #publish:version
 edition = "2021"
-rust-version = "1.70" # For cargo-config2
+# NB: Sync with the MSRV in "From source" section in README.md.
+rust-version = "1.76" # For toml
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/taiki-e/cargo-hack"
 keywords = ["cargo", "subcommand", "testing"]
