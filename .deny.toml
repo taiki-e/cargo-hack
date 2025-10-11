@@ -26,6 +26,7 @@ build.allow-build-scripts = [
     { name = "serde" }, # https://github.com/serde-rs/serde/issues/2972
 ]
 build.bypass = [
+    { name = "libc", allow-globs = ["cherry-pick-stable.sh"] },
 ]
 
 # https://embarkstudios.github.io/cargo-deny/checks/licenses/cfg.html
