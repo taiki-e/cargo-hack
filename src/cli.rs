@@ -532,16 +532,24 @@ impl Args {
 
         if let Some(f) = must_have_and_exclude_feature.as_ref() {
             if features.contains(f) {
-                bail!("feature `{f}` specified by both --must-have-and-exclude-feature and --features");
+                bail!(
+                    "feature `{f}` specified by both --must-have-and-exclude-feature and --features"
+                );
             }
             if optional_deps.as_ref().is_some_and(|d| d.contains(f)) {
-                bail!("feature `{f}` specified by both --must-have-and-exclude-feature and --optional-deps");
+                bail!(
+                    "feature `{f}` specified by both --must-have-and-exclude-feature and --optional-deps"
+                );
             }
             if group_features.iter().any(|v| v.matches(f)) {
-                bail!("feature `{f}` specified by both --must-have-and-exclude-feature and --group-features");
+                bail!(
+                    "feature `{f}` specified by both --must-have-and-exclude-feature and --group-features"
+                );
             }
             if include_features.contains(f) {
-                bail!("feature `{f}` specified by both --must-have-and-exclude-feature and --include-features");
+                bail!(
+                    "feature `{f}` specified by both --must-have-and-exclude-feature and --include-features"
+                );
             }
         }
 
@@ -813,11 +821,17 @@ const HELP: &[HelpText<'_>] = &[
         &["This flag can only be used together with either --each-feature flag or \
              --feature-powerset flag."],
     ),
-    ("", "--must-have-and-exclude-feature", "<FEATURE>", "Require the specified feature to be present but excluded", &[
-        "Exclude the specified feature and all other features which depend on it.",
-        "Exclude packages which don't have the specified feature.",
-        "This is useful for doing no_std testing with --must-have-and-exclude-feature std.",
-    ]),
+    (
+        "",
+        "--must-have-and-exclude-feature",
+        "<FEATURE>",
+        "Require the specified feature to be present but excluded",
+        &[
+            "Exclude the specified feature and all other features which depend on it.",
+            "Exclude packages which don't have the specified feature.",
+            "This is useful for doing no_std testing with --must-have-and-exclude-feature std.",
+        ],
+    ),
     ("", "--no-dev-deps", "", "Perform without dev-dependencies", &[
         "Note that this flag removes dev-dependencies from real `Cargo.toml` while cargo-hack is \
          running and restores it when finished.",
