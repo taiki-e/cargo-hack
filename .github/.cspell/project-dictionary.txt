@@ -1,4 +1,5 @@
 binstall
+indexmap
 qpmember
 subcrate
 vvpmember
