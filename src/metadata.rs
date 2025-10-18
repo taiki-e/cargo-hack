@@ -318,7 +318,7 @@ impl Package {
             // This field was added in Rust 1.39.
             publish: if cargo_version >= 39 {
                 // Publishing is unrestricted if null, and forbidden if an empty array.
-                map.remove_nullable("publish", into_array)?.map_or(true, |a| !a.is_empty())
+                map.remove_nullable("publish", into_array)?.is_none_or(|a| !a.is_empty())
             } else {
                 true
             },
