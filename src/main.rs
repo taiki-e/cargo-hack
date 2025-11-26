@@ -197,9 +197,13 @@ fn determine_kind<'a>(
 
     let package = cx.packages(id);
     let pkg_features = cx.pkg_features(id);
+    let recursively_exclude_feature =
+        cx.must_have_and_exclude_feature.as_ref().and_then(|s| pkg_features.get(s));
     let filter = |&f: &&Feature| {
         !cx.exclude_features.iter().any(|s| f == s)
             && !cx.group_features.iter().any(|g| g.matches(f.name()))
+            && !recursively_exclude_feature
+                .is_some_and(|rf| rf.matches_recursive(f.name(), &package.features))
     };
     let features = if cx.include_features.is_empty() {
         // TODO
@@ -337,10 +341,14 @@ fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
             );
         }
     }
+    let has_required_features = |id: &&PackageId| {
+        !cx.must_have_and_exclude_feature.as_ref().is_some_and(|s| !cx.pkg_features(id).contains(s))
+    };
     Ok(if cx.workspace {
         let ids: Vec<_> = cx
             .workspace_members()
             .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
+            .filter(has_required_features)
             .collect();
         let multiple_packages = ids.len() > 1;
         ids.iter().filter_map(|id| determine_kind(cx, id, multiple_packages)).collect()
@@ -357,6 +365,7 @@ fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
             .workspace_members()
             .filter(|id| cx.package.contains(&cx.packages(id).name))
             .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
+            .filter(has_required_features)
             .collect();
         let multiple_packages = ids.len() > 1;
         ids.iter().filter_map(|id| determine_kind(cx, id, multiple_packages)).collect()
@@ -364,6 +373,7 @@ fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
         let ids: Vec<_> = cx
             .workspace_members()
             .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
+            .filter(has_required_features)
             .collect();
         let multiple_packages = ids.len() > 1;
         ids.iter().filter_map(|id| determine_kind(cx, id, multiple_packages)).collect()
@@ -373,6 +383,7 @@ fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
         cx.workspace_members()
             .find(|id| cx.packages(id).name == *current_package)
             .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
+            .filter(has_required_features)
             .and_then(|id| determine_kind(cx, id, multiple_packages).map(|p| vec![p]))
             .unwrap_or_default()
     })
