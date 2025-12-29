@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Update `toml_edit` to 0.24. This includes TOML 1.1 parse support.
+
 ## [0.6.39] - 2025-09-19
 
 - Fix bug casing ["feature `...` includes `..`, but `..` is not a dependency" error](https://github.com/taiki-e/cargo-minimal-versions/issues/34).
