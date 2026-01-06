@@ -1,6 +1,6 @@
 [package]
 name = "cargo-hack"
-version = "0.6.40" #publish:version
+version = "0.6.41" #publish:version
 edition = "2021"
 # NB: Sync with the MSRV in "From source" section in README.md.
 rust-version = "1.82" # For indexmap
