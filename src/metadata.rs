@@ -52,7 +52,7 @@ impl Metadata {
         restore: &mut restore::Manager,
     ) -> Result<Self> {
         let stable_cargo_version =
-            cargo::version(cmd!("rustup", "run", "stable", "cargo")).map(|v| v.minor).unwrap_or(0);
+            cargo::version(cmd!("rustup", "run", "stable", "cargo")).map_or(0, |v| v.minor);
 
         let config;
         let include_deps_features = if args.include_deps_features {

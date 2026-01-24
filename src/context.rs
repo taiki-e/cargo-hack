@@ -42,8 +42,7 @@ impl Context {
         // If failed to determine cargo version, assign 0 to skip all version-dependent decisions.
         let cargo_version = cargo::version(cmd!(&cargo))
             .map_err(|e| warn!("unable to determine cargo version: {e:#}"))
-            .map(|v| v.minor)
-            .unwrap_or(0);
+            .map_or(0, |v| v.minor);
 
         // if `--remove-dev-deps` flag is off, restore manifest file.
         let mut restore = restore::Manager::new(!args.remove_dev_deps);
