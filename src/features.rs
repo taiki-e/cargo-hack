@@ -18,10 +18,10 @@ impl Features {
     pub(crate) fn new(
         metadata: &Metadata,
         manifest: &Manifest,
-        id: &PackageId,
+        id: PackageId,
         include_deps_features: bool,
     ) -> Self {
-        let package = &metadata.packages[id];
+        let package = &metadata[id];
 
         let mut features: Vec<_> = manifest.features.keys().map(Feature::from).collect();
         let mut referenced_deps = BTreeSet::new(); // referenced in features with `dep:` prefix
@@ -48,13 +48,13 @@ impl Features {
         let deps_features_start = features.len();
 
         if include_deps_features {
-            let node = &metadata.resolve.nodes[id];
+            let node = &metadata.resolve.nodes[&id];
             // TODO: Unpublished dependencies are not included in `node.deps`.
             for dep in node.deps.iter().filter(|dep| {
                 // ignore if `dep_kinds` is empty (i.e., not Rust 1.41+), target specific or not a normal dependency.
                 dep.dep_kinds.iter().any(|kind| kind.kind.is_none() && kind.target.is_none())
             }) {
-                let dep_package = &metadata.packages[&dep.pkg];
+                let dep_package = &metadata[dep.pkg];
                 // TODO: `dep.name` (`resolve.nodes[].deps[].name`) is a valid rust identifier, not a valid feature flag.
                 // And `packages[].dependencies` doesn't have package identifier,
                 // so I'm not sure if there is a way to find the actual feature name exactly.

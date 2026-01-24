@@ -61,12 +61,12 @@ impl Context {
         let mut manifests = HashMap::with_capacity(metadata.workspace_members.len());
         let mut pkg_features = HashMap::with_capacity(metadata.workspace_members.len());
 
-        for id in &metadata.workspace_members {
-            let manifest_path = &metadata.packages[id].manifest_path;
+        for &id in &metadata.workspace_members {
+            let manifest_path = &metadata[id].manifest_path;
             let manifest = Manifest::new(manifest_path, metadata.cargo_version)?;
             let features = Features::new(&metadata, &manifest, id, args.include_deps_features);
-            manifests.insert(id.clone(), manifest);
-            pkg_features.insert(id.clone(), features);
+            manifests.insert(id, manifest);
+            pkg_features.insert(id, features);
         }
 
         let mut cmd = cmd!(&cargo, "locate-project");
@@ -81,12 +81,12 @@ impl Context {
                 .with_context(|| format!("failed to parse output from {cmd}"))?;
         let locate_project = Path::new(locate_project["root"].as_str().unwrap());
         let mut current_package = None;
-        for id in &metadata.workspace_members {
-            let manifest_path = &metadata.packages[id].manifest_path;
+        for &id in &metadata.workspace_members {
+            let manifest_path = &metadata[id].manifest_path;
             // no need to use same_file as cargo-metadata and cargo-locate-project
             // as they return absolute paths resolved in the same way.
             if locate_project == manifest_path {
-                current_package = Some(id.clone());
+                current_package = Some(id);
                 break;
             }
         }
@@ -116,31 +116,31 @@ impl Context {
 
     // Accessor methods.
 
-    pub(crate) fn packages(&self, id: &PackageId) -> &Package {
-        &self.metadata.packages[id]
+    pub(crate) fn packages(&self, id: PackageId) -> &Package {
+        &self.metadata[id]
     }
 
     pub(crate) fn workspace_members(&self) -> impl ExactSizeIterator<Item = &PackageId> {
         self.metadata.workspace_members.iter()
     }
 
-    pub(crate) fn current_package(&self) -> Option<&PackageId> {
-        self.current_package.as_ref()
+    pub(crate) fn current_package(&self) -> Option<PackageId> {
+        self.current_package
     }
 
     pub(crate) fn workspace_root(&self) -> &Path {
         &self.metadata.workspace_root
     }
 
-    pub(crate) fn manifests(&self, id: &PackageId) -> &Manifest {
-        &self.manifests[id]
+    pub(crate) fn manifests(&self, id: PackageId) -> &Manifest {
+        &self.manifests[&id]
     }
 
-    pub(crate) fn pkg_features(&self, id: &PackageId) -> &Features {
-        &self.pkg_features[id]
+    pub(crate) fn pkg_features(&self, id: PackageId) -> &Features {
+        &self.pkg_features[&id]
     }
 
-    pub(crate) fn is_private(&self, id: &PackageId) -> bool {
+    pub(crate) fn is_private(&self, id: PackageId) -> bool {
         if self.metadata.cargo_version >= 39 {
             !self.packages(id).publish
         } else {
@@ -148,7 +148,7 @@ impl Context {
         }
     }
 
-    pub(crate) fn rust_version(&self, id: &PackageId) -> Option<&str> {
+    pub(crate) fn rust_version(&self, id: PackageId) -> Option<&str> {
         if self.metadata.cargo_version >= 58 {
             self.packages(id).rust_version.as_deref()
         } else {
@@ -156,7 +156,7 @@ impl Context {
         }
     }
 
-    pub(crate) fn name_verbose(&self, id: &PackageId) -> Cow<'_, str> {
+    pub(crate) fn name_verbose(&self, id: PackageId) -> Cow<'_, str> {
         let package = self.packages(id);
         if term::verbose() {
             Cow::Owned(format!(

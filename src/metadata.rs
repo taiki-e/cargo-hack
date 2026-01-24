@@ -9,8 +9,8 @@
 use std::{
     collections::{BTreeMap, HashMap},
     ffi::OsStr,
+    ops,
     path::{Path, PathBuf},
-    rc::Rc,
 };
 
 use anyhow::{Context as _, Result, format_err};
@@ -23,15 +23,10 @@ type Object = Map<String, Value>;
 type ParseResult<T> = Result<T, &'static str>;
 
 /// An opaque unique identifier for referring to the package.
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
 pub(crate) struct PackageId {
-    repr: Rc<str>,
-}
-
-impl From<String> for PackageId {
-    fn from(repr: String) -> Self {
-        Self { repr: repr.into() }
-    }
+    index: usize,
 }
 
 pub(crate) struct Metadata {
@@ -39,7 +34,7 @@ pub(crate) struct Metadata {
     /// List of all packages in the workspace and all feature-enabled dependencies.
     //
     /// This doesn't contain dependencies if cargo-metadata is run with --no-deps.
-    pub(crate) packages: HashMap<PackageId, Package>,
+    pub(crate) packages: Box<[Package]>,
     /// List of members of the workspace.
     pub(crate) workspace_members: Vec<PackageId>,
     /// The resolved dependency graph for the entire workspace.
@@ -152,25 +147,40 @@ impl Metadata {
     }
 
     fn from_obj(mut map: Object, cargo_version: u32) -> ParseResult<Self> {
+        let raw_packages = map.remove_array("packages")?;
+        let mut packages = Vec::with_capacity(raw_packages.len());
+        let mut pkg_id_map = HashMap::with_capacity(raw_packages.len());
+        for (i, pkg) in raw_packages.into_iter().enumerate() {
+            let (id, pkg) = Package::from_value(pkg, cargo_version)?;
+            pkg_id_map.insert(id, i);
+            packages.push(pkg);
+        }
         let workspace_members: Vec<_> = map
             .remove_array("workspace_members")?
             .into_iter()
-            .map(|v| into_string(v).ok_or("workspace_members"))
+            .map(|v| -> ParseResult<_> {
+                let id: String = into_string(v).ok_or("workspace_members")?;
+                Ok(PackageId { index: pkg_id_map[&id] })
+            })
             .collect::<Result<_, _>>()?;
         Ok(Self {
             cargo_version,
-            packages: map
-                .remove_array("packages")?
-                .into_iter()
-                .map(|v| Package::from_value(v, cargo_version))
-                .collect::<Result<_, _>>()?,
+            packages: packages.into_boxed_slice(),
             workspace_members,
             resolve: match map.remove_nullable("resolve", into_object)? {
-                Some(resolve) => Resolve::from_obj(resolve, cargo_version)?,
+                Some(resolve) => Resolve::from_obj(resolve, &pkg_id_map, cargo_version)?,
                 None => Resolve { nodes: HashMap::default() },
             },
             workspace_root: map.remove_string("workspace_root")?,
         })
+    }
+}
+
+impl ops::Index<PackageId> for Metadata {
+    type Output = Package;
+    #[inline]
+    fn index(&self, index: PackageId) -> &Self::Output {
+        &self.packages[index.index]
     }
 }
 
@@ -183,14 +193,20 @@ pub(crate) struct Resolve {
 }
 
 impl Resolve {
-    fn from_obj(mut map: Object, cargo_version: u32) -> ParseResult<Self> {
-        Ok(Self {
-            nodes: map
-                .remove_array("nodes")?
-                .into_iter()
-                .map(|v| Node::from_value(v, cargo_version))
-                .collect::<Result<_, _>>()?,
-        })
+    fn from_obj(
+        mut map: Object,
+        pkg_id_map: &HashMap<String, usize>,
+        cargo_version: u32,
+    ) -> ParseResult<Self> {
+        let nodes = map
+            .remove_array("nodes")?
+            .into_iter()
+            .map(|v| -> ParseResult<_> {
+                let (id, node) = Node::from_value(v, pkg_id_map, cargo_version)?;
+                Ok((PackageId { index: pkg_id_map[&id] }, node))
+            })
+            .collect::<Result<_, _>>()?;
+        Ok(Self { nodes })
     }
 }
 
@@ -203,7 +219,11 @@ pub(crate) struct Node {
 }
 
 impl Node {
-    fn from_value(mut value: Value, cargo_version: u32) -> ParseResult<(PackageId, Self)> {
+    fn from_value(
+        mut value: Value,
+        pkg_id_map: &HashMap<String, usize>,
+        cargo_version: u32,
+    ) -> ParseResult<(String, Self)> {
         let map = value.as_object_mut().ok_or("nodes")?;
 
         let id = map.remove_string("id")?;
@@ -212,7 +232,7 @@ impl Node {
             deps: if cargo_version >= 30 {
                 map.remove_array("deps")?
                     .into_iter()
-                    .map(|v| NodeDep::from_value(v, cargo_version))
+                    .map(|v| NodeDep::from_value(v, pkg_id_map, cargo_version))
                     .collect::<Result<_, _>>()?
             } else {
                 vec![]
@@ -232,11 +252,16 @@ pub(crate) struct NodeDep {
 }
 
 impl NodeDep {
-    fn from_value(mut value: Value, cargo_version: u32) -> ParseResult<Self> {
+    fn from_value(
+        mut value: Value,
+        pkg_id_map: &HashMap<String, usize>,
+        cargo_version: u32,
+    ) -> ParseResult<Self> {
         let map = value.as_object_mut().ok_or("deps")?;
 
+        let id: String = map.remove_string("pkg")?;
         Ok(Self {
-            pkg: map.remove_string("pkg")?,
+            pkg: PackageId { index: pkg_id_map[&id] },
             // This field was added in Rust 1.41.
             dep_kinds: if cargo_version >= 41 {
                 map.remove_array("dep_kinds")?
@@ -292,7 +317,7 @@ pub(crate) struct Package {
 }
 
 impl Package {
-    fn from_value(mut value: Value, cargo_version: u32) -> ParseResult<(PackageId, Self)> {
+    fn from_value(mut value: Value, cargo_version: u32) -> ParseResult<(String, Self)> {
         let map = value.as_object_mut().ok_or("packages")?;
 
         let id = map.remove_string("id")?;

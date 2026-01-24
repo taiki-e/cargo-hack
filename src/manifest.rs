@@ -109,7 +109,7 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
         let root_manifest = &workspace_root.join("Cargo.toml");
         let mut root_id = None;
         let mut private_crates = BTreeSet::new();
-        for id in &cx.metadata.workspace_members {
+        for &id in &cx.metadata.workspace_members {
             let package = cx.packages(id);
             let manifest_path = &*package.manifest_path;
             let is_root = manifest_path == root_manifest;

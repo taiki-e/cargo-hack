@@ -179,11 +179,7 @@ enum Kind<'a> {
     Powerset { features: Vec<Vec<&'a Feature>> },
 }
 
-fn determine_kind<'a>(
-    cx: &'a Context,
-    id: &'a PackageId,
-    multiple_packages: bool,
-) -> Option<PackageRuns<'a>> {
+fn determine_kind(cx: &Context, id: PackageId, multiple_packages: bool) -> Option<PackageRuns<'_>> {
     assert!(cx.subcommand.is_some());
     if cx.ignore_private && cx.is_private(id) {
         info!("skipped running on private package `{}`", cx.name_verbose(id));
@@ -323,14 +319,14 @@ fn determine_kind<'a>(
 
 #[derive(Clone)]
 struct PackageRuns<'a> {
-    id: &'a PackageId,
+    id: PackageId,
     kind: Kind<'a>,
     feature_count: usize,
 }
 
 fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
     for spec in &cx.exclude {
-        if !cx.workspace_members().any(|id| cx.packages(id).name == *spec) {
+        if !cx.workspace_members().any(|&id| cx.packages(id).name == *spec) {
             warn!(
                 "excluded package(s) `{spec}` not found in workspace `{}`",
                 cx.workspace_root().display()
@@ -340,40 +336,40 @@ fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
     Ok(if cx.workspace {
         let ids: Vec<_> = cx
             .workspace_members()
-            .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
+            .filter(|&&id| !cx.exclude.contains(&cx.packages(id).name))
             .collect();
         let multiple_packages = ids.len() > 1;
-        ids.iter().filter_map(|id| determine_kind(cx, id, multiple_packages)).collect()
+        ids.iter().filter_map(|&&id| determine_kind(cx, id, multiple_packages)).collect()
     } else if !cx.package.is_empty() {
         if let Some(spec) = cx
             .package
             .iter()
-            .find(|&spec| !cx.workspace_members().any(|id| cx.packages(id).name == *spec))
+            .find(|&spec| !cx.workspace_members().any(|&id| cx.packages(id).name == *spec))
         {
             bail!("package ID specification `{spec}` matched no packages")
         }
 
         let ids: Vec<_> = cx
             .workspace_members()
-            .filter(|id| cx.package.contains(&cx.packages(id).name))
-            .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
+            .filter(|&&id| cx.package.contains(&cx.packages(id).name))
+            .filter(|&&id| !cx.exclude.contains(&cx.packages(id).name))
             .collect();
         let multiple_packages = ids.len() > 1;
-        ids.iter().filter_map(|id| determine_kind(cx, id, multiple_packages)).collect()
+        ids.iter().filter_map(|&&id| determine_kind(cx, id, multiple_packages)).collect()
     } else if cx.current_package().is_none() {
         let ids: Vec<_> = cx
             .workspace_members()
-            .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
+            .filter(|&&id| !cx.exclude.contains(&cx.packages(id).name))
             .collect();
         let multiple_packages = ids.len() > 1;
-        ids.iter().filter_map(|id| determine_kind(cx, id, multiple_packages)).collect()
+        ids.iter().filter_map(|&&id| determine_kind(cx, id, multiple_packages)).collect()
     } else {
         let current_package = &cx.packages(cx.current_package().unwrap()).name;
         let multiple_packages = false;
         cx.workspace_members()
-            .find(|id| cx.packages(id).name == *current_package)
-            .filter(|id| !cx.exclude.contains(&cx.packages(id).name))
-            .and_then(|id| determine_kind(cx, id, multiple_packages).map(|p| vec![p]))
+            .find(|&&id| cx.packages(id).name == *current_package)
+            .filter(|&&id| !cx.exclude.contains(&cx.packages(id).name))
+            .and_then(|&id| determine_kind(cx, id, multiple_packages).map(|p| vec![p]))
             .unwrap_or_default()
     })
 }
@@ -475,7 +471,7 @@ fn exec_on_packages(
 
 fn exec_on_package(
     cx: &Context,
-    id: &PackageId,
+    id: PackageId,
     kind: &Kind<'_>,
     line: &ProcessBuilder<'_>,
     progress: &mut Progress,
@@ -575,7 +571,7 @@ fn exec_on_package(
 
 fn exec_cargo_with_features(
     cx: &Context,
-    id: &PackageId,
+    id: PackageId,
     line: &ProcessBuilder<'_>,
     progress: &mut Progress,
     keep_going: &mut KeepGoing,
@@ -670,7 +666,7 @@ impl FromStr for Partition {
 
 fn exec_cargo(
     cx: &Context,
-    id: &PackageId,
+    id: PackageId,
     line: &ProcessBuilder<'_>,
     progress: &mut Progress,
     keep_going: &mut KeepGoing,
@@ -694,7 +690,7 @@ fn exec_cargo(
 
 fn exec_cargo_inner(
     cx: &Context,
-    id: &PackageId,
+    id: PackageId,
     line: &ProcessBuilder<'_>,
     progress: &mut Progress,
 ) -> Result<()> {
@@ -723,7 +719,7 @@ fn exec_cargo_inner(
     line.run()
 }
 
-fn cargo_clean(cx: &Context, id: Option<&PackageId>) -> Result<()> {
+fn cargo_clean(cx: &Context, id: Option<PackageId>) -> Result<()> {
     let mut line = cx.cargo();
     line.arg("clean");
     if cx.locked {
@@ -756,7 +752,7 @@ fn print_command(mut line: ProcessBuilder<'_>) {
 
 fn log_and_update_progress(
     cx: &Context,
-    id: &PackageId,
+    id: PackageId,
     line: &ProcessBuilder<'_>,
     progress: &mut Progress,
     action: &str,
