@@ -326,7 +326,7 @@ struct PackageRuns<'a> {
 
 fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
     for spec in &cx.exclude {
-        if !cx.workspace_members().any(|&id| cx.packages(id).name == *spec) {
+        if !cx.workspace_members().any(|&id| *cx.packages(id).name == **spec) {
             warn!(
                 "excluded package(s) `{spec}` not found in workspace `{}`",
                 cx.workspace_root().display()
@@ -336,7 +336,7 @@ fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
     Ok(if cx.workspace {
         let ids: Vec<_> = cx
             .workspace_members()
-            .filter(|&&id| !cx.exclude.contains(&cx.packages(id).name))
+            .filter(|&&id| !cx.exclude.iter().any(|e| *cx.packages(id).name == **e))
             .collect();
         let multiple_packages = ids.len() > 1;
         ids.iter().filter_map(|&&id| determine_kind(cx, id, multiple_packages)).collect()
@@ -344,22 +344,22 @@ fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
         if let Some(spec) = cx
             .package
             .iter()
-            .find(|&spec| !cx.workspace_members().any(|&id| cx.packages(id).name == *spec))
+            .find(|&spec| !cx.workspace_members().any(|&id| *cx.packages(id).name == **spec))
         {
             bail!("package ID specification `{spec}` matched no packages")
         }
 
         let ids: Vec<_> = cx
             .workspace_members()
-            .filter(|&&id| cx.package.contains(&cx.packages(id).name))
-            .filter(|&&id| !cx.exclude.contains(&cx.packages(id).name))
+            .filter(|&&id| cx.package.iter().any(|p| *cx.packages(id).name == **p))
+            .filter(|&&id| !cx.exclude.iter().any(|e| *cx.packages(id).name == **e))
             .collect();
         let multiple_packages = ids.len() > 1;
         ids.iter().filter_map(|&&id| determine_kind(cx, id, multiple_packages)).collect()
     } else if cx.current_package().is_none() {
         let ids: Vec<_> = cx
             .workspace_members()
-            .filter(|&&id| !cx.exclude.contains(&cx.packages(id).name))
+            .filter(|&&id| !cx.exclude.iter().any(|e| *cx.packages(id).name == **e))
             .collect();
         let multiple_packages = ids.len() > 1;
         ids.iter().filter_map(|&&id| determine_kind(cx, id, multiple_packages)).collect()
@@ -368,7 +368,7 @@ fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
         let multiple_packages = false;
         cx.workspace_members()
             .find(|&&id| cx.packages(id).name == *current_package)
-            .filter(|&&id| !cx.exclude.contains(&cx.packages(id).name))
+            .filter(|&&id| !cx.exclude.iter().any(|e| *cx.packages(id).name == **e))
             .and_then(|&id| determine_kind(cx, id, multiple_packages).map(|p| vec![p]))
             .unwrap_or_default()
     })
@@ -676,11 +676,11 @@ fn exec_cargo(
         if let Err(e) = res {
             error!("{e:#}");
             keep_going.count = keep_going.count.saturating_add(1);
-            let name = cx.packages(id).name.clone();
-            if !keep_going.failed_commands.contains_key(&name) {
-                keep_going.failed_commands.insert(name.clone(), vec![]);
+            let name = &*cx.packages(id).name;
+            if !keep_going.failed_commands.contains_key(name) {
+                keep_going.failed_commands.insert(name.to_owned(), vec![]);
             }
-            keep_going.failed_commands.get_mut(&name).unwrap().push(format!("{line:#}"));
+            keep_going.failed_commands.get_mut(name).unwrap().push(format!("{line:#}"));
         }
         Ok(())
     } else {
@@ -727,7 +727,7 @@ fn cargo_clean(cx: &Context, id: Option<PackageId>) -> Result<()> {
     }
     if let Some(id) = id {
         line.arg("--package");
-        line.arg(&cx.packages(id).name);
+        line.arg(&*cx.packages(id).name);
     }
 
     if cx.print_command_list {

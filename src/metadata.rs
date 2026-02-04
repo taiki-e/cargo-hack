@@ -36,7 +36,7 @@ pub(crate) struct Metadata {
     /// This doesn't contain dependencies if cargo-metadata is run with --no-deps.
     pub(crate) packages: Box<[Package]>,
     /// List of members of the workspace.
-    pub(crate) workspace_members: Vec<PackageId>,
+    pub(crate) workspace_members: Box<[PackageId]>,
     /// The resolved dependency graph for the entire workspace.
     pub(crate) resolve: Resolve,
     /// The absolute path to the root of the workspace.
@@ -155,7 +155,7 @@ impl Metadata {
             pkg_id_map.insert(id, i);
             packages.push(pkg);
         }
-        let workspace_members: Vec<_> = map
+        let workspace_members = map
             .remove_array("workspace_members")?
             .into_iter()
             .map(|v| -> ParseResult<_> {
@@ -163,14 +163,15 @@ impl Metadata {
                 Ok(PackageId { index: pkg_id_map[&id] })
             })
             .collect::<Result<_, _>>()?;
+        let resolve = match map.remove_nullable("resolve", into_object)? {
+            Some(resolve) => Resolve::from_obj(resolve, &pkg_id_map, cargo_version)?,
+            None => Resolve { nodes: HashMap::default() },
+        };
         Ok(Self {
             cargo_version,
             packages: packages.into_boxed_slice(),
             workspace_members,
-            resolve: match map.remove_nullable("resolve", into_object)? {
-                Some(resolve) => Resolve::from_obj(resolve, &pkg_id_map, cargo_version)?,
-                None => Resolve { nodes: HashMap::default() },
-            },
+            resolve,
             workspace_root: map.remove_string("workspace_root")?,
         })
     }
@@ -215,7 +216,7 @@ pub(crate) struct Node {
     /// The dependencies of this package.
     ///
     /// This is always empty if running with a version of Cargo older than 1.30.
-    pub(crate) deps: Vec<NodeDep>,
+    pub(crate) deps: Box<[NodeDep]>,
 }
 
 impl Node {
@@ -235,7 +236,7 @@ impl Node {
                     .map(|v| NodeDep::from_value(v, pkg_id_map, cargo_version))
                     .collect::<Result<_, _>>()?
             } else {
-                vec![]
+                Box::default()
             },
         }))
     }
@@ -248,7 +249,7 @@ pub(crate) struct NodeDep {
     /// The kinds of dependencies.
     ///
     /// This is always empty if running with a version of Cargo older than 1.41.
-    pub(crate) dep_kinds: Vec<DepKindInfo>,
+    pub(crate) dep_kinds: Box<[DepKindInfo]>,
 }
 
 impl NodeDep {
@@ -269,7 +270,7 @@ impl NodeDep {
                     .map(DepKindInfo::from_value)
                     .collect::<Result<_, _>>()?
             } else {
-                vec![]
+                Box::default()
             },
         })
     }
@@ -278,10 +279,10 @@ impl NodeDep {
 /// Information about a dependency kind.
 pub(crate) struct DepKindInfo {
     /// The kind of dependency.
-    pub(crate) kind: Option<String>,
+    pub(crate) kind: Option<Box<str>>,
     /// The target platform for the dependency.
     /// This is `None` if it is not a target dependency.
-    pub(crate) target: Option<String>,
+    pub(crate) target: Option<Box<str>>,
 }
 
 impl DepKindInfo {
@@ -297,15 +298,15 @@ impl DepKindInfo {
 
 pub(crate) struct Package {
     /// The name of the package.
-    pub(crate) name: String,
+    pub(crate) name: Box<str>,
     // /// The version of the package.
-    // pub(crate) version: String,
+    // pub(crate) version: Box<str>,
     /// List of dependencies of this particular package.
-    pub(crate) dependencies: Vec<Dependency>,
+    pub(crate) dependencies: Box<[Dependency]>,
     /// Features provided by the crate, mapped to the features required by that feature.
-    pub(crate) features: BTreeMap<String, Vec<String>>,
+    pub(crate) features: BTreeMap<Box<str>, Box<[Box<str>]>>,
     /// Absolute path to this package's manifest.
-    pub(crate) manifest_path: PathBuf,
+    pub(crate) manifest_path: Box<Path>,
     /// List of registries to which this package may be published.
     ///
     /// This is always `true` if running with a version of Cargo older than 1.39.
@@ -313,7 +314,7 @@ pub(crate) struct Package {
     /// The minimum supported Rust version of this package.
     ///
     /// This is always `None` if running with a version of Cargo older than 1.58.
-    pub(crate) rust_version: Option<String>,
+    pub(crate) rust_version: Option<Box<str>>,
 }
 
 impl Package {
@@ -334,12 +335,14 @@ impl Package {
                 .into_iter()
                 .map(|(k, v)| {
                     into_array(v)
-                        .and_then(|v| v.into_iter().map(into_string).collect::<Option<_>>())
-                        .map(|v| (k, v))
+                        .and_then(|v| {
+                            v.into_iter().map(into_string::<Box<str>>).collect::<Option<_>>()
+                        })
+                        .map(|v| (k.into_boxed_str(), v))
                 })
                 .collect::<Option<_>>()
                 .ok_or("features")?,
-            manifest_path: map.remove_string("manifest_path")?,
+            manifest_path: map.remove_string::<PathBuf>("manifest_path")?.into_boxed_path(),
             // This field was added in Rust 1.39.
             publish: if cargo_version >= 39 {
                 // Publishing is unrestricted if null, and forbidden if an empty array.
@@ -364,21 +367,21 @@ impl Package {
 /// A dependency of the main crate.
 pub(crate) struct Dependency {
     /// The name of the dependency.
-    pub(crate) name: String,
+    pub(crate) name: Box<str>,
     // /// The version requirement for the dependency.
-    // pub(crate) req: String,
+    // pub(crate) req: Box<str>,
     /// Whether or not this is an optional dependency.
     pub(crate) optional: bool,
     // TODO: support this
     // /// The target platform for the dependency.
     // /// This is `None` if it is not a target dependency.
-    // pub(crate) target: Option<String>,
+    // pub(crate) target: Option<Box<str>>,
     /// If the dependency is renamed, this is the new name for the dependency
     /// as a string.
     /// This is `None` if it is not renamed.
     ///
     /// This is always `None` if running with a version of Cargo older than 1.26.
-    pub(crate) rename: Option<String>,
+    pub(crate) rename: Option<Box<str>>,
 }
 
 impl Dependency {

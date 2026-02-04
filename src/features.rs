@@ -151,10 +151,14 @@ impl Feature {
         self.as_group().iter().any(|n| **n == *s)
     }
 
-    pub(crate) fn matches_recursive(&self, s: &str, map: &BTreeMap<String, Vec<String>>) -> bool {
+    pub(crate) fn matches_recursive(
+        &self,
+        s: &str,
+        map: &BTreeMap<Box<str>, Box<[Box<str>]>>,
+    ) -> bool {
         fn rec<'a>(
             group: &Feature,
-            map: &'a BTreeMap<String, Vec<String>>,
+            map: &'a BTreeMap<Box<str>, Box<[Box<str>]>>,
             cur: &'a str,
             traversed: &mut BTreeSet<&'a str>,
         ) -> bool {
@@ -212,7 +216,7 @@ pub(crate) fn feature_powerset<'a>(
     depth: Option<usize>,
     at_least_one_of: &[Feature],
     mutually_exclusive_features: &[Feature],
-    package_features: &BTreeMap<String, Vec<String>>,
+    package_features: &BTreeMap<Box<str>, Box<[Box<str>]>>,
 ) -> Vec<Vec<&'a Feature>> {
     let deps_map = feature_deps(package_features);
     let at_least_one_of = at_least_one_of_for_package(at_least_one_of, &deps_map);
@@ -255,9 +259,9 @@ pub(crate) fn feature_powerset<'a>(
         .collect()
 }
 
-fn feature_deps(map: &BTreeMap<String, Vec<String>>) -> BTreeMap<&str, BTreeSet<&str>> {
+fn feature_deps(map: &BTreeMap<Box<str>, Box<[Box<str>]>>) -> BTreeMap<&str, BTreeSet<&str>> {
     fn rec<'a>(
-        map: &'a BTreeMap<String, Vec<String>>,
+        map: &'a BTreeMap<Box<str>, Box<[Box<str>]>>,
         set: &mut BTreeSet<&'a str>,
         cur: &str,
         root: &str,
@@ -268,7 +272,7 @@ fn feature_deps(map: &BTreeMap<String, Vec<String>>) -> BTreeMap<&str, BTreeSet<
                 if cur.starts_with("dep:") {
                     continue;
                 }
-                if cur != root && set.insert(cur) {
+                if &**cur != root && set.insert(cur) {
                     rec(map, set, cur, root);
                 }
             }
@@ -345,7 +349,7 @@ mod tests {
 
     macro_rules! map {
         ($(($key:expr, $value:expr)),* $(,)?) => {
-            BTreeMap::from_iter([$(($key.into(), $value)),*])
+            BTreeMap::from_iter([$(($key.into(), $value.into())),*])
         };
     }
 

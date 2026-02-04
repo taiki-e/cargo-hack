@@ -81,7 +81,7 @@ impl Context {
         let locate_project = Path::new(locate_project["root"].as_str().unwrap());
         let mut current_package = None;
         for &id in &metadata.workspace_members {
-            let manifest_path = &metadata[id].manifest_path;
+            let manifest_path = &*metadata[id].manifest_path;
             // no need to use same_file as cargo-metadata and cargo-locate-project
             // as they return absolute paths resolved in the same way.
             if locate_project == manifest_path {
