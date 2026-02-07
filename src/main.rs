@@ -36,7 +36,7 @@ use crate::{
     metadata::PackageId,
     process::ProcessBuilder,
     rustup::Rustup,
-    version::{Version, VersionRange},
+    version::{MaybeVersion, Version, VersionRange},
 };
 
 fn main() -> ExitCode {
@@ -89,7 +89,9 @@ fn try_main() -> Result<()> {
                             continue;
                         }
                         if !seen {
-                            if Some(*cargo_version) != msrv {
+                            if range.start_inclusive == MaybeVersion::Msrv
+                                && Some(*cargo_version) != msrv
+                            {
                                 if let Some(msrv) = msrv {
                                     versions.entry(msrv).or_insert_with(Vec::new).push(pkg.clone());
                                 }

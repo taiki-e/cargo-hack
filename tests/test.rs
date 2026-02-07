@@ -1524,6 +1524,15 @@ fn version_range() {
             running `rustup run 1.76 cargo check --locked` on real (7/7)
             ",
     );
+
+    cargo_hack(["check", "--version-range", "1.92..=1.93"])
+        .assert_success("rust-version")
+        .stderr_contains(
+            "
+            running `rustup run 1.92 cargo check` on real (1/2)
+            running `rustup run 1.93 cargo check` on real (2/2)
+            ",
+        );
 }
 
 #[test]
