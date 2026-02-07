@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.42] - 2026-02-07
+
 - Fix bug where start of `--version-range` is being ignored when `rust-version` field is set.
 
 ## [0.6.41] - 2026-01-06
@@ -566,7 +568,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.41...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.42...HEAD
+[0.6.42]: https://github.com/taiki-e/cargo-hack/compare/v0.6.41...v0.6.42
 [0.6.41]: https://github.com/taiki-e/cargo-hack/compare/v0.6.40...v0.6.41
 [0.6.40]: https://github.com/taiki-e/cargo-hack/compare/v0.6.39...v0.6.40
 [0.6.39]: https://github.com/taiki-e/cargo-hack/compare/v0.6.38...v0.6.39
