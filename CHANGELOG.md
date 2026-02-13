@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Update `toml_edit` to 0.25.
+
 ## [0.6.42] - 2026-02-07
 
 - Fix bug where start of `--version-range` is being ignored when `rust-version` field is set.
