@@ -77,8 +77,10 @@ jobs:
           rustup toolchain remove 1.63 1.64 1.65
           cargo hack check --rust-version --workspace --locked
           cargo uninstall cargo-hack
-      - uses: taiki-e/install-action@cargo-hack
-      - uses: taiki-e/install-action@cargo-minimal-versions
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-hack,cargo-minimal-versions
+          fallback: none
       - run: cargo hack build --workspace --no-private --feature-powerset --no-dev-deps
       - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features
       - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features --direct
