@@ -290,6 +290,7 @@ fn determine_kind(cx: &Context, id: PackageId, multiple_packages: bool) -> Optio
             cx.depth,
             &cx.at_least_one_of,
             &cx.mutually_exclusive_features,
+            &cx.feature_requires,
             &package.features,
         );
 
