@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.6.44] - 2026-03-20
+
 - Publish [artifact attestations](https://docs.github.com/en/actions/concepts/security/artifact-attestations).
 
 ## [0.6.43] - 2026-02-13
@@ -574,7 +576,8 @@ See [#89](https://github.com/taiki-e/cargo-hack/pull/89) for more.
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.43...HEAD
+[Unreleased]: https://github.com/taiki-e/cargo-hack/compare/v0.6.44...HEAD
+[0.6.44]: https://github.com/taiki-e/cargo-hack/compare/v0.6.43...v0.6.44
 [0.6.43]: https://github.com/taiki-e/cargo-hack/compare/v0.6.42...v0.6.43
 [0.6.42]: https://github.com/taiki-e/cargo-hack/compare/v0.6.41...v0.6.42
 [0.6.41]: https://github.com/taiki-e/cargo-hack/compare/v0.6.40...v0.6.41
