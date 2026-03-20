@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Publish [artifact attestations](https://docs.github.com/en/actions/concepts/security/artifact-attestations).
+
 ## [0.6.43] - 2026-02-13
 
 - Update `toml_edit` to 0.25.
