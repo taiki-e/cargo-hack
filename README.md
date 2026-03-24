@@ -493,7 +493,7 @@ curl --proto '=https' --tlsv1.2 -fsSL -o cargo-hack.tar.gz "https://github.com/t
 # Verify release attestations.
 gh release -R https://github.com/taiki-e/cargo-hack verify-asset cargo-hack.tar.gz
 # Verify artifact attestations.
-gh attestation verify --owner taiki-e cargo-hack.tar.gz
+gh attestation verify --repo taiki-e/cargo-hack --signer-workflow taiki-e/github-actions/.github/workflows/rust-release.yml cargo-hack.tar.gz
 # Install to $CARGO_HOME/bin (or $HOME/.cargo/bin if CARGO_HOME is unset).
 tar xf cargo-hack.tar.gz -C "${CARGO_HOME:-"$HOME/.cargo"}"/bin
 # Remove archive.
