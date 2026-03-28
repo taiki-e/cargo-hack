@@ -1,6 +1,6 @@
 version: 2
 updates:
-  - package-ecosystem: cargo
+  - package-ecosystem: cargo # zizmor: ignore[dependabot-cooldown] # Unless dependencies are pinned/locked, the effect is limited.
     directory: /
     schedule:
       interval: daily
@@ -11,6 +11,8 @@ updates:
     directory: /
     schedule:
       interval: daily
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: ''
     labels: []
