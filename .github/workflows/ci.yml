@@ -45,7 +45,8 @@ jobs:
       contents: write # for creating branch for pr
       pull-requests: write # unused (used in `codegen-automerge: true` case)
       security-events: write # for github/codeql-action/*
-    secrets: inherit
+    secrets:
+      PR_TOKEN_APP_PRIVATE_KEY: ${{ secrets.PR_TOKEN_APP_PRIVATE_KEY }}
 
   test:
     strategy:
@@ -103,10 +104,14 @@ jobs:
     steps:
       - uses: taiki-e/checkout-action@v1
       - uses: taiki-e/github-actions/install-rust@nightly
-      - run: CARGO_HACK_TEST_TOOLCHAIN=${{ matrix.rust }} cargo test --workspace --all-features
+      - run: cargo test --workspace --all-features
+        env:
+          CARGO_HACK_TEST_TOOLCHAIN: ${{ matrix.rust }}
       # Remove stable toolchain to disable https://github.com/taiki-e/cargo-hack/pull/138's behavior.
       - run: rustup toolchain remove stable
-      - run: CARGO_HACK_TEST_TOOLCHAIN=${{ matrix.rust }} cargo test --workspace --all-features
+      - run: cargo test --workspace --all-features
+        env:
+          CARGO_HACK_TEST_TOOLCHAIN: ${{ matrix.rust }}
 
   test-no-rustup:
     name: test (no rustup)
