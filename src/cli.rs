@@ -13,7 +13,12 @@ use lexopt::{
     ValueExt as _,
 };
 
-use crate::{Feature, LogGroup, Partition, Rustup, term, version::VersionRange};
+use crate::{
+    Feature, LogGroup, Partition, Rustup,
+    features::{FeatureRequirement, parse_feature_requires},
+    term,
+    version::VersionRange,
+};
 
 pub(crate) struct Args {
     pub(crate) leading_args: Vec<String>,
@@ -91,6 +96,8 @@ pub(crate) struct Args {
     /// --at-least-one-of <FEATURES>...
     /// Implies --exclude-no-default-features. Can be specified multiple times.
     pub(crate) at_least_one_of: Vec<Feature>,
+    /// --feature-requires <CONSTRAINTS>...
+    pub(crate) feature_requires: Vec<FeatureRequirement>,
 
     // options that will be propagated to cargo
     /// --features <FEATURES>...
@@ -179,6 +186,7 @@ impl Args {
 
         let mut group_features: Vec<String> = vec![];
         let mut mutually_exclusive_features: Vec<String> = vec![];
+        let mut feature_requires: Vec<String> = vec![];
         let mut depth = None;
 
         let mut verbose = 0;
@@ -304,6 +312,7 @@ impl Args {
                 Long("each-feature") => parse_flag!(each_feature),
                 Long("feature-powerset") => parse_flag!(feature_powerset),
                 Long("at-least-one-of") => at_least_one_of.push(parser.value()?.parse()?),
+                Long("feature-requires") => feature_requires.push(parser.value()?.parse()?),
                 Long("no-private") => parse_flag!(no_private),
                 Long("ignore-private") => parse_flag!(ignore_private),
                 Long("exclude-no-default-features") => parse_flag!(exclude_no_default_features),
@@ -429,6 +438,8 @@ impl Args {
                 requires("--mutually-exclusive-features", &["--feature-powerset"])?;
             } else if !at_least_one_of.is_empty() {
                 requires("--at-least-one-of", &["--feature-powerset"])?;
+            } else if !feature_requires.is_empty() {
+                requires("--feature-requires", &["--feature-powerset"])?;
             }
         }
 
@@ -437,6 +448,14 @@ impl Args {
         let mutually_exclusive_features =
             parse_grouped_features(&mutually_exclusive_features, "mutually-exclusive-features")?;
         let at_least_one_of = parse_grouped_features(&at_least_one_of, "at-least-one-of")?;
+        let feature_requires: Vec<FeatureRequirement> = feature_requires
+            .iter()
+            .map(|s| parse_feature_requires(s))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| format_err!("{e}"))?
+            .into_iter()
+            .flatten()
+            .collect();
 
         if let Some(subcommand) = subcommand.as_deref() {
             match subcommand {
@@ -637,6 +656,7 @@ impl Args {
             depth,
             group_features,
             mutually_exclusive_features,
+            feature_requires,
 
             exclude_features,
             exclude_no_default_features,
@@ -776,6 +796,21 @@ const HELP: &[HelpText<'_>] = &[
         &[
             "To specify multiple groups, use this option multiple times: \
              `--at-least-one-of a,b --at-least-one-of c,d`",
+            "This flag can only be used together with --feature-powerset flag.",
+        ],
+    ),
+    (
+        "",
+        "--feature-requires",
+        "<CONSTRAINTS>...",
+        "Comma separated list of feature dependency constraints",
+        &[
+            "Each constraint has the form `FEATURE:EXPR` where EXPR is a boolean expression \
+             using AND, OR, and parentheses. AND binds tighter than OR.",
+            "Example: `--feature-requires \"c:a OR b\"` means feature c requires at least \
+             one of a or b.",
+            "To specify multiple constraints, separate with commas or use this option multiple times: \
+             `--feature-requires \"c:a OR b,d:e AND f\"`",
             "This flag can only be used together with --feature-powerset flag.",
         ],
     ),
@@ -998,6 +1033,7 @@ fn similar_flags(flag: &str, subcommand: Option<&str>) -> Result<()> {
             "--include-deps-features"
         }
         "ignore-unknown-feature" => "--ignore-unknown-features",
+        "feature-require" | "features-requires" | "features-require" => "--feature-requires",
         _ => return Ok(()),
     };
     similar_arg(&Long(flag), subcommand, expected)
