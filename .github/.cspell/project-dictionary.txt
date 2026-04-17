@@ -1,5 +1,6 @@
 binstall
 objc
+PRNG
 qpmember
 subcrate
 vvpmember

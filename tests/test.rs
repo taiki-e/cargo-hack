@@ -2042,33 +2042,18 @@ fn partition_seeded() {
     }
 
     fn extract_running(stderr: &str) -> Vec<String> {
-        extract_decisions(stderr)
-            .into_iter()
-            .filter(|l| l.starts_with("running `"))
-            .collect()
+        extract_decisions(stderr).into_iter().filter(|l| l.starts_with("running `")).collect()
     }
 
     let seed = "abc1234";
 
     // Same seed -> identical partition decisions (determinism).
-    let out1 = cargo_hack([
-        "check",
-        "--feature-powerset",
-        "--partition",
-        "1/3",
-        "--partition-seed",
-        seed,
-    ])
-    .assert_success("real");
-    let out2 = cargo_hack([
-        "check",
-        "--feature-powerset",
-        "--partition",
-        "1/3",
-        "--partition-seed",
-        seed,
-    ])
-    .assert_success("real");
+    let out1 =
+        cargo_hack(["check", "--feature-powerset", "--partition", "1/3", "--partition-seed", seed])
+            .assert_success("real");
+    let out2 =
+        cargo_hack(["check", "--feature-powerset", "--partition", "1/3", "--partition-seed", seed])
+            .assert_success("real");
     assert_eq!(
         extract_decisions(&out1.0.as_ref().unwrap().stderr),
         extract_decisions(&out2.0.as_ref().unwrap().stderr),

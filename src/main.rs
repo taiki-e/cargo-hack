@@ -200,10 +200,10 @@ impl Progress {
 
 /// FNV-1a 64-bit. Stable across platforms and Rust versions, unlike `std::hash::DefaultHasher`.
 pub(crate) fn fnv1a_64(s: &str) -> u64 {
-    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+    let mut h: u64 = 0xCBF2_9CE4_8422_2325;
     for &b in s.as_bytes() {
         h ^= u64::from(b);
-        h = h.wrapping_mul(0x0000_0100_0000_01b3);
+        h = h.wrapping_mul(0x0000_0100_0000_01B3);
     }
     h
 }
