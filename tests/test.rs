@@ -887,6 +887,68 @@ fn group_features_failure() {
 }
 
 #[test]
+fn feature_requires() {
+    // c requires (a OR b): c should not appear alone, only with a or b
+    cargo_hack([
+        "check",
+        "--feature-powerset",
+        "--feature-requires",
+        "c:a OR b",
+        "--exclude-features",
+        "default",
+    ])
+    .assert_success("real")
+    .stderr_contains(
+        "
+        running `cargo check --no-default-features --features a` on real
+        running `cargo check --no-default-features --features b` on real
+        running `cargo check --no-default-features --features a,b` on real
+        running `cargo check --no-default-features --features a,c` on real
+        running `cargo check --no-default-features --features b,c` on real
+        running `cargo check --no-default-features --features a,b,c` on real
+        ",
+    )
+    .stderr_not_contains("--no-default-features --features c`");
+
+    // c requires (a AND b): c should only appear with both a and b
+    cargo_hack([
+        "check",
+        "--feature-powerset",
+        "--feature-requires",
+        "c:a AND b",
+        "--exclude-features",
+        "default",
+    ])
+    .assert_success("real")
+    .stderr_contains(
+        "
+        running `cargo check --no-default-features --features a` on real
+        running `cargo check --no-default-features --features b` on real
+        running `cargo check --no-default-features --features a,b` on real
+        running `cargo check --no-default-features --features a,b,c` on real
+        ",
+    )
+    .stderr_not_contains(
+        "
+        --no-default-features --features c`
+        --no-default-features --features a,c`
+        --no-default-features --features b,c`
+        ",
+    );
+}
+
+#[test]
+fn feature_requires_failure() {
+    cargo_hack(["check", "--each-feature", "--feature-requires", "c:a"])
+        .assert_failure("real")
+        .stderr_contains("--feature-requires can only be used together with --feature-powerset");
+
+    cargo_hack(["check", "--feature-powerset", "--feature-requires", "invalid"])
+        .assert_failure("real")
+        .stderr_contains("expected ':'");
+}
+
+#[test]
 fn include_features() {
     cargo_hack(["check", "--each-feature", "--include-features", "a,b"])
         .assert_success("real")
