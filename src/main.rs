@@ -125,6 +125,7 @@ fn try_main() -> Result<()> {
                     }
                 }
             }
+            progress.ensure_permutation(cx.partition_seed);
 
             // First, generate the lockfile using the oldest cargo specified.
             // https://github.com/taiki-e/cargo-hack/issues/105
@@ -151,6 +152,7 @@ fn try_main() -> Result<()> {
         } else {
             let total = packages.iter().map(|p| p.feature_count).sum();
             progress.total = total;
+            progress.ensure_permutation(cx.partition_seed);
             default_cargo_exec_on_packages(cx, &packages, &mut progress, &mut keep_going)?;
         }
         if keep_going.count > 0 {
@@ -165,12 +167,56 @@ fn try_main() -> Result<()> {
 struct Progress {
     total: usize,
     count: usize,
+    /// Permutation of `0..total` controlling partition assignment when `--partition-seed` is set.
+    /// `None` preserves the original contiguous-chunk behavior.
+    permutation: Option<Vec<usize>>,
 }
 
 impl Progress {
+    fn ensure_permutation(&mut self, seed: Option<u64>) {
+        let Some(seed) = seed else { return };
+        if self.permutation.is_some() {
+            return;
+        }
+        let mut perm: Vec<usize> = (0..self.total).collect();
+        let mut rng = SplitMix64(seed);
+        for i in (1..perm.len()).rev() {
+            // `rng.next() % bound` is in `0..=i`, which always fits in usize.
+            #[allow(clippy::cast_possible_truncation)]
+            let j = (rng.next() % (i as u64 + 1)) as usize;
+            perm.swap(i, j);
+        }
+        self.permutation = Some(perm);
+    }
+
     fn in_partition(&self, partition: &Partition) -> bool {
-        let current_index = self.count / self.total.div_ceil(partition.count);
-        current_index == partition.index
+        let pos = match &self.permutation {
+            Some(p) => p[self.count],
+            None => self.count,
+        };
+        pos / self.total.div_ceil(partition.count) == partition.index
+    }
+}
+
+/// FNV-1a 64-bit. Stable across platforms and Rust versions, unlike `std::hash::DefaultHasher`.
+pub(crate) fn fnv1a_64(s: &str) -> u64 {
+    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+    for &b in s.as_bytes() {
+        h ^= u64::from(b);
+        h = h.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    h
+}
+
+/// SplitMix64 PRNG. Used to drive a deterministic Fisher-Yates shuffle from a single u64 seed.
+struct SplitMix64(u64);
+impl SplitMix64 {
+    fn next(&mut self) -> u64 {
+        self.0 = self.0.wrapping_add(0x9E37_79B9_7F4A_7C15);
+        let mut z = self.0;
+        z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+        z ^ (z >> 31)
     }
 }
 

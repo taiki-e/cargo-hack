@@ -55,6 +55,8 @@ pub(crate) struct Args {
     pub(crate) keep_going: bool,
     /// --partition
     pub(crate) partition: Option<Partition>,
+    /// --partition-seed (hashed via FNV-1a so the user can pass any string, e.g. a git short hash)
+    pub(crate) partition_seed: Option<u64>,
     /// --print-command-list
     pub(crate) print_command_list: bool,
     /// --version-range/--rust-version
@@ -159,6 +161,7 @@ impl Args {
         let mut clean_per_version = false;
         let mut keep_going = false;
         let mut partition = None;
+        let mut partition_seed: Option<String> = None;
         let mut print_command_list = false;
         let mut no_manifest_path = false;
         let mut locked = false;
@@ -313,6 +316,7 @@ impl Args {
                 Long("clean-per-version") => parse_flag!(clean_per_version),
                 Long("keep-going") => parse_flag!(keep_going),
                 Long("partition") => parse_opt!(partition, false),
+                Long("partition-seed") => parse_opt!(partition_seed, false),
                 Long("print-command-list") => parse_flag!(print_command_list),
                 Long("no-manifest-path") => parse_flag!(no_manifest_path),
                 Long("locked") => parse_flag!(locked),
@@ -574,6 +578,10 @@ impl Args {
         };
 
         let partition = partition.as_deref().map(str::parse).transpose()?;
+        let partition_seed = partition_seed.as_deref().map(crate::fnv1a_64);
+        if partition_seed.is_some() && partition.is_none() {
+            bail!("--partition-seed can only be used together with --partition");
+        }
 
         if no_dev_deps || no_private {
             let flag = if no_dev_deps && no_private {
@@ -625,6 +633,7 @@ impl Args {
             clean_per_version,
             keep_going,
             partition,
+            partition_seed,
             print_command_list,
             no_manifest_path,
             include_features: include_features.into_iter().map(Into::into).collect(),
@@ -843,6 +852,9 @@ const HELP: &[HelpText<'_>] = &[
     ]),
     ("", "--keep-going", "", "Keep going on failure", &[]),
     ("", "--partition", "<M/N>", "Partition runs and execute only its subset according to M/N", &[
+    ]),
+    ("", "--partition-seed", "<SEED>", "Seed string to shuffle partition assignment for load balancing", &[
+        "Requires --partition. Any string is accepted (e.g. a git commit hash); the same seed produces the same assignment across all M/N runs.",
     ]),
     ("", "--log-group", "<KIND>", "Log grouping: none, github-actions", &[
         "If this option is not used, the environment will be automatically detected.",
