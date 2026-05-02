@@ -76,7 +76,7 @@ jobs:
           rustup toolchain remove 1.63 1.64 1.65
           cargo hack check --rust-version --workspace --locked
           cargo uninstall cargo-hack
-      - uses: taiki-e/install-action@b8be7f5e140177087325943c4a8e169d01c59b3d # v2.75.3
+      - uses: taiki-e/install-action@58e862542551f667fa44c8a2a4a1d64ad477c96a # v2.75.17
         with:
           tool: cargo-hack,cargo-minimal-versions
           fallback: none
