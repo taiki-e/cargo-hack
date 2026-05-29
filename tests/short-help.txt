@@ -49,6 +49,8 @@ OPTIONS:
         --keep-going                     Keep going on failure
         --partition <M/N>                Partition runs and execute only its subset according to
                                          M/N
+        --partition-seed <SEED>          Seed string to shuffle partition assignment for load
+                                         balancing
         --log-group <KIND>               Log grouping: none, github-actions
         --print-command-list             Print commands without run (Unstable)
         --no-manifest-path               Do not pass --manifest-path option to cargo (Unstable)

@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Add `--partition-seed <SEED>` option for deterministic shuffling of `--partition` assignment. Accepts any string (e.g. a git short hash), hashed stably with FNV-1a; the same seed produces the same assignment across all `M/N` runs, balancing load when some workspace members are heavier than others.
+
 ## [0.6.44] - 2026-03-20
 
 - Publish [artifact attestations](https://docs.github.com/en/actions/concepts/security/artifact-attestations).

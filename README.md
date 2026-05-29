@@ -225,6 +225,12 @@ OPTIONS:
         --partition <M/N>
             Partition runs and execute only its subset according to M/N.
 
+        --partition-seed <SEED>
+            Seed string to shuffle partition assignment for load balancing.
+
+            Requires --partition. Any string is accepted (e.g. a git commit hash); the same seed
+            produces the same assignment across all M/N runs.
+
         --log-group <KIND>
             Log grouping: none, github-actions.
 

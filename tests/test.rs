@@ -2015,6 +2015,74 @@ fn partition_bad() {
     .stderr_contains(
         "The argument '--partition' was provided more than once, but cannot be used multiple times",
     );
+
+    cargo_hack(["check", "--each-feature", "--partition-seed", "abc"])
+        .assert_failure("real")
+        .stderr_contains("--partition-seed can only be used together with --partition");
+}
+
+#[test]
+fn partition_seeded() {
+    /// Captured stderr is collapsed onto one line by the test helper. Scan the joined string
+    /// for `(running|skipping) `<cmd>`` markers and return them sorted, so we can compare
+    /// without depending on per-run noise (tempdir paths, cargo build output, etc).
+    fn extract_decisions(stderr: &str) -> Vec<String> {
+        let mut out = vec![];
+        for marker in ["running `", "skipping `"] {
+            let mut rest = stderr;
+            while let Some(idx) = rest.find(marker) {
+                let after = &rest[idx..];
+                let end = after.find(')').expect("decision line ends with `(N/M)`");
+                out.push(after[..=end].to_owned());
+                rest = &after[marker.len()..];
+            }
+        }
+        out.sort();
+        out
+    }
+
+    fn extract_running(stderr: &str) -> Vec<String> {
+        extract_decisions(stderr).into_iter().filter(|l| l.starts_with("running `")).collect()
+    }
+
+    let seed = "abc1234";
+
+    // Same seed -> identical partition decisions (determinism).
+    let out1 =
+        cargo_hack(["check", "--feature-powerset", "--partition", "1/3", "--partition-seed", seed])
+            .assert_success("real");
+    let out2 =
+        cargo_hack(["check", "--feature-powerset", "--partition", "1/3", "--partition-seed", seed])
+            .assert_success("real");
+    assert_eq!(
+        extract_decisions(&out1.0.as_ref().unwrap().stderr),
+        extract_decisions(&out2.0.as_ref().unwrap().stderr),
+    );
+
+    // Each partition runs the expected unseeded chunk size, and the union of "running" commands
+    // across all partitions covers exactly the 17 invocations with no duplicates.
+    let mut running = vec![];
+    let mut sizes = vec![];
+    for m in 1..=3 {
+        let out = cargo_hack([
+            "check",
+            "--feature-powerset",
+            "--partition",
+            &format!("{m}/3"),
+            "--partition-seed",
+            seed,
+        ])
+        .assert_success("real");
+        let lines = extract_running(&out.0.as_ref().unwrap().stderr);
+        sizes.push(lines.len());
+        running.extend(lines);
+    }
+    assert_eq!(sizes, vec![6, 6, 5], "partition sizes should match the unseeded chunking");
+    assert_eq!(running.len(), 17);
+    let mut unique = running.clone();
+    unique.sort();
+    unique.dedup();
+    assert_eq!(unique.len(), 17, "no invocation should run in more than one partition");
 }
 
 #[test]
