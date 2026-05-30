@@ -50,6 +50,7 @@ OPTIONS:
         --partition <M/N>                Partition runs and execute only its subset according to
                                          M/N
         --log-group <KIND>               Log grouping: none, github-actions
+        --workspace-behavior=cargo       Use Cargo's workspace handling
         --print-command-list             Print commands without run (Unstable)
         --no-manifest-path               Do not pass --manifest-path option to cargo (Unstable)
     -v, --verbose                        Use verbose output

@@ -200,6 +200,14 @@ OPTIONS:
 
             If this option is not used, the environment will be automatically detected.
 
+        --workspace-behavior=cargo
+            Use Cargo's workspace handling.
+
+            This is for use cases where cargo-hack's workspace handling does not work.
+
+            Note that this is incompatible with flags that require cargo-hack's workspace handling
+            to work properly (e.g., `--each-feature`, `--feature-powerset`, etc.).
+
         --print-command-list
             Print commands without run (Unstable).
 

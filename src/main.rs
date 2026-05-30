@@ -31,6 +31,8 @@ use std::{
 use anyhow::{Error, Result, bail, format_err};
 
 use crate::{
+    cargo::match_pkg_spec,
+    cli::WorkspaceBehavior,
     context::Context,
     features::Feature,
     metadata::PackageId,
@@ -68,16 +70,31 @@ fn try_main() -> Result<()> {
         if let Some(range) = cx.version_range {
             let mut versions = BTreeMap::new();
             let steps = rustup::version_range(range, cx.version_step, &packages, cx)?;
+            let mut workspace_msrv = None;
             for pkg in packages {
                 let msrv = cx
                     .rust_version(pkg.id)
                     .map(str::parse::<Version>)
                     .transpose()?
                     .map(Version::strip_patch);
+                match cx.workspace_behavior {
+                    WorkspaceBehavior::Default => {}
+                    WorkspaceBehavior::Cargo => {
+                        if let Some(workspace_msrv) = workspace_msrv {
+                            if msrv != workspace_msrv {
+                                bail!(
+                                    "currently only single MSRV is supported by --workspace-behavior=cargo; consider using --package or --exclude to run per MSRV"
+                                )
+                            }
+                        } else {
+                            workspace_msrv = Some(msrv);
+                        }
+                    }
+                }
                 if range == VersionRange::msrv() {
                     let msrv = msrv.ok_or_else(|| {
                         format_err!(
-                            "no rust-version field in {}'s Cargo.toml is specified",
+                            "no rust-version field in {0}'s Cargo.toml is specified; consider setting rust-version field or excluding {0}",
                             cx.packages(pkg.id).name
                         )
                     })?;
@@ -117,11 +134,22 @@ fn try_main() -> Result<()> {
             }
 
             for (cargo_version, packages) in &versions {
-                for package in packages {
-                    if cx.target.is_empty() || cargo_version.minor >= 64 {
-                        progress.total += package.feature_count;
-                    } else {
-                        progress.total += package.feature_count * cx.target.len();
+                match cx.workspace_behavior {
+                    WorkspaceBehavior::Default => {
+                        for package in packages {
+                            if cx.target.is_empty() || cargo_version.minor >= 64 {
+                                progress.total += package.feature_count;
+                            } else {
+                                progress.total += package.feature_count * cx.target.len();
+                            }
+                        }
+                    }
+                    WorkspaceBehavior::Cargo => {
+                        if cx.target.is_empty() || cargo_version.minor >= 64 {
+                            progress.total += 1;
+                        } else {
+                            progress.total += cx.target.len();
+                        }
                     }
                 }
             }
@@ -149,8 +177,15 @@ fn try_main() -> Result<()> {
                 )?;
             }
         } else {
-            let total = packages.iter().map(|p| p.feature_count).sum();
-            progress.total = total;
+            match cx.workspace_behavior {
+                WorkspaceBehavior::Default => {
+                    let total = packages.iter().map(|p| p.feature_count).sum();
+                    progress.total = total;
+                }
+                WorkspaceBehavior::Cargo => {
+                    progress.total = 1;
+                }
+            }
             default_cargo_exec_on_packages(cx, &packages, &mut progress, &mut keep_going)?;
         }
         if keep_going.count > 0 {
@@ -328,7 +363,8 @@ struct PackageRuns<'a> {
 
 fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
     for spec in &cx.exclude {
-        if !cx.workspace_members().any(|&id| *cx.packages(id).name == **spec) {
+        if !cx.workspace_members().any(|&id| match_pkg_spec(cx.packages(id), spec).unwrap_or(false))
+        {
             warn!(
                 "excluded package(s) `{spec}` not found in workspace `{}`",
                 cx.workspace_root().display()
@@ -338,30 +374,36 @@ fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
     Ok(if cx.workspace {
         let ids: Vec<_> = cx
             .workspace_members()
-            .filter(|&&id| !cx.exclude.iter().any(|e| *cx.packages(id).name == **e))
+            .filter(|&&id| {
+                !cx.exclude.iter().any(|e| match_pkg_spec(cx.packages(id), e).unwrap_or(false))
+            })
             .collect();
         let multiple_packages = ids.len() > 1;
         ids.iter().filter_map(|&&id| determine_kind(cx, id, multiple_packages)).collect()
     } else if !cx.package.is_empty() {
-        if let Some(spec) = cx
-            .package
-            .iter()
-            .find(|&spec| !cx.workspace_members().any(|&id| *cx.packages(id).name == **spec))
-        {
+        if let Some(spec) = cx.package.iter().find(|p| {
+            !cx.workspace_members().any(|&id| match_pkg_spec(cx.packages(id), p).unwrap_or(false))
+        }) {
             bail!("package ID specification `{spec}` matched no packages")
         }
 
         let ids: Vec<_> = cx
             .workspace_members()
-            .filter(|&&id| cx.package.iter().any(|p| *cx.packages(id).name == **p))
-            .filter(|&&id| !cx.exclude.iter().any(|e| *cx.packages(id).name == **e))
+            .filter(|&&id| {
+                cx.package.iter().any(|p| match_pkg_spec(cx.packages(id), p).unwrap_or(false))
+            })
+            .filter(|&&id| {
+                !cx.exclude.iter().any(|e| match_pkg_spec(cx.packages(id), e).unwrap_or(false))
+            })
             .collect();
         let multiple_packages = ids.len() > 1;
         ids.iter().filter_map(|&&id| determine_kind(cx, id, multiple_packages)).collect()
     } else if cx.current_package().is_none() {
         let ids: Vec<_> = cx
             .workspace_members()
-            .filter(|&&id| !cx.exclude.iter().any(|e| *cx.packages(id).name == **e))
+            .filter(|&&id| {
+                !cx.exclude.iter().any(|e| match_pkg_spec(cx.packages(id), e).unwrap_or(false))
+            })
             .collect();
         let multiple_packages = ids.len() > 1;
         ids.iter().filter_map(|&&id| determine_kind(cx, id, multiple_packages)).collect()
@@ -370,7 +412,9 @@ fn determine_package_list(cx: &Context) -> Result<Vec<PackageRuns<'_>>> {
         let multiple_packages = false;
         cx.workspace_members()
             .find(|&&id| cx.packages(id).name == *current_package)
-            .filter(|&&id| !cx.exclude.iter().any(|e| *cx.packages(id).name == **e))
+            .filter(|&&id| {
+                !cx.exclude.iter().any(|e| match_pkg_spec(cx.packages(id), e).unwrap_or(false))
+            })
             .and_then(|&id| determine_kind(cx, id, multiple_packages).map(|p| vec![p]))
             .unwrap_or_default()
     })
@@ -450,23 +494,52 @@ fn exec_on_packages(
     if cx.locked {
         line.arg("--locked");
     }
+    match cx.workspace_behavior {
+        WorkspaceBehavior::Default => {}
+        WorkspaceBehavior::Cargo => {
+            if let Some(manifest_path) = &cx.manifest_path {
+                line.arg("--manifest-path");
+                line.arg(manifest_path);
+            }
+            for pkg in &cx.package {
+                line.arg("--package");
+                line.arg(pkg);
+            }
+            for pkg in &cx.exclude {
+                line.arg("--exclude");
+                line.arg(pkg);
+            }
+            if cx.all {
+                line.arg("--all");
+            } else if cx.workspace {
+                line.arg("--workspace");
+            }
+            line.append_features_from_args(cx, None);
+        }
+    }
     if cx.target.is_empty() || cargo_version >= 64 {
         // TODO: We should test that cargo's multi-target build does not break the resolver behavior required for a correct check.
         for target in &cx.target {
             line.arg("--target");
             line.arg(target);
         }
-        packages
-            .iter()
-            .try_for_each(|pkg| exec_on_package(cx, pkg.id, &pkg.kind, &line, progress, keep_going))
+        match cx.workspace_behavior {
+            WorkspaceBehavior::Default => packages.iter().try_for_each(|pkg| {
+                exec_on_package(cx, pkg.id, &pkg.kind, &line, progress, keep_going)
+            }),
+            WorkspaceBehavior::Cargo => exec_cargo(cx, None, &line, progress, keep_going),
+        }
     } else {
         cx.target.iter().try_for_each(|target| {
             let mut line = line.clone();
             line.arg("--target");
             line.arg(target);
-            packages.iter().try_for_each(|pkg| {
-                exec_on_package(cx, pkg.id, &pkg.kind, &line, progress, keep_going)
-            })
+            match cx.workspace_behavior {
+                WorkspaceBehavior::Default => packages.iter().try_for_each(|pkg| {
+                    exec_on_package(cx, pkg.id, &pkg.kind, &line, progress, keep_going)
+                }),
+                WorkspaceBehavior::Cargo => exec_cargo(cx, None, &line, progress, keep_going),
+            }
         })
     }
 }
@@ -482,7 +555,7 @@ fn exec_on_package(
     let package = cx.packages(id);
 
     let mut line = line.clone();
-    line.append_features_from_args(cx, id);
+    line.append_features_from_args(cx, Some(id));
 
     if !cx.no_manifest_path {
         line.arg("--manifest-path");
@@ -494,7 +567,7 @@ fn exec_on_package(
     match kind {
         Kind::Normal => {
             // only run with default features
-            return exec_cargo(cx, id, &line, progress, keep_going);
+            return exec_cargo(cx, Some(id), &line, progress, keep_going);
         }
         Kind::Each { .. } | Kind::Powerset { .. } => {}
     }
@@ -524,7 +597,7 @@ fn exec_on_package(
         // run with all features
         // https://github.com/taiki-e/cargo-hack/issues/42
         line.arg("--all-features");
-        exec_cargo(cx, id, &line, progress, keep_going)?;
+        exec_cargo(cx, Some(id), &line, progress, keep_going)?;
     }
 
     if !cx.no_default_features {
@@ -538,7 +611,7 @@ fn exec_on_package(
 
     if !cx.exclude_no_default_features {
         // run with no default features if the package has other features
-        exec_cargo(cx, id, &line, progress, keep_going)?;
+        exec_cargo(cx, Some(id), &line, progress, keep_going)?;
     }
 
     match kind {
@@ -581,7 +654,7 @@ fn exec_cargo_with_features(
 ) -> Result<()> {
     let mut line = line.clone();
     line.append_features(features);
-    exec_cargo(cx, id, &line, progress, keep_going)
+    exec_cargo(cx, Some(id), &line, progress, keep_going)
 }
 
 #[derive(Default)]
@@ -668,7 +741,7 @@ impl FromStr for Partition {
 
 fn exec_cargo(
     cx: &Context,
-    id: PackageId,
+    id: Option<PackageId>,
     line: &ProcessBuilder<'_>,
     progress: &mut Progress,
     keep_going: &mut KeepGoing,
@@ -678,7 +751,7 @@ fn exec_cargo(
         if let Err(e) = res {
             error!("{e:#}");
             keep_going.count = keep_going.count.saturating_add(1);
-            let name = &*cx.packages(id).name;
+            let name = if let Some(id) = id { &*cx.packages(id).name } else { "" };
             if !keep_going.failed_commands.contains_key(name) {
                 keep_going.failed_commands.insert(name.to_owned(), vec![]);
             }
@@ -692,7 +765,7 @@ fn exec_cargo(
 
 fn exec_cargo_inner(
     cx: &Context,
-    id: PackageId,
+    id: Option<PackageId>,
     line: &ProcessBuilder<'_>,
     progress: &mut Progress,
 ) -> Result<()> {
@@ -708,7 +781,7 @@ fn exec_cargo_inner(
     }
 
     if cx.clean_per_run {
-        cargo_clean(cx, Some(id))?;
+        cargo_clean(cx, id)?;
     }
 
     if cx.print_command_list {
@@ -754,17 +827,18 @@ fn print_command(mut line: ProcessBuilder<'_>) {
 
 fn log_and_update_progress(
     cx: &Context,
-    id: PackageId,
+    id: Option<PackageId>,
     line: &ProcessBuilder<'_>,
     progress: &mut Progress,
     action: &str,
 ) -> Option<LogGroupGuard> {
     // running/skipping `<command>` (on <package>) (<count>/<total>)
     let mut msg = String::new();
-    if term::verbose() {
+    if term::verbose() || id.is_none() {
         write!(msg, "{action} {line}").unwrap();
     } else {
-        write!(msg, "{action} {line} on {}", cx.packages(id).name).unwrap();
+        #[allow(clippy::unnecessary_unwrap)]
+        write!(msg, "{action} {line} on {}", cx.packages(id.unwrap()).name).unwrap();
     }
     progress.count += 1;
     write!(msg, " ({}/{})", progress.count, progress.total).unwrap();

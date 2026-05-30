@@ -151,8 +151,8 @@ impl Metadata {
         let mut packages = Vec::with_capacity(raw_packages.len());
         let mut pkg_id_map = HashMap::with_capacity(raw_packages.len());
         for (i, pkg) in raw_packages.into_iter().enumerate() {
-            let (id, pkg) = Package::from_value(pkg, cargo_version)?;
-            pkg_id_map.insert(id, i);
+            let pkg = Package::from_value(pkg, cargo_version)?;
+            pkg_id_map.insert(pkg.id.clone(), i);
             packages.push(pkg);
         }
         let workspace_members = map
@@ -297,10 +297,11 @@ impl DepKindInfo {
 }
 
 pub(crate) struct Package {
+    pub(crate) id: String,
     /// The name of the package.
     pub(crate) name: Box<str>,
-    // /// The version of the package.
-    // pub(crate) version: Box<str>,
+    /// The version of the package.
+    pub(crate) version: Box<str>,
     /// List of dependencies of this particular package.
     pub(crate) dependencies: Box<[Dependency]>,
     /// Features provided by the crate, mapped to the features required by that feature.
@@ -318,13 +319,13 @@ pub(crate) struct Package {
 }
 
 impl Package {
-    fn from_value(mut value: Value, cargo_version: u32) -> ParseResult<(String, Self)> {
+    fn from_value(mut value: Value, cargo_version: u32) -> ParseResult<Self> {
         let map = value.as_object_mut().ok_or("packages")?;
 
-        let id = map.remove_string("id")?;
-        Ok((id, Self {
+        Ok(Self {
+            id: map.remove_string("id")?,
             name: map.remove_string("name")?,
-            // version: map.remove_string("version")?,
+            version: map.remove_string("version")?,
             dependencies: map
                 .remove_array("dependencies")?
                 .into_iter()
@@ -356,7 +357,7 @@ impl Package {
             } else {
                 None
             },
-        }))
+        })
     }
 
     pub(crate) fn optional_deps(&self) -> impl Iterator<Item = &str> + '_ {

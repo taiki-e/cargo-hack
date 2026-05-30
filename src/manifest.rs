@@ -137,7 +137,8 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
                 fs::write(manifest_path, doc.to_string())?;
             }
         }
-        if no_private && (no_dev_deps && root_id.is_some() || !private_crates.is_empty()) {
+        let has_root_crate = root_id.is_some();
+        if no_private && (no_dev_deps && has_root_crate || !private_crates.is_empty()) {
             let manifest_path = root_manifest;
             let (mut doc, orig) = match root_id {
                 Some(id) => {
@@ -157,7 +158,7 @@ pub(crate) fn with(cx: &Context, f: impl FnOnce() -> Result<()>) -> Result<()> {
                     )
                 }
             };
-            if no_dev_deps && root_id.is_some() {
+            if no_dev_deps && has_root_crate {
                 if term::verbose() {
                     info!("removing dev-dependencies from {}", manifest_path.display());
                 }

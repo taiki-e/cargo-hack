@@ -230,6 +230,14 @@ OPTIONS:
 
             If this option is not used, the environment will be automatically detected.
 
+        --workspace-behavior=cargo
+            Use Cargo's workspace handling.
+
+            This is for use cases where cargo-hack's workspace handling does not work.
+
+            Note that this is incompatible with flags that require cargo-hack's workspace handling
+            to work properly (e.g., `--each-feature`, `--feature-powerset`, etc.).
+
         --print-command-list
             Print commands without run (Unstable).
 
@@ -615,14 +623,12 @@ pkg install cargo-hack
 - [cargo-llvm-cov]: Cargo subcommand to easily use LLVM source-based code coverage.
 - [cargo-minimal-versions]: Cargo subcommand for proper use of `-Z minimal-versions`.
 - [cargo-config2]: Library to load and resolve Cargo configuration.
-- [cargo-no-dev-deps]: Cargo subcommand for running cargo without dev-dependencies. This is an extraction of the [`--no-dev-deps` flag of cargo-hack](#--no-dev-deps) to be used as a stand-alone cargo subcommand.
 
 [#15]: https://github.com/taiki-e/cargo-hack/issues/15
 [cargo-config2]: https://github.com/taiki-e/cargo-config2
 [cargo-llvm-cov]: https://github.com/taiki-e/cargo-llvm-cov
 [cargo-metadata]: https://doc.rust-lang.org/cargo/commands/cargo-metadata.html
 [cargo-minimal-versions]: https://github.com/taiki-e/cargo-minimal-versions
-[cargo-no-dev-deps]: https://github.com/taiki-e/cargo-no-dev-deps
 [cargo#3620]: https://github.com/rust-lang/cargo/issues/3620
 [cargo#4106]: https://github.com/rust-lang/cargo/issues/4106
 [cargo#4242]: https://github.com/rust-lang/cargo/issues/4242

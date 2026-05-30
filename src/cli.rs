@@ -31,8 +31,10 @@ pub(crate) struct Args {
     pub(crate) package: Vec<String>,
     /// --exclude <SPEC>...
     pub(crate) exclude: Vec<String>,
-    /// --workspace, (--all)
+    /// --workspace / --all
     pub(crate) workspace: bool,
+    /// --all
+    pub(crate) all: bool,
     /// --each-feature
     pub(crate) each_feature: bool,
     /// --feature-powerset
@@ -63,6 +65,8 @@ pub(crate) struct Args {
     pub(crate) version_step: u16,
     /// --log-group
     pub(crate) log_group: LogGroup,
+    /// --workspace-behavior=cargo
+    pub(crate) workspace_behavior: WorkspaceBehavior,
 
     // options for --each-feature and --feature-powerset
     /// --optional-deps [DEPS]...
@@ -101,6 +105,12 @@ pub(crate) struct Args {
     // propagated to cargo (as a part of leading_args)
     /// --no-default-features
     pub(crate) no_default_features: bool,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum WorkspaceBehavior {
+    Cargo,
+    Default,
 }
 
 impl Args {
@@ -148,6 +158,7 @@ impl Args {
         let mut features = vec![];
 
         let mut workspace = false;
+        let mut all = false;
         let mut no_dev_deps = false;
         let mut remove_dev_deps = false;
         let mut each_feature = false;
@@ -167,6 +178,7 @@ impl Args {
         let mut version_step = None;
         let mut log_group: Option<String> = None;
         let mut disable_log_grouping = false;
+        let mut workspace_behavior: Option<String> = None;
 
         let mut optional_deps = None;
         let mut include_features = vec![];
@@ -257,6 +269,7 @@ impl Args {
                 Long("version-range") => parse_opt!(version_range, false),
                 Long("version-step") => parse_opt!(version_step, false),
                 Long("log-group") => parse_opt!(log_group, false),
+                Long("workspace-behavior") => parse_opt!(workspace_behavior, false),
 
                 Short('p') | Long("package") => package.push(parser.value()?.parse()?),
                 Long("exclude") => exclude.push(parser.value()?.parse()?),
@@ -298,7 +311,11 @@ impl Args {
                     }
                 }
 
-                Long("workspace" | "all") => parse_flag!(workspace),
+                Long("workspace") => parse_flag!(workspace),
+                Long("all") => {
+                    all = true;
+                    parse_flag!(workspace);
+                }
                 Long("no-dev-deps") => parse_flag!(no_dev_deps),
                 Long("remove-dev-deps") => parse_flag!(remove_dev_deps),
                 Long("each-feature") => parse_flag!(each_feature),
@@ -458,6 +475,21 @@ impl Args {
                 _ => {}
             }
         }
+        let workspace_behavior = match workspace_behavior.as_deref() {
+            Some("cargo") => {
+                if each_feature {
+                    conflicts("--workspace-behavior=cargo", "--each-feature")?;
+                }
+                if feature_powerset {
+                    conflicts("--workspace-behavior=cargo", "--feature-powerset")?;
+                }
+                WorkspaceBehavior::Cargo
+            }
+            Some(other) => {
+                bail!("argument for --workspace-behavior must be cargo, but found `{other}`")
+            }
+            None => WorkspaceBehavior::Default,
+        };
 
         if let Some(pos) = cargo_args.iter().position(|a| match &**a {
             "--example" | "--examples" | "--test" | "--tests" | "--bench" | "--benches"
@@ -613,6 +645,7 @@ impl Args {
             package,
             exclude,
             workspace,
+            all,
             each_feature,
             feature_powerset,
             no_dev_deps,
@@ -633,6 +666,7 @@ impl Args {
             version_range,
             version_step,
             log_group,
+            workspace_behavior,
 
             depth,
             group_features,
@@ -846,6 +880,10 @@ const HELP: &[HelpText<'_>] = &[
     ]),
     ("", "--log-group", "<KIND>", "Log grouping: none, github-actions", &[
         "If this option is not used, the environment will be automatically detected.",
+    ]),
+    ("", "--workspace-behavior=cargo", "", "Use Cargo's workspace handling", &[
+        "This is for use cases where cargo-hack's workspace handling does not work.",
+        "Note that this is incompatible with flags that require cargo-hack's workspace handling to work properly (e.g., `--each-feature`, `--feature-powerset`, etc.).",
     ]),
     ("", "--print-command-list", "", "Print commands without run (Unstable)", &[]),
     ("", "--no-manifest-path", "", "Do not pass --manifest-path option to cargo (Unstable)", &[]),

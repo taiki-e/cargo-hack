@@ -1,5 +1,7 @@
 binstall
 objc
+pkgid
+pkgname
 qpmember
 subcrate
 vvpmember

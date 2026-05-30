@@ -78,12 +78,12 @@ fn real_manifest() {
         .assert_success("real")
         .stderr_not_contains(
             "
-            running `cargo check` on member1
-            running `cargo check` on member2
-            running `cargo check` on member3
+            member1
+            member2
+            member3
             ",
         )
-        .stderr_contains("running `cargo check` on real");
+        .stderr_contains("running `cargo check` on real (1/1)");
 
     cargo_hack(["check", "--workspace"]).assert_success("real").stderr_contains(
         "
@@ -93,6 +93,13 @@ fn real_manifest() {
         running `cargo check` on real (4/4)
         ",
     );
+    cargo_hack(["check", "--all", "--workspace-behavior=cargo"])
+        .assert_success("real")
+        .stderr_contains(
+            "
+            running `cargo check --all` (1/1)
+            ",
+        );
 }
 
 #[test]
@@ -101,6 +108,7 @@ fn virtual_manifest() {
         "
         running `cargo check` on member1 (1/3)
         running `cargo check` on member2 (2/3)
+        running `cargo check` on not_find_manifest (3/3)
         ",
     );
 
@@ -108,8 +116,17 @@ fn virtual_manifest() {
         "
         running `cargo check` on member1 (1/3)
         running `cargo check` on member2 (2/3)
+        running `cargo check` on not_find_manifest (3/3)
         ",
     );
+
+    cargo_hack(["check", "--all", "--workspace-behavior=cargo"])
+        .assert_success("virtual")
+        .stderr_contains(
+            "
+            running `cargo check --all` (1/1)
+            ",
+        );
 }
 
 #[test]
@@ -508,6 +525,10 @@ fn each_feature_failure() {
     cargo_hack(["check", "--each-feature", "--no-default-features"])
         .assert_failure("real")
         .stderr_contains("--no-default-features may not be used together with --each-feature");
+
+    cargo_hack(["check", "--each-feature", "--workspace-behavior=cargo"])
+        .assert_failure("real")
+        .stderr_contains("--workspace-behavior=cargo may not be used together with --each-feature");
 }
 
 #[test]
@@ -566,6 +587,12 @@ fn feature_powerset_failure() {
     cargo_hack(["check", "--feature-powerset", "--no-default-features"])
         .assert_failure("real")
         .stderr_contains("--no-default-features may not be used together with --feature-powerset");
+
+    cargo_hack(["check", "--feature-powerset", "--workspace-behavior=cargo"])
+        .assert_failure("real")
+        .stderr_contains(
+            "--workspace-behavior=cargo may not be used together with --feature-powerset",
+        );
 }
 
 #[test]

@@ -153,7 +153,7 @@ fn replace_command(lines: &str) -> String {
     if lines.contains("rustup run") {
         lines.to_owned()
     } else if let Some(minor) = *TEST_VERSION {
-        lines.replace("cargo ", &format!("rustup run 1.{minor} cargo "))
+        lines.replace("`cargo ", &format!("`rustup run 1.{minor} cargo "))
     } else {
         lines.to_owned()
     }

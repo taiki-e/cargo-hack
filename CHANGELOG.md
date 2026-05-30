@@ -12,6 +12,14 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support versioned name and package spec in `--package` and `--exclude`.
+
+- Add `--workspace-behavior=cargo` option.
+
+  This is for use cases where cargo-hack's workspace handling does not work. Note that this is incompatible with flags that require cargo-hack's workspace handling to work properly (e.g., `--each-feature`, `--feature-powerset`, etc.).
+
+- Diagnostics improvements.
+
 ## [0.6.44] - 2026-03-20
 
 - Publish [artifact attestations](https://docs.github.com/en/actions/concepts/security/artifact-attestations).
