@@ -2011,6 +2011,16 @@ fn partition() {
             running `cargo check --no-default-features --features a,b,c,default` on real (17/17)
             ",
         );
+
+    cargo_hack(["check", "--feature-powerset", "--partition", "5/5"])
+        .assert_success("powerset_deduplication")
+        .stderr_contains(
+            "
+            skipping `cargo check --no-default-features --features c,d` on deduplication (9/11)
+            running `cargo check --no-default-features --features e` on deduplication (10/11)
+            running `cargo check --no-default-features --features c,e` on deduplication (11/11)
+            ",
+        );
 }
 
 #[test]
