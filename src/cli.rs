@@ -267,7 +267,7 @@ impl Args {
                     target.insert(parser.value()?.parse()?);
                 }
 
-                Long("manifest-path") => {
+                Short('m') | Long("manifest-path") => {
                     parse_opt!(manifest_path, workspace_behavior == WorkspaceBehavior::Cargo);
                 }
                 Long("depth") => parse_opt!(depth, false),
