@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// Note that this can handle SIGINT and SIGTERM, but cannot handle SIGKILL.
+
 use std::{
     mem,
     path::PathBuf,
