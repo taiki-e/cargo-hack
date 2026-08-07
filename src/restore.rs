@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// Note that this can handle SIGINT and SIGTERM, but cannot handle SIGKILL.
+
 use std::{
     mem,
     path::PathBuf,
@@ -19,17 +21,16 @@ pub(crate) struct Manager {
 }
 
 impl Manager {
-    pub(crate) fn new(needs_restore: bool) -> Self {
+    pub(crate) fn new(needs_restore: bool) -> Result<Self> {
         let this = Self { needs_restore, files: Arc::new(Mutex::new(vec![])) };
 
         let cloned = this.clone();
         ctrlc::set_handler(move || {
             cloned.restore_all();
             std::process::exit(1)
-        })
-        .unwrap();
+        })?;
 
-        this
+        Ok(this)
     }
 
     /// Registers the given path if `needs_restore` is `true`.

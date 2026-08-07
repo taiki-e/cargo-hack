@@ -45,7 +45,7 @@ impl Context {
             .map_or(0, |v| v.minor);
 
         // if `--remove-dev-deps` flag is off, restore manifest file.
-        let mut restore = restore::Manager::new(!args.remove_dev_deps);
+        let mut restore = restore::Manager::new(!args.remove_dev_deps)?;
         let metadata = Metadata::new(
             args.manifest_path.as_deref(),
             &cargo,
