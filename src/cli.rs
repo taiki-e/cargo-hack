@@ -430,21 +430,16 @@ impl Args {
 
         term::set_coloring(color.as_deref())?;
 
-        if ignore_unknown_features {
-            if features.is_empty() && include_features.is_empty() && group_features.is_empty() {
-                requires("--ignore-unknown-features", &[
-                    "--features",
-                    "--include-features",
-                    "--group-features",
-                ])?;
-            }
-            if !include_features.is_empty() {
-                let _guard = term::warn::scoped(false);
-                // TODO: implement
-                warn!(
-                    "--ignore-unknown-features for --include-features is not fully implemented and may not work as intended"
-                );
-            }
+        if ignore_unknown_features
+            && features.is_empty()
+            && include_features.is_empty()
+            && group_features.is_empty()
+        {
+            requires("--ignore-unknown-features", &[
+                "--features",
+                "--include-features",
+                "--group-features",
+            ])?;
         }
         if !each_feature && !feature_powerset {
             if optional_deps.is_some() {
