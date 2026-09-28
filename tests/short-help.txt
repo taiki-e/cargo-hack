@@ -29,6 +29,7 @@ OPTIONS:
                                          together
         --at-least-one-of <FEATURES>...  Space or comma separated list of features. Skips sets of
                                          features that don't enable any of the features listed
+        --feature-requires <CONSTRAINTS>... Comma separated list of feature dependency constraints
         --include-features <FEATURES>... Include only the specified features in the feature
                                          combinations instead of package features
         --no-dev-deps                    Perform without dev-dependencies

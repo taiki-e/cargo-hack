@@ -5,6 +5,12 @@ use std::{
     fmt, slice,
 };
 
+use winnow::{
+    combinator::{alt, cut_err, delimited, not, preceded, repeat},
+    prelude::*,
+    token::{one_of, take_while},
+};
+
 use crate::{PackageId, manifest::Manifest, metadata::Metadata};
 
 #[derive(Debug)]
@@ -216,6 +222,7 @@ pub(crate) fn feature_powerset<'a>(
     depth: Option<usize>,
     at_least_one_of: &[Feature],
     mutually_exclusive_features: &[Feature],
+    feature_requires: &[FeatureRequirement],
     package_features: &BTreeMap<Box<str>, Box<[Box<str>]>>,
 ) -> Vec<Vec<&'a Feature>> {
     let deps_map = feature_deps(package_features);
@@ -255,6 +262,20 @@ pub(crate) fn feature_powerset<'a>(
                 }
             }
             true
+        })
+        .filter(move |fs| {
+            if feature_requires.is_empty() {
+                return true;
+            }
+            let active: BTreeSet<&str> =
+                fs.iter().flat_map(|f| f.as_group()).map(String::as_str).collect();
+            feature_requires.iter().all(|req| {
+                if active.contains(req.dependent.as_str()) {
+                    req.requirement.is_satisfied_by(&active)
+                } else {
+                    true
+                }
+            })
         })
         .collect()
 }
@@ -335,11 +356,126 @@ pub(crate) fn at_least_one_of_for_package<'a>(
         .collect::<Vec<_>>()
 }
 
+/// A boolean expression representing a feature requirement.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum Requirement {
+    Feature(String),
+    And(Box<Requirement>, Box<Requirement>),
+    Or(Box<Requirement>, Box<Requirement>),
+}
+
+/// A constraint that a dependent feature requires a boolean expression of other features.
+#[derive(Debug)]
+pub(crate) struct FeatureRequirement {
+    pub(crate) dependent: String,
+    pub(crate) requirement: Requirement,
+}
+
+impl Requirement {
+    pub(crate) fn is_satisfied_by(&self, features: &BTreeSet<&str>) -> bool {
+        match self {
+            Self::Feature(name) => features.contains(name.as_str()),
+            Self::And(lhs, rhs) => lhs.is_satisfied_by(features) && rhs.is_satisfied_by(features),
+            Self::Or(lhs, rhs) => lhs.is_satisfied_by(features) || rhs.is_satisfied_by(features),
+        }
+    }
+}
+
+impl fmt::Display for Requirement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Feature(name) => f.write_str(name),
+            Self::And(lhs, rhs) => write!(f, "{lhs} AND {rhs}"),
+            Self::Or(lhs, rhs) => write!(f, "{lhs} OR {rhs}"),
+        }
+    }
+}
+
+// Recursive descent parser for boolean expressions with two precedence levels:
+// or_expr -> and_expr -> atom -> '(' or_expr ')' | feature_name
+// Each level delegates to the next-higher precedence, so AND binds tighter than OR.
+// Parentheses reset to the lowest precedence (or_expr).
+fn parse_requirement(input: &str) -> Result<Requirement, String> {
+    fn is_ident_char(c: char) -> bool {
+        c.is_alphanumeric() || c == '_' || c == '-'
+    }
+
+    fn or_expr(input: &mut &str) -> ModalResult<Requirement> {
+        let first = and_expr.parse_next(input)?;
+        let rest: Vec<Requirement> =
+            repeat(0.., preceded(("OR", not(one_of(is_ident_char))).void(), and_expr))
+                .parse_next(input)?;
+        Ok(rest.into_iter().fold(first, |l, r| Requirement::Or(Box::new(l), Box::new(r))))
+    }
+
+    fn and_expr(input: &mut &str) -> ModalResult<Requirement> {
+        let first = atom.parse_next(input)?;
+        let rest: Vec<Requirement> =
+            repeat(0.., preceded(("AND", not(one_of(is_ident_char))).void(), atom))
+                .parse_next(input)?;
+        Ok(rest.into_iter().fold(first, |l, r| Requirement::And(Box::new(l), Box::new(r))))
+    }
+
+    fn atom(input: &mut &str) -> ModalResult<Requirement> {
+        winnow::ascii::multispace0.parse_next(input)?;
+        let result = alt((
+            delimited('(', or_expr, cut_err(delimited(winnow::ascii::multispace0, ')', ()))),
+            feature_name,
+        ))
+        .parse_next(input)?;
+        winnow::ascii::multispace0.parse_next(input)?;
+        Ok(result)
+    }
+
+    fn feature_name(input: &mut &str) -> ModalResult<Requirement> {
+        take_while(1.., is_ident_char)
+            .verify(|s: &str| s != "AND" && s != "OR")
+            .map(|s: &str| Requirement::Feature(s.to_owned()))
+            .parse_next(input)
+    }
+
+    or_expr.parse(input).map_err(|e| e.to_string())
+}
+
+/// Parse a `--feature-requires` value into a list of feature requirements.
+pub(crate) fn parse_feature_requires(input: &str) -> Result<Vec<FeatureRequirement>, String> {
+    let constraints: Vec<&str> = input.split(',').collect();
+    let mut result = Vec::new();
+
+    for constraint in constraints {
+        let constraint = constraint.trim();
+        if constraint.is_empty() {
+            continue;
+        }
+        let (dependent, expr_str) = constraint
+            .split_once(':')
+            .ok_or_else(|| format!("expected ':' in feature requirement '{constraint}'"))?;
+        let dependent = dependent.trim();
+        let expr_str = expr_str.trim();
+        if dependent.is_empty() {
+            return Err(format!("empty feature name before ':' in '{constraint}'"));
+        }
+        if expr_str.is_empty() {
+            return Err(format!("empty expression after ':' in '{constraint}'"));
+        }
+
+        let requirement = parse_requirement(expr_str)
+            .map_err(|e| format!("invalid expression in '{constraint}': {e}"))?;
+
+        result.push(FeatureRequirement { dependent: dependent.to_owned(), requirement });
+    }
+
+    Ok(result)
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use super::{Feature, at_least_one_of_for_package, feature_deps, feature_powerset, powerset};
+    use super::{
+        Feature, Requirement, at_least_one_of_for_package, feature_deps, feature_powerset,
+        parse_feature_requires, powerset,
+    };
 
     macro_rules! v {
         ($($expr:expr),* $(,)?) => {
@@ -373,22 +509,22 @@ mod tests {
         let map = map![("a", v![]), ("b", v!["a"]), ("c", v!["b"]), ("d", v!["a", "b"])];
 
         let list = v!["a", "b", "c", "d"];
-        let filtered = feature_powerset(&list, None, &[], &[], &map);
+        let filtered = feature_powerset(&list, None, &[], &[], &[], &map);
         assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"], vec!["c", "d"]]);
 
-        let filtered = feature_powerset(&list, None, &["a".into()], &[], &map);
+        let filtered = feature_powerset(&list, None, &["a".into()], &[], &[], &map);
         assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"], vec!["c", "d"]]);
 
-        let filtered = feature_powerset(&list, None, &["c".into()], &[], &map);
+        let filtered = feature_powerset(&list, None, &["c".into()], &[], &[], &map);
         assert_eq!(filtered, vec![vec!["c"], vec!["c", "d"]]);
 
-        let filtered = feature_powerset(&list, None, &["a".into(), "c".into()], &[], &map);
+        let filtered = feature_powerset(&list, None, &["a".into(), "c".into()], &[], &[], &map);
         assert_eq!(filtered, vec![vec!["c"], vec!["c", "d"]]);
 
         let map = map![("tokio", v![]), ("async-std", v![]), ("a", v![]), ("b", v!["a"])];
         let list = v!["a", "b", "tokio", "async-std"];
         let mutually_exclusive_features = [Feature::group(["tokio", "async-std"])];
-        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &map);
+        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &[], &map);
         assert_eq!(filtered, vec![
             vec!["a"],
             vec!["b"],
@@ -402,7 +538,7 @@ mod tests {
 
         let mutually_exclusive_features =
             [Feature::group(["tokio", "a"]), Feature::group(["tokio", "async-std"])];
-        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &map);
+        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &[], &map);
         assert_eq!(filtered, vec![
             vec!["a"],
             vec!["b"],
@@ -420,7 +556,7 @@ mod tests {
         ];
         let list = v!["a", "b", "tokio", "async-std"];
         let mutually_exclusive_features = [Feature::group(["tokio", "async-std"])];
-        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &map);
+        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &[], &map);
         assert_eq!(filtered, vec![
             vec!["a"],
             vec!["b"],
@@ -440,7 +576,7 @@ mod tests {
         ];
         let list = v!["actual", "alias", "entry", "dummy_a", "dummy_b"];
         let mutually_exclusive_features = [Feature::group(["dummy_a", "dummy_b"])];
-        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &map);
+        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &[], &map);
         assert_eq!(filtered, vec![
             vec!["actual"],
             vec!["alias"],
@@ -461,7 +597,7 @@ mod tests {
         let map = map![("a", v![]), ("b", v!["a"]), ("c", v![]), ("d", v!["b"])];
         let list = v!["a", "b", "c", "d"];
         let mutually_exclusive_features = [Feature::group(["a", "c"])];
-        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &map);
+        let filtered = feature_powerset(&list, None, &[], &mutually_exclusive_features, &[], &map);
         assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"]]);
     }
 
@@ -495,7 +631,7 @@ mod tests {
             vec!["b", "c", "d"],
             vec!["a", "b", "c", "d"],
         ]);
-        let filtered = feature_powerset(&list, None, &[], &[], &map);
+        let filtered = feature_powerset(&list, None, &[], &[], &[], &map);
         assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"], vec!["c", "d"]]);
     }
 
@@ -566,5 +702,191 @@ mod tests {
             vec![1, 3, 4],
             vec![2, 3, 4],
         ]);
+    }
+
+    // --- Requirement parser tests ---
+
+    fn req_feature(name: &str) -> Requirement {
+        Requirement::Feature(name.to_owned())
+    }
+
+    fn req_and(lhs: Requirement, rhs: Requirement) -> Requirement {
+        Requirement::And(Box::new(lhs), Box::new(rhs))
+    }
+
+    fn req_or(lhs: Requirement, rhs: Requirement) -> Requirement {
+        Requirement::Or(Box::new(lhs), Box::new(rhs))
+    }
+
+    #[test]
+    fn parse_simple_feature() {
+        let reqs = parse_feature_requires("c:a").unwrap();
+        assert_eq!(reqs.len(), 1);
+        assert_eq!(reqs[0].dependent, "c");
+        assert_eq!(reqs[0].requirement, req_feature("a"));
+    }
+
+    #[test]
+    fn parse_or_expression() {
+        let reqs = parse_feature_requires("c:a OR b").unwrap();
+        assert_eq!(reqs.len(), 1);
+        assert_eq!(reqs[0].dependent, "c");
+        assert_eq!(reqs[0].requirement, req_or(req_feature("a"), req_feature("b")));
+    }
+
+    #[test]
+    fn parse_and_expression() {
+        let reqs = parse_feature_requires("c:a AND b").unwrap();
+        assert_eq!(reqs.len(), 1);
+        assert_eq!(reqs[0].dependent, "c");
+        assert_eq!(reqs[0].requirement, req_and(req_feature("a"), req_feature("b")));
+    }
+
+    #[test]
+    fn parse_precedence_and_binds_tighter() {
+        // a OR b AND c  =>  a OR (b AND c)
+        let reqs = parse_feature_requires("x:a OR b AND c").unwrap();
+        assert_eq!(
+            reqs[0].requirement,
+            req_or(req_feature("a"), req_and(req_feature("b"), req_feature("c")))
+        );
+    }
+
+    #[test]
+    fn parse_parentheses_override_precedence() {
+        // (a OR b) AND c
+        let reqs = parse_feature_requires("x:(a OR b) AND c").unwrap();
+        assert_eq!(
+            reqs[0].requirement,
+            req_and(req_or(req_feature("a"), req_feature("b")), req_feature("c"))
+        );
+    }
+
+    #[test]
+    fn parse_left_associativity() {
+        // a OR b OR c  =>  (a OR b) OR c
+        let reqs = parse_feature_requires("x:a OR b OR c").unwrap();
+        assert_eq!(
+            reqs[0].requirement,
+            req_or(req_or(req_feature("a"), req_feature("b")), req_feature("c"))
+        );
+
+        // a AND b AND c  =>  (a AND b) AND c
+        let reqs = parse_feature_requires("x:a AND b AND c").unwrap();
+        assert_eq!(
+            reqs[0].requirement,
+            req_and(req_and(req_feature("a"), req_feature("b")), req_feature("c"))
+        );
+    }
+
+    #[test]
+    fn parse_multiple_constraints() {
+        let reqs = parse_feature_requires("c:a OR b,d:e").unwrap();
+        assert_eq!(reqs.len(), 2);
+        assert_eq!(reqs[0].dependent, "c");
+        assert_eq!(reqs[0].requirement, req_or(req_feature("a"), req_feature("b")));
+        assert_eq!(reqs[1].dependent, "d");
+        assert_eq!(reqs[1].requirement, req_feature("e"));
+    }
+
+    #[test]
+    fn parse_hyphenated_feature_names() {
+        let reqs = parse_feature_requires("my-feat:dep-a OR dep-b").unwrap();
+        assert_eq!(reqs[0].dependent, "my-feat");
+        assert_eq!(reqs[0].requirement, req_or(req_feature("dep-a"), req_feature("dep-b")));
+    }
+
+    #[test]
+    fn parse_error_missing_colon() {
+        assert!(parse_feature_requires("abc").is_err());
+    }
+
+    #[test]
+    fn parse_error_empty_expression() {
+        assert!(parse_feature_requires("c:").is_err());
+    }
+
+    #[test]
+    fn parse_error_unmatched_paren() {
+        assert!(parse_feature_requires("c:(a OR b").is_err());
+    }
+
+    #[test]
+    fn parse_error_unexpected_operator() {
+        assert!(parse_feature_requires("c:AND a").is_err());
+    }
+
+    // --- Requirement::is_satisfied_by tests ---
+
+    #[test]
+    fn requirement_satisfied_by() {
+        let features: BTreeSet<&str> = set!["a", "b", "c"];
+
+        assert!(req_feature("a").is_satisfied_by(&features));
+        assert!(!req_feature("x").is_satisfied_by(&features));
+
+        assert!(req_or(req_feature("a"), req_feature("x")).is_satisfied_by(&features));
+        assert!(req_or(req_feature("x"), req_feature("b")).is_satisfied_by(&features));
+        assert!(!req_or(req_feature("x"), req_feature("y")).is_satisfied_by(&features));
+
+        assert!(req_and(req_feature("a"), req_feature("b")).is_satisfied_by(&features));
+        assert!(!req_and(req_feature("a"), req_feature("x")).is_satisfied_by(&features));
+    }
+
+    // --- feature_powerset with feature_requires tests ---
+
+    #[test]
+    fn powerset_with_feature_requires() {
+        let map = map![("a", v![]), ("b", v![]), ("c", v![])];
+        let list: Vec<Feature> = v!["a", "b", "c"];
+
+        // c requires (a OR b): c should not appear alone
+        let reqs = parse_feature_requires("c:a OR b").unwrap();
+        let filtered = feature_powerset(&list, None, &[], &[], &reqs, &map);
+        assert_eq!(filtered, vec![
+            vec!["a"],
+            vec!["b"],
+            vec!["a", "b"],
+            vec!["a", "c"],
+            vec!["b", "c"],
+            vec!["a", "b", "c"],
+        ]);
+    }
+
+    #[test]
+    fn powerset_feature_requires_and() {
+        let map = map![("a", v![]), ("b", v![]), ("c", v![])];
+        let list: Vec<Feature> = v!["a", "b", "c"];
+
+        // c requires (a AND b): c should only appear with both a and b
+        let reqs = parse_feature_requires("c:a AND b").unwrap();
+        let filtered = feature_powerset(&list, None, &[], &[], &reqs, &map);
+        assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["a", "b"], vec!["a", "b", "c"],]);
+    }
+
+    #[test]
+    fn powerset_feature_requires_issue_264() {
+        // From issue #264: feature_only_if_a_or_b requires feature_a OR feature_b
+        let map = map![("feature_a", v![]), ("feature_b", v![]), ("feature_only_if_a_or_b", v![])];
+        let list: Vec<Feature> = v!["feature_a", "feature_b", "feature_only_if_a_or_b"];
+
+        let reqs = parse_feature_requires("feature_only_if_a_or_b:feature_a OR feature_b").unwrap();
+        let filtered = feature_powerset(&list, None, &[], &[], &reqs, &map);
+        assert_eq!(filtered, vec![
+            vec!["feature_a"],
+            vec!["feature_b"],
+            vec!["feature_a", "feature_b"],
+            vec!["feature_a", "feature_only_if_a_or_b"],
+            vec!["feature_b", "feature_only_if_a_or_b"],
+            vec!["feature_a", "feature_b", "feature_only_if_a_or_b"],
+        ]);
+    }
+
+    #[test]
+    fn powerset_feature_requires_no_constraints() {
+        let map = map![("a", v![]), ("b", v![])];
+        let list: Vec<Feature> = v!["a", "b"];
+        let filtered = feature_powerset(&list, None, &[], &[], &[], &map);
+        assert_eq!(filtered, vec![vec!["a"], vec!["b"], vec!["a", "b"]]);
     }
 }
