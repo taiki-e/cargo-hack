@@ -125,6 +125,20 @@ OPTIONS:
 
             This flag can only be used together with --feature-powerset flag.
 
+        --feature-requires <CONSTRAINTS>...
+            Comma separated list of feature dependency constraints.
+
+            Each constraint has the form `FEATURE:EXPR` where EXPR is a boolean expression using
+            AND, OR, and parentheses. AND binds tighter than OR.
+
+            Example: `--feature-requires "c:a OR b"` means feature c requires at least one of a or
+            b.
+
+            To specify multiple constraints, separate with commas or use this option multiple
+            times: `--feature-requires "c:a OR b,d:e AND f"`
+
+            This flag can only be used together with --feature-powerset flag.
+
         --include-features <FEATURES>...
             Include only the specified features in the feature combinations instead of package
             features.
