@@ -204,7 +204,12 @@ struct Progress {
 
 impl Progress {
     fn in_partition(&self, partition: &Partition) -> bool {
-        let current_index = self.count / self.total.div_ceil(partition.count);
+        // Spread runs over near-even buckets without overfilling early partitions.
+        let current_index = if self.total <= partition.count {
+            self.count
+        } else {
+            self.count * partition.count / self.total
+        };
         current_index == partition.index
     }
 }
