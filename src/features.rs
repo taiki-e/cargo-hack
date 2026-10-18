@@ -234,10 +234,7 @@ pub(crate) fn feature_powerset<'a>(
         .filter(move |fs| {
             // all() returns true if at_least_one_of is empty
             at_least_one_of.iter().all(|required_set| {
-                fs
-                    .iter()
-                    .flat_map(|f| f.as_group())
-                    .any(|f| required_set.contains(f.as_str()))
+                fs.iter().flat_map(|f| f.as_group()).any(|f| required_set.contains(f.as_str()))
             })
         })
         .filter(move |fs| {
@@ -259,7 +256,9 @@ pub(crate) fn feature_powerset<'a>(
         .collect()
 }
 
-fn feature_deps(map: &BTreeMap<Box<str>, Box<[Box<str>]>>) -> BTreeMap<&str, BTreeSet<&str>> {
+pub(crate) fn feature_deps(
+    map: &BTreeMap<Box<str>, Box<[Box<str>]>>,
+) -> BTreeMap<&str, BTreeSet<&str>> {
     fn rec<'a>(
         map: &'a BTreeMap<Box<str>, Box<[Box<str>]>>,
         set: &mut BTreeSet<&'a str>,

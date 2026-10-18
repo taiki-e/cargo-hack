@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Report an error for `--at-least-one-of` features absent from every selected package, unless `--ignore-unknown-features` is used.
+
 ## [0.6.45] - 2026-05-30
 
 - Support versioned name and package spec in `--package` and `--exclude`. ([#298](https://github.com/taiki-e/cargo-hack/pull/298))

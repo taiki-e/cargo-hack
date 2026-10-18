@@ -431,11 +431,16 @@ impl Args {
         term::set_coloring(color.as_deref())?;
 
         if ignore_unknown_features {
-            if features.is_empty() && include_features.is_empty() && group_features.is_empty() {
+            if features.is_empty()
+                && include_features.is_empty()
+                && group_features.is_empty()
+                && at_least_one_of.is_empty()
+            {
                 requires("--ignore-unknown-features", &[
                     "--features",
                     "--include-features",
                     "--group-features",
+                    "--at-least-one-of",
                 ])?;
             }
             if !include_features.is_empty() {
@@ -838,6 +843,7 @@ const HELP: &[HelpText<'_>] = &[
         &[
             "To specify multiple groups, use this option multiple times: \
              `--at-least-one-of a,b --at-least-one-of c,d`",
+            "Features absent from all selected packages cause an error, unless --ignore-unknown-features is used.",
             "This flag can only be used together with --feature-powerset flag.",
         ],
     ),
@@ -869,7 +875,9 @@ const HELP: &[HelpText<'_>] = &[
         "--ignore-unknown-features",
         "",
         "Skip passing --features flag to `cargo` if that feature does not exist in the package",
-        &["This flag can be used with --features, --include-features, or --group-features."],
+        &[
+            "This flag can be used with --features, --include-features, --group-features, or --at-least-one-of.",
+        ],
     ),
     ("", "--rust-version", "", "Perform commands on `package.rust-version`", &[
         "This cannot be used with --version-range.",

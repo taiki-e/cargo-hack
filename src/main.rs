@@ -65,6 +65,22 @@ fn try_main() -> Result<()> {
         }
 
         let packages = determine_package_list(cx)?;
+        if !cx.ignore_unknown_features && !cx.at_least_one_of.is_empty() {
+            let feature_deps: Vec<_> = packages
+                .iter()
+                .map(|pkg| features::feature_deps(&cx.packages(pkg.id).features))
+                .collect();
+            for name in cx.at_least_one_of.iter().flat_map(Feature::as_group) {
+                if !feature_deps.iter().any(|deps| {
+                    deps.contains_key(name.as_str())
+                        || deps.values().any(|features| features.contains(name.as_str()))
+                }) {
+                    bail!(
+                        "feature `{name}` specified by --at-least-one-of not found in any selected package"
+                    );
+                }
+            }
+        }
         let mut progress = Progress::default();
         let mut keep_going = KeepGoing::default();
         if let Some(range) = cx.version_range {

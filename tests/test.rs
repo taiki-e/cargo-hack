@@ -465,7 +465,7 @@ fn ignore_unknown_features_failure() {
         .stderr_contains(
             "
             --ignore-unknown-features can only be used together with --features, --include-features, \
-            or --group-features
+            --group-features, or --at-least-one-of
             ",
         );
 
@@ -935,6 +935,59 @@ fn include_features() {
             running `cargo check --no-default-features --features b` on real (3/3)
             ",
         );
+}
+
+#[test]
+fn at_least_one_of_unknown_features() {
+    cargo_hack(["check", "--feature-powerset", "--at-least-one-of", "a,missing"])
+        .assert_failure("real")
+        .stderr_contains(
+            "feature `missing` specified by --at-least-one-of not found in any selected package",
+        )
+        .stderr_not_contains("running `cargo");
+
+    // A feature only needs to exist in one of the selected workspace packages.
+    cargo_hack(["check", "--feature-powerset", "--at-least-one-of", "a,f"])
+        .assert_success("virtual");
+
+    cargo_hack(["check", "--feature-powerset", "--at-least-one-of", "a,f", "--exclude", "member2"])
+        .assert_failure("virtual")
+        .stderr_contains(
+            "feature `f` specified by --at-least-one-of not found in any selected package",
+        );
+
+    cargo_hack([
+        "check",
+        "--feature-powerset",
+        "--at-least-one-of",
+        "a,missing",
+        "--ignore-unknown-features",
+    ])
+    .assert_success("real");
+
+    cargo_hack([
+        "check",
+        "--feature-powerset",
+        "--at-least-one-of",
+        "missing,also-missing",
+        "--ignore-unknown-features",
+    ])
+    .assert_success("real");
+
+    cargo_hack(["check", "--feature-powerset", "--at-least-one-of", "a,f", "-p", "member1"])
+        .assert_failure("virtual")
+        .stderr_contains(
+            "feature `f` specified by --at-least-one-of not found in any selected package",
+        );
+
+    // Dependency feature references have always been accepted by the per-package filter.
+    cargo_hack([
+        "check",
+        "--feature-powerset",
+        "--at-least-one-of",
+        "easytime/std,easytime?/default",
+    ])
+    .assert_success2("weak_dep_features_namespaced", Some(60));
 }
 
 #[test]
