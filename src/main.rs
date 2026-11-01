@@ -301,6 +301,17 @@ fn determine_kind(cx: &Context, id: PackageId, multiple_packages: bool) -> Optio
         cx.include_features.iter().filter(filter).collect()
     };
 
+    let features = features
+        .into_iter()
+        .filter(|feature| match feature {
+            Feature::Normal { name } => package.features.contains_key(name.as_str()),
+            Feature::Group { list, .. } => {
+                list.iter().any(|name| package.features.contains_key(name.as_str()))
+            }
+            Feature::Path { .. } => true,
+        })
+        .collect::<Vec<_>>();
+
     if cx.each_feature {
         if (pkg_features.normal().is_empty() && pkg_features.optional_deps().is_empty()
             || !cx.include_features.is_empty())

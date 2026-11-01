@@ -468,21 +468,6 @@ fn ignore_unknown_features_failure() {
             or --group-features
             ",
         );
-
-    cargo_hack([
-        "check",
-        "--ignore-unknown-features",
-        "--feature-powerset",
-        "--include-features",
-        "a",
-    ])
-    .assert_success("real")
-    .stderr_contains(
-        "
-        --ignore-unknown-features for --include-features is not fully implemented and may not \
-        work as intended
-        ",
-    );
 }
 
 #[test]
@@ -2067,4 +2052,46 @@ fn update_readme() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("README.md");
     let command = "cargo hack --help";
     test_helper::doc::sync_command_output_to_markdown(path, "readme-long-help", command, new);
+}
+
+#[test]
+fn include_features_ignore_unknown() {
+    cargo_hack([
+        "check",
+        "--each-feature",
+        "--include-features",
+        "a,b",
+        "--ignore-unknown-features",
+    ])
+    .assert_success("include_features_ignore_unknown")
+    .stderr_contains(
+        "
+            running `cargo check --no-default-features --features a` on features-a-b (1/4)
+            running `cargo check --no-default-features --features b` on features-a-b (2/4)
+            running `cargo check --no-default-features --features a` on features-a-c (3/4)
+            running `cargo check` on features-c-d (4/4)
+            ",
+    )
+    .stderr_not_contains("--features c")
+    .stderr_not_contains("--features d");
+
+    cargo_hack([
+        "check",
+        "--feature-powerset",
+        "--include-features",
+        "a,b",
+        "--ignore-unknown-features",
+    ])
+    .assert_success("include_features_ignore_unknown")
+    .stderr_contains(
+        "
+            running `cargo check --no-default-features --features a,b` on features-a-b (1/5)
+            running `cargo check --no-default-features --features a` on features-a-b (2/5)
+            running `cargo check --no-default-features --features b` on features-a-b (3/5)
+            running `cargo check --no-default-features --features a` on features-a-c (4/5)
+            running `cargo check` on features-c-d (5/5)
+            ",
+    )
+    .stderr_not_contains("--features c")
+    .stderr_not_contains("--features d");
 }
