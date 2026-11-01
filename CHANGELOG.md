@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support `-m` alias [added in Cargo 1.97](https://github.com/rust-lang/cargo/pull/16858).
+
 ## [0.6.45] - 2026-05-30
 
 - Support versioned name and package spec in `--package` and `--exclude`. ([#298](https://github.com/taiki-e/cargo-hack/pull/298))
