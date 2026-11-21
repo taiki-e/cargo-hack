@@ -67,6 +67,10 @@ OPTIONS:
             --include-features and there are multiple features, this also includes runs with just
             --all-features flag.
 
+            With --exclude-features and without --include-features, the remaining package features
+            are also checked together unless a single run already covers them or
+            --exclude-all-features is used.
+
         --feature-powerset
             Perform for the feature powerset of the package.
 
@@ -96,7 +100,7 @@ OPTIONS:
             To exclude run of just --no-default-features flag, using --exclude-no-default-features
             flag.
 
-            To exclude run of just --all-features flag, using --exclude-all-features flag.
+            To skip the combined run, use --exclude-all-features.
 
             This flag can only be used together with either --each-feature flag or
             --feature-powerset flag.
@@ -108,7 +112,7 @@ OPTIONS:
             --feature-powerset flag.
 
         --exclude-all-features
-            Exclude run of just --all-features flag.
+            Skip the extra combined feature run.
 
             This flag can only be used together with either --each-feature flag or
             --feature-powerset flag.

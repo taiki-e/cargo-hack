@@ -82,6 +82,8 @@ pub(crate) struct Args {
     pub(crate) exclude_no_default_features: bool,
     /// --exclude-all-features
     pub(crate) exclude_all_features: bool,
+    /// --each-feature with exclusions still checks the remaining features together.
+    pub(crate) combine_remaining_features: bool,
 
     // options for --feature-powerset
     /// --depth <NUM>
@@ -652,6 +654,10 @@ impl Args {
         // https://github.com/taiki-e/cargo-hack/issues/42
         // https://github.com/rust-lang/cargo/pull/8799
         exclude_no_default_features |= !include_features.is_empty();
+        let combine_remaining_features = each_feature
+            && !exclude_features.is_empty()
+            && include_features.is_empty()
+            && !exclude_all_features;
         exclude_all_features |= !include_features.is_empty()
             || !exclude_features.is_empty()
             || !mutually_exclusive_features.is_empty();
@@ -703,6 +709,7 @@ impl Args {
             exclude_features,
             exclude_no_default_features,
             exclude_all_features,
+            combine_remaining_features,
 
             features,
 
@@ -756,6 +763,9 @@ const HELP: &[HelpText<'_>] = &[
         "When this flag is not used together with --exclude-features (--skip) and \
          --include-features and there are multiple features, this also includes runs with \
          just --all-features flag.",
+        "With --exclude-features and without --include-features, the remaining package features \
+         are also checked together unless a single run already covers them or \
+         --exclude-all-features is used.",
     ]),
     ("", "--feature-powerset", "", "Perform for the feature powerset of the package", &[
         "This also includes runs with just --no-default-features flag, and default features.",
@@ -780,7 +790,7 @@ const HELP: &[HelpText<'_>] = &[
             "To exclude run of default feature, using value `--exclude-features default`.",
             "To exclude run of just --no-default-features flag, using --exclude-no-default-features \
          flag.",
-            "To exclude run of just --all-features flag, using --exclude-all-features flag.",
+            "To skip the combined run, use --exclude-all-features.",
             "This flag can only be used together with either --each-feature flag or --feature-powerset \
          flag.",
         ],
@@ -789,7 +799,7 @@ const HELP: &[HelpText<'_>] = &[
         "This flag can only be used together with either --each-feature flag or --feature-powerset \
          flag.",
     ]),
-    ("", "--exclude-all-features", "", "Exclude run of just --all-features flag", &[
+    ("", "--exclude-all-features", "", "Skip the extra combined feature run", &[
         "This flag can only be used together with either --each-feature flag or --feature-powerset \
          flag.",
     ]),
