@@ -1043,10 +1043,14 @@ fn each_feature_combination_with_exclusions() {
         .stderr_contains("running `cargo check --no-default-features` on real (1/4)");
 
     // A run with b also enables a.
-    cargo_hack(["check", "--each-feature", "--skip=c,d,e,member1"])
-        .assert_success("powerset_deduplication")
+    cargo_hack(["check", "--each-feature", "--skip=c"])
+        .assert_success("implied_feature")
         .stderr_contains(
-            "running `cargo check --no-default-features --features b` on deduplication (3/3)",
+            "
+            running `cargo check --no-default-features` on implied_feature (1/3)
+            running `cargo check --no-default-features --features a` on implied_feature (2/3)
+            running `cargo check --no-default-features --features b` on implied_feature (3/3)
+            ",
         );
 }
 

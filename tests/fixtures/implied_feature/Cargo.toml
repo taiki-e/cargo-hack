@@ -1,0 +1,11 @@
+[package]
+name = "implied_feature"
+version = "0.0.0"
+publish = false
+
+[features]
+a = []
+b = ["a"]
+c = []
+
+[workspace]
