@@ -212,7 +212,7 @@ impl Progress {
 #[derive(Clone)]
 enum Kind<'a> {
     Normal,
-    Each { features: Vec<&'a Feature> },
+    Each { features: Vec<&'a Feature>, combined: Vec<&'a Feature> },
     Powerset { features: Vec<Vec<&'a Feature>> },
 }
 
@@ -310,13 +310,30 @@ fn determine_kind(cx: &Context, id: PackageId, multiple_packages: bool) -> Optio
             let kind = Kind::Normal;
             Some(PackageRuns { id, kind, feature_count })
         } else {
+            let mut combined = Vec::new();
+            if cx.combine_remaining_features {
+                // Cargo's --all-features includes implicit optional dependency features,
+                // even if --optional-deps did not request separate runs for them.
+                combined.extend(
+                    pkg_features.normal().iter().chain(pkg_features.optional_deps()).filter(filter),
+                );
+                combined.retain(|f| {
+                    !cx.features.iter().any(|always| f.matches_recursive(always, &package.features))
+                });
+                if features.iter().any(|single| {
+                    combined.iter().all(|f| f.matches_recursive(single.name(), &package.features))
+                }) {
+                    combined.clear();
+                }
+            }
             // See exec_on_package
             let feature_count = features.len()
+                + (!combined.is_empty()) as usize
                 + (!cx.exclude_no_default_features) as usize
                 + (!(cx.exclude_all_features
                     || pkg_features.optional_deps().is_empty() && pkg_features.normal().len() <= 1))
                     as usize;
-            let kind = Kind::Each { features };
+            let kind = Kind::Each { features, combined };
             Some(PackageRuns { id, kind, feature_count })
         }
     } else if cx.feature_powerset {
@@ -582,6 +599,12 @@ fn exec_on_package(
         line.arg("--no-default-features");
     }
 
+    if let Kind::Each { combined, .. } = kind {
+        if !combined.is_empty() {
+            exec_cargo_with_features(cx, id, &line, progress, keep_going, combined)?;
+        }
+    }
+
     // if `metadata.packages[].features` has `default` feature, users can
     // specify `--features=default`, so it should be one of the combinations.
     // Otherwise, "run with default features" is basically the same as
@@ -593,7 +616,7 @@ fn exec_on_package(
     }
 
     match kind {
-        Kind::Each { features } => {
+        Kind::Each { features, .. } => {
             for &f in features {
                 exec_cargo_with_features(cx, id, &line, progress, keep_going, &[f])?;
             }

@@ -20,7 +20,7 @@ OPTIONS:
         --skip <FEATURES>...             Alias for --exclude-features
         --exclude-features <FEATURES>... Space or comma separated list of features to exclude
         --exclude-no-default-features    Exclude run of just --no-default-features flag
-        --exclude-all-features           Exclude run of just --all-features flag
+        --exclude-all-features           Skip the extra combined feature run
         --depth <NUM>                    Specify a max number of simultaneous feature flags of
                                          --feature-powerset
         --group-features <FEATURES>...   Space or comma separated list of features to group
